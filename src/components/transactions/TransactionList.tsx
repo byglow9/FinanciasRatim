@@ -53,12 +53,12 @@ export function TransactionList({
       {transactions.map((transaction) => (
         <div
           key={transaction.id}
-          className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-between p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div
               className={cn(
-                'p-2 rounded-full',
+                'p-2 rounded-full shrink-0',
                 transaction.type === 'entrada'
                   ? 'bg-green-100 text-green-600'
                   : 'bg-red-100 text-red-600'
@@ -70,8 +70,8 @@ export function TransactionList({
                 <ArrowDownCircle className="h-5 w-5" />
               )}
             </div>
-            <div>
-              <p className="font-medium">{transaction.description}</p>
+            <div className="min-w-0">
+              <p className="font-medium truncate">{transaction.description}</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Badge variant="secondary" className="text-xs">
                   {transaction.category}
@@ -81,7 +81,7 @@ export function TransactionList({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             <span
               className={cn(
                 'font-semibold',

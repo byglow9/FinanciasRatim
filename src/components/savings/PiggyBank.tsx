@@ -10,7 +10,7 @@ export function PiggyBank({ balance, className }: PiggyBankProps) {
   return (
     <div
       className={cn(
-        'relative flex flex-col items-center justify-center p-8 rounded-2xl bg-gradient-to-br from-pink-100 to-pink-200 border-2 border-pink-300',
+        'relative flex flex-col items-center justify-center p-4 sm:p-8 rounded-2xl bg-gradient-to-br from-pink-100 to-pink-200 border-2 border-pink-300',
         className
       )}
     >
@@ -18,11 +18,11 @@ export function PiggyBank({ balance, className }: PiggyBankProps) {
         <div className="w-8 h-4 bg-pink-400 rounded-t-full" />
       </div>
 
-      <PiggyIcon className="h-24 w-24 text-pink-500 mb-4" />
+      <PiggyIcon className="h-16 w-16 sm:h-24 sm:w-24 text-pink-500 mb-2 sm:mb-4" />
 
       <div className="text-center">
         <p className="text-sm text-pink-600 font-medium">Saldo atual</p>
-        <p className="text-3xl font-bold text-pink-700">
+        <p className="text-2xl sm:text-3xl font-bold text-pink-700">
           {formatCurrency(balance)}
         </p>
       </div>

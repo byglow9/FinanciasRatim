@@ -72,11 +72,11 @@ export function FixedExpenseList({
           <div
             key={expense.id}
             className={cn(
-              'flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors',
+              'flex items-center justify-between p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors',
               isPaid && 'opacity-60'
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <Button
                 variant={isPaid ? 'default' : 'outline'}
                 size="icon"
@@ -89,11 +89,11 @@ export function FixedExpenseList({
                 <Check className="h-4 w-4" />
               </Button>
 
-              <div>
-                <p className={cn('font-medium', isPaid && 'line-through')}>
+              <div className="min-w-0">
+                <p className={cn('font-medium truncate', isPaid && 'line-through')}>
                   {expense.name}
                 </p>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
                   <Badge variant="secondary" className="text-xs">
                     {expense.category}
                   </Badge>
@@ -115,7 +115,7 @@ export function FixedExpenseList({
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 shrink-0">
               <span className="font-semibold">
                 {formatCurrency(expense.amount)}
               </span>

@@ -33,20 +33,20 @@ export function SavingsHistory({ transactions, onDelete, loading }: SavingsHisto
           key={t.id}
           className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {t.type === 'deposito' ? (
               <ArrowDownCircle className="h-5 w-5 text-green-600 shrink-0" />
             ) : (
               <ArrowUpCircle className="h-5 w-5 text-red-600 shrink-0" />
             )}
-            <div>
-              <p className="text-sm font-medium">{t.description}</p>
-              <p className="text-xs text-muted-foreground capitalize">
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{t.description}</p>
+              <p className="text-xs text-muted-foreground capitalize truncate">
                 {t.person} · {formatDate(t.date)}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <span
               className={cn(
                 'font-semibold text-sm',

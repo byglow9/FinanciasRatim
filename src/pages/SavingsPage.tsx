@@ -33,25 +33,25 @@ export function SavingsPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <PiggyBank balance={balance} className="md:col-span-1" />
-        <div className="md:col-span-2 grid gap-4 sm:grid-cols-2 content-start">
+        <div className="md:col-span-2 grid gap-2 sm:gap-4 grid-cols-2 content-start">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
               <CardTitle className="text-sm font-medium">Total Depositado</CardTitle>
               <TrendingDown className="h-4 w-4 text-green-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
+              <div className="text-sm sm:text-xl font-bold text-green-600">
                 {formatCurrency(totalDeposits)}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
               <CardTitle className="text-sm font-medium">Total Sacado</CardTitle>
               <TrendingUp className="h-4 w-4 text-red-600" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+            <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
+              <div className="text-sm sm:text-xl font-bold text-red-600">
                 {formatCurrency(totalWithdrawals)}
               </div>
             </CardContent>

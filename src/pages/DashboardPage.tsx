@@ -73,66 +73,69 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
+      <div>
+        <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Visao geral das financas</p>
+          <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
         </div>
-        <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
+        <p className="text-muted-foreground text-sm mt-0.5">Visao geral das financas</p>
       </div>
 
       {upcomingExpenses.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              <CardTitle className="text-base text-orange-700">
-                Contas proximas do vencimento
-              </CardTitle>
-            </div>
+        <Card className="border-orange-300 bg-orange-50">
+          <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 pt-3 px-4">
+            <AlertCircle className="h-4 w-4 text-orange-600 shrink-0" />
+            <CardTitle className="text-sm font-semibold text-orange-700">
+              Contas proximas do vencimento
+            </CardTitle>
+            <Badge className="ml-auto bg-orange-200 text-orange-800 hover:bg-orange-200">
+              {upcomingExpenses.length}
+            </Badge>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
+          <CardContent className="px-4 pb-3 pt-0">
+            <div className="divide-y divide-orange-100">
               {upcomingExpenses.map((e) => (
-                <Badge
-                  key={e.id}
-                  variant="outline"
-                  className="border-orange-300 text-orange-700"
-                >
-                  {e.name} — vence dia {e.dueDay} ({formatCurrency(e.amount)})
-                </Badge>
+                <div key={e.id} className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-orange-900">{e.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-orange-500">dia {e.dueDay}</span>
+                    <span className="text-sm font-semibold text-orange-800">
+                      {formatCurrency(e.amount)}
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card>
-          <CardHeader>
+          <CardHeader className="px-3 pt-3 pb-0 sm:px-6 sm:pt-6">
             <CardTitle className="text-base">{settings.tabNames.area1}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+          <CardContent className="px-2 pb-3 pt-0 sm:px-6 sm:pb-6">
+            <div className="grid grid-cols-3 gap-1 sm:gap-3">
               <div className="text-center">
-                <TrendingUp className="h-4 w-4 text-green-600 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-sm font-bold text-green-600">
+                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Entradas</p>
+                <p className="text-[10px] sm:text-sm font-bold text-green-600 leading-tight">
                   {formatCurrency(ele.totals.entradas)}
                 </p>
               </div>
               <div className="text-center">
-                <TrendingDown className="h-4 w-4 text-red-600 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Saidas</p>
-                <p className="text-sm font-bold text-red-600">
+                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Saidas</p>
+                <p className="text-[10px] sm:text-sm font-bold text-red-600 leading-tight">
                   {formatCurrency(ele.totals.saidas)}
                 </p>
               </div>
               <div className="text-center">
-                <Wallet className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Saldo</p>
+                <Wallet className="hidden sm:block h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Saldo</p>
                 <p
-                  className={`text-sm font-bold ${ele.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-[10px] sm:text-sm font-bold leading-tight ${ele.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {formatCurrency(ele.totals.saldo)}
                 </p>
@@ -142,30 +145,30 @@ export function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="px-3 pt-3 pb-0 sm:px-6 sm:pt-6">
             <CardTitle className="text-base">{settings.tabNames.area2}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+          <CardContent className="px-2 pb-3 pt-0 sm:px-6 sm:pb-6">
+            <div className="grid grid-cols-3 gap-1 sm:gap-3">
               <div className="text-center">
-                <TrendingUp className="h-4 w-4 text-green-600 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-sm font-bold text-green-600">
+                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Entradas</p>
+                <p className="text-[10px] sm:text-sm font-bold text-green-600 leading-tight">
                   {formatCurrency(ela.totals.entradas)}
                 </p>
               </div>
               <div className="text-center">
-                <TrendingDown className="h-4 w-4 text-red-600 mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Saidas</p>
-                <p className="text-sm font-bold text-red-600">
+                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Saidas</p>
+                <p className="text-[10px] sm:text-sm font-bold text-red-600 leading-tight">
                   {formatCurrency(ela.totals.saidas)}
                 </p>
               </div>
               <div className="text-center">
-                <Wallet className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-                <p className="text-xs text-muted-foreground">Saldo</p>
+                <Wallet className="hidden sm:block h-4 w-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-[9px] sm:text-xs text-muted-foreground">Saldo</p>
                 <p
-                  className={`text-sm font-bold ${ela.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-[10px] sm:text-sm font-bold leading-tight ${ela.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {formatCurrency(ela.totals.saldo)}
                 </p>

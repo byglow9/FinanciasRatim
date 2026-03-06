@@ -45,59 +45,51 @@ export function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Transacoes</h1>
-          <p className="text-muted-foreground">
-            Gerencie suas entradas e saidas
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <MonthSelector
-            selectedDate={selectedMonth}
-            onChange={setSelectedMonth}
-          />
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova
-          </Button>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <MonthSelector
+          selectedDate={selectedMonth}
+          onChange={setSelectedMonth}
+        />
+        <Button size="sm" onClick={() => setFormOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          Nova
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Entradas</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
+            <div className="text-sm sm:text-xl font-bold text-green-600">
               {formatCurrency(totals.entradas)}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Saidas</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
+            <div className="text-sm sm:text-xl font-bold text-red-600">
               {formatCurrency(totals.saidas)}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Saldo</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
             <div
               className={cn(
-                'text-2xl font-bold',
+                'text-sm sm:text-xl font-bold',
                 totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'
               )}
             >

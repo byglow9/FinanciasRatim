@@ -117,7 +117,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-px sm:gap-1">
         {cells.map((day, idx) => {
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
@@ -131,7 +131,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               key={idx}
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
-                'min-h-[80px] p-1 rounded border cursor-pointer transition-colors',
+                'min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
                 inMonth ? 'bg-card' : 'bg-muted/30',
                 isSelected && 'ring-2 ring-primary',
                 'hover:bg-muted/50'
@@ -144,7 +144,30 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                 {format(day, 'd')}
               </div>
 
-              <div className="space-y-0.5">
+              {/* Mobile: colored dots */}
+              <div className="flex flex-wrap gap-0.5 sm:hidden">
+                {txEvent && txEvent.net !== undefined && (
+                  <div className={cn(
+                    'h-1.5 w-1.5 rounded-full shrink-0',
+                    txEvent.net >= 0 ? 'bg-green-400' : 'bg-red-400'
+                  )} />
+                )}
+                {fixedEvents.slice(0, 2).map((fe, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full shrink-0',
+                      fe.paid ? 'bg-green-400' : 'bg-orange-400'
+                    )}
+                  />
+                ))}
+                {savingsEvent && (
+                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-pink-400" />
+                )}
+              </div>
+
+              {/* Desktop: text badges */}
+              <div className="hidden sm:block space-y-0.5">
                 {/* Transaction badge */}
                 {txEvent && txEvent.net !== undefined && (
                   <div className={cn(

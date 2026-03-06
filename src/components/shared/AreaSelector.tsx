@@ -1,13 +1,26 @@
 import { useArea } from '@/contexts/AreaContext'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { User, Users, PiggyBank } from 'lucide-react'
+import { User, PiggyBank } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import type { AreaType } from '@/types'
 
 export function AreaSelector() {
   const { currentArea, setCurrentArea, settings } = useArea()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleAreaChange = (value: string) => {
+    const area = value as AreaType
+    setCurrentArea(area)
+    if (area === 'porquinho') {
+      navigate('/porquinho')
+    } else if (location.pathname === '/porquinho') {
+      navigate('/')
+    }
+  }
 
   return (
-    <Tabs value={currentArea} onValueChange={(value) => setCurrentArea(value as AreaType)}>
+    <Tabs value={currentArea} onValueChange={handleAreaChange}>
       <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
         <TabsTrigger value="ele" className="flex items-center gap-2">
           <User className="h-4 w-4" />

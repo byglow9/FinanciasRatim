@@ -86,8 +86,8 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
 
 export const DEFAULT_SETTINGS: Omit<Settings, 'id'> = {
   tabNames: {
-    area1: 'Ele',
-    area2: 'Ela',
+    area1: 'Nirigue',
+    area2: 'Nirigua',
     piggy: 'Porquinho',
   },
   notificationsEnabled: true,

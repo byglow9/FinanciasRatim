@@ -11,15 +11,27 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Goal } from '@/types'
+import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 
-const COLLECTION_NAME = 'goals'
+type RawGoal = Omit<Goal, 'deadline' | 'createdAt'> & {
+  deadline: string | null
+  createdAt: string
+}
+
+const COL = 'goals'
 
 export async function getGoals(): Promise<Goal[]> {
-  const q = query(
-    collection(db, COLLECTION_NAME),
-    orderBy('createdAt', 'desc')
-  )
+  if (MOCK) {
+    return mList<RawGoal>(COL)
+      .map((g) => ({
+        ...g,
+        deadline: g.deadline ? new Date(g.deadline) : undefined,
+        createdAt: new Date(g.createdAt),
+      }))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  }
 
+  const q = query(collection(db, COL), orderBy('createdAt', 'desc'))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -29,10 +41,21 @@ export async function getGoals(): Promise<Goal[]> {
   })) as Goal[]
 }
 
-export async function addGoal(
-  goal: Omit<Goal, 'id' | 'createdAt'>
-): Promise<string> {
-  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+export async function addGoal(goal: Omit<Goal, 'id' | 'createdAt'>): Promise<string> {
+  if (MOCK) {
+    const id = mId()
+    const all = mList<RawGoal>(COL)
+    all.push({
+      ...goal,
+      id,
+      deadline: goal.deadline ? goal.deadline.toISOString() : null,
+      createdAt: new Date().toISOString(),
+    })
+    mSave(COL, all)
+    return id
+  }
+
+  const docRef = await addDoc(collection(db, COL), {
     ...goal,
     deadline: goal.deadline ? Timestamp.fromDate(goal.deadline) : null,
     createdAt: Timestamp.now(),
@@ -44,20 +67,43 @@ export async function updateGoal(
   id: string,
   goal: Partial<Omit<Goal, 'id' | 'createdAt'>>
 ): Promise<void> {
-  const docRef = doc(db, COLLECTION_NAME, id)
-  const updateData: Record<string, unknown> = { ...goal }
-  if (goal.deadline) {
-    updateData.deadline = Timestamp.fromDate(goal.deadline)
+  if (MOCK) {
+    const all = mList<RawGoal>(COL)
+    const idx = all.findIndex((g) => g.id === id)
+    if (idx !== -1) {
+      all[idx] = {
+        ...all[idx],
+        ...goal,
+        deadline: goal.deadline !== undefined
+          ? (goal.deadline ? goal.deadline.toISOString() : null)
+          : all[idx].deadline,
+      }
+      mSave(COL, all)
+    }
+    return
   }
-  await updateDoc(docRef, updateData)
+
+  const updateData: Record<string, unknown> = { ...goal }
+  if (goal.deadline) updateData.deadline = Timestamp.fromDate(goal.deadline)
+  await updateDoc(doc(db, COL, id), updateData)
 }
 
 export async function deleteGoal(id: string): Promise<void> {
-  const docRef = doc(db, COLLECTION_NAME, id)
-  await deleteDoc(docRef)
+  if (MOCK) {
+    mSave(COL, mList<RawGoal>(COL).filter((g) => g.id !== id))
+    return
+  }
+
+  await deleteDoc(doc(db, COL, id))
 }
 
 export async function updateGoalProgress(id: string, currentAmount: number): Promise<void> {
-  const docRef = doc(db, COLLECTION_NAME, id)
-  await updateDoc(docRef, { currentAmount })
+  if (MOCK) {
+    const all = mList<RawGoal>(COL)
+    const idx = all.findIndex((g) => g.id === id)
+    if (idx !== -1) { all[idx] = { ...all[idx], currentAmount }; mSave(COL, all) }
+    return
+  }
+
+  await updateDoc(doc(db, COL, id), { currentAmount })
 }

@@ -1,50 +1,49 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  type User,
-} from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+
+export interface LocalUser {
+  username: string
+}
 
 interface AuthContextType {
-  user: User | null
+  user: LocalUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signIn: (username: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
+
+const VALID_USERNAME = import.meta.env.VITE_APP_USERNAME || 'ratimbum'
+const VALID_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'ratimbum123'
+const AUTH_KEY = 'financias_auth'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<LocalUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
+    const stored = localStorage.getItem(AUTH_KEY)
+    if (stored) setUser(JSON.parse(stored))
+    setLoading(false)
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password)
-  }
-
-  const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password)
+  const signIn = async (username: string, password: string) => {
+    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+      const u = { username }
+      setUser(u)
+      localStorage.setItem(AUTH_KEY, JSON.stringify(u))
+    } else {
+      throw new Error('Usuario ou senha incorretos')
+    }
   }
 
   const signOut = async () => {
-    await firebaseSignOut(auth)
+    setUser(null)
+    localStorage.removeItem(AUTH_KEY)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

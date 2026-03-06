@@ -12,21 +12,22 @@ const navItems = [
   { href: '/contas-fixas', label: 'Contas Fixas' },
   { href: '/metas', label: 'Metas' },
   { href: '/relatorios', label: 'Relatorios' },
+  { href: '/calendario', label: 'Calendario' },
 ]
 
 export function Header() {
-  const { signOut, user } = useAuth()
+  const { signOut } = useAuth()
   const { currentArea } = useArea()
   const location = useLocation()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-4xl">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-2">
               <PiggyBank className="h-6 w-6 text-primary" />
-              <span className="font-semibold hidden sm:inline">Financas</span>
+              <span className="font-semibold hidden sm:inline">Financias Ratimbum</span>
             </Link>
           </div>
 

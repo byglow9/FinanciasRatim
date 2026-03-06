@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +21,7 @@ const fixedExpenseSchema = z.object({
   amount: z.number().positive('Valor deve ser positivo'),
   dueDay: z.number().min(1).max(31, 'Dia deve ser entre 1 e 31'),
   category: z.string().min(1, 'Categoria obrigatoria'),
-  person: z.enum(['ele', 'ela', 'conjunto']),
+  person: z.enum(['ele', 'ela']),
 })
 
 type FixedExpenseFormData = z.infer<typeof fixedExpenseSchema>
@@ -44,6 +45,7 @@ export function FixedExpenseForm({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FixedExpenseFormData>({
     resolver: zodResolver(fixedExpenseSchema),
@@ -53,13 +55,17 @@ export function FixedExpenseForm({
           amount: initialData.amount,
           dueDay: initialData.dueDay,
           category: initialData.category,
-          person: initialData.person,
+          person: initialData.person as 'ele' | 'ela',
         }
       : {
           person: currentPerson,
           dueDay: 1,
         },
   })
+
+  useEffect(() => {
+    if (!initialData) setValue('person', currentPerson)
+  }, [currentPerson, initialData, setValue])
 
   const handleFormSubmit = async (data: FixedExpenseFormData) => {
     await onSubmit({
@@ -133,15 +139,6 @@ export function FixedExpenseForm({
             {errors.category && (
               <p className="text-sm text-destructive">{errors.category.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="person">Responsavel</Label>
-            <Select id="person" {...register('person')}>
-              <option value="ele">Ele</option>
-              <option value="ela">Ela</option>
-              <option value="conjunto">Conjunto</option>
-            </Select>
           </div>
 
           <DialogFooter>

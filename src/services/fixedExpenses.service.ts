@@ -12,28 +12,37 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { FixedExpense, FixedExpensePayment, PersonType } from '@/types'
+import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 
-const COLLECTION_NAME = 'fixedExpenses'
-const PAYMENTS_COLLECTION = 'fixedExpensePayments'
+type RawExpense = Omit<FixedExpense, 'createdAt'> & { createdAt: string }
+type RawPayment = Omit<FixedExpensePayment, 'paidAt'> & { paidAt: string }
+
+const COL = 'fixedExpenses'
+const PAY_COL = 'fixedExpensePayments'
 
 export async function getFixedExpenses(
   person?: PersonType | 'conjunto'
 ): Promise<FixedExpense[]> {
+  if (MOCK) {
+    return mList<RawExpense>(COL)
+      .filter((e) => e.isActive && (!person || e.person === person))
+      .map((e) => ({ ...e, createdAt: new Date(e.createdAt) }))
+      .sort((a, b) => a.dueDay - b.dueDay)
+  }
+
   let q = query(
-    collection(db, COLLECTION_NAME),
+    collection(db, COL),
     where('isActive', '==', true),
     orderBy('dueDay', 'asc')
   )
-
   if (person) {
     q = query(
-      collection(db, COLLECTION_NAME),
+      collection(db, COL),
       where('person', '==', person),
       where('isActive', '==', true),
       orderBy('dueDay', 'asc')
     )
   }
-
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -45,7 +54,15 @@ export async function getFixedExpenses(
 export async function addFixedExpense(
   expense: Omit<FixedExpense, 'id' | 'createdAt'>
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+  if (MOCK) {
+    const id = mId()
+    const all = mList<RawExpense>(COL)
+    all.push({ ...expense, id, createdAt: new Date().toISOString() })
+    mSave(COL, all)
+    return id
+  }
+
+  const docRef = await addDoc(collection(db, COL), {
     ...expense,
     createdAt: Timestamp.now(),
   })
@@ -56,27 +73,42 @@ export async function updateFixedExpense(
   id: string,
   expense: Partial<Omit<FixedExpense, 'id' | 'createdAt'>>
 ): Promise<void> {
-  const docRef = doc(db, COLLECTION_NAME, id)
-  await updateDoc(docRef, expense)
+  if (MOCK) {
+    const all = mList<RawExpense>(COL)
+    const idx = all.findIndex((e) => e.id === id)
+    if (idx !== -1) { all[idx] = { ...all[idx], ...expense }; mSave(COL, all) }
+    return
+  }
+
+  await updateDoc(doc(db, COL, id), expense)
 }
 
 export async function deleteFixedExpense(id: string): Promise<void> {
-  const docRef = doc(db, COLLECTION_NAME, id)
-  await updateDoc(docRef, { isActive: false })
-}
+  if (MOCK) {
+    const all = mList<RawExpense>(COL)
+    const idx = all.findIndex((e) => e.id === id)
+    if (idx !== -1) { all[idx] = { ...all[idx], isActive: false }; mSave(COL, all) }
+    return
+  }
 
-// Payments
+  await updateDoc(doc(db, COL, id), { isActive: false })
+}
 
 export async function getPaymentsForMonth(
   month: number,
   year: number
 ): Promise<FixedExpensePayment[]> {
+  if (MOCK) {
+    return mList<RawPayment>(PAY_COL)
+      .filter((p) => p.month === month && p.year === year)
+      .map((p) => ({ ...p, paidAt: new Date(p.paidAt) }))
+  }
+
   const q = query(
-    collection(db, PAYMENTS_COLLECTION),
+    collection(db, PAY_COL),
     where('month', '==', month),
     where('year', '==', year)
   )
-
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -91,17 +123,25 @@ export async function markAsPaid(
   year: number,
   paidAmount: number
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, PAYMENTS_COLLECTION), {
-    fixedExpenseId,
-    month,
-    year,
-    paidAmount,
-    paidAt: Timestamp.now(),
+  if (MOCK) {
+    const id = mId()
+    const all = mList<RawPayment>(PAY_COL)
+    all.push({ id, fixedExpenseId, month, year, paidAmount, paidAt: new Date().toISOString() })
+    mSave(PAY_COL, all)
+    return id
+  }
+
+  const docRef = await addDoc(collection(db, PAY_COL), {
+    fixedExpenseId, month, year, paidAmount, paidAt: Timestamp.now(),
   })
   return docRef.id
 }
 
 export async function unmarkAsPaid(paymentId: string): Promise<void> {
-  const docRef = doc(db, PAYMENTS_COLLECTION, paymentId)
-  await deleteDoc(docRef)
+  if (MOCK) {
+    mSave(PAY_COL, mList<RawPayment>(PAY_COL).filter((p) => p.id !== paymentId))
+    return
+  }
+
+  await deleteDoc(doc(db, PAY_COL, paymentId))
 }

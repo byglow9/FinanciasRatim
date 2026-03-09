@@ -14,7 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import type { FixedExpense, PersonType } from '@/types'
-import { DEFAULT_CATEGORIES } from '@/types'
+import { useArea } from '@/contexts/AreaContext'
 
 const fixedExpenseSchema = z.object({
   name: z.string().min(1, 'Nome obrigatorio'),
@@ -41,6 +41,9 @@ export function FixedExpenseForm({
   currentPerson,
   initialData,
 }: FixedExpenseFormProps) {
+  const { settings } = useArea()
+  const categories = settings.categories || []
+
   const {
     register,
     handleSubmit,
@@ -130,9 +133,9 @@ export function FixedExpenseForm({
             <Label htmlFor="category">Categoria</Label>
             <Select id="category" {...register('category')}>
               <option value="">Selecione...</option>
-              {DEFAULT_CATEGORIES.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name}
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
                 </option>
               ))}
             </Select>

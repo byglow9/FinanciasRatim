@@ -9,6 +9,7 @@ interface AreaContextType {
   setCurrentArea: (area: AreaType) => void
   settings: Settings
   updateTabNames: (tabNames: Settings['tabNames']) => Promise<void>
+  updateCategories: (categories: string[]) => Promise<void>
   loading: boolean
 }
 
@@ -49,8 +50,18 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateCategories = async (categories: string[]) => {
+    try {
+      await updateSettings({ categories })
+      setSettings(prev => ({ ...prev, categories }))
+    } catch (error) {
+      console.error('Error updating categories:', error)
+      throw error
+    }
+  }
+
   return (
-    <AreaContext.Provider value={{ currentArea, setCurrentArea, settings, updateTabNames, loading }}>
+    <AreaContext.Provider value={{ currentArea, setCurrentArea, settings, updateTabNames, updateCategories, loading }}>
       {children}
     </AreaContext.Provider>
   )

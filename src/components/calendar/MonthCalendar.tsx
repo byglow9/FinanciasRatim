@@ -9,13 +9,13 @@ import {
   format,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction } from '@/types'
-import { formatCurrency } from '@/lib/utils'
-import { PiggyBank } from 'lucide-react'
+import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal } from '@/types'
+import { formatCurrency, formatTime } from '@/lib/utils'
+import { PiggyBank, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DayEvent {
-  type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings'
+  type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings' | 'goal'
   label: string
   amount?: number
   net?: number
@@ -28,11 +28,13 @@ interface MonthCalendarProps {
   fixedExpenses: FixedExpense[]
   payments: FixedExpensePayment[]
   savings: SavingsTransaction[]
+  contributions: GoalContribution[]
+  goals: Goal[]
 }
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings }: MonthCalendarProps) {
+export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals }: MonthCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
   // Build 42-cell grid starting from Monday of the first week of the month
@@ -45,6 +47,9 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
 
   // Precompute paid expense IDs for this month
   const paidIds = new Set(payments.map((p) => p.fixedExpenseId))
+
+  // Map goal IDs to names
+  const goalMap = new Map(goals.map((g) => [g.id, g.name]))
 
   // Get events for a given day
   function getEventsForDay(day: Date): DayEvent[] {
@@ -87,6 +92,13 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
       events.push({ type: 'savings', label: 'Porquinho', net })
     }
 
+    // Goal contributions
+    const dayContribs = contributions.filter((c) => isSameDay(c.date, day))
+    if (dayContribs.length > 0) {
+      const total = dayContribs.reduce((sum, c) => sum + c.amount, 0)
+      events.push({ type: 'goal', label: 'Metas', amount: total })
+    }
+
     return events
   }
 
@@ -96,7 +108,8 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
     const dayNum = getDate(day)
     const dayFixed = fixedExpenses.filter((fe) => fe.dueDay === dayNum)
     const daySavings = savings.filter((s) => isSameDay(s.date, day))
-    return { dayTx, dayFixed, daySavings }
+    const dayContribs = contributions.filter((c) => isSameDay(c.date, day))
+    return { dayTx, dayFixed, daySavings, dayContribs }
   }
 
   return (
@@ -120,6 +133,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
           const saidaEvent = events.find((e) => e.type === 'transaction-saida')
           const fixedEvents = events.filter((e) => e.type === 'fixed')
           const savingsEvent = events.find((e) => e.type === 'savings')
+          const goalEvent = events.find((e) => e.type === 'goal')
 
           return (
             <div
@@ -158,6 +172,9 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                 ))}
                 {savingsEvent && (
                   <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-pink-400" />
+                )}
+                {goalEvent && (
+                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-400" />
                 )}
               </div>
 
@@ -203,6 +220,14 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                     <span className="truncate">{savingsEvent.net !== undefined && formatCurrency(savingsEvent.net)}</span>
                   </div>
                 )}
+
+                {/* Goal contribution */}
+                {goalEvent && (
+                  <div className="flex items-center gap-0.5 text-[10px] text-purple-600">
+                    <Target className="h-3 w-3" />
+                    <span className="truncate">+{goalEvent.amount !== undefined && formatCurrency(goalEvent.amount)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -211,9 +236,9 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
 
       {/* Day detail panel */}
       {selectedDay && (() => {
-        const { dayTx, dayFixed, daySavings } = getDetailForDay(selectedDay)
+        const { dayTx, dayFixed, daySavings, dayContribs } = getDetailForDay(selectedDay)
         const dayNum = getDate(selectedDay)
-        const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0
+        const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0
         return (
           <div className="border rounded-lg p-4 space-y-4 bg-card">
             <h3 className="font-semibold">
@@ -240,6 +265,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                           </span>
                           <span>{t.description}</span>
                           <span className="text-xs text-muted-foreground">{t.category}</span>
+                          <span className="text-xs text-muted-foreground">{formatTime(t.date)}</span>
                         </div>
                         <span className={cn(
                           'font-medium',
@@ -298,12 +324,36 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                         <span className="text-xs text-muted-foreground">
                           {s.type === 'deposito' ? 'Depósito' : 'Saque'}
                         </span>
+                        <span className="text-xs text-muted-foreground">{formatTime(s.date)}</span>
                       </div>
                       <span className={cn(
                         'font-medium',
                         s.type === 'deposito' ? 'text-pink-600' : 'text-pink-400'
                       )}>
                         {s.type === 'deposito' ? '+' : '-'}{formatCurrency(s.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dayContribs.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Contribuições para Metas</p>
+                <div className="space-y-1">
+                  {dayContribs.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-purple-500" />
+                        <span>{goalMap.get(c.goalId) || 'Meta'}</span>
+                        {c.description && (
+                          <span className="text-xs text-muted-foreground">{c.description}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground">{formatTime(c.date)}</span>
+                      </div>
+                      <span className="font-medium text-purple-600">
+                        +{formatCurrency(c.amount)}
                       </span>
                     </div>
                   ))}

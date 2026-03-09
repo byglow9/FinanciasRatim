@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import type { Transaction, PersonType } from '@/types'
-import { DEFAULT_CATEGORIES } from '@/types'
+import { useArea } from '@/contexts/AreaContext'
 import { format } from 'date-fns'
 
 const transactionSchema = z.object({
@@ -41,6 +41,9 @@ export function TransactionForm({
   person,
   initialData,
 }: TransactionFormProps) {
+  const { settings } = useArea()
+  const categories = settings.categories || []
+
   const {
     register,
     handleSubmit,
@@ -66,7 +69,7 @@ export function TransactionForm({
     await onSubmit({
       ...data,
       person,
-      date: new Date(data.date + 'T12:00:00'),
+      date: new Date(data.date + 'T' + new Date().toTimeString().slice(0, 8)),
     })
     reset()
     onOpenChange(false)
@@ -120,9 +123,9 @@ export function TransactionForm({
             <Label htmlFor="category">Categoria</Label>
             <Select id="category" {...register('category')}>
               <option value="">Selecione...</option>
-              {DEFAULT_CATEGORIES.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name}
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
                 </option>
               ))}
             </Select>

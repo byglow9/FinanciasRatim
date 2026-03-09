@@ -45,18 +45,21 @@ export function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="hidden sm:block">
+      <div className="flex items-center gap-3">
+        <div className="w-8 sm:hidden" />
+        <div className="hidden sm:block sm:flex-1">
           <h1 className="text-2xl font-bold">Transacoes</h1>
           <p className="text-muted-foreground">Gerencie suas entradas e saidas</p>
         </div>
-        <MonthSelector
-          selectedDate={selectedMonth}
-          onChange={setSelectedMonth}
-        />
-        <Button size="sm" onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Nova
+        <div className="flex-1 sm:flex-none flex justify-center sm:justify-end">
+          <MonthSelector
+            selectedDate={selectedMonth}
+            onChange={setSelectedMonth}
+          />
+        </div>
+        <Button size="sm" onClick={() => setFormOpen(true)} className="shrink-0">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline sm:ml-1">Nova</span>
         </Button>
       </div>
 

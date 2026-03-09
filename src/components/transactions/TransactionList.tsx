@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Transaction } from '@/types'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
@@ -53,61 +53,123 @@ export function TransactionList({
       {transactions.map((transaction) => (
         <div
           key={transaction.id}
-          className="flex items-center justify-between p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+          className="p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div
-              className={cn(
-                'p-2 rounded-full shrink-0',
-                transaction.type === 'entrada'
-                  ? 'bg-green-100 text-green-600'
-                  : 'bg-red-100 text-red-600'
-              )}
-            >
-              {transaction.type === 'entrada' ? (
-                <ArrowUpCircle className="h-5 w-5" />
-              ) : (
-                <ArrowDownCircle className="h-5 w-5" />
-              )}
+          {/* Desktop layout */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div
+                className={cn(
+                  'p-2 rounded-full shrink-0',
+                  transaction.type === 'entrada'
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-600'
+                )}
+              >
+                {transaction.type === 'entrada' ? (
+                  <ArrowUpCircle className="h-5 w-5" />
+                ) : (
+                  <ArrowDownCircle className="h-5 w-5" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium truncate">{transaction.description}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant="secondary" className="text-xs">
+                    {transaction.category}
+                  </Badge>
+                  <span>{formatDateTime(transaction.date)}</span>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="font-medium truncate">{transaction.description}</p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="secondary" className="text-xs">
-                  {transaction.category}
-                </Badge>
-                <span>{formatDate(transaction.date)}</span>
+
+            <div className="flex items-center gap-4 shrink-0">
+              <span
+                className={cn(
+                  'font-semibold',
+                  transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                )}
+              >
+                {transaction.type === 'entrada' ? '+' : '-'}
+                {formatCurrency(transaction.amount)}
+              </span>
+
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(transaction)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(transaction.id)}
+                  disabled={deletingId === transaction.id}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
-            <span
-              className={cn(
-                'font-semibold',
-                transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
-              )}
-            >
-              {transaction.type === 'entrada' ? '+' : '-'}
-              {formatCurrency(transaction.amount)}
-            </span>
-
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onEdit(transaction)}
+          {/* Mobile layout */}
+          <div className="sm:hidden space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div
+                  className={cn(
+                    'p-1.5 rounded-full shrink-0',
+                    transaction.type === 'entrada'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-red-100 text-red-600'
+                  )}
+                >
+                  {transaction.type === 'entrada' ? (
+                    <ArrowUpCircle className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownCircle className="h-4 w-4" />
+                  )}
+                </div>
+                <p className="font-medium truncate text-sm">{transaction.description}</p>
+              </div>
+              <span
+                className={cn(
+                  'font-semibold text-sm shrink-0',
+                  transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                )}
               >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(transaction.id)}
-                disabled={deletingId === transaction.id}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+                {transaction.type === 'entrada' ? '+' : '-'}
+                {formatCurrency(transaction.amount)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {transaction.category}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{formatDateTime(transaction.date)}</span>
+              </div>
+              <div className="flex gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => onEdit(transaction)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleDelete(transaction.id)}
+                  disabled={deletingId === transaction.id}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

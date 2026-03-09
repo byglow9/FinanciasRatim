@@ -52,7 +52,7 @@ export function SavingsForm({ open, onOpenChange, onSubmit }: SavingsFormProps) 
     await onSubmit({
       ...data,
       person: data.person as PersonType,
-      date: new Date(data.date + 'T12:00:00'),
+      date: new Date(data.date + 'T' + new Date().toTimeString().slice(0, 8)),
     })
     reset()
     onOpenChange(false)

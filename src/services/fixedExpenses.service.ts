@@ -88,10 +88,18 @@ export async function deleteFixedExpense(id: string): Promise<void> {
     const all = mList<RawExpense>(COL)
     const idx = all.findIndex((e) => e.id === id)
     if (idx !== -1) { all[idx] = { ...all[idx], isActive: false }; mSave(COL, all) }
+    // Remove todos os pagamentos associados
+    const payments = mList<RawPayment>(PAY_COL).filter((p) => p.fixedExpenseId !== id)
+    mSave(PAY_COL, payments)
     return
   }
 
   await updateDoc(doc(db, COL, id), { isActive: false })
+  // Remove todos os pagamentos associados
+  const paymentsQuery = query(collection(db, PAY_COL), where('fixedExpenseId', '==', id))
+  const paymentsSnapshot = await getDocs(paymentsQuery)
+  const deletePromises = paymentsSnapshot.docs.map((d) => deleteDoc(doc(db, PAY_COL, d.id)))
+  await Promise.all(deletePromises)
 }
 
 export async function getPaymentsForMonth(
@@ -144,4 +152,24 @@ export async function unmarkAsPaid(paymentId: string): Promise<void> {
   }
 
   await deleteDoc(doc(db, PAY_COL, paymentId))
+}
+
+export async function getFixedExpensesByCategory(category: string): Promise<FixedExpense[]> {
+  if (MOCK) {
+    return mList<RawExpense>(COL)
+      .filter((e) => e.category === category && e.isActive)
+      .map((e) => ({ ...e, createdAt: new Date(e.createdAt) }))
+  }
+
+  const q = query(
+    collection(db, COL),
+    where('category', '==', category),
+    where('isActive', '==', true)
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt.toDate(),
+  })) as FixedExpense[]
 }

@@ -52,8 +52,8 @@ export function CategoryPieChart({
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
+                    innerRadius="40%"
+                    outerRadius="70%"
                     paddingAngle={3}
                     dataKey="value"
                   >

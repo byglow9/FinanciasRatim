@@ -10,9 +10,9 @@ const navItems = [
   { href: '/', label: 'Dashboard' },
   { href: '/transacoes', label: 'Transacoes' },
   { href: '/contas-fixas', label: 'Contas Fixas' },
+  { href: '/calendario', label: 'Calendario' },
   { href: '/metas', label: 'Metas' },
   { href: '/relatorios', label: 'Relatorios' },
-  { href: '/calendario', label: 'Calendario' },
 ]
 
 export function Header() {

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import { useGoalContributions } from '@/hooks/useGoalContributions'
 import { ContributionForm } from './ContributionForm'
 import type { Goal } from '@/types'
@@ -137,7 +137,7 @@ export function GoalDetailModal({
                         )}
                       </div>
                       <span className="text-muted-foreground text-xs">
-                        {formatDate(c.date)}
+                        {formatDateTime(c.date)}
                       </span>
                     </div>
                   ))}

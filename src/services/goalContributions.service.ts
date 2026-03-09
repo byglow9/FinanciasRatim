@@ -11,6 +11,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { GoalContribution } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { startOfMonth, endOfMonth } from 'date-fns'
 
 type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
   date: string
@@ -19,6 +20,39 @@ type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
 
 const COL = 'goalContributions'
 const GOALS_COL = 'goals'
+
+export async function getContributionsForMonth(month: Date): Promise<GoalContribution[]> {
+  const start = startOfMonth(month)
+  const end = endOfMonth(month)
+
+  if (MOCK) {
+    return mList<RawContribution>(COL)
+      .filter((c) => {
+        const d = new Date(c.date)
+        return d >= start && d <= end
+      })
+      .map((c) => ({
+        ...c,
+        date: new Date(c.date),
+        createdAt: new Date(c.createdAt),
+      }))
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+  }
+
+  const q = query(
+    collection(db, COL),
+    where('date', '>=', Timestamp.fromDate(start)),
+    where('date', '<=', Timestamp.fromDate(end)),
+    orderBy('date', 'desc')
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    date: doc.data().date.toDate(),
+    createdAt: doc.data().createdAt.toDate(),
+  })) as GoalContribution[]
+}
 
 export async function getContributions(goalId: string): Promise<GoalContribution[]> {
   if (MOCK) {

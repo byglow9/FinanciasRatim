@@ -1,6 +1,6 @@
 import { ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, formatDate, cn } from '@/lib/utils'
+import { formatCurrency, formatDateTime, cn } from '@/lib/utils'
 import type { SavingsTransaction } from '@/types'
 
 interface SavingsHistoryProps {
@@ -42,7 +42,7 @@ export function SavingsHistory({ transactions, onDelete, loading }: SavingsHisto
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{t.description}</p>
               <p className="text-xs text-muted-foreground capitalize truncate">
-                {t.person} · {formatDate(t.date)}
+                {t.person} · {formatDateTime(t.date)}
               </p>
             </div>
           </div>

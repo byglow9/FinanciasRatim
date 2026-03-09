@@ -50,7 +50,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-center sm:justify-between gap-4">
         <div className="hidden sm:block">
           <h1 className="text-2xl font-bold">Relatorios</h1>
           <p className="text-muted-foreground">Analise suas financas</p>

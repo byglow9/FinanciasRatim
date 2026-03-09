@@ -138,3 +138,23 @@ export async function deleteTransaction(id: string): Promise<void> {
   const docRef = doc(db, COL, id)
   await deleteDoc(docRef)
 }
+
+export async function getTransactionsByCategory(category: string): Promise<Transaction[]> {
+  if (MOCK) {
+    return mList<RawTransaction>(COL)
+      .filter((t) => t.category === category)
+      .map((t) => ({ ...t, date: new Date(t.date), createdAt: new Date(t.createdAt) }))
+  }
+
+  const q = query(
+    collection(db, COL),
+    where('category', '==', category)
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    date: doc.data().date.toDate(),
+    createdAt: doc.data().createdAt.toDate(),
+  })) as Transaction[]
+}

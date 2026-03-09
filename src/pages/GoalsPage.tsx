@@ -1,15 +1,24 @@
 import { useState } from 'react'
 import { useGoals } from '@/hooks/useGoals'
+import { useArea } from '@/contexts/AreaContext'
 import { GoalCard } from '@/components/goals/GoalCard'
 import { GoalForm } from '@/components/goals/GoalForm'
+import { GoalDetailModal } from '@/components/goals/GoalDetailModal'
+import { ContributionForm } from '@/components/goals/ContributionForm'
 import { Button } from '@/components/ui/button'
 import { Loader2, Plus, Target } from 'lucide-react'
-import type { Goal } from '@/types'
+import type { Goal, PersonType } from '@/types'
 
 export function GoalsPage() {
-  const { goals, loading, add, update, remove } = useGoals()
+  const { currentArea } = useArea()
+  // Porquinho nao deve acessar metas, mas por seguranca tratamos como 'ele'
+  const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
+
+  const { goals, loading, add, update, remove, contribute } = useGoals(person)
   const [formOpen, setFormOpen] = useState(false)
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  const [detailGoal, setDetailGoal] = useState<Goal | null>(null)
+  const [contributingGoal, setContributingGoal] = useState<Goal | null>(null)
 
   const handleSubmit = async (data: Omit<Goal, 'id' | 'createdAt'>) => {
     if (editingGoal) {
@@ -28,6 +37,19 @@ export function GoalsPage() {
   const handleOpenChange = (open: boolean) => {
     setFormOpen(open)
     if (!open) setEditingGoal(null)
+  }
+
+  const handleContribute = async (goalId: string, amount: number, description?: string) => {
+    await contribute(goalId, amount, description)
+  }
+
+  const handleContributeFromCard = (goal: Goal) => {
+    setContributingGoal(goal)
+  }
+
+  const handleContributeSubmit = async (amount: number, description?: string) => {
+    if (!contributingGoal) return
+    await contribute(contributingGoal.id, amount, description)
   }
 
   return (
@@ -63,6 +85,8 @@ export function GoalsPage() {
               goal={goal}
               onEdit={handleEdit}
               onDelete={remove}
+              onContribute={handleContributeFromCard}
+              onClick={setDetailGoal}
             />
           ))}
         </div>
@@ -73,7 +97,25 @@ export function GoalsPage() {
         onOpenChange={handleOpenChange}
         onSubmit={handleSubmit}
         initialData={editingGoal || undefined}
+        person={person}
       />
+
+      <GoalDetailModal
+        open={!!detailGoal}
+        onOpenChange={(open) => !open && setDetailGoal(null)}
+        goal={detailGoal}
+        onEdit={handleEdit}
+        onContribute={handleContribute}
+      />
+
+      {contributingGoal && (
+        <ContributionForm
+          open={!!contributingGoal}
+          onOpenChange={(open) => !open && setContributingGoal(null)}
+          goal={contributingGoal}
+          onContribute={handleContributeSubmit}
+        />
+      )}
     </div>
   )
 }

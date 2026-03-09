@@ -10,35 +10,42 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import type { Goal } from '@/types'
+import type { Goal, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 
 type RawGoal = Omit<Goal, 'deadline' | 'createdAt'> & {
   deadline: string | null
   createdAt: string
+  person?: PersonType // opcional para migracao de dados antigos
 }
 
 const COL = 'goals'
 
-export async function getGoals(): Promise<Goal[]> {
+export async function getGoals(person?: PersonType): Promise<Goal[]> {
   if (MOCK) {
-    return mList<RawGoal>(COL)
+    const goals = mList<RawGoal>(COL)
       .map((g) => ({
         ...g,
+        person: g.person || 'ele', // metas antigas sem person sao de 'ele'
         deadline: g.deadline ? new Date(g.deadline) : undefined,
         createdAt: new Date(g.createdAt),
       }))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+    return person ? goals.filter((g) => g.person === person) : goals
   }
 
   const q = query(collection(db, COL), orderBy('createdAt', 'desc'))
   const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => ({
+  const goals = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
+    person: doc.data().person || 'ele', // metas antigas sem person sao de 'ele'
     deadline: doc.data().deadline?.toDate() || null,
     createdAt: doc.data().createdAt.toDate(),
   })) as Goal[]
+
+  return person ? goals.filter((g) => g.person === person) : goals
 }
 
 export async function addGoal(goal: Omit<Goal, 'id' | 'createdAt'>): Promise<string> {

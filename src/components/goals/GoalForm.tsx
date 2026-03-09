@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import type { Goal } from '@/types'
+import type { Goal, PersonType } from '@/types'
 import { format } from 'date-fns'
 
 const goalSchema = z.object({
@@ -28,9 +28,10 @@ interface GoalFormProps {
   onOpenChange: (open: boolean) => void
   onSubmit: (data: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
   initialData?: Goal
+  person: PersonType
 }
 
-export function GoalForm({ open, onOpenChange, onSubmit, initialData }: GoalFormProps) {
+export function GoalForm({ open, onOpenChange, onSubmit, initialData, person }: GoalFormProps) {
   const {
     register,
     handleSubmit,
@@ -58,6 +59,7 @@ export function GoalForm({ open, onOpenChange, onSubmit, initialData }: GoalForm
       targetAmount: data.targetAmount,
       currentAmount: data.currentAmount,
       deadline: data.deadline ? new Date(data.deadline + 'T12:00:00') : undefined,
+      person: initialData?.person ?? person,
     })
     reset()
     onOpenChange(false)

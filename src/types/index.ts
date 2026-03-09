@@ -59,6 +59,16 @@ export interface Goal {
   targetAmount: number
   currentAmount: number
   deadline?: Date
+  person: PersonType
+  createdAt: Date
+}
+
+export interface GoalContribution {
+  id: string
+  goalId: string
+  amount: number
+  description?: string
+  date: Date
   createdAt: Date
 }
 

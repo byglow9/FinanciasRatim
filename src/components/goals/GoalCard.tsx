@@ -1,4 +1,4 @@
-import { Target, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Target, Pencil, Trash2, Calendar, PlusCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -10,9 +10,11 @@ interface GoalCardProps {
   goal: Goal
   onEdit: (goal: Goal) => void
   onDelete: (id: string) => void
+  onContribute: (goal: Goal) => void
+  onClick: (goal: Goal) => void
 }
 
-export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
+export function GoalCard({ goal, onEdit, onDelete, onContribute, onClick }: GoalCardProps) {
   const percentage =
     goal.targetAmount > 0
       ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
@@ -20,8 +22,17 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
 
   const isComplete = percentage >= 100
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Evita abrir detalhes se clicou em um botao
+    if ((e.target as HTMLElement).closest('button')) return
+    onClick(goal)
+  }
+
   return (
-    <Card className="relative overflow-hidden">
+    <Card
+      className="relative overflow-hidden cursor-pointer hover:bg-accent/50 transition-colors"
+      onClick={handleCardClick}
+    >
       {isComplete && (
         <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-green-500" />
       )}
@@ -73,11 +84,23 @@ export function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
             <span>Prazo: {formatDate(goal.deadline)}</span>
           </div>
         )}
-        {isComplete && (
-          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-            Concluida!
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {isComplete ? (
+            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+              Concluida!
+            </Badge>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => onContribute(goal)}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Contribuir
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

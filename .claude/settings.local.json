@@ -11,7 +11,8 @@
       "Bash(npm run:)",
       "Bash(npm run:*)",
       "Bash(firebase:*)",
-      "Bash(echo Auth emulator: OK:*)"
+      "Bash(echo Auth emulator: OK:*)",
+      "Bash(grep:*)"
     ]
   }
 }

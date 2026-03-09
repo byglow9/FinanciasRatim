@@ -1,49 +1,41 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useTransactions } from '@/hooks/useTransactions'
+import { useFixedExpenses } from '@/hooks/useFixedExpenses'
+import { useGoals } from '@/hooks/useGoals'
+import { useSavings } from '@/hooks/useSavings'
 import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
-import { getTransactions } from '@/services/transactions.service'
-import { subMonths } from 'date-fns'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { formatCurrency } from '@/lib/utils'
+  SummaryCards,
+  CategoryPieChart,
+  ComparisonBarChart,
+  MonthlyEvolutionChart,
+  IncomeBreakdown,
+  OverviewDashboard,
+} from '@/components/reports'
 import type { PersonType } from '@/types'
-import { DEFAULT_CATEGORIES } from '@/types'
-
-const COLORS = DEFAULT_CATEGORIES.map((c) => c.color ?? '#64748b')
-
-interface MonthlyComparison {
-  month: string
-  ele: number
-  ela: number
-}
 
 export function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
-  const [activeTab, setActiveTab] = useState('categoria')
-  const [monthlyData, setMonthlyData] = useState<MonthlyComparison[]>([])
-  const [loadingComparativo, setLoadingComparativo] = useState(true)
+  const [activeTab, setActiveTab] = useState('visao-geral')
   const { currentArea, settings } = useArea()
 
   const person: PersonType =
     currentArea === 'porquinho' ? 'ele' : (currentArea as PersonType)
 
-  const { transactions } = useTransactions(person, selectedMonth)
+  const personName =
+    currentArea === 'porquinho'
+      ? 'Ele'
+      : settings.tabNames[currentArea === 'ele' ? 'area1' : 'area2']
+
+  const { transactions, totals } = useTransactions(person, selectedMonth)
+  const { expenses, payments } = useFixedExpenses(person, selectedMonth)
+  const { goals } = useGoals()
+  const { balance: savingsBalance } = useSavings()
+
+  const paidCount = payments.length
+  const totalFixedCount = expenses.filter((e) => e.isActive).length
 
   const categoryData = transactions
     .filter((t) => t.type === 'saida')
@@ -56,138 +48,74 @@ export function ReportsPage() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  useEffect(() => {
-    const fetchComparativo = async () => {
-      setLoadingComparativo(true)
-      try {
-        const months = [subMonths(new Date(), 2), subMonths(new Date(), 1), new Date()]
-        const results = await Promise.all(
-          months.map(async (m) => {
-            const [eleTx, elaTx] = await Promise.all([
-              getTransactions('ele', m),
-              getTransactions('ela', m),
-            ])
-            return {
-              month: format(m, 'MMM', { locale: ptBR }),
-              ele: eleTx
-                .filter((t) => t.type === 'saida')
-                .reduce((sum, t) => sum + t.amount, 0),
-              ela: elaTx
-                .filter((t) => t.type === 'saida')
-                .reduce((sum, t) => sum + t.amount, 0),
-            }
-          })
-        )
-        setMonthlyData(results)
-      } finally {
-        setLoadingComparativo(false)
-      }
-    }
-
-    fetchComparativo()
-  }, [])
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Relatorios</h1>
-          <p className="text-muted-foreground">Analise seus gastos</p>
+          <p className="text-muted-foreground">Analise suas financas</p>
         </div>
         <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
+      <SummaryCards
+        entradas={totals.entradas}
+        saidas={totals.saidas}
+        saldo={totals.saldo}
+        contasFixas={{ pagas: paidCount, total: totalFixedCount }}
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="categoria">Por Categoria</TabsTrigger>
-          <TabsTrigger value="comparativo">Comparativo</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="visao-geral" className="text-xs sm:text-sm">
+            Visao Geral
+          </TabsTrigger>
+          <TabsTrigger value="categoria" className="text-xs sm:text-sm">
+            Gastos
+          </TabsTrigger>
+          <TabsTrigger value="receitas" className="text-xs sm:text-sm">
+            Receitas
+          </TabsTrigger>
+          <TabsTrigger value="evolucao" className="text-xs sm:text-sm">
+            Evolucao
+          </TabsTrigger>
+          <TabsTrigger value="comparativo" className="text-xs sm:text-sm">
+            Comparativo
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="categoria">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Gastos por Categoria — {currentArea === 'porquinho' ? 'Ele' : settings.tabNames[currentArea === 'ele' ? 'area1' : 'area2']}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pieData.length === 0 ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  Nenhum gasto registrado neste mes
-                </div>
-              ) : (
-                <div className="flex flex-col lg:flex-row items-center gap-6">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={110}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {pieData.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value) : ''} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="visao-geral" className="mt-4">
+          <OverviewDashboard
+            person={person}
+            personName={personName}
+            transactions={transactions}
+            goals={goals}
+            savingsBalance={savingsBalance}
+            piggyName={settings.tabNames.piggy}
+          />
         </TabsContent>
 
-        <TabsContent value="comparativo">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Gastos por Mes — {settings.tabNames.area1} vs {settings.tabNames.area2}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingComparativo ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  Carregando...
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart
-                    data={monthlyData}
-                    margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" className="capitalize" />
-                    <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip
-                      formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value) : ''}
-                      labelStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="ele"
-                      name={settings.tabNames.area1}
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="ela"
-                      name={settings.tabNames.area2}
-                      fill="#ec4899"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="categoria" className="mt-4">
+          <CategoryPieChart
+            data={pieData}
+            title={`Gastos por Categoria — ${personName}`}
+            emptyMessage="Nenhum gasto registrado neste mes"
+          />
+        </TabsContent>
+
+        <TabsContent value="receitas" className="mt-4">
+          <IncomeBreakdown transactions={transactions} personName={personName} />
+        </TabsContent>
+
+        <TabsContent value="evolucao" className="mt-4">
+          <MonthlyEvolutionChart person={person} personName={personName} />
+        </TabsContent>
+
+        <TabsContent value="comparativo" className="mt-4">
+          <ComparisonBarChart
+            area1Name={settings.tabNames.area1}
+            area2Name={settings.tabNames.area2}
+          />
         </TabsContent>
       </Tabs>
     </div>

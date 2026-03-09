@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Goal } from '@/types'
+import type { Goal, PersonType } from '@/types'
 import {
   getGoals,
   addGoal,
   updateGoal,
   deleteGoal,
-  updateGoalProgress,
 } from '@/services/goals.service'
+import { addContribution } from '@/services/goalContributions.service'
 
-export function useGoals() {
+export function useGoals(person?: PersonType) {
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -16,7 +16,7 @@ export function useGoals() {
   const fetchGoals = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getGoals()
+      const data = await getGoals(person)
       setGoals(data)
       setError(null)
     } catch (err) {
@@ -24,7 +24,7 @@ export function useGoals() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [person])
 
   useEffect(() => {
     fetchGoals()
@@ -45,8 +45,11 @@ export function useGoals() {
     await fetchGoals()
   }
 
-  const updateProgress = async (id: string, currentAmount: number) => {
-    await updateGoalProgress(id, currentAmount)
+  const contribute = async (goalId: string, amount: number, description?: string) => {
+    const goal = goals.find((g) => g.id === goalId)
+    if (!goal) throw new Error('Meta nao encontrada')
+
+    await addContribution(goalId, amount, goal.currentAmount, description)
     await fetchGoals()
   }
 
@@ -57,7 +60,7 @@ export function useGoals() {
     add,
     update,
     remove,
-    updateProgress,
+    contribute,
     refetch: fetchGoals,
   }
 }

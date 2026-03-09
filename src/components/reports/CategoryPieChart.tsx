@@ -43,56 +43,58 @@ export function CategoryPieChart({
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col lg:flex-row items-center gap-6">
+        <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-6">
           <div className="relative w-full lg:w-1/2">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={110}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {data.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number | undefined) =>
-                    value !== undefined ? formatCurrency(value) : ''
-                  }
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {data.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number | undefined) =>
+                      value !== undefined ? formatCurrency(value) : ''
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">Total</p>
-                <p className="text-lg font-semibold">{formatCurrency(total)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
+                <p className="text-sm sm:text-lg font-semibold">{formatCurrency(total)}</p>
               </div>
             </div>
           </div>
 
-          <div className="w-full lg:w-1/2 space-y-2 max-h-[280px] overflow-y-auto">
+          <div className="w-full lg:w-1/2 space-y-1 sm:space-y-2 max-h-[200px] sm:max-h-[280px] overflow-y-auto">
             {data.map((item, index) => {
               const percentage = ((item.value / total) * 100).toFixed(1)
               return (
                 <div
                   key={item.name}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50"
+                  className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg hover:bg-muted/50"
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span className="text-sm">{item.name}</span>
+                    <span className="text-xs sm:text-sm truncate">{item.name}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium">{formatCurrency(item.value)}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({percentage}%)</span>
+                  <div className="text-right shrink-0 ml-2">
+                    <span className="text-xs sm:text-sm font-medium">{formatCurrency(item.value)}</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground ml-1 sm:ml-2">({percentage}%)</span>
                   </div>
                 </div>
               )

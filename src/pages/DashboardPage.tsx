@@ -73,12 +73,12 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="hidden sm:block">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
+          <p className="text-muted-foreground text-sm mt-0.5">Visao geral das financas</p>
         </div>
-        <p className="text-muted-foreground text-sm mt-0.5">Visao geral das financas</p>
+        <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
       {upcomingExpenses.length > 0 && (

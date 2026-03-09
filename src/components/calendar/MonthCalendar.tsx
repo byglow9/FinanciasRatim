@@ -15,7 +15,7 @@ import { PiggyBank } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DayEvent {
-  type: 'transaction' | 'fixed' | 'savings'
+  type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings'
   label: string
   amount?: number
   net?: number
@@ -31,19 +31,6 @@ interface MonthCalendarProps {
 }
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-
-function getTransactionColor(net: number): string {
-  const abs = Math.abs(net)
-  if (net > 0) {
-    if (abs < 100) return 'bg-green-100 text-green-700'
-    if (abs < 500) return 'bg-green-200 text-green-800'
-    return 'bg-green-400 text-green-900'
-  } else {
-    if (abs < 100) return 'bg-red-100 text-red-700'
-    if (abs < 500) return 'bg-red-200 text-red-800'
-    return 'bg-red-400 text-red-900'
-  }
-}
 
 export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings }: MonthCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
@@ -63,13 +50,20 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
   function getEventsForDay(day: Date): DayEvent[] {
     const events: DayEvent[] = []
 
-    // Transactions: group by day
+    // Transactions: group by type (entrada/saida separately)
     const dayTx = transactions.filter((t) => isSameDay(t.date, day))
     if (dayTx.length > 0) {
-      const net = dayTx.reduce((sum, t) => {
-        return t.type === 'entrada' ? sum + t.amount : sum - t.amount
-      }, 0)
-      events.push({ type: 'transaction', label: `${dayTx.length} transaç${dayTx.length > 1 ? 'ões' : 'ão'}`, net })
+      const entradas = dayTx.filter(t => t.type === 'entrada')
+      const saidas = dayTx.filter(t => t.type === 'saida')
+      const totalEntradas = entradas.reduce((sum, t) => sum + t.amount, 0)
+      const totalSaidas = saidas.reduce((sum, t) => sum + t.amount, 0)
+
+      if (totalEntradas > 0) {
+        events.push({ type: 'transaction-entrada', label: 'Entradas', amount: totalEntradas })
+      }
+      if (totalSaidas > 0) {
+        events.push({ type: 'transaction-saida', label: 'Saídas', amount: totalSaidas })
+      }
     }
 
     // Fixed expenses: appear on their dueDay
@@ -122,7 +116,8 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
           const events = getEventsForDay(day)
-          const txEvent = events.find((e) => e.type === 'transaction')
+          const entradaEvent = events.find((e) => e.type === 'transaction-entrada')
+          const saidaEvent = events.find((e) => e.type === 'transaction-saida')
           const fixedEvents = events.filter((e) => e.type === 'fixed')
           const savingsEvent = events.find((e) => e.type === 'savings')
 
@@ -146,11 +141,11 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
 
               {/* Mobile: colored dots */}
               <div className="flex flex-wrap gap-0.5 sm:hidden">
-                {txEvent && txEvent.net !== undefined && (
-                  <div className={cn(
-                    'h-1.5 w-1.5 rounded-full shrink-0',
-                    txEvent.net >= 0 ? 'bg-green-400' : 'bg-red-400'
-                  )} />
+                {entradaEvent && (
+                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-green-400" />
+                )}
+                {saidaEvent && (
+                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-red-400" />
                 )}
                 {fixedEvents.slice(0, 2).map((fe, i) => (
                   <div
@@ -168,13 +163,16 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
 
               {/* Desktop: text badges */}
               <div className="hidden sm:block space-y-0.5">
-                {/* Transaction badge */}
-                {txEvent && txEvent.net !== undefined && (
-                  <div className={cn(
-                    'text-[10px] rounded px-1 py-0.5 font-medium truncate',
-                    getTransactionColor(txEvent.net)
-                  )}>
-                    {txEvent.net >= 0 ? '+' : ''}{formatCurrency(txEvent.net)}
+                {/* Entrada badge */}
+                {entradaEvent && entradaEvent.amount !== undefined && (
+                  <div className="text-[10px] rounded px-1 py-0.5 font-medium truncate bg-green-200 text-green-800">
+                    +{formatCurrency(entradaEvent.amount)}
+                  </div>
+                )}
+                {/* Saida badge */}
+                {saidaEvent && saidaEvent.amount !== undefined && (
+                  <div className="text-[10px] rounded px-1 py-0.5 font-medium truncate bg-red-200 text-red-800">
+                    -{formatCurrency(saidaEvent.amount)}
                   </div>
                 )}
 
@@ -226,30 +224,42 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               <p className="text-sm text-muted-foreground">Nenhum evento neste dia.</p>
             )}
 
-            {dayTx.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Transações</p>
-                <div className="space-y-1">
-                  {dayTx.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className={t.type === 'entrada' ? 'text-green-600' : 'text-red-600'}>
-                          {t.type === 'entrada' ? '↑' : '↓'}
+            {dayTx.length > 0 && (() => {
+              const saldoDia = dayTx.reduce((sum, t) => {
+                return t.type === 'entrada' ? sum + t.amount : sum - t.amount
+              }, 0)
+              return (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Transações</p>
+                  <div className="space-y-1">
+                    {dayTx.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={t.type === 'entrada' ? 'text-green-600' : 'text-red-600'}>
+                            {t.type === 'entrada' ? '↑' : '↓'}
+                          </span>
+                          <span>{t.description}</span>
+                          <span className="text-xs text-muted-foreground">{t.category}</span>
+                        </div>
+                        <span className={cn(
+                          'font-medium',
+                          t.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                        )}>
+                          {t.type === 'entrada' ? '+' : '-'}{formatCurrency(t.amount)}
                         </span>
-                        <span>{t.description}</span>
-                        <span className="text-xs text-muted-foreground">{t.category}</span>
                       </div>
-                      <span className={cn(
-                        'font-medium',
-                        t.type === 'entrada' ? 'text-green-600' : 'text-red-600'
-                      )}>
-                        {t.type === 'entrada' ? '+' : '-'}{formatCurrency(t.amount)}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {/* Resumo do dia */}
+                  <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
+                    <span>Saldo do dia:</span>
+                    <span className={saldoDia >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {saldoDia >= 0 ? '+' : ''}{formatCurrency(saldoDia)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {dayFixed.length > 0 && (
               <div>

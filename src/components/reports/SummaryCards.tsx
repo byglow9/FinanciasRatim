@@ -48,21 +48,21 @@ export function SummaryCards({ entradas, saidas, saldo, contasFixas }: SummaryCa
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {cards.map((card) => (
         <Card key={card.title}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={cn('rounded-full p-2', card.bgColor)}>
-                <card.icon className={cn('h-5 w-5', card.color)} />
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={cn('rounded-full p-1.5 sm:p-2', card.bgColor)}>
+                <card.icon className={cn('h-4 w-4 sm:h-5 sm:w-5', card.color)} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground truncate">{card.title}</p>
-                <p className={cn('text-lg font-semibold truncate', card.color)}>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{card.title}</p>
+                <p className={cn('text-sm sm:text-lg font-semibold truncate', card.color)}>
                   {card.displayValue ?? formatCurrency(card.value ?? 0)}
                 </p>
                 {card.subtitle && (
-                  <p className="text-xs text-muted-foreground">{card.subtitle}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">{card.subtitle}</p>
                 )}
               </div>
             </div>

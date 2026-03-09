@@ -46,6 +46,10 @@ export function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
+        <div className="hidden sm:block">
+          <h1 className="text-2xl font-bold">Transacoes</h1>
+          <p className="text-muted-foreground">Gerencie suas entradas e saidas</p>
+        </div>
         <MonthSelector
           selectedDate={selectedMonth}
           onChange={setSelectedMonth}

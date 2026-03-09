@@ -86,15 +86,15 @@ export function ComparisonBarChart({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-base">
+      <CardHeader className="flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
+        <CardTitle className="text-sm sm:text-base">
           {viewType === 'saida' ? 'Gastos' : 'Receitas'} por Mes — {area1Name} vs {area2Name}
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-row gap-2 w-full sm:w-auto">
           <Select
             value={viewType}
             onChange={(e) => setViewType(e.target.value as 'saida' | 'entrada')}
-            className="w-[120px]"
+            className="flex-1 sm:flex-none sm:w-[120px]"
           >
             <option value="saida">Gastos</option>
             <option value="entrada">Receitas</option>
@@ -102,7 +102,7 @@ export function ComparisonBarChart({
           <Select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="w-[110px]"
+            className="flex-1 sm:flex-none sm:w-[110px]"
           >
             <option value="3">3 meses</option>
             <option value="6">6 meses</option>
@@ -122,36 +122,38 @@ export function ComparisonBarChart({
           />
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={monthlyData}
-                margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" className="capitalize" />
-                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(value: number | undefined) =>
-                    value !== undefined ? formatCurrency(value) : ''
-                  }
-                  labelStyle={{ fontWeight: 600 }}
-                />
-                <Legend />
-                <Bar dataKey="ele" name={area1Name} fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="ela" name={area2Name} fill="#ec4899" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={monthlyData}
+                  margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" className="capitalize" tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 12 }} width={50} />
+                  <Tooltip
+                    formatter={(value: number | undefined) =>
+                      value !== undefined ? formatCurrency(value) : ''
+                    }
+                    labelStyle={{ fontWeight: 600 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="ele" name={area1Name} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="ela" name={area2Name} fill="#ec4899" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
             <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">{area1Name}</p>
-                <p className="text-lg font-semibold text-blue-500">
+                <p className="text-xs sm:text-sm text-muted-foreground">{area1Name}</p>
+                <p className="text-sm sm:text-lg font-semibold text-blue-500">
                   {formatCurrency(totals.ele)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">{area2Name}</p>
-                <p className="text-lg font-semibold text-pink-500">
+                <p className="text-xs sm:text-sm text-muted-foreground">{area2Name}</p>
+                <p className="text-sm sm:text-lg font-semibold text-pink-500">
                   {formatCurrency(totals.ela)}
                 </p>
               </div>

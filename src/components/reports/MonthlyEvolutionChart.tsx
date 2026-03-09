@@ -75,12 +75,12 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-base">Evolucao Mensal — {personName}</CardTitle>
+      <CardHeader className="flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
+        <CardTitle className="text-sm sm:text-base">Evolucao Mensal — {personName}</CardTitle>
         <Select
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          className="w-[110px]"
+          className="w-full sm:w-[110px]"
         >
           <option value="3">3 meses</option>
           <option value="6">6 meses</option>
@@ -98,48 +98,50 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
             description="Nenhuma transacao registrada no periodo"
           />
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" className="capitalize" />
-              <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : ''
-                }
-                labelStyle={{ fontWeight: 600 }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="entradas"
-                name="Entradas"
-                stroke="#22c55e"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="saidas"
-                name="Saidas"
-                stroke="#ef4444"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="saldo"
-                name="Saldo"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[220px] sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" className="capitalize" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 12 }} width={50} />
+                <Tooltip
+                  formatter={(value: number | undefined) =>
+                    value !== undefined ? formatCurrency(value) : ''
+                  }
+                  labelStyle={{ fontWeight: 600 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line
+                  type="monotone"
+                  dataKey="entradas"
+                  name="Entradas"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="saidas"
+                  name="Saidas"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="saldo"
+                  name="Saldo"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>

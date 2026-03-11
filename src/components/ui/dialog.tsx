@@ -1,4 +1,5 @@
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
@@ -46,8 +47,20 @@ DialogTrigger.displayName = "DialogTrigger"
 
 const DialogPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const context = React.useContext(DialogContext)
+
+  React.useEffect(() => {
+    if (context?.open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [context?.open])
+
   if (!context?.open) return null
-  return <>{children}</>
+  return createPortal(<>{children}</>, document.body)
 }
 
 const DialogOverlay = React.forwardRef<
@@ -62,7 +75,7 @@ const DialogOverlay = React.forwardRef<
       ref={ref}
       onClick={() => context.onOpenChange(false)}
       className={cn(
-        "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "fixed inset-0 z-[9999] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className
       )}
       {...props}
@@ -85,7 +98,7 @@ const DialogContent = React.forwardRef<
         ref={ref}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 rounded-2xl sm:rounded-xl",
+          "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 rounded-2xl sm:rounded-xl",
           className
         )}
         {...props}

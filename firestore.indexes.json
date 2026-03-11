@@ -24,13 +24,6 @@
         { "fieldPath": "person", "order": "ASCENDING" },
         { "fieldPath": "dueDay", "order": "ASCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "savings",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []

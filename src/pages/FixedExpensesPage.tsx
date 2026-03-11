@@ -20,6 +20,7 @@ export function FixedExpensesPage() {
   const {
     expenses,
     loading,
+    error,
     add,
     update,
     remove,
@@ -106,6 +107,15 @@ export function FixedExpensesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {error && (
+        <Card className="border-destructive bg-destructive/10">
+          <CardContent className="p-4 text-destructive">
+            <p className="font-medium">Erro ao carregar contas fixas:</p>
+            <p className="text-sm">{error.message}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

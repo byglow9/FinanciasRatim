@@ -52,7 +52,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
   const goalMap = new Map(goals.map((g) => [g.id, g.name]))
 
   // Get events for a given day
-  function getEventsForDay(day: Date): DayEvent[] {
+  function getEventsForDay(day: Date, inMonth: boolean): DayEvent[] {
     const events: DayEvent[] = []
 
     // Transactions: group by type (entrada/saida separately)
@@ -79,7 +79,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
         type: 'fixed',
         label: fe.name,
         amount: fe.amount,
-        paid: paidIds.has(fe.id),
+        paid: inMonth && paidIds.has(fe.id),
       })
     }
 
@@ -128,7 +128,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
         {cells.map((day, idx) => {
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
-          const events = getEventsForDay(day)
+          const events = getEventsForDay(day, inMonth)
           const entradaEvent = events.find((e) => e.type === 'transaction-entrada')
           const saidaEvent = events.find((e) => e.type === 'transaction-saida')
           const fixedEvents = events.filter((e) => e.type === 'fixed')
@@ -141,14 +141,14 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
                 'min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
-                inMonth ? 'bg-card' : 'bg-muted/30',
+                inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
                 isSelected && 'ring-2 ring-primary',
                 'hover:bg-muted/50'
               )}
             >
               <div className={cn(
                 'text-xs font-medium mb-1',
-                inMonth ? 'text-foreground' : 'text-muted-foreground'
+                inMonth ? 'text-foreground' : 'text-muted-foreground/60'
               )}>
                 {format(day, 'd')}
               </div>

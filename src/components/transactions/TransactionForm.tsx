@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -51,19 +52,30 @@ export function TransactionForm({
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
-    defaultValues: initialData
-      ? {
+    defaultValues: {
+      type: 'saida',
+      date: format(new Date(), 'yyyy-MM-dd'),
+    },
+  })
+
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        reset({
           type: initialData.type,
           amount: initialData.amount,
           description: initialData.description,
           category: initialData.category,
           date: format(initialData.date, 'yyyy-MM-dd'),
-        }
-      : {
+        })
+      } else {
+        reset({
           type: 'saida',
           date: format(new Date(), 'yyyy-MM-dd'),
-        },
-  })
+        })
+      }
+    }
+  }, [open, initialData, reset])
 
   const handleFormSubmit = async (data: TransactionFormData) => {
     await onSubmit({

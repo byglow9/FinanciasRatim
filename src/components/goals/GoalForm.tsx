@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -39,19 +40,29 @@ export function GoalForm({ open, onOpenChange, onSubmit, initialData, person }: 
     formState: { errors, isSubmitting },
   } = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
-    defaultValues: initialData
-      ? {
+    defaultValues: {
+      currentAmount: 0,
+    },
+  })
+
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        reset({
           name: initialData.name,
           targetAmount: initialData.targetAmount,
           currentAmount: initialData.currentAmount,
           deadline: initialData.deadline
             ? format(initialData.deadline, 'yyyy-MM-dd')
             : undefined,
-        }
-      : {
+        })
+      } else {
+        reset({
           currentAmount: 0,
-        },
-  })
+        })
+      }
+    }
+  }, [open, initialData, reset])
 
   const handleFormSubmit = async (data: GoalFormData) => {
     await onSubmit({

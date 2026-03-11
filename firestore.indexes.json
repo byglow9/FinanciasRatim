@@ -24,6 +24,32 @@
         { "fieldPath": "person", "order": "ASCENDING" },
         { "fieldPath": "dueDay", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "fixedExpenses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "person", "order": "ASCENDING" },
+        { "fieldPath": "dueDay", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "fixedExpenses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "person", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "dueDay", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "fixedExpenses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "dueDay", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

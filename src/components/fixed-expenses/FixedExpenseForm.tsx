@@ -52,19 +52,30 @@ export function FixedExpenseForm({
     formState: { errors, isSubmitting },
   } = useForm<FixedExpenseFormData>({
     resolver: zodResolver(fixedExpenseSchema),
-    defaultValues: initialData
-      ? {
+    defaultValues: {
+      person: currentPerson,
+      dueDay: 1,
+    },
+  })
+
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        reset({
           name: initialData.name,
           amount: initialData.amount,
           dueDay: initialData.dueDay,
           category: initialData.category,
           person: initialData.person as 'ele' | 'ela',
-        }
-      : {
+        })
+      } else {
+        reset({
           person: currentPerson,
           dueDay: 1,
-        },
-  })
+        })
+      }
+    }
+  }, [open, initialData, currentPerson, reset])
 
   useEffect(() => {
     if (!initialData) setValue('person', currentPerson)

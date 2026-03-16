@@ -90,7 +90,7 @@ export function TransactionsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
+            <CardTitle className="text-sm font-medium">Saldo Mensal</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">

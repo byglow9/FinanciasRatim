@@ -30,12 +30,9 @@ export function ReportsPage() {
       : settings.tabNames[currentArea === 'ele' ? 'area1' : 'area2']
 
   const { transactions, totals } = useTransactions(person, selectedMonth)
-  const { expenses, payments } = useFixedExpenses(person, selectedMonth)
+  const { totals: fixedTotals } = useFixedExpenses(person, selectedMonth)
   const { goals } = useGoals()
   const { balance: savingsBalance } = useSavings()
-
-  const paidCount = payments.length
-  const totalFixedCount = expenses.filter((e) => e.isActive).length
 
   const categoryData = transactions
     .filter((t) => t.type === 'saida')
@@ -62,7 +59,8 @@ export function ReportsPage() {
         entradas={totals.entradas}
         saidas={totals.saidas}
         saldo={totals.saldo}
-        contasFixas={{ pagas: paidCount, total: totalFixedCount }}
+        saldoAcumulado={totals.saldoAcumulado}
+        contasFixas={{ pagas: fixedTotals.paidCount, total: fixedTotals.activeCount }}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

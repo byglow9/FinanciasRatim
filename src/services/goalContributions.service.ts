@@ -5,6 +5,7 @@ import {
   where,
   orderBy,
   getDocs,
+  deleteDoc,
   Timestamp,
   runTransaction,
 } from 'firebase/firestore'
@@ -141,4 +142,18 @@ export async function addContribution(
   })
 
   return contributionId
+}
+
+export async function deleteContributionsByGoalId(goalId: string): Promise<void> {
+  if (MOCK) {
+    const filtered = mList<RawContribution>(COL).filter((c) => c.goalId !== goalId)
+    mSave(COL, filtered)
+    return
+  }
+
+  const q = query(collection(db, COL), where('goalId', '==', goalId))
+  const snapshot = await getDocs(q)
+
+  const deletePromises = snapshot.docs.map((d) => deleteDoc(d.ref))
+  await Promise.all(deletePromises)
 }

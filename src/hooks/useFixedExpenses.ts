@@ -77,9 +77,15 @@ export function useFixedExpenses(person?: PersonType | 'conjunto', selectedMonth
     return payments.find((p) => p.fixedExpenseId === expenseId)
   }
 
+  // Filtrar pagamentos apenas das despesas da pessoa atual
+  const expenseIds = new Set(expenses.map((e) => e.id))
+  const personPayments = payments.filter((p) => expenseIds.has(p.fixedExpenseId))
+
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-  const totalPaid = payments.reduce((sum, p) => sum + p.paidAmount, 0)
+  const totalPaid = personPayments.reduce((sum, p) => sum + p.paidAmount, 0)
   const totalPending = totalExpenses - totalPaid
+  const paidCount = personPayments.length
+  const activeCount = expenses.filter((e) => e.isActive).length
 
   return {
     expenses,
@@ -97,6 +103,8 @@ export function useFixedExpenses(person?: PersonType | 'conjunto', selectedMonth
       total: totalExpenses,
       paid: totalPaid,
       pending: totalPending,
+      paidCount,
+      activeCount,
     },
   }
 }

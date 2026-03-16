@@ -158,3 +158,35 @@ export async function getTransactionsByCategory(category: string): Promise<Trans
     createdAt: doc.data().createdAt.toDate(),
   })) as Transaction[]
 }
+
+export async function getAccumulatedBalance(
+  person: PersonType,
+  untilMonth: Date
+): Promise<number> {
+  const end = endOfMonth(untilMonth)
+
+  if (MOCK) {
+    return mList<RawTransaction>(COL)
+      .filter((t) => {
+        const d = new Date(t.date)
+        return t.person === person && d <= end
+      })
+      .reduce((acc, t) => {
+        return t.type === 'entrada' ? acc + t.amount : acc - t.amount
+      }, 0)
+  }
+
+  // Busca todas as transações da pessoa e filtra por data no cliente
+  // para evitar necessidade de índice composto no Firestore
+  const q = query(
+    collection(db, COL),
+    where('person', '==', person)
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.reduce((acc, doc) => {
+    const data = doc.data()
+    const txDate = data.date.toDate()
+    if (txDate > end) return acc
+    return data.type === 'entrada' ? acc + data.amount : acc - data.amount
+  }, 0)
+}

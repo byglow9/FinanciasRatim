@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { Goal, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { deleteContributionsByGoalId } from './goalContributions.service'
 
 type RawGoal = Omit<Goal, 'deadline' | 'createdAt'> & {
   deadline: string | null
@@ -96,6 +97,9 @@ export async function updateGoal(
 }
 
 export async function deleteGoal(id: string): Promise<void> {
+  // Primeiro, deletar todas as contribuições associadas
+  await deleteContributionsByGoalId(id)
+
   if (MOCK) {
     mSave(COL, mList<RawGoal>(COL).filter((g) => g.id !== id))
     return

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Transaction, PersonType } from '@/types'
 import {
   getTransactions,
+  getAccumulatedBalance,
   addTransaction,
   updateTransaction,
   deleteTransaction,
@@ -9,14 +10,19 @@ import {
 
 export function useTransactions(person: PersonType, selectedMonth: Date) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [saldoAcumulado, setSaldoAcumulado] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getTransactions(person, selectedMonth)
+      const [data, accumulated] = await Promise.all([
+        getTransactions(person, selectedMonth),
+        getAccumulatedBalance(person, selectedMonth),
+      ])
       setTransactions(data)
+      setSaldoAcumulado(accumulated)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch transactions'))
@@ -67,6 +73,7 @@ export function useTransactions(person: PersonType, selectedMonth: Date) {
     totals: {
       ...totals,
       saldo: totals.entradas - totals.saidas,
+      saldoAcumulado,
     },
   }
 }

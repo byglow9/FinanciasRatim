@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { formatCurrency } from '@/lib/utils'
-import { getTransactions } from '@/services/transactions.service'
+import { getTransactions, getAccumulatedBalance } from '@/services/transactions.service'
 import { subMonths, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { EmptyState } from './EmptyState'
@@ -23,6 +23,7 @@ interface MonthlyEvolution {
   entradas: number
   saidas: number
   saldo: number
+  saldoAcumulado: number
 }
 
 interface MonthlyEvolutionChartProps {
@@ -46,7 +47,10 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
 
         const results = await Promise.all(
           months.map(async (m) => {
-            const transactions = await getTransactions(person, m)
+            const [transactions, accumulated] = await Promise.all([
+              getTransactions(person, m),
+              getAccumulatedBalance(person, m),
+            ])
             const entradas = transactions
               .filter((t) => t.type === 'entrada')
               .reduce((sum, t) => sum + t.amount, 0)
@@ -59,6 +63,7 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
               entradas,
               saidas,
               saldo: entradas - saidas,
+              saldoAcumulado: accumulated,
             }
           })
         )
@@ -132,10 +137,19 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
                 <Line
                   type="monotone"
                   dataKey="saldo"
-                  name="Saldo"
+                  name="Saldo Mensal"
                   stroke="#3b82f6"
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="saldoAcumulado"
+                  name="Saldo Total"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
                 />

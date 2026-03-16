@@ -40,7 +40,7 @@ export function SettingsPage() {
     }
   }
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const trimmed = newCategory.trim()
     if (!trimmed) {
       setCategoryError('Nome da categoria nao pode ser vazio')
@@ -51,9 +51,12 @@ export function SettingsPage() {
       setCategoryError('Categoria ja existe')
       return
     }
-    setCategories([...categories, trimmed])
+    const newCategories = [...categories, trimmed]
+    setCategories(newCategories)
     setNewCategory('')
     setCategoryError(null)
+    // Salvar automaticamente
+    await updateCategories(newCategories)
   }
 
   const handleRemoveCategory = async (categoryName: string) => {
@@ -72,7 +75,10 @@ export function SettingsPage() {
         setCategoryError(`Nao e possivel remover "${categoryName}" pois existem contas fixas usando esta categoria.`)
         return
       }
-      setCategories(categories.filter(c => c !== categoryName))
+      const newCategories = categories.filter(c => c !== categoryName)
+      setCategories(newCategories)
+      // Salvar automaticamente
+      await updateCategories(newCategories)
     } finally {
       setRemovingCategory(null)
     }

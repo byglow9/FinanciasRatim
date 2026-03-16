@@ -12,7 +12,10 @@
       "Bash(npm run:*)",
       "Bash(firebase:*)",
       "Bash(echo Auth emulator: OK:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:dev.to)",
+      "Bash(curl -I https://financias-ratimbum.web.app/)"
     ]
   }
 }

@@ -124,11 +124,12 @@ export function TransactionsPage() {
       </Card>
 
       <TransactionForm
+        key={editingTransaction?.id ?? 'new'}
         open={formOpen}
         onOpenChange={handleOpenChange}
         onSubmit={handleSubmit}
         person={person}
-        initialData={editingTransaction || undefined}
+        initialData={editingTransaction ?? undefined}
       />
     </div>
   )

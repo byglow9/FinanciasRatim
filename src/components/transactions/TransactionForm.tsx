@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -52,33 +51,22 @@ export function TransactionForm({
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
-    defaultValues: {
-      type: 'saida',
-      date: format(new Date(), 'yyyy-MM-dd'),
-    },
-  })
-
-  useEffect(() => {
-    if (open) {
-      if (initialData) {
-        reset({
+    defaultValues: initialData
+      ? {
           type: initialData.type,
           amount: initialData.amount,
           description: initialData.description,
           category: initialData.category,
           date: format(initialData.date, 'yyyy-MM-dd'),
-        })
-      } else {
-        reset({
+        }
+      : {
           type: 'saida',
           amount: undefined,
           description: '',
           category: '',
           date: format(new Date(), 'yyyy-MM-dd'),
-        })
-      }
-    }
-  }, [open, initialData, reset])
+        },
+  })
 
   const handleFormSubmit = async (data: TransactionFormData) => {
     await onSubmit({
@@ -102,7 +90,7 @@ export function TransactionForm({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <Select id="type" {...register('type')}>
+            <Select id="type" defaultValue={initialData?.type ?? 'saida'} {...register('type')}>
               <option value="saida">Saida</option>
               <option value="entrada">Entrada</option>
             </Select>
@@ -136,7 +124,7 @@ export function TransactionForm({
 
           <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
-            <Select id="category" {...register('category')}>
+            <Select id="category" defaultValue={initialData?.category ?? ''} {...register('category')}>
               <option value="">Selecione...</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>

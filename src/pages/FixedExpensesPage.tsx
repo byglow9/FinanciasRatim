@@ -137,11 +137,12 @@ export function FixedExpensesPage() {
       </Card>
 
       <FixedExpenseForm
+        key={editingExpense?.id ?? 'new'}
         open={formOpen}
         onOpenChange={handleOpenChange}
         onSubmit={handleSubmit}
         currentPerson={person}
-        initialData={editingExpense || undefined}
+        initialData={editingExpense ?? undefined}
       />
     </div>
   )

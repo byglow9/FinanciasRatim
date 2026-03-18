@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -48,41 +47,25 @@ export function FixedExpenseForm({
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FixedExpenseFormData>({
     resolver: zodResolver(fixedExpenseSchema),
-    defaultValues: {
-      person: currentPerson,
-      dueDay: 1,
-    },
-  })
-
-  useEffect(() => {
-    if (open) {
-      if (initialData) {
-        reset({
+    defaultValues: initialData
+      ? {
           name: initialData.name,
           amount: initialData.amount,
           dueDay: initialData.dueDay,
           category: initialData.category,
           person: initialData.person as 'ele' | 'ela',
-        })
-      } else {
-        reset({
+        }
+      : {
           name: '',
           amount: undefined,
           dueDay: 1,
           category: '',
           person: currentPerson,
-        })
-      }
-    }
-  }, [open, initialData, currentPerson, reset])
-
-  useEffect(() => {
-    if (!initialData) setValue('person', currentPerson)
-  }, [currentPerson, initialData, setValue])
+        },
+  })
 
   const handleFormSubmit = async (data: FixedExpenseFormData) => {
     await onSubmit({
@@ -145,7 +128,7 @@ export function FixedExpenseForm({
 
           <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
-            <Select id="category" {...register('category')}>
+            <Select id="category" defaultValue={initialData?.category ?? ''} {...register('category')}>
               <option value="">Selecione...</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>

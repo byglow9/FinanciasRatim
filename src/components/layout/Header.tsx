@@ -48,7 +48,7 @@ export function Header() {
         </div>
 
         {currentArea !== 'porquinho' && (
-          <nav className="flex gap-1 pb-2 overflow-x-auto">
+          <nav className="hidden md:flex gap-1 pb-2 overflow-x-auto">
             {navItems.map((item) => (
               <Link
                 key={item.href}

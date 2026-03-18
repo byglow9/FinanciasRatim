@@ -72,8 +72,8 @@ export function FixedExpenseList({
           <div
             key={expense.id}
             className={cn(
-              'p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors',
-              isPaid && 'opacity-60'
+              'p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-all duration-300 ease-out',
+              isPaid && 'opacity-60 bg-green-50/50'
             )}
           >
             {/* Desktop layout */}
@@ -83,16 +83,20 @@ export function FixedExpenseList({
                   variant={isPaid ? 'default' : 'outline'}
                   size="icon"
                   className={cn(
-                    'shrink-0',
+                    'shrink-0 transition-all duration-300',
                     isPaid && 'bg-green-600 hover:bg-green-700'
                   )}
-                  onClick={() => onTogglePaid(expense.id, expense.amount)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onTogglePaid(expense.id, expense.amount)
+                  }}
                 >
                   <Check className="h-4 w-4" />
                 </Button>
 
                 <div className="min-w-0">
-                  <p className={cn('font-medium truncate', isPaid && 'line-through')}>
+                  <p className={cn('font-medium truncate transition-all duration-300', isPaid && 'line-through')}>
                     {expense.name}
                   </p>
                   <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
@@ -150,14 +154,18 @@ export function FixedExpenseList({
                     variant={isPaid ? 'default' : 'outline'}
                     size="icon"
                     className={cn(
-                      'shrink-0 h-8 w-8',
+                      'shrink-0 h-8 w-8 transition-all duration-300',
                       isPaid && 'bg-green-600 hover:bg-green-700'
                     )}
-                    onClick={() => onTogglePaid(expense.id, expense.amount)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onTogglePaid(expense.id, expense.amount)
+                    }}
                   >
                     <Check className="h-3.5 w-3.5" />
                   </Button>
-                  <p className={cn('font-medium truncate text-sm', isPaid && 'line-through')}>
+                  <p className={cn('font-medium truncate text-sm transition-all duration-300', isPaid && 'line-through')}>
                     {expense.name}
                   </p>
                 </div>

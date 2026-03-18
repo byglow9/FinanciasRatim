@@ -62,11 +62,35 @@ export function useFixedExpenses(person?: PersonType | 'conjunto', selectedMonth
     )
 
     if (existingPayment) {
-      await unmarkAsPaid(existingPayment.id)
+      // Remover pagamento otimisticamente
+      setPayments(prev => prev.filter(p => p.id !== existingPayment.id))
+      try {
+        await unmarkAsPaid(existingPayment.id)
+      } catch {
+        // Reverter em caso de erro
+        setPayments(prev => [...prev, existingPayment])
+      }
     } else {
-      await markAsPaid(expenseId, month, year, amount)
+      // Adicionar pagamento otimisticamente
+      const optimisticPayment: FixedExpensePayment = {
+        id: `temp-${Date.now()}`,
+        fixedExpenseId: expenseId,
+        month,
+        year,
+        paidAmount: amount,
+        paidAt: new Date(),
+      }
+      setPayments(prev => [...prev, optimisticPayment])
+      try {
+        await markAsPaid(expenseId, month, year, amount)
+        // Refetch silencioso para obter o ID real
+        const paymentsData = await getPaymentsForMonth(month, year)
+        setPayments(paymentsData)
+      } catch {
+        // Reverter em caso de erro
+        setPayments(prev => prev.filter(p => p.id !== optimisticPayment.id))
+      }
     }
-    await fetchData()
   }
 
   const isExpensePaid = (expenseId: string): boolean => {

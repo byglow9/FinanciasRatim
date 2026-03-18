@@ -70,8 +70,11 @@ export function FixedExpenseForm({
         })
       } else {
         reset({
-          person: currentPerson,
+          name: '',
+          amount: undefined,
           dueDay: 1,
+          category: '',
+          person: currentPerson,
         })
       }
     }

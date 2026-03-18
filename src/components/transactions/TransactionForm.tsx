@@ -71,6 +71,9 @@ export function TransactionForm({
       } else {
         reset({
           type: 'saida',
+          amount: undefined,
+          description: '',
+          category: '',
           date: format(new Date(), 'yyyy-MM-dd'),
         })
       }

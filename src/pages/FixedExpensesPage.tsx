@@ -64,7 +64,10 @@ export function FixedExpensesPage() {
             onChange={setSelectedMonth}
           />
         </div>
-        <Button size="sm" onClick={() => setFormOpen(true)} className="shrink-0">
+        <Button size="sm" onClick={() => {
+          setEditingExpense(null)
+          setFormOpen(true)
+        }} className="shrink-0">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline sm:ml-1">Nova</span>
         </Button>

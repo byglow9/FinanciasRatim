@@ -15,7 +15,8 @@
       "Bash(grep:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:dev.to)",
-      "Bash(curl -I https://financias-ratimbum.web.app/)"
+      "Bash(curl -I https://financias-ratimbum.web.app/)",
+      "Bash(git log:*)"
     ]
   }
 }

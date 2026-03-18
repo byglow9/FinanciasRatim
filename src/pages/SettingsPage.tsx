@@ -85,7 +85,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 pb-20 md:pb-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 bg-primary/10 rounded-lg">
@@ -268,26 +268,24 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Botoes de acao - fixo no mobile */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t md:relative md:p-0 md:bg-transparent md:border-0">
-        <div className="flex gap-3 max-w-screen-xl mx-auto">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 h-11"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar'}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={signOut}
-            className="h-11 px-4"
-          >
-            <LogOut className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Sair</span>
-          </Button>
-        </div>
+      {/* Botoes de acao */}
+      <div className="flex gap-3">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 h-11"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar'}
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={signOut}
+          className="h-11 px-4"
+        >
+          <LogOut className="h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">Sair</span>
+        </Button>
       </div>
     </div>
   )

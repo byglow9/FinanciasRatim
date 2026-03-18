@@ -61,7 +61,9 @@ export function CalendarPage() {
         sav
           .filter((s) => isSameMonth(s.date, selectedMonth) && s.person === person)
       )
-      setContributions(contrib)
+      // Filtrar contribuições: apenas de metas que existem E são do perfil atual
+      const goalIds = new Set(g.map(goal => goal.id))
+      setContributions(contrib.filter(c => goalIds.has(c.goalId)))
       setGoals(g)
     }).finally(() => setLoading(false))
   }, [selectedMonth, person])

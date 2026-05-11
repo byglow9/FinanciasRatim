@@ -11,7 +11,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, Note } from '@/types'
 import { formatCurrency, formatTime } from '@/lib/utils'
-import { PiggyBank, Target, StickyNote } from 'lucide-react'
+import { PiggyBank, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DayEvent {
@@ -20,6 +20,15 @@ interface DayEvent {
   amount?: number
   net?: number
   paid?: boolean
+  noteColor?: Note['color']
+}
+
+const NOTE_MINI_BG: Record<NonNullable<Note['color']>, string> = {
+  yellow: 'bg-yellow-300',
+  blue:   'bg-cyan-300',
+  green:  'bg-lime-300',
+  pink:   'bg-fuchsia-400',
+  purple: 'bg-violet-300',
 }
 
 interface MonthCalendarProps {
@@ -103,7 +112,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
     // Notes
     const dayNotes = notes.filter((n) => n.date && isSameDay(n.date, day))
     for (const note of dayNotes) {
-      events.push({ type: 'note', label: note.title })
+      events.push({ type: 'note', label: note.title, noteColor: note.color })
     }
 
     return events
@@ -149,7 +158,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               key={idx}
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
-                'min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
+                'relative min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
                 inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
                 isSelected && 'ring-2 ring-primary',
                 'hover:bg-muted/50'
@@ -184,9 +193,6 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                 )}
                 {goalEvent && (
                   <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-400" />
-                )}
-                {noteEvents.length > 0 && (
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-blue-400" />
                 )}
               </div>
 
@@ -241,19 +247,26 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                   </div>
                 )}
 
-                {/* Note badges */}
-                {noteEvents.slice(0, 1).map((ne, i) => (
-                  <div key={i} className="flex items-center gap-0.5 text-[10px] text-blue-600">
-                    <StickyNote className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{ne.label}</span>
-                  </div>
-                ))}
-                {noteEvents.length > 1 && (
-                  <div className="text-[10px] text-muted-foreground">
-                    +{noteEvents.length - 1} nota{noteEvents.length - 1 > 1 ? 's' : ''}
-                  </div>
-                )}
               </div>
+
+              {/* Mini post-its no canto inferior direito */}
+              {noteEvents.length > 0 && (
+                <div className="absolute -top-1 -right-1 flex gap-0.5 z-10">
+                  {noteEvents.slice(0, 2).map((ne, i) => (
+                    <div
+                      key={i}
+                      title={ne.label}
+                      style={{ transform: `rotate(${i === 0 ? '8deg' : '14deg'})` }}
+                      className={cn('w-4 h-4 sm:w-5 sm:h-5 relative shadow-md', NOTE_MINI_BG[ne.noteColor ?? 'yellow'])}
+                    >
+                      <div style={{ position:'absolute', bottom:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 0 4px 4px', borderColor:'transparent transparent rgba(0,0,0,0.25) transparent' }} />
+                    </div>
+                  ))}
+                  {noteEvents.length > 2 && (
+                    <span className="text-[8px] text-muted-foreground self-end leading-none">+{noteEvents.length - 2}</span>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}

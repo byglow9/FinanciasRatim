@@ -1,16 +1,32 @@
 import { useState } from 'react'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { useArea } from '@/contexts/AreaContext'
 import { useNotes } from '@/hooks/useNotes'
 import { NoteCard } from '@/components/notes/NoteCard'
 import { NoteForm } from '@/components/notes/NoteForm'
 import { Button } from '@/components/ui/button'
-import { Plus, StickyNote } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog'
+import { Plus, StickyNote, Calendar, Pencil } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { Note, PersonType } from '@/types'
+
+const VIEW_BG: Record<Note['color'], string> = {
+  yellow: '!bg-yellow-300',
+  blue:   '!bg-cyan-300',
+  green:  '!bg-lime-300',
+  pink:   '!bg-fuchsia-400',
+  purple: '!bg-violet-300',
+}
 
 export function NotasPage() {
   const { currentArea } = useArea()
   const [formOpen, setFormOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
+  const [viewingNote, setViewingNote] = useState<Note | null>(null)
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : (currentArea as PersonType)
   const { notes, loading, error, add, update, remove } = useNotes(person)
@@ -25,6 +41,7 @@ export function NotasPage() {
   }
 
   const handleEdit = (note: Note) => {
+    setViewingNote(null)
     setEditingNote(note)
     setFormOpen(true)
   }
@@ -81,10 +98,62 @@ export function NotasPage() {
               note={note}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onView={setViewingNote}
             />
           ))}
         </div>
       )}
+
+      {/* Modal de visualização */}
+      <Dialog open={!!viewingNote} onOpenChange={(open) => !open && setViewingNote(null)}>
+        <DialogContent className={cn('p-0 overflow-hidden max-w-sm border-0 shadow-xl rounded-sm', viewingNote && VIEW_BG[viewingNote.color])}>
+          {viewingNote && (
+            <div className="flex flex-col min-h-[280px] p-6 relative">
+              {/* Canto dobrado */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 0,
+                  height: 0,
+                  borderStyle: 'solid',
+                  borderWidth: '0 0 28px 28px',
+                  borderColor: 'transparent transparent rgba(0,0,0,0.18) transparent',
+                }}
+              />
+
+              <h2 className="font-bold text-lg text-gray-800 leading-tight mb-3 pr-2">
+                {viewingNote.title}
+              </h2>
+              <p className="text-gray-800 whitespace-pre-wrap leading-relaxed flex-1 text-sm">
+                {viewingNote.content}
+              </p>
+
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-black/10">
+                {viewingNote.date ? (
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-gray-600" />
+                    <span className="text-xs text-gray-600">
+                      {format(viewingNote.date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </span>
+                  </div>
+                ) : <span />}
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 hover:bg-black/10 text-gray-700"
+                  onClick={() => handleEdit(viewingNote)}
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1" />
+                  Editar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <NoteForm
         key={editingNote?.id ?? 'new'}

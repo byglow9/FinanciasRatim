@@ -28,10 +28,10 @@ type NoteFormData = z.infer<typeof noteSchema>
 
 const NOTE_COLORS: { value: Note['color']; bg: string }[] = [
   { value: 'yellow', bg: 'bg-yellow-300' },
-  { value: 'blue', bg: 'bg-blue-300' },
-  { value: 'green', bg: 'bg-green-300' },
-  { value: 'pink', bg: 'bg-pink-300' },
-  { value: 'purple', bg: 'bg-purple-300' },
+  { value: 'blue',   bg: 'bg-cyan-300'   },
+  { value: 'green',  bg: 'bg-lime-300'   },
+  { value: 'pink',   bg: 'bg-fuchsia-400'},
+  { value: 'purple', bg: 'bg-violet-300' },
 ]
 
 interface NoteFormProps {

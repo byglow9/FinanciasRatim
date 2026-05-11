@@ -55,7 +55,7 @@ export function CalendarPage() {
       getSavingsTransactions(),
       getContributionsForMonth(selectedMonth),
       getGoals(person),
-      getNotes(person),
+      getNotes(person).catch(() => [] as Note[]),
     ]).then(([tx, fe, pay, sav, contrib, g, n]) => {
       setTransactions(tx)
       setFixedExpenses(fe)

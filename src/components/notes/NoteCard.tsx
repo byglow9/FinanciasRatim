@@ -26,7 +26,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
         COLOR_CLASSES[note.color]
       )}
     >
-      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onEdit(note)}
           className="p-1 rounded hover:bg-black/10 transition-colors"

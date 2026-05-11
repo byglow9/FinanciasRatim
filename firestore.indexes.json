@@ -50,6 +50,14 @@
         { "fieldPath": "isActive", "order": "ASCENDING" },
         { "fieldPath": "dueDay", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "person", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

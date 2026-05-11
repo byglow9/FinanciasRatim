@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,6 +48,7 @@ export function FixedExpenseForm({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FixedExpenseFormData>({
     resolver: zodResolver(fixedExpenseSchema),
@@ -66,6 +68,12 @@ export function FixedExpenseForm({
           person: currentPerson,
         },
   })
+
+  useEffect(() => {
+    if (!initialData) {
+      setValue('person', currentPerson)
+    }
+  }, [currentPerson, initialData, setValue])
 
   const handleFormSubmit = async (data: FixedExpenseFormData) => {
     await onSubmit({

@@ -95,6 +95,16 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
   { name: 'Outros', isDefault: true, color: '#64748b' },
 ]
 
+export interface Note {
+  id: string
+  person: PersonType
+  title: string
+  content: string
+  color: 'yellow' | 'blue' | 'green' | 'pink' | 'purple'
+  date?: Date
+  createdAt: Date
+}
+
 export const DEFAULT_SETTINGS: Omit<Settings, 'id'> = {
   tabNames: {
     area1: 'Nirigue',

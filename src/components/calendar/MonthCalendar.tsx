@@ -9,13 +9,13 @@ import {
   format,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal } from '@/types'
+import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, Note } from '@/types'
 import { formatCurrency, formatTime } from '@/lib/utils'
-import { PiggyBank, Target } from 'lucide-react'
+import { PiggyBank, Target, StickyNote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DayEvent {
-  type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings' | 'goal'
+  type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings' | 'goal' | 'note'
   label: string
   amount?: number
   net?: number
@@ -30,11 +30,12 @@ interface MonthCalendarProps {
   savings: SavingsTransaction[]
   contributions: GoalContribution[]
   goals: Goal[]
+  notes?: Note[]
 }
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals }: MonthCalendarProps) {
+export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals, notes = [] }: MonthCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
   // Build 42-cell grid starting from Monday of the first week of the month
@@ -99,6 +100,12 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
       events.push({ type: 'goal', label: 'Metas', amount: total })
     }
 
+    // Notes
+    const dayNotes = notes.filter((n) => n.date && isSameDay(n.date, day))
+    for (const note of dayNotes) {
+      events.push({ type: 'note', label: note.title })
+    }
+
     return events
   }
 
@@ -109,7 +116,8 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
     const dayFixed = fixedExpenses.filter((fe) => fe.dueDay === dayNum)
     const daySavings = savings.filter((s) => isSameDay(s.date, day))
     const dayContribs = contributions.filter((c) => isSameDay(c.date, day))
-    return { dayTx, dayFixed, daySavings, dayContribs }
+    const dayNotes = notes.filter((n) => n.date && isSameDay(n.date, day))
+    return { dayTx, dayFixed, daySavings, dayContribs, dayNotes }
   }
 
   return (
@@ -134,6 +142,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
           const fixedEvents = events.filter((e) => e.type === 'fixed')
           const savingsEvent = events.find((e) => e.type === 'savings')
           const goalEvent = events.find((e) => e.type === 'goal')
+          const noteEvents = events.filter((e) => e.type === 'note')
 
           return (
             <div
@@ -175,6 +184,9 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                 )}
                 {goalEvent && (
                   <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-400" />
+                )}
+                {noteEvents.length > 0 && (
+                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-blue-400" />
                 )}
               </div>
 
@@ -228,6 +240,19 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                     <span className="truncate">+{goalEvent.amount !== undefined && formatCurrency(goalEvent.amount)}</span>
                   </div>
                 )}
+
+                {/* Note badges */}
+                {noteEvents.slice(0, 1).map((ne, i) => (
+                  <div key={i} className="flex items-center gap-0.5 text-[10px] text-blue-600">
+                    <StickyNote className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{ne.label}</span>
+                  </div>
+                ))}
+                {noteEvents.length > 1 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    +{noteEvents.length - 1} nota{noteEvents.length - 1 > 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -236,9 +261,9 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
 
       {/* Day detail panel */}
       {selectedDay && (() => {
-        const { dayTx, dayFixed, daySavings, dayContribs } = getDetailForDay(selectedDay)
+        const { dayTx, dayFixed, daySavings, dayContribs, dayNotes } = getDetailForDay(selectedDay)
         const dayNum = getDate(selectedDay)
-        const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0
+        const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0 || dayNotes.length > 0
         return (
           <div className="border rounded-lg p-4 space-y-4 bg-card">
             <h3 className="font-semibold">
@@ -355,6 +380,20 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                       <span className="font-medium text-purple-600">
                         +{formatCurrency(c.amount)}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {dayNotes.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Anotações</p>
+                <div className="space-y-2">
+                  {dayNotes.map((n) => (
+                    <div key={n.id} className="border-l-2 border-blue-400 pl-3 py-1">
+                      <p className="font-medium text-sm">{n.title}</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.content}</p>
                     </div>
                   ))}
                 </div>

@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { isSameMonth } from 'date-fns'
-import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, PersonType } from '@/types'
+import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, Note, PersonType } from '@/types'
 import { getTransactions } from '@/services/transactions.service'
 import { getFixedExpenses, getPaymentsForMonth } from '@/services/fixedExpenses.service'
 import { getSavingsTransactions } from '@/services/savings.service'
 import { getContributionsForMonth } from '@/services/goalContributions.service'
 import { getGoals } from '@/services/goals.service'
+import { getNotes } from '@/services/notes.service'
 import { MonthSelector } from '@/components/shared/MonthSelector'
 import { MonthCalendar } from '@/components/calendar/MonthCalendar'
 import { useArea } from '@/contexts/AreaContext'
 import { Button } from '@/components/ui/button'
-import { Info, PiggyBank, Target } from 'lucide-react'
+import { Info, PiggyBank, Target, StickyNote } from 'lucide-react'
 
 export function CalendarPage() {
   const { currentArea, settings } = useArea()
@@ -21,6 +22,7 @@ export function CalendarPage() {
   const [savings, setSavings] = useState<SavingsTransaction[]>([])
   const [contributions, setContributions] = useState<GoalContribution[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [showLegend, setShowLegend] = useState(false)
   const legendRef = useRef<HTMLDivElement>(null)
@@ -53,7 +55,8 @@ export function CalendarPage() {
       getSavingsTransactions(),
       getContributionsForMonth(selectedMonth),
       getGoals(person),
-    ]).then(([tx, fe, pay, sav, contrib, g]) => {
+      getNotes(person),
+    ]).then(([tx, fe, pay, sav, contrib, g, n]) => {
       setTransactions(tx)
       setFixedExpenses(fe)
       setPayments(pay)
@@ -65,6 +68,7 @@ export function CalendarPage() {
       const goalIds = new Set(g.map(goal => goal.id))
       setContributions(contrib.filter(c => goalIds.has(c.goalId)))
       setGoals(g)
+      setNotes((n as Note[]).filter((note) => note.date && isSameMonth(note.date, selectedMonth)))
     }).finally(() => setLoading(false))
   }, [selectedMonth, person])
 
@@ -124,6 +128,10 @@ export function CalendarPage() {
                     <Target className="w-3 h-3 text-purple-500 shrink-0" />
                     <span>Metas</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <StickyNote className="w-3 h-3 text-blue-500 shrink-0" />
+                    <span>Anotações</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -144,6 +152,7 @@ export function CalendarPage() {
           savings={savings}
           contributions={contributions}
           goals={goals}
+          notes={notes}
         />
       )}
     </div>

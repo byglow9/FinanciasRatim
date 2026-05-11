@@ -13,6 +13,7 @@ const navItems = [
   { href: '/calendario', label: 'Calendario' },
   { href: '/metas', label: 'Metas' },
   { href: '/relatorios', label: 'Relatorios' },
+  { href: '/anotacoes', label: 'Anotações' },
 ]
 
 export function Header() {

@@ -1,10 +1,18 @@
 import { useState } from 'react'
+import { format, isToday, isYesterday } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import type { Transaction } from '@/types'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+function formatDayHeader(date: Date): string {
+  if (isToday(date)) return 'Hoje'
+  if (isYesterday(date)) return 'Ontem'
+  return format(date, "EEEE, d 'de' MMMM", { locale: ptBR })
+}
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -48,9 +56,29 @@ export function TransactionList({
     )
   }
 
+  // Agrupa transações por dia
+  const groups: { dateKey: string; date: Date; items: Transaction[] }[] = []
+  for (const t of transactions) {
+    const key = format(t.date, 'yyyy-MM-dd')
+    const existing = groups.find((g) => g.dateKey === key)
+    if (existing) {
+      existing.items.push(t)
+    } else {
+      groups.push({ dateKey: key, date: t.date, items: [t] })
+    }
+  }
+
   return (
-    <div className="space-y-2">
-      {transactions.map((transaction) => (
+    <div className="space-y-4">
+      {groups.map((group) => (
+        <div key={group.dateKey} className="space-y-2">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-muted-foreground capitalize">
+              {formatDayHeader(group.date)}
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          {group.items.map((transaction) => (
         <div
           key={transaction.id}
           className="p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
@@ -172,6 +200,8 @@ export function TransactionList({
               </div>
             </div>
           </div>
+        </div>
+          ))}
         </div>
       ))}
     </div>

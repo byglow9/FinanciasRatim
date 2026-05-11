@@ -7,6 +7,7 @@ import {
   Calendar,
   Target,
   BarChart3,
+  StickyNote,
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { href: '/calendario', label: 'Calendário', icon: Calendar },
   { href: '/metas', label: 'Metas', icon: Target },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+  { href: '/anotacoes', label: 'Notas', icon: StickyNote },
 ]
 
 export function BottomNav() {
@@ -35,7 +37,7 @@ export function BottomNav() {
           transform: `translateX(${validIndex * 100}%)`
         }}
       />
-      <div className="grid grid-cols-6">
+      <div className="grid grid-cols-7">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = location.pathname === item.href

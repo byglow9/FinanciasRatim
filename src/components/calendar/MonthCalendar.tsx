@@ -5,6 +5,7 @@ import {
   addDays,
   isSameMonth,
   isSameDay,
+  isToday,
   getDate,
   format,
 } from 'date-fns'
@@ -145,6 +146,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
         {cells.map((day, idx) => {
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
+          const isCurrentDay = isToday(day)
           const events = getEventsForDay(day, inMonth)
           const entradaEvent = events.find((e) => e.type === 'transaction-entrada')
           const saidaEvent = events.find((e) => e.type === 'transaction-saida')
@@ -160,15 +162,25 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               className={cn(
                 'relative min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
                 inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
-                isSelected && 'ring-2 ring-primary',
+                isCurrentDay && inMonth && 'border-primary/60 bg-primary/[0.08]',
+                isSelected && 'border-primary/35 bg-primary/[0.05] ring-1 ring-primary/15',
                 'hover:bg-muted/50'
               )}
             >
-              <div className={cn(
-                'text-xs font-medium mb-1',
-                inMonth ? 'text-foreground' : 'text-muted-foreground/60'
-              )}>
-                {format(day, 'd')}
+              <div className="mb-1 flex items-start justify-between gap-1">
+                <span className={cn(
+                  'text-xs font-semibold leading-none',
+                  inMonth ? 'text-foreground' : 'text-muted-foreground/60',
+                  isCurrentDay && inMonth && 'text-primary',
+                  isSelected && !isCurrentDay && 'text-primary'
+                )}>
+                  {format(day, 'd')}
+                </span>
+                {isCurrentDay && inMonth && (
+                  <span className="hidden text-[9px] font-medium uppercase leading-none text-primary/70 sm:inline">
+                    Hoje
+                  </span>
+                )}
               </div>
 
               {/* Mobile: colored dots */}
@@ -278,10 +290,20 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
         const dayNum = getDate(selectedDay)
         const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0 || dayNotes.length > 0
         return (
-          <div className="border rounded-lg p-4 space-y-4 bg-card">
-            <h3 className="font-semibold">
-              {format(selectedDay, "d 'de' MMMM", { locale: ptBR })}
-            </h3>
+          <div className={cn(
+            'border rounded-lg p-4 space-y-4 bg-card',
+            isToday(selectedDay) && 'border-primary/35 bg-primary/[0.04]'
+          )}>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">
+                {format(selectedDay, "d 'de' MMMM", { locale: ptBR })}
+              </h3>
+              {isToday(selectedDay) && (
+                <span className="text-xs font-medium text-primary">
+                  Hoje
+                </span>
+              )}
+            </div>
 
             {!hasAny && (
               <p className="text-sm text-muted-foreground">Nenhum evento neste dia.</p>

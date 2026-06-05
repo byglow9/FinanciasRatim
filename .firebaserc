@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "financias-ratimbum"
+    "default": "financias-ratimbum",
+    "ratimbum": "financias-ratimbum",
+    "amigo": "financias-xrd"
   }
 }

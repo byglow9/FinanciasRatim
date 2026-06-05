@@ -10,19 +10,23 @@ import { PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Usuario obrigatorio'),
-  password: z.string().min(1, 'Senha obrigatoria'),
+  email: z.string().min(1, 'E-mail obrigatorio').email('E-mail invalido'),
+  password: z.string().min(6, 'A senha precisa ter ao menos 6 caracteres'),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
 
+type Mode = 'login' | 'signup'
+
 export function LoginForm() {
-  const { signIn } = useAuth()
+  const { signIn, signUp } = useAuth()
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>('login')
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -31,11 +35,23 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError(null)
     try {
-      await signIn(data.username, data.password)
+      if (mode === 'signup') {
+        await signUp(data.email, data.password)
+      } else {
+        await signIn(data.email, data.password)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login')
     }
   }
+
+  const toggleMode = () => {
+    setError(null)
+    reset()
+    setMode((m) => (m === 'login' ? 'signup' : 'login'))
+  }
+
+  const isSignup = mode === 'signup'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-4">
@@ -45,21 +61,23 @@ export function LoginForm() {
             <PiggyBank className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Financias Ratimbum</CardTitle>
-          <CardDescription>Entre para gerenciar suas financas</CardDescription>
+          <CardDescription>
+            {isSignup ? 'Crie sua conta para comecar' : 'Entre para gerenciar suas financas'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuario</Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="seu usuario"
-                autoComplete="username"
-                {...register('username')}
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                autoComplete="email"
+                {...register('email')}
               />
-              {errors.username && (
-                <p className="text-sm text-destructive">{errors.username.message}</p>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -69,7 +87,7 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 placeholder="••••••"
-                autoComplete="current-password"
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
                 {...register('password')}
               />
               {errors.password && (
@@ -84,9 +102,26 @@ export function LoginForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
+              {isSubmitting
+                ? isSignup
+                  ? 'Criando conta...'
+                  : 'Entrando...'
+                : isSignup
+                  ? 'Criar conta'
+                  : 'Entrar'}
             </Button>
           </form>
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            {isSignup ? 'Ja tem uma conta?' : 'Nao tem conta?'}{' '}
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="font-medium text-primary hover:underline"
+            >
+              {isSignup ? 'Entrar' : 'Criar conta'}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

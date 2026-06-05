@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:amigo": "vite --mode amigo",
     "build": "tsc -b && vite build",
+    "build:amigo": "tsc -b && vite build --mode amigo",
     "lint": "eslint .",
     "preview": "vite preview"
   },

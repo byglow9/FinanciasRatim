@@ -14,15 +14,39 @@ export interface LocalUser {
 interface AuthContextType {
   user: LocalUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (credential: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
+const VALID_USERNAME = import.meta.env.VITE_APP_USERNAME || 'ratimbum'
+const VALID_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'ratimbum123'
+const LEGACY_AUTH_KEY = 'financias_legacy_user'
+const OLD_LEGACY_AUTH_KEY = 'financias_auth'
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+function getStoredLegacyUser(): LocalUser | null {
+  const username = localStorage.getItem(LEGACY_AUTH_KEY)
+  if (username) return { username }
+
+  const oldStored = localStorage.getItem(OLD_LEGACY_AUTH_KEY)
+  if (!oldStored) return null
+
+  try {
+    const parsed = JSON.parse(oldStored) as Partial<LocalUser>
+    return parsed.username ? { username: parsed.username } : null
+  } catch {
+    return null
+  }
+}
 
 function mapAuthError(code: string): string {
   switch (code) {
+    case 'auth/admin-restricted-operation':
+    case 'auth/operation-not-allowed':
+    case 'auth/configuration-not-found':
+      return 'Login por e-mail nao habilitado neste Firebase'
     case 'auth/invalid-email':
       return 'E-mail invalido'
     case 'auth/user-not-found':
@@ -55,15 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser ? { username: firebaseUser.email ?? '' } : null)
+      if (!firebaseUser) {
+        setUser(getStoredLegacyUser())
+        setLoading(false)
+        return
+      }
+
+      setUser({ username: firebaseUser.email ?? '' })
       setLoading(false)
     })
     return unsubscribe
   }, [])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (credential: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const normalizedCredential = credential.trim()
+
+      if (!normalizedCredential.includes('@')) {
+        if (normalizedCredential !== VALID_USERNAME || password !== VALID_PASSWORD) {
+          throw new Error('Usuario ou senha incorretos')
+        }
+
+        localStorage.setItem(LEGACY_AUTH_KEY, normalizedCredential)
+        localStorage.setItem(OLD_LEGACY_AUTH_KEY, JSON.stringify({ username: normalizedCredential }))
+        setUser({ username: normalizedCredential })
+        return
+      }
+
+      localStorage.removeItem(LEGACY_AUTH_KEY)
+      localStorage.removeItem(OLD_LEGACY_AUTH_KEY)
+      await signInWithEmailAndPassword(auth, normalizedCredential, password)
     } catch (err) {
       throw toError(err)
     }
@@ -78,7 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    localStorage.removeItem(LEGACY_AUTH_KEY)
+    localStorage.removeItem(OLD_LEGACY_AUTH_KEY)
     await firebaseSignOut(auth)
+    setUser(null)
   }
 
   return (

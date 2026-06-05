@@ -6,7 +6,7 @@ import { TransactionList } from '@/components/transactions/TransactionList'
 import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, Wallet, Landmark } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import type { Transaction, PersonType } from '@/types'
 
@@ -66,7 +66,7 @@ export function TransactionsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Entradas</CardTitle>
@@ -104,6 +104,23 @@ export function TransactionsPage() {
               )}
             >
               {formatCurrency(totals.saldo)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
+            <CardTitle className="text-sm font-medium">Saldo Total</CardTitle>
+            <Landmark className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
+            <div
+              className={cn(
+                'text-sm sm:text-xl font-bold',
+                totals.saldoAcumulado >= 0 ? 'text-purple-600' : 'text-red-600'
+              )}
+            >
+              {formatCurrency(totals.saldoAcumulado)}
             </div>
           </CardContent>
         </Card>

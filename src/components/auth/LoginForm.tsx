@@ -10,8 +10,8 @@ import { PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'E-mail obrigatorio').email('E-mail invalido'),
-  password: z.string().min(6, 'A senha precisa ter ao menos 6 caracteres'),
+  credential: z.string().min(1, 'Usuario obrigatorio'),
+  password: z.string().min(1, 'Senha obrigatoria'),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -36,9 +36,16 @@ export function LoginForm() {
     setError(null)
     try {
       if (mode === 'signup') {
-        await signUp(data.email, data.password)
+        const emailResult = z.string().email().safeParse(data.credential)
+        if (!emailResult.success) {
+          throw new Error('Use um e-mail valido para criar conta')
+        }
+        if (data.password.length < 6) {
+          throw new Error('A senha precisa ter ao menos 6 caracteres')
+        }
+        await signUp(emailResult.data, data.password)
       } else {
-        await signIn(data.email, data.password)
+        await signIn(data.credential, data.password)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login')
@@ -68,16 +75,16 @@ export function LoginForm() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="credential">{isSignup ? 'E-mail' : 'Usuario ou e-mail'}</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                autoComplete="email"
-                {...register('email')}
+                id="credential"
+                type={isSignup ? 'email' : 'text'}
+                placeholder={isSignup ? 'seu@email.com' : 'seu usuario'}
+                autoComplete={isSignup ? 'email' : 'username'}
+                {...register('credential')}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+              {errors.credential && (
+                <p className="text-sm text-destructive">{errors.credential.message}</p>
               )}
             </div>
 

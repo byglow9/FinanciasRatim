@@ -12,7 +12,8 @@ import {
 import { ptBR } from 'date-fns/locale'
 import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, Note } from '@/types'
 import { formatCurrency, formatTime } from '@/lib/utils'
-import { PiggyBank, Target } from 'lucide-react'
+import { PiggyBank, Target, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface DayEvent {
@@ -32,6 +33,14 @@ const NOTE_MINI_BG: Record<NonNullable<Note['color']>, string> = {
   purple: 'bg-violet-300',
 }
 
+const NOTE_BORDER: Record<NonNullable<Note['color']>, string> = {
+  yellow: 'border-yellow-400',
+  blue:   'border-cyan-400',
+  green:  'border-lime-400',
+  pink:   'border-fuchsia-500',
+  purple: 'border-violet-400',
+}
+
 interface MonthCalendarProps {
   month: Date
   transactions: Transaction[]
@@ -41,11 +50,14 @@ interface MonthCalendarProps {
   contributions: GoalContribution[]
   goals: Goal[]
   notes?: Note[]
+  onAddNote: (date: Date) => void
+  onEditNote: (note: Note) => void
+  onDeleteNote: (note: Note) => void
 }
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals, notes = [] }: MonthCalendarProps) {
+export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals, notes = [], onAddNote, onEditNote, onDeleteNote }: MonthCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
   // Build 42-cell grid starting from Monday of the first week of the month
@@ -155,12 +167,30 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
           const goalEvent = events.find((e) => e.type === 'goal')
           const noteEvents = events.filter((e) => e.type === 'note')
 
+          // Badges compactas (mesmo padrão visual do AgendaCalendar): pill sólida colorida
+          const badges: { key: string; label: string; color: string }[] = []
+          if (entradaEvent?.amount !== undefined) {
+            badges.push({ key: 'entrada', label: `+${formatCurrency(entradaEvent.amount)}`, color: '#22c55e' })
+          }
+          if (saidaEvent?.amount !== undefined) {
+            badges.push({ key: 'saida', label: `-${formatCurrency(saidaEvent.amount)}`, color: '#ef4444' })
+          }
+          fixedEvents.forEach((fe, i) => {
+            badges.push({ key: `fixed-${i}`, label: `${fe.paid ? '✓ ' : ''}${fe.label}`, color: fe.paid ? '#22c55e' : '#f97316' })
+          })
+          if (savingsEvent?.net !== undefined) {
+            badges.push({ key: 'savings', label: formatCurrency(savingsEvent.net), color: '#ec4899' })
+          }
+          if (goalEvent?.amount !== undefined) {
+            badges.push({ key: 'goal', label: `+${formatCurrency(goalEvent.amount)}`, color: '#8b5cf6' })
+          }
+
           return (
             <div
               key={idx}
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
-                'relative min-h-[52px] sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors',
+                'relative aspect-square sm:aspect-auto sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors overflow-hidden',
                 inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
                 isCurrentDay && inMonth && 'border-primary/60 bg-primary/[0.08]',
                 isSelected && 'border-primary/35 bg-primary/[0.05] ring-1 ring-primary/15',
@@ -183,82 +213,23 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                 )}
               </div>
 
-              {/* Mobile: colored dots */}
-              <div className="flex flex-wrap gap-0.5 sm:hidden">
-                {entradaEvent && (
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-green-400" />
-                )}
-                {saidaEvent && (
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-red-400" />
-                )}
-                {fixedEvents.slice(0, 2).map((fe, i) => (
+              {/* Badges: pill compacta com a cor do tipo (igual ao AgendaCalendar) */}
+              <div className="space-y-0.5 leading-none">
+                {badges.slice(0, 2).map((b) => (
                   <div
-                    key={i}
-                    className={cn(
-                      'h-1.5 w-1.5 rounded-full shrink-0',
-                      fe.paid ? 'bg-green-400' : 'bg-orange-400'
-                    )}
-                  />
-                ))}
-                {savingsEvent && (
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-pink-400" />
-                )}
-                {goalEvent && (
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0 bg-purple-400" />
-                )}
-              </div>
-
-              {/* Desktop: text badges */}
-              <div className="hidden sm:block space-y-0.5">
-                {/* Entrada badge */}
-                {entradaEvent && entradaEvent.amount !== undefined && (
-                  <div className="text-[10px] rounded px-1 py-0.5 font-medium truncate bg-green-200 text-green-800">
-                    +{formatCurrency(entradaEvent.amount)}
-                  </div>
-                )}
-                {/* Saida badge */}
-                {saidaEvent && saidaEvent.amount !== undefined && (
-                  <div className="text-[10px] rounded px-1 py-0.5 font-medium truncate bg-red-200 text-red-800">
-                    -{formatCurrency(saidaEvent.amount)}
-                  </div>
-                )}
-
-                {/* Fixed expense badges */}
-                {fixedEvents.slice(0, 2).map((fe, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      'text-[10px] rounded px-1 py-0.5 truncate',
-                      fe.paid
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-orange-100 text-orange-700'
-                    )}
+                    key={b.key}
+                    className="text-[8px] sm:text-[10px] leading-tight px-1 py-px rounded truncate text-white font-medium"
+                    style={{ backgroundColor: b.color }}
+                    title={b.label}
                   >
-                    {fe.paid ? '✓ ' : ''}{fe.label}
+                    {b.label}
                   </div>
                 ))}
-                {fixedEvents.length > 2 && (
-                  <div className="text-[10px] text-muted-foreground">
-                    +{fixedEvents.length - 2} contas
+                {badges.length > 2 && (
+                  <div className="text-[8px] sm:text-[10px] text-muted-foreground leading-tight">
+                    +{badges.length - 2}
                   </div>
                 )}
-
-                {/* Savings icon */}
-                {savingsEvent && (
-                  <div className="flex items-center gap-0.5 text-[10px] text-pink-600">
-                    <PiggyBank className="h-3 w-3" />
-                    <span className="truncate">{savingsEvent.net !== undefined && formatCurrency(savingsEvent.net)}</span>
-                  </div>
-                )}
-
-                {/* Goal contribution */}
-                {goalEvent && (
-                  <div className="flex items-center gap-0.5 text-[10px] text-purple-600">
-                    <Target className="h-3 w-3" />
-                    <span className="truncate">+{goalEvent.amount !== undefined && formatCurrency(goalEvent.amount)}</span>
-                  </div>
-                )}
-
               </div>
 
               {/* Mini post-its no canto inferior direito */}
@@ -288,7 +259,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
       {selectedDay && (() => {
         const { dayTx, dayFixed, daySavings, dayContribs, dayNotes } = getDetailForDay(selectedDay)
         const dayNum = getDate(selectedDay)
-        const hasAny = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0 || dayNotes.length > 0
+        const hasAnyFinance = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0
         return (
           <div className={cn(
             'border rounded-lg p-4 space-y-4 bg-card',
@@ -305,8 +276,8 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               )}
             </div>
 
-            {!hasAny && (
-              <p className="text-sm text-muted-foreground">Nenhum evento neste dia.</p>
+            {!hasAnyFinance && (
+              <p className="text-sm text-muted-foreground">Nenhum evento financeiro neste dia.</p>
             )}
 
             {dayTx.length > 0 && (() => {
@@ -421,19 +392,43 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               </div>
             )}
 
-            {dayNotes.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Anotações</p>
+            <div className={cn(dayNotes.length > 0 && hasAnyFinance && 'pt-2 border-t')}>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <p className="text-xs font-medium text-muted-foreground">Anotações</p>
+                {dayNotes.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => onAddNote(selectedDay)}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Nova nota
+                  </Button>
+                )}
+              </div>
+
+              {dayNotes.length === 0 ? (
+                <Button className="w-full h-12 text-base" onClick={() => onAddNote(selectedDay)}>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Nova nota
+                </Button>
+              ) : (
                 <div className="space-y-2">
                   {dayNotes.map((n) => (
-                    <div key={n.id} className="border-l-2 border-blue-400 pl-3 py-1">
-                      <p className="font-medium text-sm">{n.title}</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.content}</p>
+                    <div key={n.id} className={cn('flex items-start justify-between gap-3 border-l-2 pl-3 py-1', NOTE_BORDER[n.color])}>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{n.title}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.content}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditNote(n)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDeleteNote(n)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )
       })()}

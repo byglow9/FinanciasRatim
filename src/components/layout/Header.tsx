@@ -7,13 +7,12 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 const navItems = [
+  { href: '/calendario', label: 'Calendario' },
   { href: '/', label: 'Dashboard' },
   { href: '/transacoes', label: 'Transacoes' },
   { href: '/contas-fixas', label: 'Contas Fixas' },
-  { href: '/calendario', label: 'Calendario' },
   { href: '/metas', label: 'Metas' },
   { href: '/relatorios', label: 'Relatorios' },
-  { href: '/anotacoes', label: 'Anotações' },
 ]
 
 export function Header() {

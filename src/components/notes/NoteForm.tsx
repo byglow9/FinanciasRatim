@@ -20,7 +20,7 @@ const noteSchema = z.object({
   title: z.string().min(1, 'Título obrigatório'),
   content: z.string().min(1, 'Conteúdo obrigatório'),
   color: z.enum(['yellow', 'blue', 'green', 'pink', 'purple']),
-  date: z.string().optional(),
+  date: z.string().min(1, 'Data obrigatória'),
   person: z.enum(['ele', 'ela']),
 })
 
@@ -39,10 +39,11 @@ interface NoteFormProps {
   onOpenChange: (open: boolean) => void
   onSubmit: (data: Omit<Note, 'id' | 'createdAt'>) => Promise<void>
   currentPerson: PersonType
+  defaultDate: Date
   initialData?: Note
 }
 
-export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, initialData }: NoteFormProps) {
+export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, defaultDate, initialData }: NoteFormProps) {
   const {
     register,
     handleSubmit,
@@ -57,14 +58,14 @@ export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, initialD
           title: initialData.title,
           content: initialData.content,
           color: initialData.color,
-          date: initialData.date ? format(initialData.date, 'yyyy-MM-dd') : '',
+          date: initialData.date ? format(initialData.date, 'yyyy-MM-dd') : format(defaultDate, 'yyyy-MM-dd'),
           person: initialData.person,
         }
       : {
           title: '',
           content: '',
           color: 'yellow',
-          date: '',
+          date: format(defaultDate, 'yyyy-MM-dd'),
           person: currentPerson,
         },
   })
@@ -75,6 +76,12 @@ export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, initialD
     }
   }, [currentPerson, initialData, setValue])
 
+  useEffect(() => {
+    if (!initialData) {
+      setValue('date', format(defaultDate, 'yyyy-MM-dd'))
+    }
+  }, [defaultDate, initialData, setValue])
+
   const selectedColor = watch('color')
 
   const handleFormSubmit = async (data: NoteFormData) => {
@@ -83,7 +90,7 @@ export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, initialD
       content: data.content,
       color: data.color,
       person: data.person,
-      date: data.date && data.date.length > 0 ? new Date(data.date + 'T12:00:00') : undefined,
+      date: new Date(data.date + 'T12:00:00'),
     })
     reset()
     onOpenChange(false)
@@ -137,11 +144,11 @@ export function NoteForm({ open, onOpenChange, onSubmit, currentPerson, initialD
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="note-date">Data (opcional)</Label>
+            <Label htmlFor="note-date">Data</Label>
             <Input id="note-date" type="date" {...register('date')} />
-            <p className="text-xs text-muted-foreground">
-              Se preenchida, aparecerá no calendário
-            </p>
+            {errors.date && (
+              <p className="text-sm text-destructive">{errors.date.message}</p>
+            )}
           </div>
 
           <DialogFooter>

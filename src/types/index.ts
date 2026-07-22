@@ -105,6 +105,30 @@ export interface Note {
   createdAt: Date
 }
 
+export interface EventCategory {
+  id: string
+  name: string
+  color: string // hex, ex: '#3b82f6'
+  createdAt: Date
+}
+
+export const DEFAULT_EVENT_CATEGORY_COLORS = [
+  '#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#22c55e',
+  '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#6366f1',
+]
+
+export interface AgendaEvent {
+  id: string
+  person: PersonType | 'conjunto'
+  title: string
+  date: Date
+  time?: string // 'HH:mm'
+  location?: string
+  categoryId?: string
+  notes?: string
+  createdAt: Date
+}
+
 export const DEFAULT_SETTINGS: Omit<Settings, 'id'> = {
   tabNames: {
     area1: 'Nirigue',

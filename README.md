@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Finanças Ratimbum
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicativo de controle financeiro pessoal, construído com React 19, TypeScript, Vite e Firebase/Firestore. Permite acompanhar finanças de duas pessoas ("ele"/"ela") mais uma conta poupança compartilhada ("porquinho").
 
-Currently, two official plugins are available:
+## Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Transações**: registro de entradas e saídas por categoria
+- **Despesas fixas**: contas recorrentes com vencimento e controle de pagamento
+- **Poupança (porquinho)**: depósitos e saques compartilhados
+- **Metas**: acompanhamento de objetivos financeiros com contribuições
+- **Calendário e relatórios**: visualização de gastos e receitas ao longo do tempo
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 + TypeScript + Vite
+- Firebase/Firestore (com fallback mock via `localStorage` para desenvolvimento)
+- Tailwind CSS + componentes no padrão shadcn/ui
+- React Hook Form + Zod para formulários e validação
+- Recharts para gráficos, Lucide React para ícones
+- React Router para navegação, TanStack Query para dados assíncronos
 
-## Expanding the ESLint configuration
+## Como rodar
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Instale as dependências:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Copie o arquivo de variáveis de ambiente e preencha as chaves do Firebase:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.local.example .env.local
 ```
+
+Além das variáveis do Firebase, defina manualmente:
+
+- `VITE_USE_EMULATOR=true` — usa `localStorage` como mock em vez do Firebase
+- `VITE_APP_USERNAME` / `VITE_APP_PASSWORD` — credenciais de login (padrão: `ratimbum`/`ratimbum123`)
+
+Inicie o servidor de desenvolvimento:
+
+```bash
+npm run dev
+```
+
+Existe também um modo alternativo de ambiente (`amigo`):
+
+```bash
+npm run dev:amigo
+```
+
+## Scripts disponíveis
+
+```bash
+npm run dev        # Servidor de desenvolvimento (Vite)
+npm run dev:amigo  # Servidor de desenvolvimento no modo "amigo"
+npm run build       # Type-check com tsc e build de produção
+npm run build:amigo # Build de produção no modo "amigo"
+npm run lint         # Executa o ESLint
+npm run preview      # Preview do build de produção
+```
+
+## Estrutura do projeto
+
+```
+src/
+├── components/   # Componentes organizados por feature (auth, calendar, dashboard, ...)
+├── contexts/     # AuthContext e AreaContext
+├── hooks/        # Hooks de acesso a dados (loading/error + CRUD)
+├── lib/          # Utilitários, incluindo mockStorage (fallback localStorage)
+├── pages/        # Páginas da aplicação
+├── services/     # Operações com Firestore (com fallback mock)
+└── types/        # Tipos compartilhados
+```
+
+Mais detalhes sobre a arquitetura estão em `CLAUDE.md`.

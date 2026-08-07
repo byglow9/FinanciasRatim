@@ -8,8 +8,15 @@
     <link rel="icon" type="image/svg+xml" href="/piggy.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Financias Ratimbum</title>
-    <script type="module" crossorigin src="/assets/index-BdAPLRJ-.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-TS5IecF-.css">
+    <script>
+      try {
+        if (localStorage.getItem('financias_theme') === 'dark') {
+          document.documentElement.classList.add('dark')
+        }
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/assets/index-Dn8fk1ym.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BjD7HAWF.css">
   </head>
   <body>
     <div id="root"></div>

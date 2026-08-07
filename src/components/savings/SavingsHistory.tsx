@@ -35,9 +35,9 @@ export function SavingsHistory({ transactions, onDelete, loading }: SavingsHisto
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {t.type === 'deposito' ? (
-              <ArrowDownCircle className="h-5 w-5 text-green-600 shrink-0" />
+              <ArrowDownCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
             ) : (
-              <ArrowUpCircle className="h-5 w-5 text-red-600 shrink-0" />
+              <ArrowUpCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
             )}
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{t.description}</p>
@@ -50,7 +50,7 @@ export function SavingsHistory({ transactions, onDelete, loading }: SavingsHisto
             <span
               className={cn(
                 'font-semibold text-sm',
-                t.type === 'deposito' ? 'text-green-600' : 'text-red-600'
+                t.type === 'deposito' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               )}
             >
               {t.type === 'deposito' ? '+' : '-'}{formatCurrency(t.amount)}

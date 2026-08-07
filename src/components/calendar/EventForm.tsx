@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -15,11 +15,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import type { AgendaEvent, EventCategory } from '@/types'
-import { DEFAULT_EVENT_CATEGORY_COLORS } from '@/types'
 import { useArea } from '@/contexts/AreaContext'
 import { useEventCategories } from '@/hooks/useEventCategories'
-import { cn } from '@/lib/utils'
-import { Plus } from 'lucide-react'
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Título obrigatório'),
@@ -43,11 +40,7 @@ interface EventFormProps {
 
 export function EventForm({ open, onOpenChange, onSubmit, defaultDate, initialData }: EventFormProps) {
   const { settings } = useArea()
-  const { categories, add: addCategory } = useEventCategories()
-
-  const [creatingCategory, setCreatingCategory] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_EVENT_CATEGORY_COLORS[0])
+  const { categories } = useEventCategories()
 
   const {
     register,
@@ -87,15 +80,6 @@ export function EventForm({ open, onOpenChange, onSubmit, defaultDate, initialDa
 
   const categoryId = watch('categoryId')
 
-  const handleCreateCategory = async () => {
-    const trimmed = newCategoryName.trim()
-    if (!trimmed) return
-    const id = await addCategory({ name: trimmed, color: newCategoryColor })
-    setValue('categoryId', id)
-    setNewCategoryName('')
-    setCreatingCategory(false)
-  }
-
   const handleFormSubmit = async (data: EventFormData) => {
     await onSubmit({
       title: data.title,
@@ -107,7 +91,6 @@ export function EventForm({ open, onOpenChange, onSubmit, defaultDate, initialDa
       person: data.person,
     })
     reset()
-    setCreatingCategory(false)
     onOpenChange(false)
   }
 
@@ -157,29 +140,17 @@ export function EventForm({ open, onOpenChange, onSubmit, defaultDate, initialDa
 
           <div className="space-y-2">
             <Label>Categoria</Label>
-            <div className="flex gap-2">
-              <Select
-                className="flex-1"
-                value={categoryId ?? ''}
-                onChange={(e) => setValue('categoryId', e.target.value)}
-              >
-                <option value="">Sem categoria</option>
-                {categories.map((cat: EventCategory) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 shrink-0"
-                onClick={() => setCreatingCategory((v) => !v)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+            <Select
+              value={categoryId ?? ''}
+              onChange={(e) => setValue('categoryId', e.target.value)}
+            >
+              <option value="">Sem categoria</option>
+              {categories.map((cat: EventCategory) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Select>
 
             {categoryId && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -188,39 +159,6 @@ export function EventForm({ open, onOpenChange, onSubmit, defaultDate, initialDa
                   style={{ backgroundColor: categories.find((c) => c.id === categoryId)?.color }}
                 />
                 {categories.find((c) => c.id === categoryId)?.name}
-              </div>
-            )}
-
-            {creatingCategory && (
-              <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-                <Input
-                  placeholder="Nome da categoria"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="h-9"
-                />
-                <div className="flex flex-wrap gap-2">
-                  {DEFAULT_EVENT_CATEGORY_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setNewCategoryColor(color)}
-                      style={{ backgroundColor: color }}
-                      className={cn(
-                        'w-6 h-6 rounded-full border-2 transition-all',
-                        newCategoryColor === color ? 'border-gray-700 scale-110' : 'border-transparent'
-                      )}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setCreatingCategory(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="button" size="sm" onClick={handleCreateCategory}>
-                    Criar categoria
-                  </Button>
-                </div>
               </div>
             )}
           </div>

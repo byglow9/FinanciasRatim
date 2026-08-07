@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useArea } from '@/contexts/AreaContext'
 import { AreaSelector } from '@/components/shared/AreaSelector'
 import { Button } from '@/components/ui/button'
+import { NotificationsBell } from '@/components/layout/NotificationsBell'
 import { LogOut, Settings, PiggyBank } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -36,6 +37,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-2">
+            <NotificationsBell />
             <Link to="/configuracoes">
               <Button variant="ghost" size="icon">
                 <Settings className="h-5 w-5" />

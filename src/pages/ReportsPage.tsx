@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useFixedExpenses } from '@/hooks/useFixedExpenses'
-import { useGoals } from '@/hooks/useGoals'
 import { useSavings } from '@/hooks/useSavings'
 import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -31,7 +30,6 @@ export function ReportsPage() {
 
   const { transactions, totals } = useTransactions(person, selectedMonth)
   const { totals: fixedTotals } = useFixedExpenses(person, selectedMonth)
-  const { goals } = useGoals()
   const { balance: savingsBalance } = useSavings()
 
   const categoryData = transactions
@@ -87,7 +85,7 @@ export function ReportsPage() {
             person={person}
             personName={personName}
             transactions={transactions}
-            goals={goals}
+            selectedMonth={selectedMonth}
             savingsBalance={savingsBalance}
             piggyName={settings.tabNames.piggy}
           />

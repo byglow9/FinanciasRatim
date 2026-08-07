@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useSavings } from '@/hooks/useSavings'
-import { useFixedExpenses } from '@/hooks/useFixedExpenses'
 import { useArea } from '@/contexts/AreaContext'
 import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   BarChart,
   Bar,
@@ -21,11 +19,9 @@ import {
   TrendingDown,
   Wallet,
   PiggyBank,
-  AlertCircle,
   Landmark,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { getDate } from 'date-fns'
 
 export function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
@@ -33,26 +29,7 @@ export function DashboardPage() {
 
   const ele = useTransactions('ele', selectedMonth)
   const ela = useTransactions('ela', selectedMonth)
-  const eleFixed = useFixedExpenses('ele', selectedMonth)
-  const elaFixed = useFixedExpenses('ela', selectedMonth)
   const savings = useSavings()
-
-  const today = getDate(new Date())
-
-  const upcomingExpenses = [
-    ...eleFixed.expenses.filter((e) => {
-      if (!e.isActive) return false
-      if (eleFixed.isExpensePaid(e.id)) return false
-      const daysUntilDue = e.dueDay - today
-      return daysUntilDue >= 0 && daysUntilDue <= settings.daysBeforeDueDate
-    }),
-    ...elaFixed.expenses.filter((e) => {
-      if (!e.isActive) return false
-      if (elaFixed.isExpensePaid(e.id)) return false
-      const daysUntilDue = e.dueDay - today
-      return daysUntilDue >= 0 && daysUntilDue <= settings.daysBeforeDueDate
-    }),
-  ]
 
   const chartData = [
     {
@@ -82,35 +59,6 @@ export function DashboardPage() {
         <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
-      {upcomingExpenses.length > 0 && (
-        <Card className="border-orange-300 bg-orange-50">
-          <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 pt-3 px-4">
-            <AlertCircle className="h-4 w-4 text-orange-600 shrink-0" />
-            <CardTitle className="text-sm font-semibold text-orange-700">
-              Contas proximas do vencimento
-            </CardTitle>
-            <Badge className="ml-auto bg-orange-200 text-orange-800 hover:bg-orange-200">
-              {upcomingExpenses.length}
-            </Badge>
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="divide-y divide-orange-100">
-              {upcomingExpenses.map((e) => (
-                <div key={e.id} className="flex items-center justify-between py-2">
-                  <span className="text-sm font-medium text-orange-900">{e.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-orange-500">dia {e.dueDay}</span>
-                    <span className="text-sm font-semibold text-orange-800">
-                      {formatCurrency(e.amount)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card>
           <CardHeader className="px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-0">
@@ -119,30 +67,30 @@ export function DashboardPage() {
           <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
               <div className="text-center">
-                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 mx-auto mb-1" />
+                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xs sm:text-sm font-bold text-green-600">
+                <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">
                   {formatCurrency(ele.totals.entradas)}
                 </p>
               </div>
               <div className="text-center">
-                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 mx-auto mb-1" />
+                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 dark:text-red-400 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Saidas</p>
-                <p className="text-xs sm:text-sm font-bold text-red-600">
+                <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">
                   {formatCurrency(ele.totals.saidas)}
                 </p>
               </div>
               <div className="text-center">
                 <Wallet className="hidden sm:block h-4 w-4 text-blue-600 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal</p>
-                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(ele.totals.saldo)}
                 </p>
               </div>
               <div className="text-center">
                 <Landmark className="hidden sm:block h-4 w-4 text-purple-600 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
-                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldoAcumulado >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(ele.totals.saldoAcumulado)}
                 </p>
               </div>
@@ -157,30 +105,30 @@ export function DashboardPage() {
           <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
               <div className="text-center">
-                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 mx-auto mb-1" />
+                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xs sm:text-sm font-bold text-green-600">
+                <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">
                   {formatCurrency(ela.totals.entradas)}
                 </p>
               </div>
               <div className="text-center">
-                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 mx-auto mb-1" />
+                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 dark:text-red-400 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Saidas</p>
-                <p className="text-xs sm:text-sm font-bold text-red-600">
+                <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">
                   {formatCurrency(ela.totals.saidas)}
                 </p>
               </div>
               <div className="text-center">
                 <Wallet className="hidden sm:block h-4 w-4 text-blue-600 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal</p>
-                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(ela.totals.saldo)}
                 </p>
               </div>
               <div className="text-center">
                 <Landmark className="hidden sm:block h-4 w-4 text-purple-600 mx-auto mb-1" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
-                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldoAcumulado >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
                   {formatCurrency(ela.totals.saldoAcumulado)}
                 </p>
               </div>

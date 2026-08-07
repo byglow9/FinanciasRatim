@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useEventCategories } from '@/hooks/useEventCategories'
 import { updateSettings } from '@/services/settings.service'
 import { getTransactionsByCategory } from '@/services/transactions.service'
 import { getFixedExpensesByCategory } from '@/services/fixedExpenses.service'
@@ -8,11 +9,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LogOut, Save, X, Plus, AlertTriangle, Tag, Bell, Users, Settings } from 'lucide-react'
+import type { EventCategory } from '@/types'
+import { DEFAULT_EVENT_CATEGORY_COLORS } from '@/types'
+import { cn } from '@/lib/utils'
+import { LogOut, Save, X, Plus, Pencil, AlertTriangle, Tag, CalendarDays, Bell, Moon, Users, Settings } from 'lucide-react'
 
 export function SettingsPage() {
-  const { settings, updateTabNames, updateCategories } = useArea()
+  const { settings, updateTabNames, updateCategories, updateTheme } = useArea()
   const { signOut } = useAuth()
+  const {
+    categories: eventCategories,
+    add: addEventCategory,
+    update: updateEventCategory,
+    remove: removeEventCategory,
+  } = useEventCategories()
 
   const [tabNames, setTabNames] = useState(settings.tabNames)
   const [notifications, setNotifications] = useState(settings.notificationsEnabled)
@@ -23,6 +33,13 @@ export function SettingsPage() {
   const [removingCategory, setRemovingCategory] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [theme, setTheme] = useState(settings.theme)
+
+  const [editingEventCategory, setEditingEventCategory] = useState<EventCategory | null>(null)
+  const [eventCategoryName, setEventCategoryName] = useState('')
+  const [eventCategoryColor, setEventCategoryColor] = useState(DEFAULT_EVENT_CATEGORY_COLORS[0])
+  const [savingEventCategory, setSavingEventCategory] = useState(false)
+  const [removingEventCategory, setRemovingEventCategory] = useState<string | null>(null)
 
   const handleSave = async () => {
     setSaving(true)
@@ -81,6 +98,50 @@ export function SettingsPage() {
       await updateCategories(newCategories)
     } finally {
       setRemovingCategory(null)
+    }
+  }
+
+  const handleToggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    await updateTheme(newTheme)
+  }
+
+  const handleEditEventCategory = (category: EventCategory) => {
+    setEditingEventCategory(category)
+    setEventCategoryName(category.name)
+    setEventCategoryColor(category.color)
+  }
+
+  const handleCancelEditEventCategory = () => {
+    setEditingEventCategory(null)
+    setEventCategoryName('')
+    setEventCategoryColor(DEFAULT_EVENT_CATEGORY_COLORS[0])
+  }
+
+  const handleSaveEventCategory = async () => {
+    const trimmed = eventCategoryName.trim()
+    if (!trimmed) return
+    setSavingEventCategory(true)
+    try {
+      if (editingEventCategory) {
+        await updateEventCategory(editingEventCategory.id, { name: trimmed, color: eventCategoryColor })
+      } else {
+        await addEventCategory({ name: trimmed, color: eventCategoryColor })
+      }
+      handleCancelEditEventCategory()
+    } finally {
+      setSavingEventCategory(false)
+    }
+  }
+
+  const handleRemoveEventCategory = async (id: string) => {
+    setRemovingEventCategory(id)
+    try {
+      await removeEventCategory(id)
+      if (editingEventCategory?.id === id) handleCancelEditEventCategory()
+    } finally {
+      setRemovingEventCategory(null)
     }
   }
 
@@ -167,7 +228,7 @@ export function SettingsPage() {
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${
                     notifications ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -189,6 +250,39 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Aparencia */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Moon className="h-4 w-4 text-primary" />
+            Aparencia
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Modo escuro</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Ativar tema escuro no aplicativo
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+                theme === 'dark' ? 'bg-primary' : 'bg-muted'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${
+                  theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Categorias - full width */}
       <Card>
@@ -264,6 +358,112 @@ export function SettingsPage() {
               <Plus className="h-4 w-4 mr-1" />
               Adicionar
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Categorias de Eventos - full width */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            Categorias de Eventos
+            <span className="ml-auto text-xs font-normal text-muted-foreground">
+              {eventCategories.length} {eventCategories.length === 1 ? 'categoria' : 'categorias'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {eventCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {eventCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="group flex items-center gap-1.5 px-3 py-1.5 bg-muted/70 hover:bg-muted rounded-full text-sm transition-colors"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <span>{category.name}</span>
+                  <button
+                    type="button"
+                    className="p-0.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                    onClick={() => handleEditEventCategory(category)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="p-0.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={() => handleRemoveEventCategory(category.id)}
+                    disabled={removingEventCategory === category.id}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {eventCategories.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhuma categoria de evento cadastrada
+            </p>
+          )}
+
+          {/* Adicionar/editar categoria de evento */}
+          <div className="space-y-3 pt-2 border-t">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Nome da categoria..."
+                value={eventCategoryName}
+                onChange={(e) => setEventCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleSaveEventCategory()
+                  }
+                }}
+                className="h-9"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSaveEventCategory}
+                disabled={savingEventCategory}
+                className="h-9 px-3 shrink-0"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {editingEventCategory ? 'Salvar' : 'Adicionar'}
+              </Button>
+              {editingEventCategory && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEditEventCategory}
+                  className="h-9 px-3 shrink-0"
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_EVENT_CATEGORY_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setEventCategoryColor(color)}
+                  style={{ backgroundColor: color }}
+                  className={cn(
+                    'w-6 h-6 rounded-full border-2 transition-all',
+                    eventCategoryColor === color ? 'border-gray-700 scale-110' : 'border-transparent'
+                  )}
+                />
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>

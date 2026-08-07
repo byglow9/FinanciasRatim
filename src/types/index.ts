@@ -52,6 +52,7 @@ export interface Settings {
   notificationsEnabled: boolean
   daysBeforeDueDate: number
   categories: string[]
+  theme: 'light' | 'dark'
 }
 
 export interface Goal {
@@ -138,4 +139,5 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'id'> = {
   notificationsEnabled: true,
   daysBeforeDueDate: 3,
   categories: DEFAULT_CATEGORIES.map(c => c.name),
+  theme: 'light',
 }

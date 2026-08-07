@@ -291,7 +291,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                     {dayTx.map((t) => (
                       <div key={t.id} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className={t.type === 'entrada' ? 'text-green-600' : 'text-red-600'}>
+                          <span className={t.type === 'entrada' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                             {t.type === 'entrada' ? '↑' : '↓'}
                           </span>
                           <span>{t.description}</span>
@@ -300,7 +300,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                         </div>
                         <span className={cn(
                           'font-medium',
-                          t.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                          t.type === 'entrada' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                         )}>
                           {t.type === 'entrada' ? '+' : '-'}{formatCurrency(t.amount)}
                         </span>
@@ -310,7 +310,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                   {/* Resumo do dia */}
                   <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
                     <span>Saldo do dia:</span>
-                    <span className={saldoDia >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    <span className={saldoDia >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                       {saldoDia >= 0 ? '+' : ''}{formatCurrency(saldoDia)}
                     </span>
                   </div>
@@ -327,13 +327,13 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                     return (
                       <div key={fe.id} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className={isPaid ? 'text-green-600' : 'text-orange-600'}>
+                          <span className={isPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}>
                             {isPaid ? '✓' : '○'}
                           </span>
                           <span>{fe.name}</span>
                           <span className="text-xs text-muted-foreground">{fe.category}</span>
                         </div>
-                        <span className={cn('font-medium', isPaid ? 'text-green-600' : 'text-orange-600')}>
+                        <span className={cn('font-medium', isPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600')}>
                           {formatCurrency(fe.amount)}
                         </span>
                       </div>

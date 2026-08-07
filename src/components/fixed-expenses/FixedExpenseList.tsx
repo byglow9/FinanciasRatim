@@ -73,7 +73,7 @@ export function FixedExpenseList({
             key={expense.id}
             className={cn(
               'p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-all duration-300 ease-out',
-              isPaid && 'opacity-60 bg-green-50/50'
+              isPaid && 'opacity-70 bg-green-500/10'
             )}
           >
             {/* Desktop layout */}

@@ -37,10 +37,10 @@ export function SavingsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
               <CardTitle className="text-sm font-medium">Total Depositado</CardTitle>
-              <TrendingDown className="h-4 w-4 text-green-600" />
+              <TrendingDown className="h-4 w-4 text-green-600 dark:text-green-400" />
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-              <div className="text-sm sm:text-xl font-bold text-green-600">
+              <div className="text-sm sm:text-xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(totalDeposits)}
               </div>
             </CardContent>
@@ -48,10 +48,10 @@ export function SavingsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
               <CardTitle className="text-sm font-medium">Total Sacado</CardTitle>
-              <TrendingUp className="h-4 w-4 text-red-600" />
+              <TrendingUp className="h-4 w-4 text-red-600 dark:text-red-400" />
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-              <div className="text-sm sm:text-xl font-bold text-red-600">
+              <div className="text-sm sm:text-xl font-bold text-red-600 dark:text-red-400">
                 {formatCurrency(totalWithdrawals)}
               </div>
             </CardContent>

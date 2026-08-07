@@ -56,6 +56,7 @@ export function CategoryPieChart({
                     outerRadius="70%"
                     paddingAngle={3}
                     dataKey="value"
+                    stroke="none"
                   >
                     {data.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

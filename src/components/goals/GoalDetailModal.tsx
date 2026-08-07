@@ -62,7 +62,7 @@ export function GoalDetailModal({
               <Target className="h-5 w-5 text-primary" />
               <DialogTitle>{goal.name}</DialogTitle>
               {isComplete && (
-                <Badge className="bg-green-100 text-green-700">Concluida!</Badge>
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400">Concluida!</Badge>
               )}
             </div>
           </DialogHeader>
@@ -127,7 +127,7 @@ export function GoalDetailModal({
                       className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
                     >
                       <div>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-green-600 dark:text-green-400">
                           +{formatCurrency(c.amount)}
                         </span>
                         {c.description && (

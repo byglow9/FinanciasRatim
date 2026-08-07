@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { TrendingUp, TrendingDown, PiggyBank, Target, Landmark } from 'lucide-react'
+import { TrendingUp, TrendingDown, PiggyBank, Wallet, Landmark } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { getTransactions, getAccumulatedBalance } from '@/services/transactions.service'
-import { subMonths, format } from 'date-fns'
+import { subMonths, format, startOfMonth, endOfMonth, differenceInCalendarDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   LineChart,
@@ -15,13 +15,13 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import type { PersonType, Transaction, Goal } from '@/types'
+import type { PersonType, Transaction } from '@/types'
 
 interface OverviewDashboardProps {
   person: PersonType
   personName?: string
   transactions: Transaction[]
-  goals: Goal[]
+  selectedMonth: Date
   savingsBalance: number
   piggyName: string
 }
@@ -35,7 +35,7 @@ interface MiniEvolution {
 export function OverviewDashboard({
   person,
   transactions,
-  goals,
+  selectedMonth,
   savingsBalance,
   piggyName,
 }: OverviewDashboardProps) {
@@ -108,10 +108,18 @@ export function OverviewDashboard({
 
   const totalIncomes = topIncomes.reduce((sum, c) => sum + c.value, 0)
 
-  const personGoals = goals.filter((g) => g.person === person)
-  const totalGoalsTarget = personGoals.reduce((sum, g) => sum + g.targetAmount, 0)
-  const totalGoalsCurrent = personGoals.reduce((sum, g) => sum + g.currentAmount, 0)
-  const goalsProgress = totalGoalsTarget > 0 ? (totalGoalsCurrent / totalGoalsTarget) * 100 : 0
+  const monthStart = startOfMonth(selectedMonth)
+  const monthEnd = endOfMonth(selectedMonth)
+  const today = new Date()
+  const referenceDate = today < monthStart ? monthStart : today > monthEnd ? monthEnd : today
+  const daysRemaining = differenceInCalendarDays(monthEnd, referenceDate) + 1
+  const weeksRemaining = Math.ceil(daysRemaining / 7)
+
+  const saldoMensal = transactions.reduce(
+    (acc, t) => (t.type === 'entrada' ? acc + t.amount : acc - t.amount),
+    0
+  )
+  const maxWeeklySpend = saldoMensal / weeksRemaining
 
   const currentAccumulatedBalance = evolutionData.length > 0
     ? evolutionData[evolutionData.length - 1].saldoAcumulado
@@ -235,30 +243,22 @@ export function OverviewDashboard({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Target className="h-4 w-4 text-purple-500" />
-            Progresso das Metas
+            <Wallet className="h-4 w-4 text-amber-500" />
+            Gasto Maximo por Semana
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {personGoals.length === 0 ? (
-            <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
-              Nenhuma meta cadastrada
-            </div>
-          ) : (
-            <div className="space-y-3 h-[120px] flex flex-col justify-center">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {personGoals.length} {personGoals.length === 1 ? 'meta' : 'metas'}
-                </span>
-                <span className="font-medium">{goalsProgress.toFixed(0)}% concluido</span>
-              </div>
-              <Progress value={goalsProgress} className="h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatCurrency(totalGoalsCurrent)}</span>
-                <span>{formatCurrency(totalGoalsTarget)}</span>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-col items-center justify-center h-[120px]">
+            <p className={cn(
+              'text-2xl font-bold',
+              maxWeeklySpend >= 0 ? 'text-amber-500' : 'text-red-500'
+            )}>
+              {formatCurrency(maxWeeklySpend)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 text-center">
+              Saldo do mes / {weeksRemaining} {weeksRemaining === 1 ? 'semana restante' : 'semanas restantes'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

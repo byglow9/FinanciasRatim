@@ -86,7 +86,7 @@ export function GoalCard({ goal, onEdit, onDelete, onContribute, onClick }: Goal
         )}
         <div className="flex items-center gap-2">
           {isComplete ? (
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-500/15 dark:text-green-400 dark:hover:bg-green-500/15">
               Concluida!
             </Badge>
           ) : (

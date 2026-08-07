@@ -90,8 +90,8 @@ export function TransactionList({
                 className={cn(
                   'p-2 rounded-full shrink-0',
                   transaction.type === 'entrada'
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-red-100 text-red-600'
+                    ? 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400'
+                    : 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400'
                 )}
               >
                 {transaction.type === 'entrada' ? (
@@ -115,7 +115,7 @@ export function TransactionList({
               <span
                 className={cn(
                   'font-semibold',
-                  transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                  transaction.type === 'entrada' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 )}
               >
                 {transaction.type === 'entrada' ? '+' : '-'}
@@ -150,8 +150,8 @@ export function TransactionList({
                   className={cn(
                     'p-1.5 rounded-full shrink-0',
                     transaction.type === 'entrada'
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-red-100 text-red-600'
+                      ? 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400'
+                      : 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400'
                   )}
                 >
                   {transaction.type === 'entrada' ? (
@@ -165,7 +165,7 @@ export function TransactionList({
               <span
                 className={cn(
                   'font-semibold text-sm shrink-0',
-                  transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                  transaction.type === 'entrada' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 )}
               >
                 {transaction.type === 'entrada' ? '+' : '-'}

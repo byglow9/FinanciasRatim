@@ -70,10 +70,10 @@ export function TransactionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Entradas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-green-600">
+            <div className="text-sm sm:text-xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(totals.entradas)}
             </div>
           </CardContent>
@@ -82,10 +82,10 @@ export function TransactionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
             <CardTitle className="text-sm font-medium">Saidas</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
           </CardHeader>
           <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-red-600">
+            <div className="text-sm sm:text-xl font-bold text-red-600 dark:text-red-400">
               {formatCurrency(totals.saidas)}
             </div>
           </CardContent>
@@ -100,7 +100,7 @@ export function TransactionsPage() {
             <div
               className={cn(
                 'text-sm sm:text-xl font-bold',
-                totals.saldo >= 0 ? 'text-green-600' : 'text-red-600'
+                totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               )}
             >
               {formatCurrency(totals.saldo)}
@@ -117,7 +117,7 @@ export function TransactionsPage() {
             <div
               className={cn(
                 'text-sm sm:text-xl font-bold',
-                totals.saldoAcumulado >= 0 ? 'text-purple-600' : 'text-red-600'
+                totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'
               )}
             >
               {formatCurrency(totals.saldoAcumulado)}

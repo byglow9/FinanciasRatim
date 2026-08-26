@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import { initializeFirestore, type Firestore } from 'firebase/firestore'
 
 const USE_MOCK = import.meta.env.VITE_USE_EMULATOR === 'true'
 
@@ -13,7 +13,7 @@ function createFirebase() {
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
   })
-  return { auth: getAuth(app), db: getFirestore(app) }
+  return { auth: getAuth(app), db: initializeFirestore(app, { ignoreUndefinedProperties: true }) }
 }
 
 // In mock mode, skip Firebase init entirely to avoid invalid-api-key crash

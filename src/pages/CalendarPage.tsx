@@ -124,7 +124,7 @@ export function CalendarPage() {
       getEventsForMonth(selectedMonth),
       getEventCategories(),
     ]).then(([ev, cats]) => {
-      setEvents(ev)
+      setEvents(ev.filter((e) => e.person === 'conjunto' || e.person === person))
       setEventCategories(cats)
     }).finally(() => { if (showLoading) setLoading(false) })
   }
@@ -133,7 +133,7 @@ export function CalendarPage() {
     if (mode !== 'agenda') return
     fetchAgendaData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, mode])
+  }, [selectedMonth, mode, person])
 
   const handleAddEvent = (date: Date) => {
     setEditingEvent(undefined)

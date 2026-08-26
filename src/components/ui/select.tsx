@@ -16,6 +16,15 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     // Combine refs
     React.useImperativeHandle(ref, () => selectRef.current as HTMLSelectElement)
 
+    // Sync with the underlying (possibly uncontrolled, e.g. react-hook-form) select's
+    // real DOM value once it mounts, since props.value/defaultValue aren't set by register()
+    React.useLayoutEffect(() => {
+      if (props.value === undefined && selectRef.current) {
+        setInternalValue(selectRef.current.value)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     React.useEffect(() => {
       const checkMobile = () => setIsMobile(window.innerWidth < 640)
       checkMobile()

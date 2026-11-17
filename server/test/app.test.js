@@ -1,4 +1,4 @@
-import { test, describe, before, after, beforeEach } from 'node:test'
+import { test, describe, before, after, beforeEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { createApp } from '../src/app.js'
 import { monthRange } from '../../shared/core/time.js'
@@ -35,8 +35,8 @@ function fakeDb() {
               const data = store.get(key)
               return { exists: data !== undefined, id, data: () => (data ? { ...data } : undefined) }
             },
-            async set(data) {
-              store.set(key, { ...data })
+            async set(data, opts) {
+              store.set(key, opts?.merge ? { ...(store.get(key) ?? {}), ...data } : { ...data })
             },
             async delete() {
               store.delete(key)
@@ -78,8 +78,25 @@ function fakeSync(calls) {
       calls.push(['cleanExistingDescriptions', hid])
       return { transactions: 0, imports: 0 }
     },
+    async syncItem(db, pluggy, itemId) {
+      calls.push(['syncItem', itemId])
+      if (itemId === 'item-falha-1') throw new Error('falha simulada')
+      return {}
+    },
   }
 }
+
+// Repete fn ate valer (o processamento do webhook roda depois do 200).
+async function waitFor(fn, { timeoutMs = 3000, stepMs = 10 } = {}) {
+  const limit = Date.now() + timeoutMs
+  while (Date.now() < limit) {
+    if (await fn()) return
+    await new Promise((r) => setTimeout(r, stepMs))
+  }
+  throw new Error('waitFor: tempo esgotado')
+}
+
+const WH_SECRET = 'segredo-de-teste-0123456789abcdef'
 
 describe('createApp', () => {
   let server
@@ -97,6 +114,7 @@ describe('createApp', () => {
       sync: fakeSync(calls),
       origins: [ORIGIN],
       now: () => NOW,
+      webhookSecret: WH_SECRET,
     })
     await new Promise((resolve) => {
       server = app.listen(0, resolve)
@@ -298,5 +316,193 @@ describe('createApp', () => {
       'cleanExistingDescriptions',
       'casalA',
     ])
+  })
+})
+
+describe('POST /webhooks/pluggy', () => {
+  let server
+  let base
+  let db
+  let calls
+
+  const start = async (opts) => {
+    const app = createApp({
+      verifyToken,
+      db,
+      pluggy: fakePluggy(calls),
+      sync: fakeSync(calls),
+      origins: [ORIGIN],
+      now: () => NOW,
+      ...opts,
+    })
+    const s = await new Promise((resolve) => {
+      const l = app.listen(0, () => resolve(l))
+    })
+    return { s, url: `http://127.0.0.1:${s.address().port}` }
+  }
+
+  before(async () => {
+    db = fakeDb()
+    calls = []
+    const started = await start({ webhookSecret: WH_SECRET })
+    server = started.s
+    base = started.url
+  })
+
+  after(async () => {
+    await new Promise((resolve) => server.close(resolve))
+  })
+
+  beforeEach(() => {
+    db.store.clear()
+    calls.length = 0
+    mock.restoreAll()
+  })
+
+  const hook = (body, { secret = WH_SECRET, path = '/webhooks/pluggy', url = base } = {}) =>
+    fetch(`${url}${path}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(secret ? { 'x-webhook-secret': secret } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+
+  const ev = (extra = {}) => ({
+    event: 'item/updated',
+    eventId: `ev-${Math.random().toString(36).slice(2)}`,
+    itemId: 'item-webhook-1',
+    ...extra,
+  })
+
+  const seedItem = (itemId = 'item-webhook-1') =>
+    db.store.set(`bankConnections/${itemId}`, { ownerId: 'casalA', person: 'ele' })
+
+  const syncCalls = () => calls.filter((c) => c[0] === 'syncItem')
+
+  test('sem segredo ou com segredo errado responde 401 e nao sincroniza', async () => {
+    seedItem()
+    const none = await hook(ev(), { secret: null })
+    assert.equal(none.status, 401)
+    assert.deepEqual(await none.json(), { error: 'Nao autorizado' })
+    const wrong = await hook(ev(), { secret: 'errado' })
+    assert.equal(wrong.status, 401)
+    await new Promise((r) => setTimeout(r, 50))
+    assert.equal(syncCalls().length, 0)
+  })
+
+  test('segredo na query string sem cabecalho responde 401', async () => {
+    seedItem()
+    const res = await hook(ev(), { secret: null, path: `/webhooks/pluggy?secret=${WH_SECRET}` })
+    assert.equal(res.status, 401)
+    assert.equal(syncCalls().length, 0)
+  })
+
+  test('os 4 eventos tratados respondem 200 e disparam um syncItem cada', async () => {
+    seedItem()
+    for (const event of [
+      'item/updated',
+      'transactions/created',
+      'transactions/updated',
+      'transactions/deleted',
+    ]) {
+      calls.length = 0
+      const res = await hook(ev({ event }))
+      assert.equal(res.status, 200)
+      assert.deepEqual(await res.json(), { ok: true })
+      await waitFor(() => syncCalls().length === 1)
+      assert.deepEqual(syncCalls()[0], ['syncItem', 'item-webhook-1'])
+    }
+  })
+
+  test('evento fora da lista responde 200 ignored e nao sincroniza', async () => {
+    seedItem()
+    const res = await hook(ev({ event: 'item/login_succeeded' }))
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { ok: true, ignored: true })
+    await new Promise((r) => setTimeout(r, 50))
+    assert.equal(syncCalls().length, 0)
+  })
+
+  test('corpo invalido responde 400', async () => {
+    seedItem()
+    for (const body of [
+      { event: 'item/updated', itemId: 'item-webhook-1' },
+      { event: 'item/updated', eventId: 'ev-x' },
+      { event: 'item/updated', eventId: 'ev-x', itemId: 'x' },
+      { event: 'item/updated', eventId: 'ev-x', itemId: 'a/b/c/d/e/f' },
+      { eventId: 'ev-x', itemId: 'item-webhook-1' },
+    ]) {
+      const res = await hook(body)
+      assert.equal(res.status, 400)
+      assert.deepEqual(await res.json(), { error: 'Evento invalido' })
+    }
+    assert.equal(syncCalls().length, 0)
+  })
+
+  test('item desconhecido responde 200, nao sincroniza e nao cria documento', async () => {
+    const res = await hook(ev({ itemId: 'item-desconhecido-1' }))
+    assert.equal(res.status, 200)
+    await new Promise((r) => setTimeout(r, 50))
+    assert.equal(syncCalls().length, 0)
+    assert.equal(db.store.has('bankConnections/item-desconhecido-1'), false)
+  })
+
+  test('o mesmo eventId duas vezes gera um unico syncItem', async () => {
+    seedItem()
+    const body = ev({ eventId: 'ev-repetido-1' })
+    assert.equal((await hook(body)).status, 200)
+    assert.equal((await hook(body)).status, 200)
+    await waitFor(() => syncCalls().length >= 1)
+    await new Promise((r) => setTimeout(r, 50))
+    assert.equal(syncCalls().length, 1)
+  })
+
+  test('ownerId e clientUserId do corpo nao mudam o dono e a evidencia e gravada por merge', async () => {
+    seedItem()
+    const res = await hook(ev({ ownerId: 'casalB', clientUserId: 'casalB' }))
+    assert.equal(res.status, 200)
+    await waitFor(() => db.store.get('bankConnections/item-webhook-1')?.lastWebhookAt)
+    const doc = db.store.get('bankConnections/item-webhook-1')
+    assert.equal(doc.ownerId, 'casalA')
+    assert.equal(doc.person, 'ele')
+    assert.equal(doc.lastWebhookEvent, 'item/updated')
+    assert.ok(doc.lastWebhookAt)
+  })
+
+  test('sem webhookSecret a rota nao existe (404)', async () => {
+    const started = await start({})
+    try {
+      const res = await hook(ev(), { url: started.url })
+      assert.equal(res.status, 404)
+    } finally {
+      await new Promise((resolve) => started.s.close(resolve))
+    }
+  })
+
+  test('/api/sync continua exigindo token mesmo com o cabecalho do webhook', async () => {
+    const res = await fetch(`${base}/api/sync`, {
+      method: 'POST',
+      headers: { 'x-webhook-secret': WH_SECRET },
+    })
+    assert.equal(res.status, 401)
+    assert.equal(calls.filter((c) => c[0] === 'syncAll').length, 0)
+  })
+
+  test('falha do syncItem depois do 200 so gera console.error sem o segredo', async () => {
+    seedItem('item-falha-1')
+    const errors = mock.method(console, 'error', () => {})
+    const logs = mock.method(console, 'log', () => {})
+    const warns = mock.method(console, 'warn', () => {})
+    const res = await hook(ev({ itemId: 'item-falha-1' }))
+    assert.equal(res.status, 200)
+    await waitFor(() => errors.mock.callCount() >= 1)
+    assert.deepEqual(syncCalls()[0], ['syncItem', 'item-falha-1'])
+    const all = [errors, logs, warns].flatMap((m) =>
+      m.mock.calls.flatMap((c) => c.arguments.map((a) => String(a)))
+    )
+    assert.ok(all.length > 0)
+    for (const text of all) assert.equal(text.includes(WH_SECRET), false)
   })
 })

@@ -3,13 +3,23 @@ import cors from 'cors'
 import { Timestamp } from 'firebase-admin/firestore'
 import { monthRange } from '../../shared/core/time.js'
 import { originGuard, requireOwner } from './auth.js'
+import { HANDLED_EVENTS, secretMatches, validateWebhookBody } from './webhook.js'
 
 const PEOPLE = ['ele', 'ela']
 
 // Fabrica do app Express. Tudo que toca o mundo externo entra por `deps`, para teste:
-// verifyToken(token) -> claims; db (Firestore Admin); pluggy; sync; origins; now.
+// verifyToken(token) -> claims; db (Firestore Admin); pluggy; sync; origins; now;
+// webhookSecret (string, lista ou ausente: sem segredo a rota do webhook nao existe).
 // O dono dos dados vem sempre de req.owner (token verificado), nunca do corpo (FUND-04).
-export function createApp({ verifyToken, db, pluggy, sync, origins, now = () => new Date() }) {
+export function createApp({
+  verifyToken,
+  db,
+  pluggy,
+  sync,
+  origins,
+  now = () => new Date(),
+  webhookSecret,
+}) {
   if (!Array.isArray(origins) || origins.length === 0) {
     throw new Error('ALLOWED_ORIGINS obrigatoria: informe ao menos uma origem')
   }
@@ -19,6 +29,39 @@ export function createApp({ verifyToken, db, pluggy, sync, origins, now = () => 
   app.use(express.json())
 
   app.get('/health', (_req, res) => res.json({ ok: true }))
+
+  // Webhook da Pluggy (REV-06): publico, fora de /api. A Pluggy nao envia Origin nem token do
+  // Firebase; so o cabecalho secreto autentica. Sem segredo configurado a rota nao existe (404).
+  const secrets = (Array.isArray(webhookSecret) ? webhookSecret : [webhookSecret]).filter(
+    (s) => typeof s === 'string' && s
+  )
+  if (secrets.length > 0) {
+    app.post('/webhooks/pluggy', (req, res) => {
+      if (!secretMatches(req.get('x-webhook-secret'), secrets)) {
+        return res.status(401).json({ error: 'Nao autorizado' })
+      }
+      const parsed = validateWebhookBody(req.body)
+      if (!parsed.ok) return res.status(400).json({ error: 'Evento invalido' })
+      const { event, itemId } = parsed
+      // Responde antes de ler banco ou sincronizar (limite de 10 s da Pluggy).
+      const handled = HANDLED_EVENTS.has(event)
+      res.status(200).json(handled ? { ok: true } : { ok: true, ignored: true })
+      if (!handled) return
+
+      // O dono vem sempre do documento bankConnections/{itemId}, nunca do corpo.
+      ;(async () => {
+        try {
+          const ref = db.collection('bankConnections').doc(itemId)
+          const snap = await ref.get()
+          if (!snap.exists) return
+          await sync.syncItem(db, pluggy, itemId)
+          console.log('[webhook]', event, 'item=' + itemId.slice(0, 8))
+        } catch (err) {
+          console.error('[webhook] falha no processamento:', err?.message ?? err)
+        }
+      })()
+    })
+  }
 
   app.use('/api', originGuard(origins), requireOwner(verifyToken))
 

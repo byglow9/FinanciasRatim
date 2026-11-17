@@ -304,3 +304,41 @@ export function syncAll(db, pluggy, { hid } = {}) {
   }
   return runs.get(key)
 }
+
+// Sincroniza uma unica conexao (webhook da Pluggy, REV-06) na MESMA fila do syncAll, para nunca
+// haver duas conexoes em processamento ao mesmo tempo. Rajadas do mesmo item coalescem: uma
+// execucao em andamento mais uma repeticao final (o evento que chegou no meio nao se perde).
+const itemRuns = new Map()
+
+export function syncItem(db, pluggy, itemId) {
+  if (typeof itemId !== 'string' || !itemId) {
+    return Promise.reject(new Error('syncItem: itemId invalido'))
+  }
+  const current = itemRuns.get(itemId)
+  if (current) {
+    current.again = true
+    return current.promise
+  }
+  const state = { again: false, promise: null }
+  state.promise = (async () => {
+    let result = null
+    try {
+      do {
+        state.again = false
+        const job = tail.then(async () => {
+          const snap = await db.collection(CONNECTIONS).doc(itemId).get()
+          if (!snap.exists) return null
+          return syncConnection(db, pluggy, { itemId, ...snap.data() })
+        })
+        tail = job.catch(() => {})
+        result = await job
+      } while (state.again)
+    } finally {
+      // Sem await entre a checagem de again e esta remocao: nenhum evento se perde.
+      itemRuns.delete(itemId)
+    }
+    return result
+  })()
+  itemRuns.set(itemId, state)
+  return state.promise
+}

@@ -1,5 +1,7 @@
 import { CategoryPieChart } from './CategoryPieChart'
 import type { Transaction } from '@/types'
+import { useArea } from '@/contexts/AreaContext'
+import { categoryDisplayName } from '@shared/core/categories.js'
 
 interface IncomeBreakdownProps {
   transactions: Transaction[]
@@ -7,10 +9,12 @@ interface IncomeBreakdownProps {
 }
 
 export function IncomeBreakdown({ transactions, personName }: IncomeBreakdownProps) {
+  const { categoryDefs } = useArea()
   const incomeData = transactions
     .filter((t) => t.type === 'entrada')
     .reduce<Record<string, number>>((acc, t) => {
-      acc[t.category] = (acc[t.category] ?? 0) + t.amount
+      const name = categoryDisplayName(t, categoryDefs)
+      acc[name] = (acc[name] ?? 0) + t.amount
       return acc
     }, {})
 

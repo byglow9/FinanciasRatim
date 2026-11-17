@@ -14,11 +14,12 @@ import {
   OverviewDashboard,
 } from '@/components/reports'
 import type { PersonType } from '@/types'
+import { categoryDisplayName } from '@shared/core/categories.js'
 
 export function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
   const [activeTab, setActiveTab] = useState('visao-geral')
-  const { currentArea, settings } = useArea()
+  const { currentArea, settings, categoryDefs } = useArea()
 
   const person: PersonType =
     currentArea === 'porquinho' ? 'ele' : (currentArea as PersonType)
@@ -35,7 +36,8 @@ export function ReportsPage() {
   const categoryData = transactions
     .filter((t) => t.type === 'saida')
     .reduce<Record<string, number>>((acc, t) => {
-      acc[t.category] = (acc[t.category] ?? 0) + t.amount
+      const name = categoryDisplayName(t, categoryDefs)
+      acc[name] = (acc[name] ?? 0) + t.amount
       return acc
     }, {})
 

@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, PiggyBank, Wallet, Landmark } from 'lucide-re
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { getTransactions, getAccumulatedBalance } from '@/services/transactions.service'
-import { subMonths, format, startOfMonth, endOfMonth, differenceInCalendarDays } from 'date-fns'
+import { subMonths, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   LineChart,
@@ -16,6 +16,9 @@ import {
   Tooltip,
 } from 'recharts'
 import type { PersonType, Transaction } from '@/types'
+import { useArea } from '@/contexts/AreaContext'
+import { categoryDisplayName } from '@shared/core/categories.js'
+import { weeklySpend } from '@shared/core/ledger.js'
 
 interface OverviewDashboardProps {
   person: PersonType
@@ -39,6 +42,7 @@ export function OverviewDashboard({
   savingsBalance,
   piggyName,
 }: OverviewDashboardProps) {
+  const { categoryDefs } = useArea()
   const [evolutionData, setEvolutionData] = useState<MiniEvolution[]>([])
   const [loadingEvolution, setLoadingEvolution] = useState(true)
 
@@ -82,7 +86,8 @@ export function OverviewDashboard({
   const categoryData = transactions
     .filter((t) => t.type === 'saida')
     .reduce<Record<string, number>>((acc, t) => {
-      acc[t.category] = (acc[t.category] ?? 0) + t.amount
+      const name = categoryDisplayName(t, categoryDefs)
+      acc[name] = (acc[name] ?? 0) + t.amount
       return acc
     }, {})
 
@@ -97,7 +102,8 @@ export function OverviewDashboard({
   const incomeData = transactions
     .filter((t) => t.type === 'entrada')
     .reduce<Record<string, number>>((acc, t) => {
-      acc[t.category] = (acc[t.category] ?? 0) + t.amount
+      const name = categoryDisplayName(t, categoryDefs)
+      acc[name] = (acc[name] ?? 0) + t.amount
       return acc
     }, {})
 
@@ -108,18 +114,12 @@ export function OverviewDashboard({
 
   const totalIncomes = topIncomes.reduce((sum, c) => sum + c.value, 0)
 
-  const monthStart = startOfMonth(selectedMonth)
-  const monthEnd = endOfMonth(selectedMonth)
-  const today = new Date()
-  const referenceDate = today < monthStart ? monthStart : today > monthEnd ? monthEnd : today
-  const daysRemaining = differenceInCalendarDays(monthEnd, referenceDate) + 1
-  const weeksRemaining = Math.ceil(daysRemaining / 7)
-
-  const saldoMensal = transactions.reduce(
-    (acc, t) => (t.type === 'entrada' ? acc + t.amount : acc - t.amount),
-    0
-  )
-  const maxWeeklySpend = saldoMensal / weeksRemaining
+  // Gasto semanal pelo nucleo (D-12, FUND-06): mes escolhido, dia de referencia em Sao Paulo.
+  const { weeksRemaining, maxWeeklySpend } = weeklySpend({
+    transactions,
+    now: new Date(),
+    month: { year: selectedMonth.getFullYear(), month: selectedMonth.getMonth() + 1 },
+  })
 
   const currentAccumulatedBalance = evolutionData.length > 0
     ? evolutionData[evolutionData.length - 1].saldoAcumulado

@@ -242,9 +242,13 @@ export function renderCardProbe(summary, { dayIso }) {
   return lines.join('\n')
 }
 
-export function alreadyProbedToday() {
-  return false
+// Primeira linha igual ao cabecalho do dia: ja existe sonda de hoje.
+export function alreadyProbedToday(text, dayIso) {
+  if (typeof text !== 'string') return false
+  return text.split(/\r?\n/, 1)[0] === probeHeading(dayIso)
 }
-export function isProbeFile() {
-  return true
+
+// So um arquivo que comeca pelo titulo da sonda pode ser sobrescrito.
+export function isProbeFile(text) {
+  return typeof text === 'string' && text.startsWith('# Sonda do cartao')
 }

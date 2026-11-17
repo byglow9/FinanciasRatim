@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Revisão de importações, contas fixas e webhook
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-11-17T19:23:25.420Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-11-17T19:29:15.596Z"
 last_activity: 2026-11-17
-last_activity_desc: Phase 01 execution started
-state_head: a38c142aa38f63587e737a7c8055721b612f98cc
+last_activity_desc: Phase 02 execution started
+state_head: d33ae87a023c0169752441a0ae38defeeadbc5b0
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 19
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 01 — Fundação de dados e acesso
+**Current focus:** Phase 02 — Revisão de importações, contas fixas e webhook
 
 ## Current Position
 
-Phase: 02 (Revisão de importações, contas fixas e webhook) — READY TO EXECUTE
-Plan: 13 of 13
+Phase: 02 (Revisão de importações, contas fixas e webhook) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-11-17 — Phase 01 execution started
+Last activity: 2026-11-17 — Phase 02 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P10 | 15min | 3 tasks | 0 files |
 | Phase 01 P12 | 1h | 3 tasks | 0 files |
 | Phase 01 P13 | 1h | 3 tasks | 0 files |
+| Phase 02 P01 | 40min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 01]: Plano 01-08: settings mantem ID fixo main; troca por documento por hid fica para a Fase 8 — Open Question 4; evita reescrita agora
 - [Phase 01]: 01-09: categoryDefs do AreaContext reconciliados com settings.categories (fonte de quem esta ativo) para documento antigo e rollback — getSettings mescla DEFAULT_SETTINGS; sem reconciliar, categorias removidas ressuscitariam
 - [Phase 01]: 01-13: regras restritivas publicadas (2026-11-17T18:31:31Z), dono respondeu keep; pos-cutover R8 registrado como pendencias humanas nao confirmadas (user actions, .env.local, APP_API_KEY Railway, git rm --cached .env.local, troca de senhas)
+- [Phase 02]: [Phase 02-01]: Webhook Pluggy: segredo so em cabecalho x-webhook-secret (sha256 + timingSafeEqual), dono sempre de bankConnections/{itemId}, sem segredo a rota nao existe (404)
+- [Phase 02]: [Phase 02-01]: syncItem na mesma fila do syncAll com coalescencia por item (itemRuns); idempotencia por eventId em memoria sem colecao webhookEvents
 
 ### Pending Todos
 
@@ -123,6 +126,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T18:48:55.280Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-revis-o-de-importa-es-contas-fixas-e-webhook/02-CONTEXT.md
+Last session: 2026-11-17T19:29:15.523Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

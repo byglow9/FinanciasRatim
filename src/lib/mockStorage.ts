@@ -1,4 +1,5 @@
-export const MOCK = import.meta.env.VITE_USE_EMULATOR === 'true'
+// O mock so vale em desenvolvimento: um build de producao com a variavel ligada inicializa o Firebase normalmente.
+export const MOCK = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATOR === 'true'
 
 export function mList<T>(key: string): T[] {
   return JSON.parse(localStorage.getItem(`db::${key}`) ?? '[]')

@@ -2,44 +2,33 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  type User as FirebaseUser,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { MOCK } from '@/lib/mockStorage'
+import { setScope } from '@/lib/scope'
+import { purgeLegacyAuthKeys } from '@/lib/legacyAuthCleanup'
+import type { PersonType } from '@/types'
 
-export interface LocalUser {
+export interface AppUser {
   username: string
+  uid: string
+  hid: string
+  person: PersonType
 }
 
 interface AuthContextType {
-  user: LocalUser | null
+  user: AppUser | null
   loading: boolean
-  signIn: (credential: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  accessError: string | null
+  signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
-const VALID_USERNAME = import.meta.env.VITE_APP_USERNAME || 'ratimbum'
-const VALID_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'ratimbum123'
-const LEGACY_AUTH_KEY = 'financias_legacy_user'
-const OLD_LEGACY_AUTH_KEY = 'financias_auth'
+const ACCESS_DENIED_MESSAGE = 'Conta sem acesso. Peca para liberar sua conta.'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-function getStoredLegacyUser(): LocalUser | null {
-  const username = localStorage.getItem(LEGACY_AUTH_KEY)
-  if (username) return { username }
-
-  const oldStored = localStorage.getItem(OLD_LEGACY_AUTH_KEY)
-  if (!oldStored) return null
-
-  try {
-    const parsed = JSON.parse(oldStored) as Partial<LocalUser>
-    return parsed.username ? { username: parsed.username } : null
-  } catch {
-    return null
-  }
-}
 
 function mapAuthError(code: string): string {
   switch (code) {
@@ -53,10 +42,6 @@ function mapAuthError(code: string): string {
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
       return 'E-mail ou senha incorretos'
-    case 'auth/email-already-in-use':
-      return 'Este e-mail ja esta cadastrado'
-    case 'auth/weak-password':
-      return 'A senha precisa ter ao menos 6 caracteres'
     case 'auth/too-many-requests':
       return 'Muitas tentativas. Tente novamente mais tarde'
     case 'auth/network-request-failed':
@@ -73,69 +58,113 @@ function toError(err: unknown): Error {
   return err instanceof Error ? err : new Error('Erro ao autenticar')
 }
 
+function isPerson(value: unknown): value is PersonType {
+  return value === 'ele' || value === 'ela'
+}
+
+// Le os claims hid e person do ID token. Sessao antiga (anterior ao script de contas)
+// nao tem claims: uma unica retentativa com refresh forcado antes de desistir.
+async function readClaims(firebaseUser: FirebaseUser): Promise<{ hid: string; person: PersonType } | null> {
+  let result = await firebaseUser.getIdTokenResult()
+  if (typeof result.claims.hid !== 'string' || result.claims.hid === '') {
+    result = await firebaseUser.getIdTokenResult(true)
+  }
+  const { hid, person } = result.claims
+  if (typeof hid !== 'string' || hid === '' || !isPerson(person)) return null
+  return { hid, person }
+}
+
+const MOCK_USER: AppUser = { username: 'mock@local', uid: 'mock', hid: 'mock', person: 'ele' }
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<LocalUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Modo MOCK (so em desenvolvimento): usuario fixo, sem Firebase Auth (auth e nulo).
+  // O escopo e definido no inicializador, antes de qualquer filho montar.
+  const [user, setUser] = useState<AppUser | null>(() => {
+    if (!MOCK) return null
+    setScope({ hid: MOCK_USER.hid, person: MOCK_USER.person })
+    return MOCK_USER
+  })
+  const [loading, setLoading] = useState(!MOCK)
+  const [accessError, setAccessError] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    purgeLegacyAuthKeys()
+
+    if (MOCK) return
+
+    let cancelled = false
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Sem usuario: nao apaga accessError, o signOut forcado cai neste ramo e a mensagem precisa sobreviver.
       if (!firebaseUser) {
-        setUser(getStoredLegacyUser())
+        setScope(null)
+        setUser(null)
         setLoading(false)
         return
       }
 
-      setUser({ username: firebaseUser.email ?? '' })
-      setLoading(false)
-    })
-    return unsubscribe
-  }, [])
+      let claims: { hid: string; person: PersonType } | null = null
+      try {
+        claims = await readClaims(firebaseUser)
+      } catch {
+        claims = null
+      }
+      if (cancelled) return
 
-  const signIn = async (credential: string, password: string) => {
-    try {
-      const normalizedCredential = credential.trim()
-
-      if (!normalizedCredential.includes('@')) {
-        if (normalizedCredential !== VALID_USERNAME || password !== VALID_PASSWORD) {
-          throw new Error('Usuario ou senha incorretos')
+      if (!claims) {
+        setScope(null)
+        setUser(null)
+        setAccessError(ACCESS_DENIED_MESSAGE)
+        try {
+          await firebaseSignOut(auth)
+        } catch {
+          // sem rede: o estado local ja esta sem acesso
         }
-
-        localStorage.setItem(LEGACY_AUTH_KEY, normalizedCredential)
-        localStorage.setItem(OLD_LEGACY_AUTH_KEY, JSON.stringify({ username: normalizedCredential }))
-        setUser({ username: normalizedCredential })
+        if (!cancelled) setLoading(false)
         return
       }
 
-      localStorage.removeItem(LEGACY_AUTH_KEY)
-      localStorage.removeItem(OLD_LEGACY_AUTH_KEY)
-      await signInWithEmailAndPassword(auth, normalizedCredential, password)
-    } catch (err) {
-      throw toError(err)
-    }
-  }
+      // setScope ANTES de setUser: o AreaProvider carrega as configuracoes no efeito de user
+      // e getSettings ja consulta o Firestore com o escopo do dono.
+      setScope({ hid: claims.hid, person: claims.person })
+      setUser({
+        username: firebaseUser.email ?? '',
+        uid: firebaseUser.uid,
+        hid: claims.hid,
+        person: claims.person,
+      })
+      setLoading(false)
+    })
 
-  const signUp = async (email: string, password: string) => {
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  const signIn = async (email: string, password: string) => {
+    setAccessError(null)
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
+      await signInWithEmailAndPassword(auth, email.trim(), password)
     } catch (err) {
       throw toError(err)
     }
   }
 
   const signOut = async () => {
-    localStorage.removeItem(LEGACY_AUTH_KEY)
-    localStorage.removeItem(OLD_LEGACY_AUTH_KEY)
-    await firebaseSignOut(auth)
+    if (!MOCK) await firebaseSignOut(auth)
+    setScope(null)
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, accessError, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

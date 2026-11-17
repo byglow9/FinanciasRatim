@@ -10,23 +10,19 @@ import { PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 
 const loginSchema = z.object({
-  credential: z.string().min(1, 'Usuario obrigatorio'),
+  email: z.string().email('E-mail invalido'),
   password: z.string().min(1, 'Senha obrigatoria'),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
 
-type Mode = 'login' | 'signup'
-
 export function LoginForm() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, accessError } = useAuth()
   const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>('login')
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -35,30 +31,13 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError(null)
     try {
-      if (mode === 'signup') {
-        const emailResult = z.string().email().safeParse(data.credential)
-        if (!emailResult.success) {
-          throw new Error('Use um e-mail valido para criar conta')
-        }
-        if (data.password.length < 6) {
-          throw new Error('A senha precisa ter ao menos 6 caracteres')
-        }
-        await signUp(emailResult.data, data.password)
-      } else {
-        await signIn(data.credential, data.password)
-      }
+      await signIn(data.email, data.password)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login')
     }
   }
 
-  const toggleMode = () => {
-    setError(null)
-    reset()
-    setMode((m) => (m === 'login' ? 'signup' : 'login'))
-  }
-
-  const isSignup = mode === 'signup'
+  const shownError = error ?? accessError
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-4">
@@ -68,23 +47,21 @@ export function LoginForm() {
             <PiggyBank className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Financias Ratimbum</CardTitle>
-          <CardDescription>
-            {isSignup ? 'Crie sua conta para comecar' : 'Entre para gerenciar suas financas'}
-          </CardDescription>
+          <CardDescription>Entre para gerenciar suas financas</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="credential">{isSignup ? 'E-mail' : 'Usuario ou e-mail'}</Label>
+              <Label htmlFor="email">E-mail</Label>
               <Input
-                id="credential"
-                type={isSignup ? 'email' : 'text'}
-                placeholder={isSignup ? 'seu@email.com' : 'seu usuario'}
-                autoComplete={isSignup ? 'email' : 'username'}
-                {...register('credential')}
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                autoComplete="email"
+                {...register('email')}
               />
-              {errors.credential && (
-                <p className="text-sm text-destructive">{errors.credential.message}</p>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -94,7 +71,7 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 placeholder="••••••"
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 {...register('password')}
               />
               {errors.password && (
@@ -102,33 +79,16 @@ export function LoginForm() {
               )}
             </div>
 
-            {error && (
+            {shownError && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {shownError}
               </div>
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting
-                ? isSignup
-                  ? 'Criando conta...'
-                  : 'Entrando...'
-                : isSignup
-                  ? 'Criar conta'
-                  : 'Entrar'}
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            {isSignup ? 'Ja tem uma conta?' : 'Nao tem conta?'}{' '}
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="font-medium text-primary hover:underline"
-            >
-              {isSignup ? 'Entrar' : 'Criar conta'}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>

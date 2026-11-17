@@ -1,8 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, type Auth } from 'firebase/auth'
 import { initializeFirestore, type Firestore } from 'firebase/firestore'
-
-const USE_MOCK = import.meta.env.VITE_USE_EMULATOR === 'true'
+import { MOCK } from '@/lib/mockStorage'
 
 function createFirebase() {
   const app = initializeApp({
@@ -17,7 +16,7 @@ function createFirebase() {
 }
 
 // In mock mode, skip Firebase init entirely to avoid invalid-api-key crash
-const firebase = USE_MOCK ? { auth: null, db: null } : createFirebase()
+const firebase = MOCK ? { auth: null, db: null } : createFirebase()
 
 export const auth = firebase.auth as Auth
 export const db = firebase.db as Firestore

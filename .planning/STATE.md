@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Revisão de importações, contas fixas e webhook
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-17T19:29:15.596Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-11-17T19:31:44.481Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 02 execution started
-state_head: d33ae87a023c0169752441a0ae38defeeadbc5b0
+state_head: ce608272c1f425f4668fb51f512890a1d8ba242f
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 19
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 02 (Revisão de importações, contas fixas e webhook) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 02 execution started
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P12 | 1h | 3 tasks | 0 files |
 | Phase 01 P13 | 1h | 3 tasks | 0 files |
 | Phase 02 P01 | 40min | 3 tasks | 8 files |
+| Phase 02 P02 | 20min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,7 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-13: regras restritivas publicadas (2026-11-17T18:31:31Z), dono respondeu keep; pos-cutover R8 registrado como pendencias humanas nao confirmadas (user actions, .env.local, APP_API_KEY Railway, git rm --cached .env.local, troca de senhas)
 - [Phase 02]: [Phase 02-01]: Webhook Pluggy: segredo so em cabecalho x-webhook-secret (sha256 + timingSafeEqual), dono sempre de bankConnections/{itemId}, sem segredo a rota nao existe (404)
 - [Phase 02]: [Phase 02-01]: syncItem na mesma fila do syncAll com coalescencia por item (itemRuns); idempotencia por eventId em memoria sem colecao webhookEvents
+- [Phase 02]: 02-02: webhook desativado pela Pluggy conta em reactivated; erros do SDK mascaram segredo e client secret; validateWebhookUrl devolve motivo fixo sem trecho da URL
 
 ### Pending Todos
 
@@ -126,6 +128,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T19:29:15.523Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-11-17T19:31:44.434Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

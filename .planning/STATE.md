@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-11-17T16:29:44.466Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-11-17T16:33:25.428Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 01 execution started
-state_head: e07a99448e37bd8cfa0223e97caaead91749f156
+state_head: 2c4aba914cc2ef8aec98af9555db2b8e9ffd8f3a
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 01 (Fundação de dados e acesso) — EXECUTING
-Plan: 9 of 13
+Plan: 10 of 13
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 01 execution started
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P06 | 25 min | 3 tasks | 8 files |
 | Phase 01 P07 | 30min | 2 tasks | 7 files |
 | Phase 01 P08 | 15 min | 3 tasks | 13 files |
+| Phase 01 P09 | 25 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,7 @@ Recent decisions affecting current work:
 - [Phase 01]: [Phase 01-07]: Conexao existente sem ownerId e tratada como de outro dono (403) e o agendador a registra em lastSyncError ate o backfill
 - [Phase 01]: [Phase 01-07]: syncAll rejeita hid vazio para nunca virar sincronizar tudo; execucoes por chave com fila unica
 - [Phase 01]: Plano 01-08: settings mantem ID fixo main; troca por documento por hid fica para a Fase 8 — Open Question 4; evita reescrita agora
+- [Phase 01]: 01-09: categoryDefs do AreaContext reconciliados com settings.categories (fonte de quem esta ativo) para documento antigo e rollback — getSettings mescla DEFAULT_SETTINGS; sem reconciliar, categorias removidas ressuscitariam
 
 ### Pending Todos
 
@@ -116,6 +118,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T16:29:44.431Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-11-17T16:33:25.393Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None

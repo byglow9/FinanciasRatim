@@ -14,7 +14,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **FUND-03**: O Firestore só permite ler e escrever dados do próprio dono, validado por testes com o emulador, e publicado só depois de login, `ownerId`, índices e cliente estarem prontos
 - [x] **FUND-04**: O servidor aceita chamadas apenas com token do Firebase (não mais com a chave compartilhada no navegador), deriva o dono do token, grava `ownerId` em tudo e libera só os domínios autorizados
 - [x] **FUND-05**: Categorias têm identificador estável, de modo que renomear uma categoria não perde histórico nem limites
-- [ ] **FUND-06**: Cálculos de orçamento, ledger, alertas e falas do mascote ficam em um núcleo puro compartilhado entre site e servidor, com testes automatizados e fuso de São Paulo
+- [x] **FUND-06**: Cálculos de orçamento, ledger, alertas e falas do mascote ficam em um núcleo puro compartilhado entre site e servidor, com testes automatizados e fuso de São Paulo
 - [x] **FUND-07**: O servidor roda com Node 22.23.4 ou mais novo e com `firebase` 13 e `firebase-admin` 14 atualizados
 
 ### Importações bancárias, contas fixas e webhook (REV)
@@ -146,7 +146,7 @@ Preenchida na criação do roadmap.
 | FUND-03 | Phase 1 | Pending |
 | FUND-04 | Phase 1 | Complete |
 | FUND-05 | Phase 1 | Complete |
-| FUND-06 | Phase 1 | Pending |
+| FUND-06 | Phase 1 | Complete |
 | FUND-07 | Phase 1 | Complete |
 | REV-01 | Phase 2 | Pending |
 | REV-02 | Phase 2 | Pending |

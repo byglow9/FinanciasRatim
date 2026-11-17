@@ -11,6 +11,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { SavingsTransaction } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 
 type RawSavings = Omit<SavingsTransaction, 'date' | 'createdAt'> & {
   date: string
@@ -26,7 +27,7 @@ export async function getSavingsTransactions(): Promise<SavingsTransaction[]> {
       .sort((a, b) => b.date.getTime() - a.date.getTime())
   }
 
-  const q = query(collection(db, COL), orderBy('date', 'desc'))
+  const q = query(collection(db, COL), ...ownerScope(), orderBy('date', 'desc'))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -49,6 +50,7 @@ export async function addSavingsTransaction(
 
   const docRef = await addDoc(collection(db, COL), {
     ...transaction,
+    ownerId: ownerId(),
     date: Timestamp.fromDate(transaction.date),
     createdAt: Timestamp.now(),
   })

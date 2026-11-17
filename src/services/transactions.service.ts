@@ -14,6 +14,9 @@ import { db } from '@/lib/firebase'
 import type { Transaction, PersonType } from '@/types'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
+import { accumulatedBalance } from '@shared/core/ledger.js'
+import { monthRangeOf } from '@shared/core/time.js'
 
 type RawTransaction = Omit<Transaction, 'date' | 'createdAt'> & {
   date: string
@@ -42,6 +45,7 @@ export async function getTransactions(
   const end = endOfMonth(month)
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('person', '==', person),
     where('date', '>=', Timestamp.fromDate(start)),
     where('date', '<=', Timestamp.fromDate(end)),
@@ -73,6 +77,7 @@ export async function getAllTransactionsForMonth(month: Date): Promise<Transacti
   const end = endOfMonth(month)
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('date', '>=', Timestamp.fromDate(start)),
     where('date', '<=', Timestamp.fromDate(end)),
     orderBy('date', 'desc')
@@ -99,6 +104,7 @@ export async function addTransaction(
 
   const docRef = await addDoc(collection(db, COL), {
     ...transaction,
+    ownerId: ownerId(),
     date: Timestamp.fromDate(transaction.date),
     createdAt: Timestamp.now(),
   })
@@ -148,6 +154,7 @@ export async function getTransactionsByCategory(category: string): Promise<Trans
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('category', '==', category)
   )
   const snapshot = await getDocs(q)
@@ -163,30 +170,31 @@ export async function getAccumulatedBalance(
   person: PersonType,
   untilMonth: Date
 ): Promise<number> {
-  const end = endOfMonth(untilMonth)
+  // Limite: ultimo milissegundo do mes em Sao Paulo (D-12); a soma em centavos vem do nucleo.
+  const until = monthRangeOf(untilMonth.getFullYear(), untilMonth.getMonth() + 1).end
 
   if (MOCK) {
-    return mList<RawTransaction>(COL)
-      .filter((t) => {
-        const d = new Date(t.date)
-        return t.person === person && d <= end
-      })
-      .reduce((acc, t) => {
-        return t.type === 'entrada' ? acc + t.amount : acc - t.amount
-      }, 0)
+    return accumulatedBalance(
+      mList<RawTransaction>(COL)
+        .filter((t) => t.person === person)
+        .map((t) => ({ type: t.type, amount: t.amount, date: new Date(t.date) })),
+      until
+    )
   }
 
-  // Busca todas as transações da pessoa e filtra por data no cliente
-  // para evitar necessidade de índice composto no Firestore
+  // Busca todas as transações da pessoa e filtra por data no nucleo
+  // para evitar necessidade de índice composto no Firestore (so igualdade: ownerId e person)
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('person', '==', person)
   )
   const snapshot = await getDocs(q)
-  return snapshot.docs.reduce((acc, doc) => {
-    const data = doc.data()
-    const txDate = data.date.toDate()
-    if (txDate > end) return acc
-    return data.type === 'entrada' ? acc + data.amount : acc - data.amount
-  }, 0)
+  return accumulatedBalance(
+    snapshot.docs.map((d) => {
+      const data = d.data()
+      return { type: data.type, amount: data.amount, date: data.date.toDate() }
+    }),
+    until
+  )
 }

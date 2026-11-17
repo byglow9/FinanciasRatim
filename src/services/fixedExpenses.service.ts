@@ -13,6 +13,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { FixedExpense, FixedExpensePayment, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 
 type RawExpense = Omit<FixedExpense, 'createdAt'> & { createdAt: string }
 type RawPayment = Omit<FixedExpensePayment, 'paidAt'> & { paidAt: string }
@@ -32,12 +33,14 @@ export async function getFixedExpenses(
 
   let q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('isActive', '==', true),
     orderBy('dueDay', 'asc')
   )
   if (person) {
     q = query(
       collection(db, COL),
+      ...ownerScope(),
       where('person', '==', person),
       where('isActive', '==', true),
       orderBy('dueDay', 'asc')
@@ -64,6 +67,7 @@ export async function addFixedExpense(
 
   const docRef = await addDoc(collection(db, COL), {
     ...expense,
+    ownerId: ownerId(),
     createdAt: Timestamp.now(),
   })
   return docRef.id
@@ -96,7 +100,11 @@ export async function deleteFixedExpense(id: string): Promise<void> {
 
   await updateDoc(doc(db, COL, id), { isActive: false })
   // Remove todos os pagamentos associados
-  const paymentsQuery = query(collection(db, PAY_COL), where('fixedExpenseId', '==', id))
+  const paymentsQuery = query(
+    collection(db, PAY_COL),
+    ...ownerScope(),
+    where('fixedExpenseId', '==', id)
+  )
   const paymentsSnapshot = await getDocs(paymentsQuery)
   const deletePromises = paymentsSnapshot.docs.map((d) => deleteDoc(doc(db, PAY_COL, d.id)))
   await Promise.all(deletePromises)
@@ -114,6 +122,7 @@ export async function getPaymentsForMonth(
 
   const q = query(
     collection(db, PAY_COL),
+    ...ownerScope(),
     where('month', '==', month),
     where('year', '==', year)
   )
@@ -140,7 +149,7 @@ export async function markAsPaid(
   }
 
   const docRef = await addDoc(collection(db, PAY_COL), {
-    fixedExpenseId, month, year, paidAmount, paidAt: Timestamp.now(),
+    ownerId: ownerId(), fixedExpenseId, month, year, paidAmount, paidAt: Timestamp.now(),
   })
   return docRef.id
 }
@@ -163,6 +172,7 @@ export async function getFixedExpensesByCategory(category: string): Promise<Fixe
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('category', '==', category),
     where('isActive', '==', true)
   )

@@ -8,9 +8,14 @@ import { db } from '@/lib/firebase'
 import type { Settings } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
 import { MOCK, mGetDoc, mSetDoc } from '@/lib/mockStorage'
+import { ownerId } from '@/lib/scope'
 
 const DOC_KEY = 'settings::main'
 const SETTINGS_DOC_ID = 'main'
+
+// Unico lugar que monta a referencia de settings. O ID continua fixo (main) nesta fase;
+// a troca por um documento por hid fica para a Fase 8 (operacao de dados).
+const settingsRef = () => doc(db, 'settings', SETTINGS_DOC_ID)
 
 export async function getSettings(): Promise<Settings | null> {
   if (MOCK) {
@@ -25,11 +30,12 @@ export async function getSettings(): Promise<Settings | null> {
     return defaults
   }
 
-  const docRef = doc(db, 'settings', SETTINGS_DOC_ID)
+  const docRef = settingsRef()
   const docSnap = await getDoc(docRef)
-  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as Settings
+  // Tolera documento parcial (por exemplo o criado pelo backfill): o que faltar vem do padrao.
+  if (docSnap.exists()) return { id: docSnap.id, ...DEFAULT_SETTINGS, ...docSnap.data() } as Settings
   const defaultSettings = { ...DEFAULT_SETTINGS }
-  await setDoc(docRef, defaultSettings)
+  await setDoc(docRef, { ...DEFAULT_SETTINGS, ownerId: ownerId() })
   return { id: SETTINGS_DOC_ID, ...defaultSettings }
 }
 
@@ -40,5 +46,5 @@ export async function updateSettings(settings: Partial<Omit<Settings, 'id'>>): P
     return
   }
 
-  await updateDoc(doc(db, 'settings', SETTINGS_DOC_ID), settings)
+  await updateDoc(settingsRef(), settings)
 }

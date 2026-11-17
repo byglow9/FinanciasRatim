@@ -1,5 +1,6 @@
 import { collection, onSnapshot, query } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { auth, db } from '@/lib/firebase'
+import { ownerScope } from '@/lib/scope'
 import type { PersonType } from '@/types'
 
 export interface BankConnection {
@@ -20,15 +21,17 @@ export interface SyncSummary {
 }
 
 const API_URL = (import.meta.env.VITE_BANK_API_URL as string | undefined)?.replace(/\/$/, '')
-const API_KEY = import.meta.env.VITE_BANK_API_KEY as string | undefined
 
-export const BANK_ENABLED = Boolean(API_URL && API_KEY)
+export const BANK_ENABLED = Boolean(API_URL)
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (!API_URL || !API_KEY) throw new Error('Servidor bancario nao configurado')
+  if (!API_URL) throw new Error('Servidor bancario nao configurado')
+  // O servidor so aceita o ID token do Firebase (FUND-04); o token nunca e registrado em log.
+  const token = await auth?.currentUser?.getIdToken()
+  if (!token) throw new Error('Entre para usar a sincronizacao')
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, ...init.headers },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init.headers },
   })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error ?? `Erro ${res.status}`)
@@ -37,21 +40,28 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export function subscribeBankConnections(cb: (list: BankConnection[]) => void): () => void {
   if (!db) return () => {}
-  return onSnapshot(query(collection(db, 'bankConnections')), (snap) => {
-    cb(
-      snap.docs.map((d) => {
-        const data = d.data()
-        return {
-          itemId: d.id,
-          person: data.person,
-          connectorName: data.connectorName ?? null,
-          connectorImageUrl: data.connectorImageUrl ?? null,
-          status: data.status ?? '',
-          lastSyncAt: data.lastSyncAt?.toDate?.() ?? null,
-        } as BankConnection
-      })
-    )
-  })
+  return onSnapshot(
+    query(collection(db, 'bankConnections'), ...ownerScope()),
+    (snap) => {
+      cb(
+        snap.docs.map((d) => {
+          const data = d.data()
+          return {
+            itemId: d.id,
+            person: data.person,
+            connectorName: data.connectorName ?? null,
+            connectorImageUrl: data.connectorImageUrl ?? null,
+            status: data.status ?? '',
+            lastSyncAt: data.lastSyncAt?.toDate?.() ?? null,
+          } as BankConnection
+        })
+      )
+    },
+    (err) => {
+      console.error('[bank] listener:', err.message)
+      cb([])
+    }
+  )
 }
 
 export const createConnectToken = (person: PersonType) =>

@@ -89,7 +89,7 @@ export function BankConnections() {
       <CardContent className="space-y-4">
         {!BANK_ENABLED ? (
           <p className="text-sm text-muted-foreground">
-            Defina VITE_BANK_API_URL e VITE_BANK_API_KEY para ativar a sincronizacao automatica.
+            Defina VITE_BANK_API_URL para ativar a sincronizacao automatica.
           </p>
         ) : (
           <>

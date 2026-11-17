@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8')
 
-// O Plano 08 estende esta lista com os nomes da chave compartilhada do servidor.
+// Inclui a chave compartilhada do servidor (variavel do site e cabecalho antigo, Plano 08).
 const FORBIDDEN = [
   'signUp',
   'createUserWithEmailAndPassword',
@@ -18,6 +18,8 @@ const FORBIDDEN = [
   'VITE_APP_PASSWORD',
   'financias_legacy_user',
   'financias_auth',
+  'VITE_BANK_API_KEY',
+  'x-api-key',
 ]
 
 function walk(dir, exts, out = []) {

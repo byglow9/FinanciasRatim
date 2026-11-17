@@ -9,7 +9,13 @@
     "build": "tsc -b && vite build",
     "build:amigo": "tsc -b && vite build --mode amigo",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:core": "node --test \"shared/**/*.test.js\"",
+    "test:core:tz": "TZ=UTC node --test \"shared/**/*.test.js\" && TZ=Asia/Tokyo node --test \"shared/**/*.test.js\"",
+    "test:server": "npm --prefix server test",
+    "test:static": "node --test \"test/static/*.test.js\"",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-coinki \"node --test test/rules/*.test.js\"",
+    "test:emu": "firebase emulators:exec --only auth,firestore --project demo-coinki \"node --test --test-concurrency=1 server/test/emu/*.test.js\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -17,7 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "firebase": "^12.10.0",
+    "firebase": "^13.4.0",
     "lucide-react": "^0.577.0",
     "pluggy-connect-sdk": "^2.15.0",
     "react": "^19.2.0",
@@ -30,6 +36,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^24.10.1",

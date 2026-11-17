@@ -7,6 +7,7 @@
     "module": "ESNext",
     "types": ["vite/client"],
     "skipLibCheck": true,
+    "allowJs": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -27,8 +28,10 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "shared"],
+  "exclude": ["shared/**/*.test.js"]
 }

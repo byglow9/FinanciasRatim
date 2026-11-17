@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-11-17T15:57:54.671Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-11-17T16:02:38.859Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 01 execution started
-state_head: 68249b4b6f2f127d795b3e11a13dcec665c38046
+state_head: 59eaf1ce7b5eaf478b553d7d57b63a6b498d48a1
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 01 (Fundação de dados e acesso) — EXECUTING
-Plan: 2 of 13
+Plan: 3 of 13
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 01 execution started
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01 P01 | 10 min | 3 tasks | 1 files |
+| Phase 01 P02 | 10 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Teste real do cartão (CARD-01) começa como trilha paralela somente leitura na Fase 2; o requisito é entregue na Fase 6
 - [Phase 01]: Plano 01-01: pacotes SUS (firebase 13.4.0, firebase-admin 14.5.1, pluggy-sdk 0.94.3, firebase-tools 15.9.1) approved pelo dono — Gate T-01-SC fechado com evidência npm
 - [Phase 01]: Higiene do repositório: untrack-all-except-amigo (.env.amigo fora, D-15) — Decisão do dono; Plano 02 aplica
+- [Phase 01]: Plano 01-02: instalados exatamente firebase 13.4.0, firebase-admin 14.5.1, pluggy-sdk 0.94.3; Node 22.23.5 + JRE 21 via scripts/dev-env.sh; Dockerfile na raiz — Pacotes aprovados no Plano 01; D-10
 
 ### Pending Todos
 
@@ -87,6 +89,7 @@ None yet.
 - Regra de parcelas contra o limite precisa de confirmação do dono antes da Fase 6
 - Decisão do amigo (só manual ou conta MeuPluggy própria) antes da Fase 8
 - Nome "Coinki": busca em lojas e INPI pendente; reservar o ID `coinki` no Hosting cedo
+- 01-02: .env.local ainda rastreado no git; guard de segredos bloqueou git rm --cached .env.local. Rodar manualmente.
 
 ## Deferred Items
 
@@ -98,6 +101,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T15:57:54.635Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-11-17T16:02:38.824Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

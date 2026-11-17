@@ -1,0 +1,21 @@
+{
+  "name": "financias-bank-sync",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Sincroniza transacoes bancarias (Pluggy / Open Finance) com o Firestore do site",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.0.0",
+    "pluggy-sdk": "^0.93.0"
+  }
+}

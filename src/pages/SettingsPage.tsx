@@ -5,6 +5,7 @@ import { useEventCategories } from '@/hooks/useEventCategories'
 import { updateSettings } from '@/services/settings.service'
 import { getTransactionsByCategory } from '@/services/transactions.service'
 import { getFixedExpensesByCategory } from '@/services/fixedExpenses.service'
+import { BankConnections } from '@/components/settings/BankConnections'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -157,6 +158,8 @@ export function SettingsPage() {
           <p className="text-sm text-muted-foreground">Personalize o aplicativo</p>
         </div>
       </div>
+
+      <BankConnections />
 
       {/* Grid layout para desktop */}
       <div className="grid gap-6 md:grid-cols-2">

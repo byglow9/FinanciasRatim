@@ -4,7 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { PluggyClient } from 'pluggy-sdk'
 import { createApp } from './app.js'
 import { parseOrigins } from './auth.js'
-import { cleanExistingDescriptions, syncAll, syncConnection } from './sync.js'
+import { cleanExistingDescriptions, syncAll, syncConnection, syncItem } from './sync.js'
 
 function required(name) {
   const value = process.env[name]
@@ -26,6 +26,19 @@ if (process.env.APP_API_KEY) {
   console.warn('[server] APP_API_KEY nao e mais usada (a API aceita so token do Firebase); remova a variavel')
 }
 
+// Webhook da Pluggy (REV-06): segredo opcional. Sem ele a rota nao existe e o servidor segue so
+// com o polling; por isso nao usa required() (o deploy nao pode derrubar o servidor antes de a
+// variavel existir). PREVIOUS cobre a janela de rotacao do segredo.
+const webhookSecrets = [
+  process.env.PLUGGY_WEBHOOK_SECRET,
+  process.env.PLUGGY_WEBHOOK_SECRET_PREVIOUS,
+].filter(Boolean)
+if (webhookSecrets.length === 0) {
+  console.warn('[server] PLUGGY_WEBHOOK_SECRET ausente: webhook da Pluggy desativado (so polling)')
+} else {
+  console.log('[server] webhook da Pluggy ativo em POST /webhooks/pluggy')
+}
+
 initializeApp({ credential: cert(serviceAccount) })
 const db = getFirestore()
 db.settings({ ignoreUndefinedProperties: true })
@@ -34,8 +47,9 @@ const app = createApp({
   verifyToken: (token) => getAuth().verifyIdToken(token),
   db,
   pluggy,
-  sync: { syncAll, syncConnection, cleanExistingDescriptions },
+  sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem },
   origins,
+  webhookSecret: webhookSecrets,
 })
 
 const port = Number(process.env.PORT ?? 3000)

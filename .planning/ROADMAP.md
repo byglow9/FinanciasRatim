@@ -85,7 +85,8 @@ Plans:
 **Goal:** O ledger fica confiável: os itens importados em revisão são resolvidos com um toque, o pagamento de conta fixa vindo do banco se vincula à fixa sem contar em dobro, e os dados do banco chegam na hora em vez de só a cada 6 horas
 **Mode:** mvp
 **Depends on:** Phase 1
-**Requirements**: REV-01, REV-02, REV-03, REV-04, REV-05, REV-06, REV-07
+**Requirements**: REV-03, REV-06, REV-07
+**Escopo reduzido pelo dono (2026-11-17):** REV-01, REV-02, REV-04 e REV-05 (fila de revisão, vínculo com conta fixa, estorno) foram descartados; os critérios de sucesso 1, 2 (parte de vínculo) e 3 abaixo não se aplicam. Ver `02-CONTEXT.md`.
 **Trilha paralela (não bloqueia a fase):** iniciar aqui o teste somente leitura do cartão (registrar o que `creditData`, faturas e parcelas devolvem na conexão real do Bradesco, sem dados sensíveis em log), para que o escopo do cartão esteja conhecido quando a Fase 6 começar. O requisito CARD-01 é entregue e verificado na Fase 6. Atenção ao limite de histórico do banco (cerca de 4 consultas por mês por CPF por banco).
 **Success Criteria** (what must be TRUE):
 

@@ -19,11 +19,11 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Importações bancárias, contas fixas e webhook (REV)
 
-- [ ] **REV-01**: Usuário vê uma lista dos itens importados que estão em revisão (duplicado, transferência própria, pagamento de fatura, estorno) com o motivo de cada um
-- [ ] **REV-02**: Usuário resolve cada item em revisão com um toque: importar, ignorar, vincular a um lançamento manual ou vincular a uma conta fixa
+- [-] **REV-01**: ~~Usuário vê uma lista dos itens importados que estão em revisão (duplicado, transferência própria, pagamento de fatura, estorno) com o motivo de cada um~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
+- [-] **REV-02**: ~~Usuário resolve cada item em revisão com um toque: importar, ignorar, vincular a um lançamento manual ou vincular a uma conta fixa~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [ ] **REV-03**: Usuário marca uma conta fixa como paga manualmente, e isso nunca cria lançamento
-- [ ] **REV-04**: Quando o banco importa o pagamento de uma conta fixa, o sistema sugere vincular a ela (por valor, descrição e data); vinculado, o lançamento não conta no "Dia a dia" nem nos limites
-- [ ] **REV-05**: Estornos entram como crédito na categoria e não como receita
+- [-] **REV-04**: ~~Quando o banco importa o pagamento de uma conta fixa, o sistema sugere vincular a ela (por valor, descrição e data); vinculado, o lançamento não conta no "Dia a dia" nem nos limites~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
+- [-] **REV-05**: ~~Estornos entram como crédito na categoria e não como receita~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [ ] **REV-06**: O servidor recebe webhooks da Pluggy (`item/updated`, `transactions/created`, `transactions/updated`, `transactions/deleted`), autenticados por cabeçalho secreto, sincroniza na hora e mantém o polling como reserva
 - [ ] **REV-07**: Usuário vê quando foi a última atualização dos dados do banco e se o consentimento está vencido ou prestes a vencer, com ação para reconectar
 
@@ -148,11 +148,11 @@ Preenchida na criação do roadmap.
 | FUND-05 | Phase 1 | Complete |
 | FUND-06 | Phase 1 | Complete |
 | FUND-07 | Phase 1 | Complete |
-| REV-01 | Phase 2 | Pending |
-| REV-02 | Phase 2 | Pending |
+| REV-01 | Phase 2 | Descartado (2026-11-17) |
+| REV-02 | Phase 2 | Descartado (2026-11-17) |
 | REV-03 | Phase 2 | Pending |
-| REV-04 | Phase 2 | Pending |
-| REV-05 | Phase 2 | Pending |
+| REV-04 | Phase 2 | Descartado (2026-11-17) |
+| REV-05 | Phase 2 | Descartado (2026-11-17) |
 | REV-06 | Phase 2 | Pending |
 | REV-07 | Phase 2 | Pending |
 | LIM-01 | Phase 3 | Pending |

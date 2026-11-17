@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, Check, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getDate } from 'date-fns'
+import { useArea } from '@/contexts/AreaContext'
+import { categoryDisplayName } from '@shared/core/categories.js'
 
 interface FixedExpenseListProps {
   expenses: FixedExpense[]
@@ -24,6 +26,7 @@ export function FixedExpenseList({
   isExpensePaid,
   loading,
 }: FixedExpenseListProps) {
+  const { categoryDefs } = useArea()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const today = getDate(new Date())
 
@@ -101,7 +104,7 @@ export function FixedExpenseList({
                   </p>
                   <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
                     <Badge variant="secondary" className="text-xs">
-                      {expense.category}
+                      {categoryDisplayName(expense, categoryDefs)}
                     </Badge>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
@@ -176,7 +179,7 @@ export function FixedExpenseList({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="text-xs">
-                    {expense.category}
+                    {categoryDisplayName(expense, categoryDefs)}
                   </Badge>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />

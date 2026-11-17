@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import type { Transaction, PersonType } from '@/types'
 import { useArea } from '@/contexts/AreaContext'
+import { activeCategoryNames, categoryDisplayName, resolveCategoryId } from '@shared/core/categories.js'
 import { format } from 'date-fns'
 
 const transactionSchema = z.object({
@@ -41,8 +42,12 @@ export function TransactionForm({
   person,
   initialData,
 }: TransactionFormProps) {
-  const { settings } = useArea()
-  const categories = settings.categories || []
+  const { categoryDefs } = useArea()
+  // Categoria atual do item em edicao (nome atual por id): se estiver arquivada, a opcao continua disponivel (D-08).
+  const currentCategory = initialData ? categoryDisplayName(initialData, categoryDefs) : ''
+  const activeNames = activeCategoryNames(categoryDefs)
+  const categories =
+    currentCategory && !activeNames.includes(currentCategory) ? [currentCategory, ...activeNames] : activeNames
 
   const {
     register,
@@ -56,7 +61,7 @@ export function TransactionForm({
           type: initialData.type,
           amount: initialData.amount,
           description: initialData.description,
-          category: initialData.category,
+          category: currentCategory,
           date: format(initialData.date, 'yyyy-MM-dd'),
         }
       : {
@@ -69,8 +74,11 @@ export function TransactionForm({
   })
 
   const handleFormSubmit = async (data: TransactionFormData) => {
+    // category (texto) e categoryId (resolvido pelas definicoes) seguem juntos durante a transicao (D-07).
+    const categoryId = resolveCategoryId(data.category, categoryDefs)
     await onSubmit({
       ...data,
+      ...(categoryId ? { categoryId } : {}),
       person,
       date: new Date(data.date + 'T' + new Date().toTimeString().slice(0, 8)),
     })
@@ -124,7 +132,7 @@ export function TransactionForm({
 
           <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
-            <Select id="category" defaultValue={initialData?.category ?? ''} {...register('category')}>
+            <Select id="category" defaultValue={currentCategory} {...register('category')}>
               <option value="">Selecione...</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>

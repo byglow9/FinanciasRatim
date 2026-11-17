@@ -15,6 +15,8 @@ import { formatCurrency, formatTime } from '@/lib/utils'
 import { PiggyBank, Target, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useArea } from '@/contexts/AreaContext'
+import { categoryDisplayName } from '@shared/core/categories.js'
 
 interface DayEvent {
   type: 'transaction-entrada' | 'transaction-saida' | 'fixed' | 'savings' | 'goal' | 'note'
@@ -58,6 +60,7 @@ interface MonthCalendarProps {
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
 export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals, notes = [], onAddNote, onEditNote, onDeleteNote }: MonthCalendarProps) {
+  const { categoryDefs } = useArea()
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
   // Build 42-cell grid starting from Monday of the first week of the month
@@ -295,7 +298,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                             {t.type === 'entrada' ? '↑' : '↓'}
                           </span>
                           <span>{t.description}</span>
-                          <span className="text-xs text-muted-foreground">{t.category}</span>
+                          <span className="text-xs text-muted-foreground">{categoryDisplayName(t, categoryDefs)}</span>
                           <span className="text-xs text-muted-foreground">{formatTime(t.date)}</span>
                         </div>
                         <span className={cn(
@@ -331,7 +334,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                             {isPaid ? '✓' : '○'}
                           </span>
                           <span>{fe.name}</span>
-                          <span className="text-xs text-muted-foreground">{fe.category}</span>
+                          <span className="text-xs text-muted-foreground">{categoryDisplayName(fe, categoryDefs)}</span>
                         </div>
                         <span className={cn('font-medium', isPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600')}>
                           {formatCurrency(fe.amount)}

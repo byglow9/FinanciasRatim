@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useArea } from '@/contexts/AreaContext'
+import { categoryDisplayName } from '@shared/core/categories.js'
 
 function formatDayHeader(date: Date): string {
   if (isToday(date)) return 'Hoje'
@@ -27,6 +29,7 @@ export function TransactionList({
   onDelete,
   loading,
 }: TransactionListProps) {
+  const { categoryDefs } = useArea()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleDelete = async (id: string) => {
@@ -104,7 +107,7 @@ export function TransactionList({
                 <p className="font-medium truncate">{transaction.description}</p>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Badge variant="secondary" className="text-xs">
-                    {transaction.category}
+                    {categoryDisplayName(transaction, categoryDefs)}
                   </Badge>
                   <span>{formatDateTime(transaction.date)}</span>
                 </div>
@@ -175,7 +178,7 @@ export function TransactionList({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {transaction.category}
+                  {categoryDisplayName(transaction, categoryDefs)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">{formatDateTime(transaction.date)}</span>
               </div>

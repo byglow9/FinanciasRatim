@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classify, findDuplicate, mapCategory, toLocalDate } from '../src/classify.js'
+import { classify, cleanDescription, findDuplicate, mapCategory, toLocalDate } from './classify.js'
 
 const now = new Date('2026-11-09T15:00:00Z')
 const tx = (over) => ({
@@ -77,8 +77,6 @@ test('categoria da Pluggy e mapeada para as categorias do site', () => {
   // categoria removida das configuracoes cai em Outros
   assert.equal(mapCategory(['Pharmacy', 'Healthcare'], cats), 'Outros')
 })
-
-import { cleanDescription } from '../src/classify.js'
 
 test('descricoes do banco ficam legiveis', () => {
   const cases = [

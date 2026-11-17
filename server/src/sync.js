@@ -6,7 +6,7 @@ import {
   mapCategory,
   normalize,
   DUPLICATE_WINDOW_DAYS,
-} from './classify.js'
+} from '../../shared/core/classify.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const CONNECTIONS = 'bankConnections'

@@ -29,10 +29,12 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 - [ ] **Home "Pode gastar"**: valor grande com arco de medidor ao redor do Vintém, status de ritmo ("No ritmo"), atalhos (Gasto, Receita, Fixos, Limites), "O mês em uma conta" (Entra, Fixos, Dia a dia, Sobra, com projeção) e resumo de fixos. A Home é individual por pessoa.
 - [ ] **Limites por categoria**: cada categoria tem teto mensal; "limite do mês" é a soma; fixos ficam fora do limite do dia a dia; categoria expansível com seus lançamentos; alertas dentro do app ao chegar perto do limite e ao estourar.
 - [ ] **Configurações modernas**: ajustes em cartões com ícone (Contas e cartões com dia de fechamento e vencimento, Categorias com ícone e limite divididas em Gastos/Receitas, Bancos conectados, Aparência, Notificações).
-- [ ] **Contas Fixas com página própria** (mantida), com resumo e atalho na Home.
+- [ ] **Central de Limites e Cartões** (seção/página própria, com resumo na Home que leva até ela): num só lugar, o estado de cada limite por categoria (gasto, teto, % usado, ajustar) e de cada cartão (fatura aberta, fecha/vence, limite disponível, próximas faturas, parcelas a vir, status pago/aberto/atrasado). Os vencimentos de fatura também aparecem no Calendário e nos alertas. Onde ela fica na navegação (aba própria, dentro de "Mais" ou dentro da Home) é decidido com mockups.
+- [ ] **Contas Fixas com página própria** (mantida), com resumo e atalho na Home. **Marcar como paga é manual e nunca cria lançamento** (hoje já é assim e continua), para não duplicar. Quando o banco importar o pagamento de uma conta fixa, o lançamento é **vinculado à fixa** (sugestão automática por valor, descrição e data, confirmada na revisão de importações): ele deixa de contar no "Dia a dia"/limites e conta só como fixo, sem duplicar, e pode marcar a fixa como paga.
+- [ ] **Webhook da Pluggy**: o servidor recebe os eventos `item/updated`, `transactions/created`, `transactions/updated` e `transactions/deleted` (URL pública HTTPS do Railway, autenticada por cabeçalho secreto) e sincroniza na hora, em vez de só consultar de 6 em 6 horas. Alimenta também os alertas e o push ("entrou um gasto novo"). O polling atual fica como reserva. Precisa de teste real no plano pessoal (MeuPluggy), porque as páginas oficiais não confirmam que os eventos chegam nele.
 - [ ] **Revisão de importações bancárias**: tela para os itens `review` (duplicado, transferência própria, pagamento de fatura, estorno), com importar, ignorar e vincular a lançamento manual.
 - [ ] **Cartão de crédito**: começar com um teste real para ver o que o MeuPluggy entrega (`creditData`, parcelas, faturas); depois salvar no servidor, separar o gasto no cartão do saldo da conta e mostrar fatura aberta, limite disponível, vencimento e parcelas. Compra no cartão conta no limite **pela data da compra**, com aviso separado do que vai sair em cada fatura.
-- [ ] **Vintém com IA gratuita**: comentários customizados sobre os gastos (elogio, bronca, alerta) gerados por um modelo gratuito chamado pelo servidor, com cache e frases prontas como reserva. O nível de dado enviado ao provedor (só agregados ou também nomes de lojas) é decidido nessa fase; o padrão recomendado é só números agregados.
+- [ ] **Vintém com IA gratuita**: comentários customizados sobre os gastos (elogio, bronca, alerta) gerados por um modelo gratuito chamado pelo servidor, com cache e frases prontas como reserva. **Tom sem filtro:** o Vintém pode dar bronca pesada, xingar e constranger (app pessoal, escolha do dono), além de elogiar; o nível do tom fica ajustável nas Configurações. **Dados enviados à IA:** totais por categoria e também **nomes de lojas/estabelecimentos** (decisão do dono); continuam fora CPF, números de conta/cartão e nomes de pessoas físicas de Pix. O provedor é escolhido nessa fase, atrás de uma camada trocável: candidatos Cloudflare Workers AI (grátis, sem treino segundo a documentação), Groq (reserva) e **Grok (xAI)**, que o dono quer testar por ser menos filtrado (o grátis dele não está confirmado e os créditos "grátis" citados exigem aceitar treino com os prompts).
 - [ ] **Push no celular**: notificações reais (ex.: "chegou a 80% do limite de Lazer"), com ressalva de que no iPhone só funcionam com o app instalado na tela inicial.
 - [ ] **Visão do casal**: Home continua individual; uma aba/modo "Casal" reúne totais, limites e gastos de Ele + Ela. O formato exato ainda está em aberto.
 - [ ] **Onboarding e login novos** no visual do Coinki (3 telas de boas-vindas, login mais limpo).
@@ -57,7 +59,7 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 
 ## Constraints
 
-- **Privacidade**: dados financeiros nunca vão para a IA gratuita além do nível decidido; chaves só no servidor — as camadas grátis podem guardar e treinar com o que recebem.
+- **Privacidade**: à IA gratuita vão totais por categoria e nomes de lojas (autorizado pelo dono), nunca CPF, números de conta/cartão nem nomes de pessoas físicas; chaves só no servidor. As camadas grátis podem guardar e treinar com o que recebem, e o dono aceitou isso.
 - **Custo**: o projeto deve rodar de graça (Firebase Spark/Hosting, Railway, MeuPluggy gratuito, IA gratuita) — uso pessoal.
 - **Originalidade**: nada copiado da referência; mascote e textos próprios.
 - **Compatibilidade**: manter o que já funciona (abas Ele/Ela/Porquinho, abas de seção, calendário, metas, sync bancária); renome sem perder dados nem trocar o projeto Firebase.
@@ -74,10 +76,12 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 | Tema segue o celular, com override | Referência só tem claro; nosso site tem os dois | — Pending |
 | Limite simples por categoria | Simples e igual ao que agradou na referência | — Pending |
 | Compra no cartão conta pela data da compra | Mostra o comportamento real e o mascote reage na hora | — Pending |
+| Central própria de Limites e Cartões, com resumo na Home | Controle detalhado de limites e faturas (vencimentos, status) precisa de um lugar dedicado | — Pending |
+| Marcar fixa como paga não gera lançamento; lançamento do banco se vincula à fixa | Evita contar o mesmo dinheiro duas vezes (fixos fora do Dia a dia) | — Pending |
 | Contas Fixas mantém página própria | Mais separado, prático e intuitivo, com resumo na Home | — Pending |
 | Home individual + visão/aba "Casal" | Formato exato em aberto | — Pending |
 | Endereço coinki.web.app no mesmo projeto Firebase | Muda a URL sem mexer nos dados | — Pending |
-| IA gratuita via servidor, só decidida na fase do Vintém | Privacidade das camadas grátis e limites de uso | — Pending |
+| IA gratuita via servidor, com nomes de lojas e tom sem filtro (bronca, xingamento) | App pessoal; o dono autorizou os dois. Continuam fora CPF, contas e nomes de pessoas | — Pending |
 | Push no celular | Quer notificações reais; iPhone exige app instalado | — Pending |
 | Navegação mobile decidida depois, com mockups | Muitas abas; "5 espaços + Mais" é a hipótese | — Pending |
 | Revisão de importações e amigo multiusuário viram fases próprias | Hoje os 7 itens `review` ficam presos; amigo exige `ownerId` | — Pending |

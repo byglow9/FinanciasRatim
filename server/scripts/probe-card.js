@@ -44,3 +44,7 @@ export async function runProbe({ pluggy, itemId, now, days = 90 }) {
   const summary = summarizeCardShape({ item, allAccounts, cards }, now)
   return { markdown: renderCardProbe(summary, { dayIso: isoDay(now) }) }
 }
+
+export async function main() {
+  return 0
+}

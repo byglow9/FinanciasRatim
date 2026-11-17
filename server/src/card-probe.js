@@ -241,3 +241,10 @@ export function renderCardProbe(summary, { dayIso }) {
   lines.push('', '```json', JSON.stringify(summary, null, 2), '```', '')
   return lines.join('\n')
 }
+
+export function alreadyProbedToday() {
+  return false
+}
+export function isProbeFile() {
+  return true
+}

@@ -1,7 +1,13 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { summarizeCardShape, renderCardProbe, probeHeading } from '../src/card-probe.js'
-import { runProbe } from '../scripts/probe-card.js'
+import {
+  summarizeCardShape,
+  renderCardProbe,
+  probeHeading,
+  alreadyProbedToday,
+  isProbeFile,
+} from '../src/card-probe.js'
+import { runProbe, main } from '../scripts/probe-card.js'
 
 // Sonda do cartao (REV-03 / trilha paralela): so formato, contagens e valores enumerados.
 // Todas as fixtures usam valores sentinela; nada aqui e dado financeiro real.
@@ -268,5 +274,139 @@ describe('runProbe', () => {
     const { markdown } = await runProbe({ pluggy, itemId: 'item-sentinela-0001', now: NOW })
     assert.deepEqual(pluggy.calls, ['fetchItem', 'fetchAccounts'])
     assert.match(markdown, /cartao CREDIT encontrado: nao/)
+  })
+})
+
+describe('alreadyProbedToday e isProbeFile', () => {
+  test('alreadyProbedToday so e true para o cabecalho exato do dia na primeira linha', () => {
+    const today = `${probeHeading('2026-11-17')}\n\ncorpo`
+    assert.equal(alreadyProbedToday(today, '2026-11-17'), true)
+    assert.equal(alreadyProbedToday(today, '2026-11-18'), false)
+    assert.equal(alreadyProbedToday(`texto\n${probeHeading('2026-11-17')}`, '2026-11-17'), false)
+    assert.equal(alreadyProbedToday(null, '2026-11-17'), false)
+    assert.equal(alreadyProbedToday(undefined, '2026-11-17'), false)
+    assert.equal(alreadyProbedToday(42, '2026-11-17'), false)
+  })
+
+  test('isProbeFile so e true se o texto comeca por # Sonda do cartao', () => {
+    assert.equal(isProbeFile(`${probeHeading('2026-11-10')}\n`), true)
+    assert.equal(isProbeFile('# Outro documento\n'), false)
+    assert.equal(isProbeFile(''), false)
+    assert.equal(isProbeFile(null), false)
+  })
+})
+
+describe('main (CLI da sonda)', () => {
+  const ENV = { PLUGGY_CLIENT_ID: 'id-sentinela', PLUGGY_CLIENT_SECRET: 'segredo-sentinela-ZZ' }
+  const ITEM = 'item-sentinela-0001'
+
+  function harness({ files = {}, env = ENV, pluggyError = null } = {}) {
+    const logs = []
+    const errors = []
+    const writes = {}
+    const created = []
+    const f = fixture()
+    const fake = {
+      async fetchItem() {
+        if (pluggyError) throw pluggyError
+        return f.item
+      },
+      async fetchAccounts() {
+        return { results: [f.bank, f.credit] }
+      },
+      async fetchCreditCardBills() {
+        return { results: [f.bill] }
+      },
+      async fetchAllTransactions() {
+        return f.txs
+      },
+    }
+    const run = (argv) =>
+      main({
+        argv,
+        env,
+        createClient: (cfg) => {
+          created.push(cfg)
+          return fake
+        },
+        readText: (p) => (p in files ? files[p] : null),
+        writeText: (p, text) => {
+          writes[p] = text
+        },
+        now: () => NOW,
+        log: (m) => logs.push(String(m)),
+        logError: (m) => errors.push(String(m)),
+      })
+    return { run, logs, errors, writes, created }
+  }
+
+  test('sem --item ou com item invalido: 1 sem chamar a Pluggy', async () => {
+    for (const argv of [[], ['--item', 'curto'], ['--item', 'tem espaco e simbolos!!']]) {
+      const h = harness()
+      assert.equal(await h.run(argv), 1)
+      assert.equal(h.created.length, 0)
+    }
+  })
+
+  test('--days fora de 1 a 365: 1', async () => {
+    for (const days of ['0', '366', 'abc', '-3']) {
+      const h = harness()
+      assert.equal(await h.run(['--item', ITEM, '--days', days]), 1)
+      assert.equal(h.created.length, 0)
+    }
+  })
+
+  test('sem credenciais: 1 citando so o nome da variavel', async () => {
+    const h = harness({ env: { PLUGGY_CLIENT_ID: 'id-sentinela' } })
+    assert.equal(await h.run(['--item', ITEM]), 1)
+    assert.equal(h.created.length, 0)
+    assert.ok(h.errors.join('\n').includes('PLUGGY_CLIENT_SECRET'))
+    assert.ok(!h.errors.join('\n').includes('id-sentinela'))
+  })
+
+  test('--out com sonda de hoje: 1 antes de criar o cliente e sem escrever', async () => {
+    const h = harness({ files: { 'saida.md': `${probeHeading('2026-11-17')}\n` } })
+    assert.equal(await h.run(['--item', ITEM, '--out', 'saida.md']), 1)
+    assert.equal(h.created.length, 0)
+    assert.deepEqual(h.writes, {})
+    assert.match(h.errors.join('\n'), /uma sonda por dia/)
+  })
+
+  test('--out com sonda de outro dia: sobrescreve e loga so o caminho', async () => {
+    const h = harness({ files: { 'saida.md': `${probeHeading('2026-11-10')}\n` } })
+    assert.equal(await h.run(['--item', ITEM, '--out', 'saida.md']), 0)
+    assert.ok(h.writes['saida.md'].startsWith('# Sonda do cartao (somente formato) - 2026-11-17'))
+    assert.deepEqual(h.logs, ['[script] sonda gravada em saida.md'])
+  })
+
+  test('--out inexistente: grava', async () => {
+    const h = harness()
+    assert.equal(await h.run(['--item', ITEM, '--out', 'novo.md']), 0)
+    assert.ok('novo.md' in h.writes)
+  })
+
+  test('--out com arquivo que nao e sonda: 1 sem escrever', async () => {
+    const h = harness({ files: { 'README.md': '# Meu documento\n' } })
+    assert.equal(await h.run(['--item', ITEM, '--out', 'README.md']), 1)
+    assert.deepEqual(h.writes, {})
+    assert.equal(h.created.length, 0)
+  })
+
+  test('sem --out: loga o markdown e nada mais', async () => {
+    const h = harness()
+    assert.equal(await h.run(['--item', ITEM, '--days', '30']), 0)
+    assert.equal(h.logs.length, 1)
+    assert.ok(h.logs[0].startsWith('# Sonda do cartao (somente formato) - 2026-11-17'))
+    assert.deepEqual(h.writes, {})
+    assert.deepEqual(h.created, [{ clientId: 'id-sentinela', clientSecret: 'segredo-sentinela-ZZ' }])
+    for (const sentinel of SENTINELS) assert.ok(!h.logs[0].includes(sentinel))
+  })
+
+  test('erro da Pluggy: 1 logando so a mensagem com prefixo, sem o objeto inteiro', async () => {
+    const err = Object.assign(new Error('falha na consulta'), { status: 500, data: { cpf: 'LOJA-SECRETA' } })
+    const h = harness({ pluggyError: err })
+    assert.equal(await h.run(['--item', ITEM]), 1)
+    assert.deepEqual(h.errors, ['[script] falha na consulta'])
+    assert.deepEqual(h.logs, [])
   })
 })

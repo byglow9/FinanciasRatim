@@ -21,10 +21,11 @@ key-files:
   modified: []
 
 key-decisions:
-  - "Plano parado no checkpoint da Task 3 (criacao das contas e autorizacao); nada foi escrito em producao"
+  - "Plano parou no checkpoint da Task 3 e foi concluido depois da resposta do dono (contas criadas, go registrado); neste plano nada foi escrito nos documentos de producao (so as contas Auth foram criadas pelo dono)"
   - "Permissao do arquivo da chave de servico ajustada de 664 para 600 (arquivo fora do repositorio; so o modo foi alterado, conteudo nunca lido)"
 
 requirements-completed: []
+
 
 actuals:
   tokens: 9000
@@ -34,12 +35,12 @@ plan_head_before: 22c27e546df8f43537238b3454acbe658e0ef27b
 
 duration: ~15min
 completed: 2026-11-17
-status: partial
+status: complete
 ---
 
 # Phase 1 Plan 10: Cutover parte 1 (R0 e R1) Summary
 
-**Status: PARCIAL, parado no checkpoint da Task 3. Backup de producao, suite completa e ensaio no emulador estao verdes; falta habilitar o Firebase Authentication, a auditoria de usuarios, a criacao das duas contas pelo dono e a autorizacao "go".**
+**Status: COMPLETO. Backup de producao, suite completa e ensaio no emulador verdes; Firebase Authentication habilitado, as duas contas criadas pelo dono (claims verificados com create-users --list) e go registrado (Task 3).**
 
 ## Task 1 (checkpoint human-action): respondido pelo dono
 
@@ -92,17 +93,22 @@ status: partial
 
 Nenhum comando escreveu em producao (export e listagem sao somente leitura; o ensaio rodou so no emulador).
 
-## Task 3 (checkpoint human-action, blocking-human): AGUARDANDO O DONO
+## Task 3 (checkpoint human-action, blocking-human): RESPONDIDO PELO DONO
 
-Pendente: habilitar o Authentication, auditoria `--list`, criacao das duas contas pelo dono (senhas digitadas por ele) e resposta literal "go: release A + backfill" ou "hold: MOTIVO". Resposta do dono: (a registrar).
+- Firebase Authentication habilitado (provedor e-mail/senha); auditoria `create-users.js --list` repetida com sucesso.
+- Contas criadas em producao (hid `9825a991f72eba0c5292`), claims `hid` e `person` verificados via `create-users --list`:
+  - ele = renancavenaghizuri@gmail.com, uid `0PtYZUZXdYY5bKggll7mpTVPEok2`
+  - ela = lothammerjulia1504@gmail.com, uid `x2TzrjEcIvQ7S75pKFs7hR4EfkV2`
+  (senhas digitadas pelo dono; nunca passaram pelo agente).
+- Go do dono, literal, no chat, em resposta ao prompt "Responda go: release A + backfill ou hold: motivo": **"CONTINUE PODE FAZER"**.
 
 ## Deviations from Plan
 
-**1. [Rule 3 - Bloqueio, nao corrigivel pelo agente] Authentication nao habilitado no projeto**
+**1. [Rule 3 - Bloqueio, nao corrigivel pelo agente] Authentication nao habilitado no projeto (RESOLVIDO: o dono habilitou o provedor e a auditoria passou)**
 - **Found during:** Task 2, passo 3 (auditoria de usuarios)
 - **Issue:** `listUsers` falha com CONFIGURATION_NOT_FOUND.
 - **Fix:** nenhum automatico (habilitar o provedor e acao de console do dono). Registrado como parte do checkpoint da Task 3.
-- **Impacto:** a auditoria de contas desconhecidas (A6) fica pendente; se o Auth nunca foi usado, nao ha contas desconhecidas.
+- **Impacto:** resolvido; `--list` funcionou depois que o dono habilitou o Authentication.
 
 **2. [Rule 2 - Seguranca] Permissao da chave de servico 664 -> 600** (T-01-40; fora do repositorio, so o modo foi alterado).
 

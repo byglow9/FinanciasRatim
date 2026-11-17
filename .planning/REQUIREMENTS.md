@@ -10,7 +10,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 ### Fundação de dados e acesso (FUND)
 
 - [x] **FUND-01**: Usuário entra apenas com login do Firebase (e-mail e senha); o login local legado (`ratimbum`) e o cadastro aberto deixam de existir
-- [ ] **FUND-02**: Todos os dados (transações, contas fixas, metas, porquinho, eventos, notas, configurações, importações bancárias) têm `ownerId`, com backfill dos dados existentes sem perder nada
+- [x] **FUND-02**: Todos os dados (transações, contas fixas, metas, porquinho, eventos, notas, configurações, importações bancárias) têm `ownerId`, com backfill dos dados existentes sem perder nada
 - [ ] **FUND-03**: O Firestore só permite ler e escrever dados do próprio dono, validado por testes com o emulador, e publicado só depois de login, `ownerId`, índices e cliente estarem prontos
 - [x] **FUND-04**: O servidor aceita chamadas apenas com token do Firebase (não mais com a chave compartilhada no navegador), deriva o dono do token, grava `ownerId` em tudo e libera só os domínios autorizados
 - [x] **FUND-05**: Categorias têm identificador estável, de modo que renomear uma categoria não perde histórico nem limites
@@ -142,7 +142,7 @@ Preenchida na criação do roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FUND-01 | Phase 1 | Complete |
-| FUND-02 | Phase 1 | Pending |
+| FUND-02 | Phase 1 | Complete |
 | FUND-03 | Phase 1 | Pending |
 | FUND-04 | Phase 1 | Complete |
 | FUND-05 | Phase 1 | Complete |

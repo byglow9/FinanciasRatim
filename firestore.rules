@@ -1,10 +1,36 @@
 rules_version = '2';
 
+// Regras por dono (casal). O dono dos dados e o id do casal (claim "hid" no ID token),
+// nunca o uid de cada pessoa (D-02, D-03). Os dois logins do casal enxergam tudo (D-05):
+// a regra nao distingue "person". Tudo que nao esta listado aqui e negado por padrao.
+// Escrita em bankConnections e bankImports e so do servidor (Admin SDK ignora regras).
 service cloud.firestore {
   match /databases/{database}/documents {
-    // App pessoal - autenticacao local no frontend
-    match /{document=**} {
-      allow read, write: if true;
+    function isMember() {
+      return request.auth != null
+        && request.auth.token.hid is string
+        && request.auth.token.hid.size() > 0;
+    }
+    function ownsExisting() { return resource.data.ownerId == request.auth.token.hid; }
+    function ownsIncoming() { return request.resource.data.ownerId == request.auth.token.hid; }
+    function clientCollections() {
+      return ['transactions', 'fixedExpenses', 'fixedExpensePayments', 'savings', 'goals',
+              'goalContributions', 'events', 'eventCategories', 'notes', 'settings'];
+    }
+
+    // Colecoes que o cliente le e escreve
+    match /{col}/{id} {
+      allow read, delete: if isMember() && col in clientCollections() && ownsExisting();
+      allow create: if isMember() && col in clientCollections() && ownsIncoming();
+      allow update: if isMember() && col in clientCollections() && ownsExisting()
+        && request.resource.data.ownerId == resource.data.ownerId;
+      // O cliente cria settings/main quando ainda nao existe (get de documento inexistente)
+      allow get: if isMember() && col == 'settings' && resource == null;
+    }
+
+    // Somente leitura para o cliente; a escrita e do servidor
+    match /{col}/{id} {
+      allow read: if isMember() && col in ['bankConnections', 'bankImports'] && ownsExisting();
     }
   }
 }

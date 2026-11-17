@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-11-17T16:26:28.976Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-11-17T16:29:44.466Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 01 execution started
-state_head: f7514708b196f5595dfd240c34ba450a75cf0d19
+state_head: e07a99448e37bd8cfa0223e97caaead91749f156
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 01 (Fundação de dados e acesso) — EXECUTING
-Plan: 8 of 13
+Plan: 9 of 13
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 01 execution started
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P05 | 12min | 2 tasks | 11 files |
 | Phase 01 P06 | 25 min | 3 tasks | 8 files |
 | Phase 01 P07 | 30min | 2 tasks | 7 files |
+| Phase 01 P08 | 15 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,7 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-06: Timestamp do backup preserva seconds/nanoseconds, mas o Firestore guarda microssegundos; ensaio exige emulador vazio; categoryDefs existentes so recebem orfaos arquivados
 - [Phase 01]: [Phase 01-07]: Conexao existente sem ownerId e tratada como de outro dono (403) e o agendador a registra em lastSyncError ate o backfill
 - [Phase 01]: [Phase 01-07]: syncAll rejeita hid vazio para nunca virar sincronizar tudo; execucoes por chave com fila unica
+- [Phase 01]: Plano 01-08: settings mantem ID fixo main; troca por documento por hid fica para a Fase 8 — Open Question 4; evita reescrita agora
 
 ### Pending Todos
 
@@ -114,6 +116,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T16:26:28.942Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-11-17T16:29:44.431Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None

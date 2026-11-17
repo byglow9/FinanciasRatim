@@ -78,11 +78,16 @@ export async function exportAll(db) {
   return { meta: { exportedAt: new Date().toISOString(), version: SNAPSHOT_VERSION }, collections }
 }
 
+// Protecao contra escrever em producao: so segue com FIRESTORE_EMULATOR_HOST definido.
+export function assertEmulator(what = 'esta operacao') {
+  if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    throw new Error(`${what} so roda no emulador: defina FIRESTORE_EMULATOR_HOST (recusado para proteger producao)`)
+  }
+}
+
 // Recarrega um snapshot. NUNCA escreve fora do emulador (protecao contra restaurar sobre producao).
 export async function importAll(db, snapshot) {
-  if (!process.env.FIRESTORE_EMULATOR_HOST) {
-    throw new Error('importAll so roda no emulador: defina FIRESTORE_EMULATOR_HOST (recusado para proteger producao)')
-  }
+  assertEmulator('importAll')
   if (snapshot?.meta?.version !== SNAPSHOT_VERSION || typeof snapshot.collections !== 'object') {
     throw new Error(`Snapshot invalido ou versao desconhecida (esperado ${SNAPSHOT_VERSION})`)
   }

@@ -35,8 +35,9 @@ cp .env.local.example .env.local
 
 Além das variáveis do Firebase, defina manualmente:
 
-- `VITE_USE_EMULATOR=true` — usa `localStorage` como mock em vez do Firebase
-- `VITE_APP_USERNAME` / `VITE_APP_PASSWORD` — credenciais de login (padrão: `ratimbum`/`ratimbum123`)
+- `VITE_USE_EMULATOR=true` — usa `localStorage` como mock em vez do Firebase; só vale em desenvolvimento (`npm run dev`), um build de produção ignora a variável
+
+O login é só por e-mail e senha do Firebase Auth. Não há cadastro pela interface: as contas de Ele e Ela são criadas pelo script `server/scripts/create-users.js`, que grava os claims `hid` e `person` usados pelas regras e pelo servidor.
 
 Inicie o servidor de desenvolvimento:
 

@@ -17,13 +17,13 @@ This is a personal finance management app (in Portuguese) built with React 19, T
 
 ### Data Layer
 
-- **Services** (`src/services/`): Firebase Firestore operations with a mock localStorage fallback when `VITE_USE_EMULATOR=true`. Each service (transactions, fixedExpenses, savings, goals, goalContributions, settings) follows the same pattern: checks `MOCK` flag and either uses localStorage helpers or Firestore.
+- **Services** (`src/services/`): Firebase Firestore operations with a mock localStorage fallback when `VITE_USE_EMULATOR=true` (development only). Each service (transactions, fixedExpenses, savings, goals, goalContributions, settings) follows the same pattern: checks `MOCK` flag and either uses localStorage helpers or Firestore.
 - **Mock Storage** (`src/lib/mockStorage.ts`): localStorage-based data persistence for development without Firebase. Uses `db::` prefix for collections and `doc::` prefix for single documents.
 - **Hooks** (`src/hooks/`): Data fetching hooks that wrap services with loading/error states and CRUD operations. Each hook returns `{ data, loading, error, add, update, remove, refetch }`.
 
 ### State Management
 
-- **AuthContext**: Simple username/password auth stored in localStorage (credentials from env vars `VITE_APP_USERNAME`/`VITE_APP_PASSWORD`)
+- **AuthContext**: Firebase Auth (e-mail e senha) e o unico caminho de login. O ID token traz os custom claims `hid` (id do casal) e `person` (`ele`/`ela`); conta sem claim e barrada com "Conta sem acesso". O escopo de dono (`ownerId`, `ownerScope`) vem so de `src/lib/scope.ts`. As contas sao criadas por `server/scripts/create-users.js`; nao existe cadastro pela interface.
 - **AreaContext**: Tracks current area selection (ele/ela/porquinho) and user settings
 
 ### Key Concepts
@@ -44,6 +44,5 @@ This is a personal finance management app (in Portuguese) built with React 19, T
 ## Environment Variables
 
 Copy `.env.local.example` to `.env.local` and add these variables:
-- `VITE_USE_EMULATOR=true` - Use localStorage mock instead of Firebase (add manually, not in example)
-- `VITE_APP_USERNAME` / `VITE_APP_PASSWORD` - Auth credentials (add manually, defaults to ratimbum/ratimbum123)
+- `VITE_USE_EMULATOR=true` - Use localStorage mock instead of Firebase (add manually, not in example). Only honored in development (`npm run dev`); a production build ignores it
 - Firebase config vars (`VITE_FIREBASE_*`) - Required for production

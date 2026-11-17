@@ -8,6 +8,7 @@
     "dev:amigo": "vite --mode amigo",
     "build": "tsc -b && vite build",
     "build:amigo": "tsc -b && vite build --mode amigo",
+    "build:release-a": "VITE_OWNER_SCOPED_READS=false npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:core": "node --test \"shared/**/*.test.js\"",

@@ -24,7 +24,7 @@ function getCachedTheme(): Settings['theme'] {
 
 export function AreaProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [currentArea, setCurrentArea] = useState<AreaType>('ele')
+  const [currentArea, setCurrentArea] = useState<AreaType>(user?.person ?? 'ele')
   const [settings, setSettings] = useState<Settings>({
     id: 'default',
     ...DEFAULT_SETTINGS,
@@ -37,6 +37,13 @@ export function AreaProvider({ children }: { children: ReactNode }) {
       loadSettings()
     }
   }, [user])
+
+  // Abre na aba da pessoa do claim quando o usuario logado muda; as outras abas seguem livres (D-01, D-05).
+  const uid = user?.uid
+  const person = user?.person
+  useEffect(() => {
+    if (person) setCurrentArea(person)
+  }, [uid, person])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark')
@@ -93,6 +100,7 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useArea() {
   const context = useContext(AreaContext)
   if (context === undefined) {

@@ -7,7 +7,11 @@ import {
   normalize,
   DUPLICATE_WINDOW_DAYS,
 } from '../../shared/core/classify.js'
-import { DEFAULT_CATEGORY_DEFS, buildCategoryDefs } from '../../shared/core/categories.js'
+import {
+  DEFAULT_CATEGORY_DEFS,
+  buildCategoryDefs,
+  resolveCategoryId,
+} from '../../shared/core/categories.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const CONNECTIONS = 'bankConnections'
@@ -39,12 +43,16 @@ async function getCategoryChains(pluggy) {
   return chains
 }
 
-async function getAppCategories(db) {
+// Definições de categoria do dono. settings/main só vale se não tiver dono ou se o dono for o mesmo
+// (Admin SDK ignora regras; nunca usar categorias de outro casal).
+async function getAppCategories(db, ownerId) {
   const snap = await db.collection('settings').doc('main').get()
-  const categories = snap.exists ? snap.data().categories : null
+  const data = snap.exists ? snap.data() : null
+  if (!data || (data.ownerId != null && data.ownerId !== ownerId)) return DEFAULT_CATEGORY_DEFS
+  if (Array.isArray(data.categoryDefs) && data.categoryDefs.length) return data.categoryDefs
   // Definições com id estável; sem categorias salvas, usa as padrão.
-  return Array.isArray(categories) && categories.length
-    ? buildCategoryDefs(categories)
+  return Array.isArray(data.categories) && data.categories.length
+    ? buildCategoryDefs(data.categories)
     : DEFAULT_CATEGORY_DEFS
 }
 
@@ -60,7 +68,8 @@ async function getExisting(db, ids) {
 
 // Reescreve descrições já importadas no formato antigo (cru do banco).
 // Idempotente; não mexe no nome de lançamentos que você editou no site.
-export async function cleanExistingDescriptions(db) {
+export async function cleanExistingDescriptions(db, hid) {
+  if (typeof hid !== 'string' || !hid) throw new Error('cleanExistingDescriptions exige o hid do dono')
   let updated = 0
   let batch = db.batch()
   let ops = 0
@@ -70,7 +79,7 @@ export async function cleanExistingDescriptions(db) {
     ops = 0
   }
 
-  const imports = await db.collection(IMPORTS).get()
+  const imports = await db.collection(IMPORTS).where('ownerId', '==', hid).get()
   for (const doc of imports.docs) {
     const d = doc.data()
     const raw = d.originalDescription ?? d.description
@@ -81,7 +90,11 @@ export async function cleanExistingDescriptions(db) {
     if (ops >= 400) await flush()
   }
 
-  const txs = await db.collection(TRANSACTIONS).where('source', '==', 'bank').get()
+  const txs = await db
+    .collection(TRANSACTIONS)
+    .where('ownerId', '==', hid)
+    .where('source', '==', 'bank')
+    .get()
   for (const doc of txs.docs) {
     const d = doc.data()
     const raw = d.originalDescription ?? d.bankDescription ?? d.description
@@ -100,11 +113,15 @@ export async function cleanExistingDescriptions(db) {
 }
 
 export async function syncConnection(db, pluggy, connection) {
-  const { itemId, person } = connection
+  const { itemId, person, ownerId } = connection
   const ref = db.collection(CONNECTIONS).doc(itemId)
   const summary = { itemId, person, imported: 0, review: 0, ignored: 0 }
 
   try {
+    // O Admin SDK ignora as regras: sem dono explícito, nada é gravado (FUND-04).
+    if (typeof ownerId !== 'string' || !ownerId) {
+      throw new Error('Conexao sem dono (ownerId): rode o backfill antes de sincronizar')
+    }
     const item = await pluggy.fetchItem(itemId)
     const { results: accounts } = await pluggy.fetchAccounts(itemId)
     const hasCreditCard = accounts.some((a) => a.type === 'CREDIT')
@@ -115,24 +132,29 @@ export async function syncConnection(db, pluggy, connection) {
 
     const [chains, appCategories, personTxSnap, personImportsSnap] = await Promise.all([
       getCategoryChains(pluggy),
-      getAppCategories(db),
+      getAppCategories(db, ownerId),
       db
         .collection(TRANSACTIONS)
+        .where('ownerId', '==', ownerId)
         .where('person', '==', person)
         .where('date', '>=', Timestamp.fromDate(windowStart))
         .orderBy('date', 'desc')
         .get(),
-      db.collection(IMPORTS).where('person', '==', person).get(),
+      db.collection(IMPORTS).where('ownerId', '==', ownerId).where('person', '==', person).get(),
     ])
 
     const manual = []
-    // descrição -> categoria já usada (aprende com as correções feitas no site)
+    // descrição -> { categoryId, category } já usado (aprende com as correções feitas no site);
+    // categoria arquivada ou desconhecida não é reaproveitada, e o nome é sempre o atual (D-07, D-09)
     const learned = new Map()
     for (const doc of personTxSnap.docs) {
       const d = doc.data()
       if (d.source === 'bank') {
         const key = normalize(d.bankDescription ?? d.description)
-        if (key && !learned.has(key)) learned.set(key, d.category)
+        if (!key || learned.has(key)) continue
+        const id = d.categoryId ?? resolveCategoryId(d.category, appCategories)
+        const def = appCategories.find((c) => c.id === id)
+        if (def && !def.archived) learned.set(key, { categoryId: def.id, category: def.name })
       } else {
         manual.push({ id: doc.id, type: d.type, amount: d.amount, date: d.date.toDate() })
       }
@@ -157,8 +179,11 @@ export async function syncConnection(db, pluggy, connection) {
         const entry = classify(tx, { accountType: account.type, hasCreditCard, categoryNames })
         if (!entry) continue
 
-        const category =
-          learned.get(normalize(entry.description)) ?? mapCategory(categoryNames, appCategories).name
+        const mapped = mapCategory(categoryNames, appCategories)
+        const { categoryId, category } = learned.get(normalize(entry.description)) ?? {
+          categoryId: mapped.id,
+          category: mapped.name,
+        }
         let { status, reason } = entry
         let matchedTransactionId = null
         if (status === 'imported') {
@@ -175,6 +200,7 @@ export async function syncConnection(db, pluggy, connection) {
         const bankName = item.connector?.name ?? connection.connectorName ?? 'Banco'
 
         batch.set(db.collection(IMPORTS).doc(tx.id), {
+          ownerId,
           person,
           itemId,
           accountId: account.id,
@@ -186,6 +212,7 @@ export async function syncConnection(db, pluggy, connection) {
           description: entry.description,
           originalDescription: entry.raw,
           category,
+          categoryId,
           date,
           status,
           reason,
@@ -197,11 +224,13 @@ export async function syncConnection(db, pluggy, connection) {
 
         if (status === 'imported') {
           batch.set(db.collection(TRANSACTIONS).doc(transactionId), {
+            ownerId,
             person,
             type: entry.type,
             amount: entry.amount,
             description: entry.description,
             category,
+            categoryId,
             date,
             createdAt: Timestamp.now(),
             source: 'bank',
@@ -248,21 +277,30 @@ export async function syncConnection(db, pluggy, connection) {
   return summary
 }
 
-let running = null
+// Execuções em andamento por chave (hid ou todas): a mesma chave reaproveita a execução.
+// Chaves diferentes entram numa fila única para nunca processar duas conexões ao mesmo tempo.
+const runs = new Map()
+let tail = Promise.resolve()
 
-// Uma sincronização por vez: chamadas simultâneas reaproveitam a que já está rodando.
-export function syncAll(db, pluggy) {
-  if (!running) {
-    running = (async () => {
-      const snap = await db.collection(CONNECTIONS).get()
+export function syncAll(db, pluggy, { hid } = {}) {
+  // hid vazio nunca pode virar "todas as conexões": só ausente (agendador) sincroniza tudo.
+  if (hid !== undefined && (typeof hid !== 'string' || !hid)) {
+    return Promise.reject(new Error('syncAll: hid invalido'))
+  }
+  const key = hid ?? '*'
+  if (!runs.has(key)) {
+    const job = tail.then(async () => {
+      const col = db.collection(CONNECTIONS)
+      const snap = await (hid ? col.where('ownerId', '==', hid) : col).get()
       const results = []
       for (const doc of snap.docs) {
         results.push(await syncConnection(db, pluggy, { itemId: doc.id, ...doc.data() }))
       }
       return results
-    })().finally(() => {
-      running = null
     })
+    const run = job.finally(() => runs.delete(key))
+    tail = run.catch(() => {})
+    runs.set(key, run)
   }
-  return running
+  return runs.get(key)
 }

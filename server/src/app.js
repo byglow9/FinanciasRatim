@@ -3,7 +3,12 @@ import cors from 'cors'
 import { Timestamp } from 'firebase-admin/firestore'
 import { monthRange } from '../../shared/core/time.js'
 import { originGuard, requireOwner } from './auth.js'
-import { HANDLED_EVENTS, secretMatches, validateWebhookBody } from './webhook.js'
+import {
+  HANDLED_EVENTS,
+  createSeenEvents,
+  secretMatches,
+  validateWebhookBody,
+} from './webhook.js'
 
 const PEOPLE = ['ele', 'ela']
 
@@ -36,17 +41,20 @@ export function createApp({
     (s) => typeof s === 'string' && s
   )
   if (secrets.length > 0) {
+    const seen = createSeenEvents()
     app.post('/webhooks/pluggy', (req, res) => {
       if (!secretMatches(req.get('x-webhook-secret'), secrets)) {
         return res.status(401).json({ error: 'Nao autorizado' })
       }
       const parsed = validateWebhookBody(req.body)
       if (!parsed.ok) return res.status(400).json({ error: 'Evento invalido' })
-      const { event, itemId } = parsed
+      const { event, eventId, itemId } = parsed
       // Responde antes de ler banco ou sincronizar (limite de 10 s da Pluggy).
       const handled = HANDLED_EVENTS.has(event)
       res.status(200).json(handled ? { ok: true } : { ok: true, ignored: true })
       if (!handled) return
+      // Reenvio do mesmo evento (a Pluggy tenta ate 3 vezes): so o primeiro sincroniza.
+      if (seen.seen(eventId)) return
 
       // O dono vem sempre do documento bankConnections/{itemId}, nunca do corpo.
       ;(async () => {
@@ -54,6 +62,8 @@ export function createApp({
           const ref = db.collection('bankConnections').doc(itemId)
           const snap = await ref.get()
           if (!snap.exists) return
+          // Evidencia de entrega para o dono (D-07): so para item conhecido, por merge.
+          await ref.set({ lastWebhookAt: Timestamp.now(), lastWebhookEvent: event }, { merge: true })
           await sync.syncItem(db, pluggy, itemId)
           console.log('[webhook]', event, 'item=' + itemId.slice(0, 8))
         } catch (err) {

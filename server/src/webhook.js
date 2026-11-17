@@ -42,3 +42,17 @@ export function validateWebhookBody(body) {
   if (typeof itemId !== 'string' || !ITEM_ID_RE.test(itemId)) return { ok: false }
   return { ok: true, event, eventId, itemId }
 }
+
+// Memoria curta dos eventId ja vistos (reenvios da Pluggy). Somente em memoria: a idempotencia
+// de dado ja existe nos ids deterministicos de bankImports e transactions (D-06).
+export function createSeenEvents(limit = 500) {
+  const ids = new Set()
+  return {
+    seen(eventId) {
+      if (ids.has(eventId)) return true
+      ids.add(eventId)
+      if (ids.size > limit) ids.delete(ids.values().next().value)
+      return false
+    },
+  }
+}

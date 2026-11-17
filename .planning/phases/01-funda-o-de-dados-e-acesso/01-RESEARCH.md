@@ -534,26 +534,26 @@ CMD ["node", "server/src/index.js"]
 | A8 | `hid` pode ser um identificador opaco gerado uma vez (ex.: 20 caracteres aleatórios) e passado ao script por `--hid` | Open Questions | Nenhum risco técnico; só convenção |
 | A9 | Clientes antigos (abas abertas) não são problema: não há service worker hoje | Pitfall 1 | Fase 5 introduz PWA; fora do escopo aqui |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Qual é a configuração atual do Railway (Root Directory, builder, versão de Node, variáveis)?**
+[RESOLVED] 1. **Qual é a configuração atual do Railway (Root Directory, builder, versão de Node, variáveis)?**
    - What we know: CLI `railway` 5.42.0 instalada, sem login; `server/` não tem `Dockerfile`/`railway.*`/`.node-version`.
    - What's unclear: se hoje o serviço aponta para `server/`.
    - Recommendation: tarefa `checkpoint:human-action` no R4: dono confere o painel, limpa Root Directory, define as variáveis e confirma o log "Using detected Dockerfile!". Plano B: script `sync-shared` com teste de divergência.
 
-2. **Subir `pluggy-sdk` para ^0.94.3 agora?**
+[RESOLVED] 2. **Subir `pluggy-sdk` para ^0.94.3 agora?**
    - What we know: FUND-07 não lista `pluggy-sdk`, mas o Node 22.23.4 vem de `0.93.1+`; os 6 métodos usados existem em 0.94.3 e os 12 testes passam.
    - Recommendation: subir junto (checkpoint de pacote recente); caso contrário o pin de Node não tem motivo prático.
 
-3. **Higiene do repositório público: `.gitignore` + `git rm --cached` de `.env.local`, `.env.amigo`, `dist/`, `node_modules/`, `.firebase/`?**
+[RESOLVED] 3. **Higiene do repositório público: `.gitignore` + `git rm --cached` de `.env.local`, `.env.amigo`, `dist/`, `node_modules/`, `.firebase/`?**
    - What we know: estão versionados e o repositório é público. Remover do índice não apaga o histórico.
    - Recommendation: incluir como tarefa pequena, com confirmação do dono (diff gigantesco por causa de `node_modules`); a mitigação de segurança real é invalidar chave/login legado.
 
-4. **Doc de configurações: manter `settings/main` agora?** Recomendado manter (cliente antigo e servidor o conhecem) e centralizar o acesso em um helper (`settingsRef()`), deixando a troca por `settings/{hid}` para a Fase 8.
+[RESOLVED] 4. **Doc de configurações: manter `settings/main` agora?** Recomendado manter (cliente antigo e servidor o conhecem) e centralizar o acesso em um helper (`settingsRef()`), deixando a troca por `settings/{hid}` para a Fase 8.
 
-5. **Modo MOCK:** manter com identidade de desenvolvimento sob `import.meta.env.DEV`, ou aposentar? Decisão do planner; qualquer caminho precisa impedir que `VITE_USE_EMULATOR=true` num build de produção libere acesso.
+[RESOLVED] 5. **Modo MOCK:** manter com identidade de desenvolvimento sob `import.meta.env.DEV`, ou aposentar? Decisão do planner; qualquer caminho precisa impedir que `VITE_USE_EMULATOR=true` num build de produção libere acesso.
 
-6. **Renomear categoria na interface:** incluir renomear mínimo em Configurações (critério 4) ou provar só por teste de núcleo? Recomendado incluir (poucas linhas) para o casal ver o histórico preservado.
+[RESOLVED] 6. **Renomear categoria na interface:** incluir renomear mínimo em Configurações (critério 4) ou provar só por teste de núcleo? Recomendado incluir (poucas linhas) para o casal ver o histórico preservado.
 
 ## Environment Availability
 

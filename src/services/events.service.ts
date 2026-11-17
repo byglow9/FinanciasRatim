@@ -14,6 +14,7 @@ import { db } from '@/lib/firebase'
 import type { AgendaEvent } from '@/types'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 
 type RawEvent = Omit<AgendaEvent, 'date' | 'createdAt'> & { date: string; createdAt: string }
 
@@ -35,6 +36,7 @@ export async function getEventsForMonth(month: Date): Promise<AgendaEvent[]> {
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('date', '>=', Timestamp.fromDate(start)),
     where('date', '<=', Timestamp.fromDate(end)),
     orderBy('date', 'asc')
@@ -64,6 +66,7 @@ export async function addEvent(
 
   const docRef = await addDoc(collection(db, COL), {
     ...event,
+    ownerId: ownerId(),
     date: Timestamp.fromDate(event.date),
     createdAt: Timestamp.now(),
   })

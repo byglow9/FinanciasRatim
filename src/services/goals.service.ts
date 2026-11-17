@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { Goal, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 import { deleteContributionsByGoalId } from './goalContributions.service'
 
 type RawGoal = Omit<Goal, 'deadline' | 'createdAt'> & {
@@ -36,7 +37,7 @@ export async function getGoals(person?: PersonType): Promise<Goal[]> {
     return person ? goals.filter((g) => g.person === person) : goals
   }
 
-  const q = query(collection(db, COL), orderBy('createdAt', 'desc'))
+  const q = query(collection(db, COL), ...ownerScope(), orderBy('createdAt', 'desc'))
   const snapshot = await getDocs(q)
   const goals = snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -65,6 +66,7 @@ export async function addGoal(goal: Omit<Goal, 'id' | 'createdAt'>): Promise<str
 
   const docRef = await addDoc(collection(db, COL), {
     ...goal,
+    ownerId: ownerId(),
     deadline: goal.deadline ? Timestamp.fromDate(goal.deadline) : null,
     createdAt: Timestamp.now(),
   })

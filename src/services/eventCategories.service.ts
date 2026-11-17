@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { EventCategory } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 
 type RawEventCategory = Omit<EventCategory, 'createdAt'> & { createdAt: string }
 
@@ -24,7 +25,7 @@ export async function getEventCategories(): Promise<EventCategory[]> {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
   }
 
-  const q = query(collection(db, COL), orderBy('createdAt', 'asc'))
+  const q = query(collection(db, COL), ...ownerScope(), orderBy('createdAt', 'asc'))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((d) => {
     const data = d.data()
@@ -49,6 +50,7 @@ export async function addEventCategory(
 
   const docRef = await addDoc(collection(db, COL), {
     ...category,
+    ownerId: ownerId(),
     createdAt: Timestamp.now(),
   })
   return docRef.id

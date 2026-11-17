@@ -12,6 +12,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { GoalContribution } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 import { startOfMonth, endOfMonth } from 'date-fns'
 
 type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
@@ -42,6 +43,7 @@ export async function getContributionsForMonth(month: Date): Promise<GoalContrib
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('date', '>=', Timestamp.fromDate(start)),
     where('date', '<=', Timestamp.fromDate(end)),
     orderBy('date', 'desc')
@@ -69,6 +71,7 @@ export async function getContributions(goalId: string): Promise<GoalContribution
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('goalId', '==', goalId),
     orderBy('date', 'desc')
   )
@@ -131,6 +134,7 @@ export async function addContribution(
     // Criar contribuicao
     const contributionRef = doc(collection(db, COL))
     transaction.set(contributionRef, {
+      ownerId: ownerId(),
       goalId,
       amount,
       description: description || null,
@@ -151,7 +155,7 @@ export async function deleteContributionsByGoalId(goalId: string): Promise<void>
     return
   }
 
-  const q = query(collection(db, COL), where('goalId', '==', goalId))
+  const q = query(collection(db, COL), ...ownerScope(), where('goalId', '==', goalId))
   const snapshot = await getDocs(q)
 
   const deletePromises = snapshot.docs.map((d) => deleteDoc(d.ref))

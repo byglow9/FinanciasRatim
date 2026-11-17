@@ -13,6 +13,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { Note, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
+import { ownerId, ownerScope } from '@/lib/scope'
 
 type RawNote = Omit<Note, 'date' | 'createdAt'> & { date?: string; createdAt: string }
 
@@ -32,6 +33,7 @@ export async function getNotes(person: PersonType): Promise<Note[]> {
 
   const q = query(
     collection(db, COL),
+    ...ownerScope(),
     where('person', '==', person),
     orderBy('createdAt', 'desc')
   )
@@ -63,6 +65,7 @@ export async function addNote(note: Omit<Note, 'id' | 'createdAt'>): Promise<str
 
   const docRef = await addDoc(collection(db, COL), {
     ...note,
+    ownerId: ownerId(),
     date: note.date ? Timestamp.fromDate(note.date) : null,
     createdAt: Timestamp.now(),
   })

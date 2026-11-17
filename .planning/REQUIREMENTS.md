@@ -141,13 +141,79 @@ Preenchida na criação do roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (a preencher pelo roadmapper) | — | Pending |
+| FUND-01 | Phase 1 | Pending |
+| FUND-02 | Phase 1 | Pending |
+| FUND-03 | Phase 1 | Pending |
+| FUND-04 | Phase 1 | Pending |
+| FUND-05 | Phase 1 | Pending |
+| FUND-06 | Phase 1 | Pending |
+| FUND-07 | Phase 1 | Pending |
+| REV-01 | Phase 2 | Pending |
+| REV-02 | Phase 2 | Pending |
+| REV-03 | Phase 2 | Pending |
+| REV-04 | Phase 2 | Pending |
+| REV-05 | Phase 2 | Pending |
+| REV-06 | Phase 2 | Pending |
+| REV-07 | Phase 2 | Pending |
+| LIM-01 | Phase 3 | Pending |
+| LIM-02 | Phase 3 | Pending |
+| LIM-03 | Phase 3 | Pending |
+| LIM-04 | Phase 3 | Pending |
+| LIM-05 | Phase 3 | Pending |
+| LIM-06 | Phase 3 | Pending |
+| LIM-07 | Phase 3 | Pending |
+| LIM-08 | Phase 3 | Pending |
+| LIM-09 | Phase 3 | Pending |
+| CENT-01 | Phase 3 | Pending |
+| CENT-02 | Phase 3 | Pending |
+| CENT-05 | Phase 3 | Pending |
+| CENT-06 | Phase 3 | Pending |
+| IDEN-07 | Phase 3 | Pending |
+| MASC-01 | Phase 4 | Pending |
+| MASC-02 | Phase 4 | Pending |
+| MASC-03 | Phase 4 | Pending |
+| MASC-04 | Phase 4 | Pending |
+| MASC-05 | Phase 4 | Pending |
+| MASC-06 | Phase 4 | Pending |
+| MASC-07 | Phase 4 | Pending |
+| IDEN-01 | Phase 5 | Pending |
+| IDEN-02 | Phase 5 | Pending |
+| IDEN-03 | Phase 5 | Pending |
+| IDEN-04 | Phase 5 | Pending |
+| IDEN-05 | Phase 5 | Pending |
+| IDEN-06 | Phase 5 | Pending |
+| IDEN-08 | Phase 5 | Pending |
+| CARD-01 | Phase 6 | Pending |
+| CARD-02 | Phase 6 | Pending |
+| CARD-03 | Phase 6 | Pending |
+| CARD-04 | Phase 6 | Pending |
+| CARD-05 | Phase 6 | Pending |
+| CARD-06 | Phase 6 | Pending |
+| CARD-07 | Phase 6 | Pending |
+| CARD-08 | Phase 6 | Pending |
+| CENT-03 | Phase 6 | Pending |
+| CENT-04 | Phase 6 | Pending |
+| PUSH-01 | Phase 7 | Pending |
+| PUSH-02 | Phase 7 | Pending |
+| PUSH-03 | Phase 7 | Pending |
+| PUSH-04 | Phase 7 | Pending |
+| PUSH-05 | Phase 7 | Pending |
+| IA-01 | Phase 7 | Pending |
+| IA-02 | Phase 7 | Pending |
+| IA-03 | Phase 7 | Pending |
+| IA-04 | Phase 7 | Pending |
+| IA-05 | Phase 7 | Pending |
+| CASAL-01 | Phase 8 | Pending |
+| CASAL-02 | Phase 8 | Pending |
+| MULTI-01 | Phase 8 | Pending |
+| MULTI-02 | Phase 8 | Pending |
+| MULTI-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 67 total
-- Mapped to phases: 0
-- Unmapped: 67 ⚠️
+- Mapped to phases: 67
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-11-17*
-*Last updated: 2026-11-17 after initial definition*
+*Last updated: 2026-11-17 after roadmap creation (traceability filled)*

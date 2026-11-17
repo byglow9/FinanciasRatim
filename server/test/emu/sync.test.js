@@ -8,7 +8,7 @@ import * as syncModule from '../../src/sync.js'
 import { createApp } from '../../src/app.js'
 import { resetEmulators } from './_helpers.js'
 
-const { cleanExistingDescriptions, syncAll, syncConnection } = syncModule
+const { cleanExistingDescriptions, syncAll, syncConnection, syncItem } = syncModule
 
 const HID_A = 'casal-aaaa-0001'
 const HID_B = 'casal-bbbb-0002'
@@ -306,7 +306,7 @@ describe('sync com dono', () => {
       },
       db,
       pluggy,
-      sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem: syncModule.syncItem },
+      sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem },
       origins: ['https://app.exemplo.test'],
       webhookSecret: secret,
     })
@@ -339,5 +339,98 @@ describe('sync com dono', () => {
     } finally {
       await new Promise((resolve) => server.close(resolve))
     }
+  })
+
+  test('syncItem: rajada do mesmo item coalesce em uma execucao mais uma repeticao final', async () => {
+    await seedConnection('item-rajada-1', HID_A)
+    let fetches = 0
+    const pluggy = fakePluggy(
+      { 'item-rajada-1': [bankTx('txR1', 'RESTAURANTE SABOR')] },
+      {
+        onFetchItem: async () => {
+          fetches++
+          await new Promise((r) => setTimeout(r, 50))
+        },
+      }
+    )
+
+    const p1 = syncItem(db, pluggy, 'item-rajada-1')
+    const p2 = syncItem(db, pluggy, 'item-rajada-1')
+    const p3 = syncItem(db, pluggy, 'item-rajada-1')
+    assert.equal(p1, p2, 'mesma promise enquanto ha execucao em andamento')
+    assert.equal(p2, p3)
+    const summary = await p1
+    assert.equal(summary.itemId, 'item-rajada-1')
+    assert.equal(fetches, 2, 'uma execucao mais uma repeticao final')
+    assert.equal(await countOf('bankImports'), 1)
+  })
+
+  test('syncItem e syncAll juntos nunca processam duas conexoes ao mesmo tempo', async () => {
+    await seedConnection('item-serial-a', HID_A)
+    await seedConnection('item-serial-b', HID_B)
+    let active = 0
+    let maxActive = 0
+    const pluggy = fakePluggy(
+      {
+        'item-serial-a': [bankTx('txSA', 'RESTAURANTE SABOR')],
+        'item-serial-b': [bankTx('txSB', 'LANCHONETE OUTRO')],
+      },
+      {
+        onFetchItem: async () => {
+          active++
+          maxActive = Math.max(maxActive, active)
+          await new Promise((r) => setTimeout(r, 40))
+          active--
+        },
+      }
+    )
+
+    await Promise.all([
+      syncItem(db, pluggy, 'item-serial-a'),
+      syncAll(db, pluggy),
+      syncItem(db, pluggy, 'item-serial-b'),
+    ])
+    assert.equal(maxActive, 1, 'no maximo uma conexao em processamento')
+    assert.equal(await countOf('bankImports'), 2)
+  })
+
+  test('syncItem: replay do mesmo item mantem as contagens de bankImports e transactions', async () => {
+    await seedConnection('item-replay-1', HID_A)
+    const pluggy = fakePluggy({
+      'item-replay-1': [bankTx('txP1', 'RESTAURANTE SABOR'), bankTx('txP2', 'LANCHONETE OUTRO')],
+    })
+
+    await syncItem(db, pluggy, 'item-replay-1')
+    const imports = await countOf('bankImports')
+    const transactions = await countOf('transactions')
+    assert.equal(imports, 2)
+    await syncItem(db, pluggy, 'item-replay-1')
+    assert.equal(await countOf('bankImports'), imports)
+    assert.equal(await countOf('transactions'), transactions)
+  })
+
+  test('syncItem: item desconhecido resolve com null sem chamar a Pluggy nem gravar', async () => {
+    let fetches = 0
+    const pluggy = fakePluggy({}, { onFetchItem: async () => void fetches++ })
+    assert.equal(await syncItem(db, pluggy, 'item-fantasma-1'), null)
+    assert.equal(fetches, 0)
+    assert.equal(await countOf('bankConnections'), 0)
+    assert.equal(await countOf('bankImports'), 0)
+  })
+
+  test('syncItem: conexao sem ownerId vira erro registrado e nenhum bankImports', async () => {
+    await seedConnection('item-sem-dono-1', null)
+    const pluggy = fakePluggy({ 'item-sem-dono-1': [bankTx('txD1', 'RESTAURANTE SEM DONO')] })
+    const summary = await syncItem(db, pluggy, 'item-sem-dono-1')
+    assert.ok(summary.error)
+    const conn = (await db.collection('bankConnections').doc('item-sem-dono-1').get()).data()
+    assert.ok(conn.lastSyncError)
+    assert.equal(await countOf('bankImports'), 0)
+  })
+
+  test('syncItem: itemId vazio ou nao string rejeita citando itemId', async () => {
+    const pluggy = fakePluggy({})
+    await assert.rejects(syncItem(db, pluggy, ''), /itemId/)
+    await assert.rejects(syncItem(db, pluggy, undefined), /itemId/)
   })
 })

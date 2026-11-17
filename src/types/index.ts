@@ -1,3 +1,5 @@
+import { DEFAULT_CATEGORY_DEFS } from '@shared/core/categories.js'
+
 export type PersonType = 'ele' | 'ela'
 export type AreaType = PersonType | 'porquinho'
 
@@ -8,6 +10,7 @@ export interface Transaction {
   amount: number
   description: string
   category: string
+  categoryId?: string
   date: Date
   createdAt: Date
 }
@@ -19,6 +22,7 @@ export interface FixedExpense {
   amount: number
   dueDay: number // 1-31
   category: string
+  categoryId?: string
   isActive: boolean
   createdAt: Date
 }
@@ -52,7 +56,16 @@ export interface Settings {
   notificationsEnabled: boolean
   daysBeforeDueDate: number
   categories: string[]
+  categoryDefs?: CategoryDef[]
   theme: 'light' | 'dark'
+}
+
+// Categoria com id estavel (D-07): renomear troca so o nome; arquivar nunca apaga (D-08).
+export interface CategoryDef {
+  id: string
+  name: string
+  color?: string
+  archived?: boolean
 }
 
 export interface Goal {
@@ -82,19 +95,11 @@ export interface Category {
   isDefault: boolean
 }
 
-export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
-  { name: 'Alimentacao', isDefault: true, color: '#f97316' },
-  { name: 'Transporte', isDefault: true, color: '#3b82f6' },
-  { name: 'Moradia', isDefault: true, color: '#8b5cf6' },
-  { name: 'Saude', isDefault: true, color: '#ef4444' },
-  { name: 'Lazer', isDefault: true, color: '#22c55e' },
-  { name: 'Educacao', isDefault: true, color: '#06b6d4' },
-  { name: 'Vestuario', isDefault: true, color: '#ec4899' },
-  { name: 'Servicos', isDefault: true, color: '#f59e0b' },
-  { name: 'Salario', isDefault: true, color: '#10b981' },
-  { name: 'Investimentos', isDefault: true, color: '#6366f1' },
-  { name: 'Outros', isDefault: true, color: '#64748b' },
-]
+export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = DEFAULT_CATEGORY_DEFS.map((d) => ({
+  name: d.name,
+  color: d.color,
+  isDefault: true,
+}))
 
 export interface Note {
   id: string
@@ -139,5 +144,6 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'id'> = {
   notificationsEnabled: true,
   daysBeforeDueDate: 3,
   categories: DEFAULT_CATEGORIES.map(c => c.name),
+  categoryDefs: DEFAULT_CATEGORY_DEFS.map(d => ({ ...d })),
   theme: 'light',
 }

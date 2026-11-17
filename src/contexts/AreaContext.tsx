@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { AreaType, Settings } from '@/types'
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
+import type { AreaType, CategoryDef, Settings } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
 import { getSettings, updateSettings } from '@/services/settings.service'
 import { useAuth } from './AuthContext'
+import { activeCategoryNames, buildCategoryDefs, resolveCategoryId } from '@shared/core/categories.js'
 
 const THEME_CACHE_KEY = 'financias_theme'
 
@@ -11,7 +12,8 @@ interface AreaContextType {
   setCurrentArea: (area: AreaType) => void
   settings: Settings
   updateTabNames: (tabNames: Settings['tabNames']) => Promise<void>
-  updateCategories: (categories: string[]) => Promise<void>
+  categoryDefs: CategoryDef[]
+  updateCategoryDefs: (defs: CategoryDef[]) => Promise<void>
   updateTheme: (theme: Settings['theme']) => Promise<void>
   loading: boolean
 }
@@ -73,10 +75,25 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const updateCategories = async (categories: string[]) => {
+  // Definicoes com id estavel (D-07). Documentos antigos so tem a lista de nomes, e um cliente
+  // antigo (rollback) pode editar so essa lista; por isso `categories` e a fonte de quem esta ativo:
+  // nome na lista = ativa, fora da lista = arquivada, nome novo ganha id. O servidor e o cliente
+  // novo gravam as duas coisas juntas, entao nesse caso a reconciliacao nao muda nada.
+  const categoryDefs = useMemo<CategoryDef[]>(() => {
+    const names = settings.categories ?? []
+    return buildCategoryDefs(names, settings.categoryDefs ?? []).map((d) => {
+      const active = names.some((n) => resolveCategoryId(n, [d]) === d.id)
+      if (active === !d.archived) return d
+      return { ...d, archived: !active }
+    })
+  }, [settings.categories, settings.categoryDefs])
+
+  // categories (nomes ativos) continua gravada para o cliente antigo, o servidor e o rollback.
+  const updateCategoryDefs = async (defs: CategoryDef[]) => {
     try {
-      await updateSettings({ categories })
-      setSettings(prev => ({ ...prev, categories }))
+      const categories = activeCategoryNames(defs)
+      await updateSettings({ categoryDefs: defs, categories })
+      setSettings(prev => ({ ...prev, categoryDefs: defs, categories }))
     } catch (error) {
       console.error('Error updating categories:', error)
       throw error
@@ -94,7 +111,7 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AreaContext.Provider value={{ currentArea, setCurrentArea, settings, updateTabNames, updateCategories, updateTheme, loading }}>
+    <AreaContext.Provider value={{ currentArea, setCurrentArea, settings, updateTabNames, categoryDefs, updateCategoryDefs, updateTheme, loading }}>
       {children}
     </AreaContext.Provider>
   )

@@ -1,22 +1,21 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEventCategories } from '@/hooks/useEventCategories'
 import { updateSettings } from '@/services/settings.service'
-import { getTransactionsByCategory } from '@/services/transactions.service'
-import { getFixedExpensesByCategory } from '@/services/fixedExpenses.service'
 import { BankConnections } from '@/components/settings/BankConnections'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { EventCategory } from '@/types'
+import type { CategoryDef, EventCategory } from '@/types'
+import { addCategory, archiveCategory, renameCategory } from '@shared/core/categories.js'
 import { DEFAULT_EVENT_CATEGORY_COLORS } from '@/types'
 import { cn } from '@/lib/utils'
 import { LogOut, Save, X, Plus, Pencil, AlertTriangle, Tag, CalendarDays, Bell, Moon, Users, Settings } from 'lucide-react'
 
 export function SettingsPage() {
-  const { settings, updateTabNames, updateCategories, updateTheme } = useArea()
+  const { settings, categoryDefs, updateTabNames, updateCategoryDefs, updateTheme } = useArea()
   const { signOut } = useAuth()
   const {
     categories: eventCategories,
@@ -28,10 +27,14 @@ export function SettingsPage() {
   const [tabNames, setTabNames] = useState(settings.tabNames)
   const [notifications, setNotifications] = useState(settings.notificationsEnabled)
   const [daysBeforeDue, setDaysBeforeDue] = useState(settings.daysBeforeDueDate)
-  const [categories, setCategories] = useState<string[]>(settings.categories || [])
+  const [defs, setDefs] = useState<CategoryDef[]>(categoryDefs)
   const [newCategory, setNewCategory] = useState('')
   const [categoryError, setCategoryError] = useState<string | null>(null)
-  const [removingCategory, setRemovingCategory] = useState<string | null>(null)
+  const [archivingCategory, setArchivingCategory] = useState<string | null>(null)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [editingCategoryName, setEditingCategoryName] = useState('')
+  const cancelRenameRef = useRef(false)
+  const activeCategories = defs.filter((d) => !d.archived)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [theme, setTheme] = useState(settings.theme)
@@ -46,7 +49,7 @@ export function SettingsPage() {
     setSaving(true)
     try {
       await updateTabNames(tabNames)
-      await updateCategories(categories)
+      await updateCategoryDefs(defs)
       await updateSettings({
         notificationsEnabled: notifications,
         daysBeforeDueDate: daysBeforeDue,
@@ -58,47 +61,67 @@ export function SettingsPage() {
     }
   }
 
-  const handleAddCategory = async () => {
-    const trimmed = newCategory.trim()
-    if (!trimmed) {
-      setCategoryError('Nome da categoria nao pode ser vazio')
-      return
+  // Aplica uma mudanca nas definicoes: o nucleo valida (erro em pt-BR vai para a tela) e persiste.
+  const applyCategoryChange = async (change: (current: CategoryDef[]) => CategoryDef[]): Promise<boolean> => {
+    let next: CategoryDef[]
+    try {
+      next = change(defs)
+    } catch (err) {
+      setCategoryError(err instanceof Error ? err.message : 'Nao foi possivel alterar a categoria')
+      return false
     }
-    const exists = categories.some(c => c.toLowerCase() === trimmed.toLowerCase())
-    if (exists) {
-      setCategoryError('Categoria ja existe')
-      return
-    }
-    const newCategories = [...categories, trimmed]
-    setCategories(newCategories)
-    setNewCategory('')
+    setDefs(next)
     setCategoryError(null)
-    // Salvar automaticamente
-    await updateCategories(newCategories)
+    try {
+      await updateCategoryDefs(next)
+    } catch {
+      setDefs(defs)
+      setCategoryError('Nao foi possivel salvar as categorias')
+      return false
+    }
+    return true
   }
 
-  const handleRemoveCategory = async (categoryName: string) => {
-    setCategoryError(null)
-    setRemovingCategory(categoryName)
+  // Nome de categoria arquivada reativa a mesma categoria (mesmo id).
+  const handleAddCategory = async () => {
+    if (await applyCategoryChange((current) => addCategory(current, newCategory))) {
+      setNewCategory('')
+    }
+  }
+
+  // D-08: excluir arquiva; nao consulta lancamentos e nao bloqueia, o historico continua mostrando o nome.
+  const handleArchiveCategory = async (id: string) => {
+    setArchivingCategory(id)
     try {
-      const [transactions, fixedExpenses] = await Promise.all([
-        getTransactionsByCategory(categoryName),
-        getFixedExpensesByCategory(categoryName),
-      ])
-      if (transactions.length > 0) {
-        setCategoryError(`Nao e possivel remover "${categoryName}" pois existem transacoes usando esta categoria.`)
-        return
-      }
-      if (fixedExpenses.length > 0) {
-        setCategoryError(`Nao e possivel remover "${categoryName}" pois existem contas fixas usando esta categoria.`)
-        return
-      }
-      const newCategories = categories.filter(c => c !== categoryName)
-      setCategories(newCategories)
-      // Salvar automaticamente
-      await updateCategories(newCategories)
+      await applyCategoryChange((current) => archiveCategory(current, id))
     } finally {
-      setRemovingCategory(null)
+      setArchivingCategory(null)
+    }
+  }
+
+  const handleStartRenameCategory = (def: CategoryDef) => {
+    cancelRenameRef.current = false
+    setCategoryError(null)
+    setEditingCategoryId(def.id)
+    setEditingCategoryName(def.name)
+  }
+
+  const handleCancelRenameCategory = () => {
+    cancelRenameRef.current = true
+    setEditingCategoryId(null)
+    setEditingCategoryName('')
+  }
+
+  const handleCommitRenameCategory = async () => {
+    if (cancelRenameRef.current || editingCategoryId === null) return
+    const id = editingCategoryId
+    const current = defs.find((d) => d.id === id)
+    if (current && current.name === editingCategoryName.trim()) {
+      handleCancelRenameCategory()
+      return
+    }
+    if (await applyCategoryChange((list) => renameCategory(list, id, editingCategoryName))) {
+      handleCancelRenameCategory()
     }
   }
 
@@ -294,7 +317,7 @@ export function SettingsPage() {
             <Tag className="h-4 w-4 text-primary" />
             Categorias
             <span className="ml-auto text-xs font-normal text-muted-foreground">
-              {categories.length} {categories.length === 1 ? 'categoria' : 'categorias'}
+              {activeCategories.length} {activeCategories.length === 1 ? 'categoria' : 'categorias'}
             </span>
           </CardTitle>
         </CardHeader>
@@ -306,29 +329,65 @@ export function SettingsPage() {
             </div>
           )}
 
-          {/* Lista de categorias como chips */}
-          {categories.length > 0 && (
+          {/* Lista de categorias ativas como chips */}
+          {activeCategories.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {activeCategories.map((def) => (
                 <div
-                  key={category}
+                  key={def.id}
                   className="group flex items-center gap-1.5 px-3 py-1.5 bg-muted/70 hover:bg-muted rounded-full text-sm transition-colors"
                 >
-                  <span>{category}</span>
-                  <button
-                    type="button"
-                    className="p-0.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    onClick={() => handleRemoveCategory(category)}
-                    disabled={removingCategory === category}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                  {editingCategoryId === def.id ? (
+                    <Input
+                      autoFocus
+                      aria-label="Renomear categoria"
+                      value={editingCategoryName}
+                      onChange={(e) => {
+                        setEditingCategoryName(e.target.value)
+                        setCategoryError(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleCommitRenameCategory()
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault()
+                          handleCancelRenameCategory()
+                        }
+                      }}
+                      onBlur={handleCommitRenameCategory}
+                      className="h-6 w-32 px-2 py-0 text-sm"
+                    />
+                  ) : (
+                    <>
+                      <span>{def.name}</span>
+                      <button
+                        type="button"
+                        aria-label="Renomear categoria"
+                        title="Renomear categoria"
+                        className="p-0.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => handleStartRenameCategory(def)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Arquivar categoria"
+                        title="Arquivar categoria"
+                        className="p-0.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        onClick={() => handleArchiveCategory(def.id)}
+                        disabled={archivingCategory === def.id}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
-          {categories.length === 0 && (
+          {activeCategories.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
               Nenhuma categoria cadastrada
             </p>

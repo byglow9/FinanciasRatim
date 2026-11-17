@@ -37,7 +37,7 @@ O Coinki é uma evolução de um app que já funciona (lançamentos, fixas, meta
   4. Renomear uma categoria mantém todo o histórico dela (e, mais adiante, seus limites), porque as categorias têm identificador estável
   5. Os cálculos puros rodam em um núcleo compartilhado com testes automatizados (fuso de São Paulo), e o servidor sobe em Node 22.23.4+ com `firebase` 13 e `firebase-admin` 14 sem regressão
 
-**Plans**: 2/13 plans executed
+**Plans**: 3/13 plans executed
 
 Plans:
 **Wave 1**
@@ -50,7 +50,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-03-PLAN.md — Tracer: conta por script, claims, regras por dono e token no servidor; matriz de regras e índices
+- [x] 01-03-PLAN.md — Tracer: conta por script, claims, regras por dono e token no servidor; matriz de regras e índices
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -210,7 +210,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fundação de dados e acesso | 2/13 | In Progress|  |
+| 1. Fundação de dados e acesso | 3/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 0/TBD | Not started | - |
 | 3. Limites, "Pode gastar" e Central | 0/TBD | Not started | - |
 | 4. Mascote Vintém | 0/TBD | Not started | - |

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-11-17T15:53:17.922Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-11-17T15:57:54.671Z"
 last_activity: 2026-11-17
-last_activity_desc: Roadmap criado (8 fases, 67/67 requisitos mapeados)
-state_head: 90d42d2d4051761ec0fbe6f50dd7991b78dd2fb5
+last_activity_desc: Phase 01 execution started
+state_head: 68249b4b6f2f127d795b3e11a13dcec665c38046
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 1 - Fundação de dados e acesso
+**Current focus:** Phase 01 — Fundação de dados e acesso
 
 ## Current Position
 
-Phase: 01 (Fundação de dados e acesso) — READY TO EXECUTE
-Plan: 0 of TBD in current phase
+Phase: 01 (Fundação de dados e acesso) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
-Last activity: 2026-11-17 - Roadmap criado (8 fases, 67/67 requisitos mapeados)
+Last activity: 2026-11-17 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -54,6 +54,11 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01 P01 | 10 min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -66,6 +71,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Ordem de regras do Firestore é obrigatória: login Firebase único, backfill de ownerId, índices, cliente, só então regras restritivas
 - [Roadmap]: Mockups (paleta, navegação mobile, posição da Central, formato do Casal) são um portão no início da Fase 3
 - [Roadmap]: Teste real do cartão (CARD-01) começa como trilha paralela somente leitura na Fase 2; o requisito é entregue na Fase 6
+- [Phase 01]: Plano 01-01: pacotes SUS (firebase 13.4.0, firebase-admin 14.5.1, pluggy-sdk 0.94.3, firebase-tools 15.9.1) approved pelo dono — Gate T-01-SC fechado com evidência npm
+- [Phase 01]: Higiene do repositório: untrack-all-except-amigo (.env.amigo fora, D-15) — Decisão do dono; Plano 02 aplica
 
 ### Pending Todos
 
@@ -91,6 +98,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T15:00:40.344Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-funda-o-de-dados-e-acesso/01-CONTEXT.md
+Last session: 2026-11-17T15:57:54.635Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None

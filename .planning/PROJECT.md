@@ -70,7 +70,7 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Nome Coinki (sem "coinc", que existe) | Vibe parecida com a ideia original; checar domínio e lojas | — Pending |
+| Nome do app: **COINC** (decisão do dono em 2026-11-17, "COINC mesmo") — substitui "Coinki". Os demais textos (ROADMAP, Fase 5, `coinki.web.app`) ainda dizem Coinki e serão ajustados na Fase 5 | Antes se evitava "coinc" por já existir; o dono confirmou que quer esse nome. Checar domínio, site ID do Hosting e lojas | — Pending |
 | Mascote porquinho-cofre "Vintém", original | Continua o porquinho do site e não copia a referência | — Pending |
 | Paleta definida por mockups | Referência é preto/branco/laranja; nosso site é verde; ver propostas antes | — Pending |
 | Tema segue o celular, com override | Referência só tem claro; nosso site tem os dois | — Pending |

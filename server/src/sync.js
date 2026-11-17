@@ -7,12 +7,12 @@ import {
   normalize,
   DUPLICATE_WINDOW_DAYS,
 } from '../../shared/core/classify.js'
+import { DEFAULT_CATEGORY_DEFS, buildCategoryDefs } from '../../shared/core/categories.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const CONNECTIONS = 'bankConnections'
 const IMPORTS = 'bankImports'
 const TRANSACTIONS = 'transactions'
-const DEFAULT_CATEGORIES = ['Outros']
 
 let categoryChainCache = null
 
@@ -42,7 +42,10 @@ async function getCategoryChains(pluggy) {
 async function getAppCategories(db) {
   const snap = await db.collection('settings').doc('main').get()
   const categories = snap.exists ? snap.data().categories : null
-  return Array.isArray(categories) && categories.length ? categories : DEFAULT_CATEGORIES
+  // Definições com id estável; sem categorias salvas, usa as padrão.
+  return Array.isArray(categories) && categories.length
+    ? buildCategoryDefs(categories)
+    : DEFAULT_CATEGORY_DEFS
 }
 
 async function getExisting(db, ids) {
@@ -155,7 +158,7 @@ export async function syncConnection(db, pluggy, connection) {
         if (!entry) continue
 
         const category =
-          learned.get(normalize(entry.description)) ?? mapCategory(categoryNames, appCategories)
+          learned.get(normalize(entry.description)) ?? mapCategory(categoryNames, appCategories).name
         let { status, reason } = entry
         let matchedTransactionId = null
         if (status === 'imported') {

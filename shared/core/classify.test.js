@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { buildCategoryDefs } from './categories.js'
 import { classify, cleanDescription, findDuplicate, mapCategory, toLocalDate } from './classify.js'
 
 const now = new Date('2026-11-09T15:00:00Z')
@@ -70,12 +71,14 @@ test('duplicata: mesmo tipo e valor em ate 3 dias, usada uma vez so', () => {
 })
 
 test('categoria da Pluggy e mapeada para as categorias do site', () => {
-  const cats = ['Alimentacao', 'Transporte', 'Servicos', 'Outros']
-  assert.equal(mapCategory(['Eating out', 'Food and drinks', 'Services'], cats), 'Alimentacao')
-  assert.equal(mapCategory(['Taxi and ride-hailing', 'Transportation'], cats), 'Transporte')
-  assert.equal(mapCategory([], cats), 'Outros')
+  const cats = buildCategoryDefs(['Alimentacao', 'Transporte', 'Servicos', 'Outros'])
+  const name = (names) => mapCategory(names, cats).name
+  assert.equal(name(['Eating out', 'Food and drinks', 'Services']), 'Alimentacao')
+  assert.equal(name(['Taxi and ride-hailing', 'Transportation']), 'Transporte')
+  assert.equal(name([]), 'Outros')
   // categoria removida das configuracoes cai em Outros
-  assert.equal(mapCategory(['Pharmacy', 'Healthcare'], cats), 'Outros')
+  assert.equal(name(['Pharmacy', 'Healthcare']), 'Outros')
+  assert.deepEqual(mapCategory(['Taxi'], cats), { id: 'transporte', name: 'Transporte' })
 })
 
 test('descricoes do banco ficam legiveis', () => {

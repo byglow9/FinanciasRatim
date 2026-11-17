@@ -1,9 +1,23 @@
+// @ts-check
 // Regras puras (sem I/O) que transformam uma transação da Pluggy em um
 // lançamento do site e decidem se ela entra direto ou vai para revisão.
+
+/**
+ * @typedef {{ id: string, name: string, color?: string, archived?: boolean }} CategoryDef
+ * @typedef {{
+ *   type: string, amount: number, date: Date, description: string, raw: string,
+ *   status: string, reason: string | null
+ * }} ClassifiedEntry
+ */
 
 const DAY_MS = 24 * 60 * 60 * 1000
 export const DUPLICATE_WINDOW_DAYS = 3
 
+/**
+ * Minúsculas, sem acento e com espaços colapsados (chave de comparação).
+ * @param {unknown} text
+ * @returns {string}
+ */
 export function normalize(text) {
   return String(text ?? '')
     .normalize('NFD')
@@ -16,13 +30,18 @@ export function normalize(text) {
 const SMALL_WORDS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'a', 'o'])
 const BRANDS = new Map([['ifood', 'iFood'], ['ifood.com', 'iFood.com']])
 
+/**
+ * @param {string} text
+ * @returns {string}
+ */
 function titleCase(text) {
   return text
     .toLowerCase()
     .split(/\s+/)
     .filter(Boolean)
     .map((w, i) => {
-      if (BRANDS.has(w)) return BRANDS.get(w)
+      const brand = BRANDS.get(w)
+      if (brand) return brand
       return i > 0 && SMALL_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)
     })
     .join(' ')
@@ -31,6 +50,8 @@ function titleCase(text) {
 /**
  * Transforma a descrição crua do banco ("PIX QR CODE DINAMICO - DES: UBER DO
  * BRASIL TECNOL 16/11 - DOCTO: 123") em algo legível ("Uber do Brasil Tecnol").
+ * @param {unknown} raw
+ * @returns {string}
  */
 export function cleanDescription(raw) {
   let s = String(raw ?? '').replace(/\s+/g, ' ').trim()
@@ -40,6 +61,7 @@ export function cleanDescription(raw) {
   s = s.replace(/\s+\d{2}\/\d{2}(\/\d{2,4})?(?=\s|$)/g, '') // data embutida
   s = s.replace(/(\s+(DE|DA|DO))+\s*$/i, '').trim() // "...AGENCIA DE" que sobrou da data
 
+  /** @param {RegExp} re */
   const pick = (re) => s.match(re)?.[1]?.replace(/\b(DES|REM):?\s*/gi, '').trim()
 
   let name = pick(/^PIX\s+ENVIAD[OA]\s*-?\s*(?:DES:?\s*)?(.+)$/i)
@@ -59,6 +81,10 @@ export function cleanDescription(raw) {
 
 // A Pluggy devolve datas "só dia" como meia-noite UTC, que no Brasil cairia
 // no dia anterior. Nesses casos fixa o horário em 12h de Brasília (15h UTC).
+/**
+ * @param {string | number | Date} value
+ * @returns {Date}
+ */
 export function toLocalDate(value) {
   const d = new Date(value)
   const isMidnightUtc =
@@ -68,6 +94,7 @@ export function toLocalDate(value) {
 }
 
 // Ordem importa: a primeira regra que casar vence.
+/** @type {[RegExp, string][]} */
 const CATEGORY_RULES = [
   [/salary|pro-labore|retirement|government aid/, 'Salario'],
   [/investment|fixed income|mutual fund|variable income|pension|dividend/, 'Investimentos'],
@@ -81,20 +108,41 @@ const CATEGORY_RULES = [
   [/telecommunication|internet|mobile|tv|digital services|streaming|bank fees|insurance|tax|services/, 'Servicos'],
 ]
 
-export function mapCategory(pluggyCategoryNames, appCategories) {
-  const available = new Map(appCategories.map((c) => [normalize(c), c]))
-  const fallback = available.get('outros') ?? appCategories[0] ?? 'Outros'
-  // Da categoria mais específica para a mais genérica.
+/**
+ * Mapeia os nomes de categoria da Pluggy (da mais específica para a mais
+ * genérica) para uma categoria ATIVA do app. Categorias arquivadas são
+ * ignoradas; sem correspondência cai em "outros" (D-09).
+ * @param {string[]} pluggyCategoryNames
+ * @param {CategoryDef[]} defs
+ * @returns {{ id: string, name: string }}
+ */
+export function mapCategory(pluggyCategoryNames, defs) {
+  const active = defs.filter((d) => !d.archived)
+  /** @param {string} target */
+  const findTarget = (target) => {
+    const key = normalize(target)
+    return active.find((d) => d.id === key) ?? active.find((d) => normalize(d.name) === key)
+  }
+  const found = findTarget('outros') ?? active[0]
+  const fallback = found ? { id: found.id, name: found.name } : { id: 'outros', name: 'Outros' }
   for (const name of pluggyCategoryNames) {
     const n = normalize(name)
     if (!n) continue
     for (const [pattern, target] of CATEGORY_RULES) {
-      if (pattern.test(n)) return available.get(normalize(target)) ?? fallback
+      if (pattern.test(n)) {
+        const def = findTarget(target)
+        return def ? { id: def.id, name: def.name } : fallback
+      }
     }
   }
   return fallback
 }
 
+/**
+ * @param {any} tx transação crua da Pluggy
+ * @param {string} categoryText
+ * @returns {boolean}
+ */
 function isCardBillPayment(tx, categoryText) {
   return (
     tx.operationType === 'PAGAMENTO_FATURA' ||
@@ -105,6 +153,11 @@ function isCardBillPayment(tx, categoryText) {
   )
 }
 
+/**
+ * @param {any} tx transação crua da Pluggy
+ * @param {string} categoryText
+ * @returns {boolean}
+ */
 function isSelfTransfer(tx, categoryText) {
   if (/same person transfer/.test(categoryText)) return true
   const payer = tx.paymentData?.payer?.documentNumber?.value
@@ -113,7 +166,9 @@ function isSelfTransfer(tx, categoryText) {
 }
 
 /**
- * @returns {null | {type, amount, date, description, status, reason}}
+ * @param {any} tx transação crua da Pluggy
+ * @param {{ accountType?: string, hasCreditCard?: boolean, categoryNames?: string[], now?: Date }} ctx
+ * @returns {null | ClassifiedEntry}
  * null = ainda não deve ser importada (pendente/agendada/futura/valor zero).
  */
 export function classify(tx, { accountType, hasCreditCard, categoryNames = [], now = new Date() }) {
@@ -157,8 +212,13 @@ export function classify(tx, { accountType, hasCreditCard, categoryNames = [], n
 /**
  * Procura um lançamento manual equivalente (mesmo tipo e valor, até 3 dias
  * de diferença) que ainda não tenha sido associado a outra transação do banco.
+ * @param {{ type: string, amount: number, date: Date }} entry
+ * @param {{ id: string, type: string, amount: number, date: Date }[]} manualTransactions
+ * @param {Set<string>} usedIds
+ * @returns {string | null}
  */
 export function findDuplicate(entry, manualTransactions, usedIds) {
+  /** @type {null | { id: string, diff: number }} */
   let best = null
   for (const m of manualTransactions) {
     if (usedIds.has(m.id) || m.type !== entry.type) continue

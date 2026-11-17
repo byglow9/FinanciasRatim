@@ -77,3 +77,19 @@ test('categoria da Pluggy e mapeada para as categorias do site', () => {
   // categoria removida das configuracoes cai em Outros
   assert.equal(mapCategory(['Pharmacy', 'Healthcare'], cats), 'Outros')
 })
+
+import { cleanDescription } from '../src/classify.js'
+
+test('descricoes do banco ficam legiveis', () => {
+  const cases = [
+    ['PIX QR CODE DINAMICO - DES: UBER DO BRASIL TECNOL 16/11 - DOCTO: 1234', 'Uber do Brasil Tecnol'],
+    ['PIX QR CODE DINAMICO - DES: IFOOD.COM AGENCIA DE 16/11 - DOCTO: 1…', 'iFood.com Agencia'],
+    ['PIX QR CODE DINAMICO - DES: MAREE INSTITUICAO DE 14/11 - DOCTO: 18…', 'Maree Instituicao'],
+    ['PIX ENVIADO - DES: JULIA LOTHAMMER CHAGA 16/11 - DOCTO: 1204569', 'Pix para Julia Lothammer Chaga'],
+    ['PIX RECEBIDO - REM: MOISES CORREA GOMES 14/11 - DOCTO: 1304541', 'Pix de Moises Correa Gomes'],
+    ['DEPOSIT TRANSFER BDN - DAYSIELI TROYSE CAVENAGHI - DOCTO: 496482', 'Transferencia de Daysieli Troyse Cavenaghi'],
+    ['MERCADO LIVRE', 'Mercado Livre'],
+    ['', 'Transacao bancaria'],
+  ]
+  for (const [raw, expected] of cases) assert.equal(cleanDescription(raw), expected, raw)
+})

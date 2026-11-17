@@ -4,7 +4,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { PluggyClient } from 'pluggy-sdk'
-import { syncAll, syncConnection } from './sync.js'
+import { cleanExistingDescriptions, syncAll, syncConnection } from './sync.js'
 
 function required(name) {
   const value = process.env[name]
@@ -112,6 +112,13 @@ app.delete(
     }
     await ref.delete()
     res.json({ ok: true })
+  })
+)
+
+app.post(
+  '/api/maintenance/clean-descriptions',
+  handle(async (_req, res) => {
+    res.json(await cleanExistingDescriptions(db))
   })
 )
 

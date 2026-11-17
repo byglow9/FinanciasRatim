@@ -13,6 +13,50 @@ export function normalize(text) {
     .trim()
 }
 
+const SMALL_WORDS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'a', 'o'])
+const BRANDS = new Map([['ifood', 'iFood'], ['ifood.com', 'iFood.com']])
+
+function titleCase(text) {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w, i) => {
+      if (BRANDS.has(w)) return BRANDS.get(w)
+      return i > 0 && SMALL_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)
+    })
+    .join(' ')
+}
+
+/**
+ * Transforma a descrição crua do banco ("PIX QR CODE DINAMICO - DES: UBER DO
+ * BRASIL TECNOL 16/11 - DOCTO: 123") em algo legível ("Uber do Brasil Tecnol").
+ */
+export function cleanDescription(raw) {
+  let s = String(raw ?? '').replace(/\s+/g, ' ').trim()
+  if (!s) return 'Transacao bancaria'
+
+  s = s.replace(/\s*-?\s*DOCTO:?.*$/i, '') // número do documento (às vezes truncado)
+  s = s.replace(/\s+\d{2}\/\d{2}(\/\d{2,4})?(?=\s|$)/g, '') // data embutida
+  s = s.replace(/(\s+(DE|DA|DO))+\s*$/i, '').trim() // "...AGENCIA DE" que sobrou da data
+
+  const pick = (re) => s.match(re)?.[1]?.replace(/\b(DES|REM):?\s*/gi, '').trim()
+
+  let name = pick(/^PIX\s+ENVIAD[OA]\s*-?\s*(?:DES:?\s*)?(.+)$/i)
+  if (name) return `Pix para ${titleCase(name)}`
+
+  name = pick(/^PIX\s+RECEBID[OA]\s*-?\s*(?:REM:?\s*)?(.+)$/i)
+  if (name) return `Pix de ${titleCase(name)}`
+
+  name = pick(/^PIX\s+QR\s*CODE\s+\w+\s*-?\s*(?:DES:?\s*)?(.+)$/i)
+  if (name) return titleCase(name)
+
+  name = pick(/^DEPOSIT\s+TRANSFER\s+\w+\s*-\s*(.+)$/i)
+  if (name) return `Transferencia de ${titleCase(name)}`
+
+  return titleCase(s.replace(/\b(DES|REM):?\s*/gi, '').trim()) || 'Transacao bancaria'
+}
+
 // A Pluggy devolve datas "só dia" como meia-noite UTC, que no Brasil cairia
 // no dia anterior. Nesses casos fixa o horário em 12h de Brasília (15h UTC).
 export function toLocalDate(value) {
@@ -84,8 +128,9 @@ export function classify(tx, { accountType, hasCreditCard, categoryNames = [], n
   if (accountType !== 'CREDIT' && tx.status === 'PENDING') return null
 
   const categoryText = normalize(categoryNames.join(' | '))
-  const description = String(tx.description || tx.descriptionRaw || 'Transacao bancaria').trim()
-  const base = { amount, date, description }
+  const raw = String(tx.description || tx.descriptionRaw || 'Transacao bancaria').trim()
+  const description = cleanDescription(raw)
+  const base = { amount, date, description, raw }
 
   if (accountType === 'CREDIT') {
     // Cartão: positivo = compra; negativo = pagamento da fatura ou estorno.

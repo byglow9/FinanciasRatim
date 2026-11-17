@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase-admin/firestore'
 import {
   classify,
+  cleanDescription,
   findDuplicate,
   mapCategory,
   normalize,
@@ -52,6 +53,47 @@ async function getExisting(db, ids) {
     for (const s of snaps) if (s.exists) existing.add(s.id)
   }
   return existing
+}
+
+// Reescreve descrições já importadas no formato antigo (cru do banco).
+// Idempotente; não mexe no nome de lançamentos que você editou no site.
+export async function cleanExistingDescriptions(db) {
+  let updated = 0
+  let batch = db.batch()
+  let ops = 0
+  const flush = async () => {
+    if (ops) await batch.commit()
+    batch = db.batch()
+    ops = 0
+  }
+
+  const imports = await db.collection(IMPORTS).get()
+  for (const doc of imports.docs) {
+    const d = doc.data()
+    const raw = d.originalDescription ?? d.description
+    const clean = cleanDescription(raw)
+    if (d.description === clean && d.originalDescription === raw) continue
+    batch.update(doc.ref, { description: clean, originalDescription: raw })
+    ops++
+    if (ops >= 400) await flush()
+  }
+
+  const txs = await db.collection(TRANSACTIONS).where('source', '==', 'bank').get()
+  for (const doc of txs.docs) {
+    const d = doc.data()
+    const raw = d.originalDescription ?? d.bankDescription ?? d.description
+    const clean = cleanDescription(raw)
+    const untouched = d.description === raw || d.description === d.bankDescription
+    const patch = { bankDescription: clean, originalDescription: raw }
+    if (untouched) patch.description = clean
+    if (d.bankDescription === clean && d.originalDescription === raw && (!untouched || d.description === clean)) continue
+    batch.update(doc.ref, patch)
+    ops++
+    updated++
+    if (ops >= 400) await flush()
+  }
+  await flush()
+  return { transactions: updated, imports: imports.size }
 }
 
 export async function syncConnection(db, pluggy, connection) {
@@ -139,6 +181,7 @@ export async function syncConnection(db, pluggy, connection) {
           type: entry.type,
           amount: entry.amount,
           description: entry.description,
+          originalDescription: entry.raw,
           category,
           date,
           status,
@@ -162,6 +205,7 @@ export async function syncConnection(db, pluggy, connection) {
             bankImportId: tx.id,
             bankName,
             bankDescription: entry.description,
+            originalDescription: entry.raw,
           })
           ops++
         }

@@ -4,8 +4,11 @@ import { test, describe, beforeEach, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Timestamp } from 'firebase-admin/firestore'
 import { initAdmin } from '../../scripts/lib/admin.js'
-import { cleanExistingDescriptions, syncAll, syncConnection } from '../../src/sync.js'
+import * as syncModule from '../../src/sync.js'
+import { createApp } from '../../src/app.js'
 import { resetEmulators } from './_helpers.js'
+
+const { cleanExistingDescriptions, syncAll, syncConnection } = syncModule
 
 const HID_A = 'casal-aaaa-0001'
 const HID_B = 'casal-bbbb-0002'
@@ -35,6 +38,16 @@ function fakePluggy(itemsById, { onFetchItem } = {}) {
       return { results: [] }
     },
   }
+}
+
+// Repete fn ate devolver verdadeiro (o processamento do webhook roda depois do 200).
+async function waitFor(fn, { timeoutMs = 5000, stepMs = 25 } = {}) {
+  const limit = Date.now() + timeoutMs
+  while (Date.now() < limit) {
+    if (await fn()) return
+    await new Promise((r) => setTimeout(r, stepMs))
+  }
+  throw new Error('waitFor: tempo esgotado')
 }
 
 const bankTx = (id, description, extra = {}) => ({
@@ -281,5 +294,50 @@ describe('sync com dono', () => {
     assert.equal(all.length, 2)
     assert.equal(maxActive, 1, 'no maximo uma conexao em processamento')
     await assert.rejects(syncAll(db, pluggy, { hid: '' }), /hid/)
+  })
+
+  test('webhook ponta a ponta: evento autenticado sincroniza o item do dono', async () => {
+    const secret = 'segredo-de-teste-0123456789abcdef'
+    await seedConnection('item-webhook-1', HID_A)
+    const pluggy = fakePluggy({ 'item-webhook-1': [bankTx('txW1', 'RESTAURANTE SABOR')] })
+    const app = createApp({
+      verifyToken: async () => {
+        throw new Error('sem token')
+      },
+      db,
+      pluggy,
+      sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem: syncModule.syncItem },
+      origins: ['https://app.exemplo.test'],
+      webhookSecret: secret,
+    })
+    const server = await new Promise((resolve) => {
+      const s = app.listen(0, () => resolve(s))
+    })
+    try {
+      const url = `http://127.0.0.1:${server.address().port}/webhooks/pluggy`
+      const body = JSON.stringify({
+        event: 'item/updated',
+        eventId: 'ev-1',
+        itemId: 'item-webhook-1',
+        ownerId: HID_B,
+      })
+      const post = (headers) =>
+        fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body })
+
+      const denied = await post({})
+      assert.equal(denied.status, 401)
+      assert.equal(await countOf('bankImports'), 0)
+
+      const ok = await post({ 'x-webhook-secret': secret })
+      assert.equal(ok.status, 200)
+      await waitFor(async () => (await db.collection('bankImports').doc('txW1').get()).exists)
+
+      const imp = (await db.collection('bankImports').doc('txW1').get()).data()
+      const tx = (await db.collection('transactions').doc('bank_txW1').get()).data()
+      assert.equal(imp.ownerId, HID_A, 'o dono vem do documento da conexao, nunca do corpo')
+      assert.equal(tx.ownerId, HID_A)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
   })
 })

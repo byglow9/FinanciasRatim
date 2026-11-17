@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-11-17T16:16:21.778Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-11-17T16:22:49.223Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 01 execution started
-state_head: c5265bd7b5400b050ffe4d238c362210e5f614ff
+state_head: 1dcf99e26c6f52715ca7f10e5a8fb721ed5a3011
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 01 (Fundação de dados e acesso) — EXECUTING
-Plan: 6 of 13
+Plan: 7 of 13
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 01 execution started
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 10 min | 3 tasks | 13 files |
 | Phase 01 P04 | 15min | 3 tasks | 11 files |
 | Phase 01 P05 | 12min | 2 tasks | 11 files |
+| Phase 01 P06 | 25 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Recent decisions affecting current work:
 - [Phase 01]: [Phase 01-04]: weeklySpend arredonda limite semanal ao centavo e filtra lancamentos ao mes escolhido
 - [Phase 01]: 01-05: usuario MOCK e escopo no inicializador do useState (regra set-state-in-effect); falha ao ler token = Conta sem acesso
 - [Phase 01]: 01-05: varredura do bundle ignora signUp do SDK e as chaves antigas do purge, checando-as por uso
+- [Phase 01]: 01-06: Timestamp do backup preserva seconds/nanoseconds, mas o Firestore guarda microssegundos; ensaio exige emulador vazio; categoryDefs existentes so recebem orfaos arquivados
 
 ### Pending Todos
 
@@ -109,6 +111,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T16:16:21.743Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-11-17T16:22:49.190Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None

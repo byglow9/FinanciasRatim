@@ -527,22 +527,26 @@ const ago = (d: Date | null) =>
 | A9 | A atualização automática do item MeuPluggy ocorre ~1x/dia (README do MeuPluggy: "daily basis") e dispara `item/updated` (`triggeredBy: SYNC`) | Summary | Se for menos frequente, "desatualizado > 48 h" gera falso alarme; calibrar com o relatório da sonda (`nextAutoSyncAt`) |
 | A10 | `updateWebhook(id, { headers })` troca os cabeçalhos (tipo `UpdateWebhook = Partial<CreateWebhook> & { enabled? }` confirma o formato, não o comportamento) | Pitfall 6, Code Examples | Rotação de segredo exigiria apagar e recriar o webhook |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **O MeuPluggy entrega webhooks?** (A1/A2)
+   - Q1 — RESOLVED: decidida por D-07 (teste real, não bloqueia) e pelo Plano 02-06 (passo do dono).
    - What we know: o contrato é por aplicação (`POST /webhooks` vale para todos os itens); o MeuPluggy é item comum, atualizado diariamente.
    - What's unclear: o plano pessoal/trial entrega ou limita eventos.
    - Recommendation: conduzir o teste de D-07 (§Validation Architecture, itens manuais) e **registrar o resultado em `02-VERIFICATION`/SUMMARY**. Sem entrega em 48 h com `nextAutoSyncAt` passado, declarar "polling único".
 
 2. **Quais lançamentos o dono quer ver "removidos" quando chega `transactions/deleted`?**
+   - Q2 — RESOLVED: D-03/D-05; eventos updated/deleted só disparam o sync.
    - What we know: hoje o sync nunca apaga nem atualiza; D-03/D-05 mandam não mudar comportamento.
    - What's unclear: se, ao usar de verdade, o dono vai querer propagar exclusões/edições.
    - Recommendation: fora do escopo; registrar como limitação e deixar para CARD-07 (Fase 6) ou para uma fase futura.
 
 3. **A URL pública do Railway é estável?** (`financiasratim-production.up.railway.app`)
+   - Q3 — RESOLVED: nota no runbook do Plano 02-06.
    - Mudança de domínio (Fase 5, Coinki) exige reexecutar `register-webhooks.js` com a nova `WEBHOOK_URL`. Anotar no runbook, não bloqueia.
 
 4. **O dono quer um indicador "recebido por webhook" visível ou só no log?**
+   - Q4 — RESOLVED: `lastWebhookAt` nos Planos 02-04 e 02-05.
    - Recomendação: linha pequena em Configurações > Bancos (`lastWebhookAt`); custo mínimo e serve de evidência de D-07.
 
 ## Environment Availability

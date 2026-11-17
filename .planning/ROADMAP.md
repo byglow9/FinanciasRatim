@@ -96,8 +96,24 @@ Plans:
   4. Um lançamento novo no banco chega ao app sem ação do usuário, via webhook autenticado por cabeçalho secreto quando o MeuPluggy o entrega (com o polling como reserva sempre ativo), e um evento reenviado não duplica nada
   5. O usuário vê quando foi a última atualização dos dados do banco e se o consentimento está vencido ou prestes a vencer, com ação para reconectar
 
-**Plans**: TBD
+**Plans**: 6 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Receptor do webhook da Pluggy (REV-06): rota autenticada por cabeçalho secreto, resposta imediata, syncItem na fila, idempotência e evidência de entrega (D-07)
+- [ ] 02-02-PLAN.md — Script idempotente de registro dos 4 webhooks na Pluggy, sem nunca imprimir o segredo (REV-06)
+- [ ] 02-03-PLAN.md — Trilha paralela do cartão (sonda somente leitura que emite só formato) e trava de não regressão do pagamento manual de conta fixa (REV-03)
+- [ ] 02-04-PLAN.md — "Atualizado há X" e estado do consentimento: função pura no núcleo, Configurações > Bancos e aviso discreto na Home (REV-07)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-05-PLAN.md — Reconectar (Connect Token com itemId só para o dono) e consentimento gravado pelo sync (REV-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-06-PLAN.md — Produção: segredo no Railway, push único, Hosting, registro dos webhooks, sonda do cartão e observação de D-07 (passos do dono agrupados)
 
 ### Phase 3: Limites, "Pode gastar" e Central
 
@@ -212,7 +228,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
-| 2. Revisão de importações, contas fixas e webhook | 0/TBD | Not started | - |
+| 2. Revisão de importações, contas fixas e webhook | 0/6 | Planned | - |
 | 3. Limites, "Pode gastar" e Central | 0/TBD | Not started | - |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |

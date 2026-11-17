@@ -1,0 +1,1 @@
+No external API integration: a fase só atualiza SDKs já usados do Firebase (firebase 13, firebase-admin 14) e a versão do pluggy-sdk sem acrescentar endpoints novos, e usa o Admin SDK e as APIs REST dos emuladores locais apenas para scripts de migração e testes; nenhuma capacidade nova de API externa é integrada.

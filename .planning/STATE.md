@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Fundação de dados e acesso
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-11-17T16:08:02.275Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-11-17T16:12:35.991Z"
 last_activity: 2026-11-17
 last_activity_desc: Phase 01 execution started
-state_head: 8538c875c25ab56c990499ba4654a48a3b7494dd
+state_head: 05cdbabb07e67b0346d1320567d9fec38f5534f8
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 13
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 01 (Fundação de dados e acesso) — EXECUTING
-Plan: 4 of 13
+Plan: 5 of 13
 Status: Ready to execute
 Last activity: 2026-11-17 — Phase 01 execution started
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 10 min | 3 tasks | 1 files |
 | Phase 01 P02 | 10 min | 3 tasks | 12 files |
 | Phase 01 P03 | 10 min | 3 tasks | 13 files |
+| Phase 01 P04 | 15min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 01]: Higiene do repositório: untrack-all-except-amigo (.env.amigo fora, D-15) — Decisão do dono; Plano 02 aplica
 - [Phase 01]: Plano 01-02: instalados exatamente firebase 13.4.0, firebase-admin 14.5.1, pluggy-sdk 0.94.3; Node 22.23.5 + JRE 21 via scripts/dev-env.sh; Dockerfile na raiz — Pacotes aprovados no Plano 01; D-10
 - [Phase 01]: Fase 01-03: regras por dono em dois blocos match com lista explicita; get de settings inexistente permitido so para membro; create-users valida tudo antes de escrever e mescla claims
+- [Phase 01]: [Phase 01-04]: mapCategory casa alvo por id (slug) e depois por nome; renomear categoria nao quebra classificacao
+- [Phase 01]: [Phase 01-04]: weeklySpend arredonda limite semanal ao centavo e filtra lancamentos ao mes escolhido
 
 ### Pending Todos
 
@@ -103,6 +106,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-17T16:08:02.244Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-11-17T16:12:35.960Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None

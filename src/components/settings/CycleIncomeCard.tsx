@@ -1,17 +1,22 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useLimitAlerts } from '@/contexts/LimitAlertsContext'
 import { Button } from '@/components/ui/button'
+import { MoneyKeypad, MoneyValue } from '@/components/ui/money-keypad'
 import { Notice } from '@/components/ui/notice'
 import { Sheet } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/toast'
 import { DayPicker } from '@/components/settings/DayPicker'
 import { FieldRow } from '@/components/settings/FieldRow'
 import { SettingsCard } from '@/components/settings/SettingsCard'
-import { setSalaryDay } from '@shared/core/limits.js'
+import { useCycleBudget } from '@/hooks/useCycleBudget'
+import { cn } from '@/lib/utils'
+import { cycleLabel, formatMoney } from '@shared/core/format.js'
+import { setExpectedIncome, setSalaryDay } from '@shared/core/limits.js'
 
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
 const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
@@ -19,6 +24,63 @@ const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de no
 // O núcleo lança mensagens sem acento; a tela mostra o mesmo erro em português correto.
 const CORE_ERRORS: Record<string, string> = {
   'Dia do salario invalido': 'Dia do salário inválido. Escolha um dia de 1 a 31.',
+  'Renda invalida': 'Renda inválida. Use até R$ 999.999,99.',
+  'Ciclo invalido': 'Ciclo inválido. Feche e abra a renda de novo.',
+}
+
+type IncomeScope = 'todos' | 'ciclo'
+
+interface ScopeOptionsProps {
+  value: IncomeScope
+  onChange: (scope: IncomeScope) => void
+  cycleText: string
+}
+
+/** Escopo da renda: radiogroup de duas opções (D-08). Setas movem a escolha. */
+function IncomeScopeRadios({ value, onChange, cycleText }: ScopeOptionsProps) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const options: { value: IncomeScope; label: string }[] = [
+    { value: 'todos', label: 'Todos os ciclos' },
+    { value: 'ciclo', label: `Só este ciclo (${cycleText})` },
+  ]
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const index = options.findIndex((o) => o.value === value)
+    let target: number | null = null
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = (index + 1) % options.length
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = (index + options.length - 1) % options.length
+    if (target === null) return
+    e.preventDefault()
+    onChange(options[target].value)
+    refs.current[target]?.focus()
+  }
+
+  return (
+    <div role="radiogroup" aria-label="Escopo da renda" onKeyDown={onKeyDown} className="mt-3 space-y-2">
+      {options.map((option, i) => {
+        const selected = option.value === value
+        return (
+          <button
+            key={option.value}
+            ref={(el) => {
+              refs.current[i] = el
+            }}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'flex min-h-11 w-full items-center rounded-2xl px-4 py-2 text-left text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              selected ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground'
+            )}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 function coreMessage(err: unknown): string {
@@ -33,15 +95,26 @@ function coreMessage(err: unknown): string {
  * valendo (PR-09).
  */
 export function CycleIncomeCard() {
-  const { personConfigFor, updatePersonConfig, readOnly } = useArea()
+  const { personConfigFor, updatePersonConfig, readOnly, settings } = useArea()
   const { user } = useAuth()
-  const { viewPerson: person } = useCycle()
+  const { viewPerson: person, cycleFor } = useCycle()
   const { rekeyForSalaryDay } = useLimitAlerts()
   const { show } = useToast()
 
   // Só de interface (Fase 8 aplica nas regras): perfil do parceiro, inclusive visto pelo Porquinho.
   const locked = readOnly || (!!user && user.person !== person)
   const config = personConfigFor(person)
+  const personName = person === 'ele' ? settings.tabNames.area1 : settings.tabNames.area2
+  const viewedCycle = cycleFor(person)
+
+  const [incomeOpen, setIncomeOpen] = useState(false)
+  const [incomeCents, setIncomeCents] = useState(config.expectedIncomeCents)
+  const [scope, setScope] = useState<IncomeScope>('todos')
+  const [incomeError, setIncomeError] = useState<string | null>(null)
+  const [incomeFailed, setIncomeFailed] = useState(false)
+  const [incomeSaving, setIncomeSaving] = useState(false)
+  // A renda já recebida só é buscada com o editor aberto (poupa leituras do Firestore).
+  const { view } = useCycleBudget(person, { enabled: incomeOpen })
 
   const [dayOpen, setDayOpen] = useState(false)
   const [dayDraft, setDayDraft] = useState(config.salaryDay)
@@ -112,6 +185,41 @@ export function CycleIncomeCard() {
     show('Salvo')
   }
 
+  const openIncome = () => {
+    if (locked) return
+    setIncomeCents(config.expectedIncomeCents)
+    setScope('todos')
+    setIncomeError(null)
+    setIncomeFailed(false)
+    setIncomeOpen(true)
+  }
+
+  const saveIncome = async () => {
+    if (locked || incomeSaving) return
+    let next
+    try {
+      next = setExpectedIncome(config, incomeCents, scope === 'ciclo' ? viewedCycle.key : null)
+    } catch (err) {
+      setIncomeError(coreMessage(err))
+      return
+    }
+    setIncomeSaving(true)
+    setIncomeError(null)
+    setIncomeFailed(false)
+    try {
+      await updatePersonConfig(person, next)
+    } catch {
+      setIncomeFailed(true)
+      setIncomeSaving(false)
+      return
+    }
+    setIncomeSaving(false)
+    setIncomeOpen(false)
+    show('Salvo')
+  }
+
+  const incomeLabel = `Renda esperada de ${personName}`
+
   return (
     <SettingsCard id="ciclo" icon={Wallet} title="Ciclo e renda" subtitle="Quando você recebe e quanto">
       <FieldRow
@@ -124,6 +232,53 @@ export function CycleIncomeCard() {
       <p className="text-xs font-normal text-muted-foreground">
         O ciclo começa nesse dia e termina na véspera do próximo. Em meses sem esse dia, vale o último dia do mês.
       </p>
+      <FieldRow
+        label={incomeLabel}
+        value={config.expectedIncomeCents > 0 ? formatMoney(config.expectedIncomeCents) : 'Definir'}
+        onClick={openIncome}
+        disabled={locked}
+        hint={locked ? READ_ONLY_HINT : undefined}
+      />
+
+      <Sheet open={incomeOpen} onClose={() => setIncomeOpen(false)} title={incomeLabel}>
+        <div className="mt-4 text-center">
+          <MoneyValue cents={incomeCents} />
+        </div>
+        {view ? (
+          <p className="mt-1 text-center text-xs font-normal text-muted-foreground">
+            Já entrou neste ciclo: {formatMoney(view.income.receivedCents)}
+          </p>
+        ) : null}
+        <IncomeScopeRadios value={scope} onChange={setScope} cycleText={cycleLabel(viewedCycle)} />
+        <MoneyKeypad
+          valueCents={incomeCents}
+          onChange={(cents) => {
+            setIncomeCents(cents)
+            setIncomeError(null)
+          }}
+          enableHardwareKeys={incomeOpen}
+        />
+        {incomeError ? (
+          <p role="alert" className="mt-3 text-xs font-normal text-danger-ink">
+            {incomeError}
+          </p>
+        ) : null}
+        {incomeFailed ? (
+          <Notice tone="danger" className="mt-3">
+            {SAVE_FAILED}
+          </Notice>
+        ) : null}
+        <Button
+          type="button"
+          size="lg"
+          className="mt-3 w-full"
+          onClick={() => void saveIncome()}
+          disabled={incomeSaving}
+          aria-busy={incomeSaving}
+        >
+          Salvar renda esperada
+        </Button>
+      </Sheet>
 
       <Sheet open={dayOpen} onClose={closeDay} title="Dia em que recebo o salário">
         <DayPicker value={dayDraft} onChange={pickDay} />

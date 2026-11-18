@@ -19,7 +19,10 @@ const CARD = 'src/components/settings/SettingsCard.tsx'
 const ROW = 'src/components/settings/FieldRow.tsx'
 const PICKER = 'src/components/settings/DayPicker.tsx'
 const CYCLE = 'src/components/settings/CycleIncomeCard.tsx'
-const FILES = [CARD, ROW, PICKER, CYCLE]
+const APPEARANCE = 'src/components/settings/AppearanceCard.tsx'
+const NOTIFICATIONS = 'src/components/settings/NotificationsCard.tsx'
+const ACCOUNTS = 'src/components/settings/AccountsSkeletonCard.tsx'
+const FILES = [CARD, ROW, PICKER, CYCLE, APPEARANCE, NOTIFICATIONS, ACCOUNTS]
 
 function assertIncludes(file, texts) {
   const src = code(file)
@@ -88,6 +91,81 @@ test('DayPicker e um radiogroup acessivel de 1 a 31 em grade de 7 colunas', () =
 test('SettingsCard e FieldRow seguem o contrato de bloco comum', () => {
   assertIncludes(CARD, ['data-section-title', 'tabIndex={-1}', 'scroll-mt', 'IconCircle', '<section id={id}'])
   assertIncludes(ROW, ['min-h-14', 'bg-surface-2', 'rounded-2xl', 'ChevronRight', 'disabled={disabled}', 'hint'])
+})
+
+test('a renda esperada passa pelo nucleo e oferece o escopo por ciclo (LIM-06, D-08)', () => {
+  assertIncludes(CYCLE, [
+    'Renda esperada de',
+    'Todos os ciclos',
+    'Só este ciclo',
+    'Já entrou neste ciclo',
+    'Salvar renda esperada',
+    'role="radiogroup"',
+    'role="alert"',
+    'MoneyKeypad',
+    'MoneyValue',
+    'enableHardwareKeys',
+    'Definir',
+  ])
+  const src = code(CYCLE)
+  assert.match(src, /import[^;]*\bsetExpectedIncome\b[^;]*from\s+'@shared\/core\/limits\.js'/)
+  assert.match(src, /\bsetExpectedIncome\(/)
+  assert.match(src, /\buseCycleBudget\(/)
+  assert.match(src, /view\.income\.receivedCents/)
+  assert.match(src, /settings\.tabNames/, 'o nome da pessoa vem de settings.tabNames')
+  assert.ok(
+    src.indexOf('setExpectedIncome(config') < src.indexOf('updatePersonConfig(person, next)', src.indexOf('saveIncome')),
+    'a renda grava pelo nucleo antes de updatePersonConfig'
+  )
+})
+
+test('AppearanceCard tem os nomes das abas, a nota do tema claro e nenhum interruptor de tema (PR-18)', () => {
+  assertIncludes(APPEARANCE, [
+    'id="aparencia"',
+    'Nomes das abas',
+    'Aba 1',
+    'Aba 2',
+    'Poupança',
+    'Tema claro. O tema escuro chega numa próxima fase.',
+    'Salvar nomes das abas',
+    'updateTabNames',
+    'Salvo',
+    'Volte ao seu perfil para editar',
+  ])
+  const src = code(APPEARANCE)
+  assert.doesNotMatch(src, /\bMoon\b|\bSun\b/, 'sem icone de lua nem de sol')
+  assert.doesNotMatch(src, /\btheme\b|updateTheme/, 'sem escrita de tema')
+  assert.doesNotMatch(src, /role="switch"|<Switch/, 'sem interruptor de tema')
+})
+
+test('NotificationsCard tem o interruptor, a antecedencia de 0 a 30 e os avisos de limite sem interruptor (PR-13)', () => {
+  assertIncludes(NOTIFICATIONS, [
+    'id="notificacoes"',
+    'Avisos de vencimento',
+    'Dias de antecedência',
+    'Avisos de limite: sempre ligados, em 80% e em 100%.',
+    'Salvar avisos',
+    'updateNotifications',
+    'inputMode="numeric"',
+    'role="alert"',
+    'Salvo',
+    'Volte ao seu perfil para editar',
+  ])
+  const src = code(NOTIFICATIONS)
+  assert.equal((src.match(/<Switch\b/g) ?? []).length, 1, 'so o interruptor dos vencimentos; limite nao tem interruptor')
+  assert.match(src, /import\s*\{\s*Switch\s*\}\s*from\s+'@\/components\/ui\/switch'/)
+  assert.match(src, /DAYS_MAX\s*=\s*30/)
+})
+
+test('AccountsSkeletonCard e so o esqueleto em breve, sem campos nem botoes (CENT-05)', () => {
+  assertIncludes(ACCOUNTS, [
+    'id="contas"',
+    'Contas e cartões',
+    'em breve',
+    'Fechamento e vencimento do cartão chegam junto com o cartão de crédito.',
+  ])
+  const src = code(ACCOUNTS)
+  assert.doesNotMatch(src, /<Input|<Button|<button|<Switch|<input/)
 })
 
 test('os componentes do plano nao usam tipografia fora da escala, HTML bruto, emoji, console nem Ele/Ela fixos', () => {

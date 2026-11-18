@@ -130,8 +130,53 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: TBD
+**Plans**: 0/20 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Gates humanos: pacotes de fonte (Sora e Bricolage, D-22) e confirmação das premissas PR-01 a PR-20 do cálculo e do ciclo (D-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Fontes auto-hospedadas, tokens Moeda, movimento reduzido e lint verde (IDEN-07, D-17, D-22)
+- [ ] 03-03-PLAN.md — Núcleo: ciclo do salário, ocorrências de vencimento e limites por categoria (LIM-10, LIM-01, LIM-02, CENT-06)
+- [ ] 03-04-PLAN.md — Núcleo: alertas idempotentes, supressão do veredito, categorias com ícone e formatação (LIM-07, LIM-08, CENT-05, LIM-04)
+- [ ] 03-05-PLAN.md — Dados: tipos, personConfig em settings (provado no emulador) e consultas por ciclo (LIM-01, LIM-06, LIM-10, CENT-06)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-06-PLAN.md — Núcleo: Pode gastar, por dia, ritmo em 5 níveis, projeção e "O mês em uma conta" (LIM-02 a LIM-06, CENT-06)
+- [ ] 03-07-PLAN.md — limitAlerts: regras, índice e serviço, com os testes que quebram de propósito atualizados (LIM-07)
+- [ ] 03-08-PLAN.md — Primitivos existentes restilizados: Progress com tone, Card, Button, Alert, Input e Dialog acessível (IDEN-07)
+- [ ] 03-09-PLAN.md — Primitivos novos: Sheet, Toast, Notice, Chip, Switch, SegmentedControl e MoneyKeypad (IDEN-07, LIM-09)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-10-PLAN.md — Estado e dados da interface: ciclo visto, useCycleBudget, somente leitura e avaliador de avisos (LIM-04, LIM-07, LIM-08, LIM-10)
+- [ ] 03-11-PLAN.md — Gate humano: publicar regras e índice de limitAlerts em produção, com rollback registrado (LIM-07)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03-12-PLAN.md — Lançamento em bottom sheet: Gasto, Receita e Porquinho com preview do Pode gastar (LIM-09, LIM-04)
+- [ ] 03-13-PLAN.md — Barra superior: seletor de ciclo, sino com avisos de 80% e 100% e menu de perfil (LIM-07, LIM-10, IDEN-07)
+- [ ] 03-14-PLAN.md — Componentes da Home e da Central: arco, ritmo, limites com Gasto geral, mês em uma conta e avisos (LIM-02 a LIM-06, LIM-08, CENT-01, CENT-06)
+- [ ] 03-15-PLAN.md — Configurações: ciclo e renda, aparência, notificações e esqueleto de cartões (LIM-10, LIM-06, CENT-05)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 03-16-PLAN.md — Casca: dock flutuante de 9 destinos, botão +, AppShell e rota /casal; navegação antiga removida (IDEN-07, CENT-01, CENT-06)
+- [ ] 03-17-PLAN.md — Configurações > Categorias com limite mensal, editor, e a página em seis cartões (LIM-01, CENT-05, CENT-02)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 03-18-PLAN.md — Home: Pode gastar no arco, por dia, ritmo, atalhos e seções, com estados e dado velho (LIM-02 a LIM-06, LIM-08, LIM-09, CENT-01, CENT-06)
+- [ ] 03-19-PLAN.md — Central de Limites e Cartões em /limites: totais, limites do mês, esqueleto de cartões e os dois juntos (CENT-01, CENT-02, LIM-02, LIM-03)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 03-20-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 ### Phase 4: Mascote Vintém
 
@@ -229,7 +274,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 0/TBD | Not started | - |
+| 3. Limites, "Pode gastar" e Central | 0/20 | Planned | - |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

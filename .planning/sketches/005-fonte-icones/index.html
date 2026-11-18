@@ -1,0 +1,21 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Plus+Jakarta+Sans:wght@400..800&family=Manrope:wght@400..800&family=Sora:wght@400..800&family=Figtree:wght@400..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><title>005 Fonte e ícones</title>
+<style>body{padding-top:16px}.wrap{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.f{background:var(--color-bg);border-radius:28px;padding:20px}.f h4{font:600 12px system-ui;color:var(--color-text-muted);margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase}.icons{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}.icons span{width:44px;height:44px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center}.top{max-width:1100px;margin:0 auto;padding:16px 16px 0;font:14px system-ui}</style></head><body>
+<div class="top"><b>Fonte (5 candidatas) e ícones (Lucide, o mesmo que o app já usa).</b> Todas gratuitas (Google Fonts, OFL), dá para auto-hospedar no app. Mesmo texto em cada uma para comparar números, títulos e rótulos pequenos.</div>
+<div class="wrap" id="w"></div>
+<script>
+const fonts=[["Bricolage Grotesque","Peso e personalidade; a mais próxima do 'título grosso' da referência, sem copiar"],["Plus Jakarta Sans","Moderna e amigável, ótima legibilidade em números"],["Manrope","Limpa e técnica, muito nítida em telas pequenas"],["Sora","Geométrica e larga, visual 'fintech'"],["Figtree","Neutra e suave, a mais discreta"]];
+const w=document.getElementById('w');
+fonts.forEach(([n,d])=>{w.insertAdjacentHTML('beforeend',`<div class="f" style="font-family:'${n}',sans-serif"><h4 style="font-family:system-ui">${n}</h4>
+<div class="muted" style="font-weight:600">Pode gastar</div><div class="big" style="font-size:54px;line-height:1.05">R$ 1.700<span class="muted" style="font-size:26px">,40</span></div>
+<div class="muted small" style="margin-top:4px">R$ 100 por dia · 17 dias · ciclo 5 nov a 4 dez</div>
+<div style="margin-top:12px"><span class="chip"><i data-lucide="check"></i> No ritmo</span></div>
+<div style="font-weight:700;font-size:22px;margin-top:18px">Limites do mês</div>
+<div class="row sp" style="margin-top:8px"><span><b>Mercado</b> <span class="muted small">Seg, 18 nov</span></span><span><b>R$ 320</b> <span class="muted small">de R$ 400</span></span></div>
+<p class="small muted" style="margin-top:8px;line-height:1.5">Restaurantes passou R$ 30 do limite. Não bloqueia: só avisa e soma quanto passou. 0123456789</p>
+<button class="btn" style="margin-top:12px;font-family:inherit">Lançar gasto</button><div class="small muted" style="margin-top:10px;font-family:system-ui">${d}</div></div>`)});
+w.insertAdjacentHTML('beforeend',`<div class="f"><h4>Ícones SVG (Lucide)</h4><div class="muted small">Substituem todos os emojis. Traço de 2px, herdam a cor do texto.</div><div class="icons">${['house','receipt','plus','calendar','repeat','gauge','target','wallet','shopping-cart','utensils','car','party-popper','heart-pulse','bell','settings','users','piggy-bank','landmark','credit-card','scale','pie-chart','sparkles','user','sliders-horizontal'].map(i=>`<span title="${i}"><i data-lucide="${i}"></i></span>`).join('')}</div></div>`);
+lucide.createIcons();
+</script></body></html>

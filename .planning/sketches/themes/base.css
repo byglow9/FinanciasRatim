@@ -18,3 +18,4 @@ body{background:#cfcfd4;font-family:var(--font-sans);color:var(--color-text);pad
 #sketch-tools{position:fixed;bottom:12px;right:12px;z-index:9999;font:12px system-ui;background:rgba(0,0,0,.75);color:#fff;padding:8px 12px;border-radius:8px;opacity:.5;transition:opacity .2s}#sketch-tools:hover{opacity:1}
 .note{max-width:390px;margin:6px auto 0;font:12px system-ui;color:#444;padding:0 8px}
 @media(max-width:430px){.phone{border-radius:0;height:calc(100vh - 60px);margin:0 auto}body{background:var(--color-bg)}}
+svg.lucide{width:20px;height:20px;stroke-width:2;flex:none}.ico svg.lucide{width:20px;height:20px}.sc b svg.lucide{width:22px;height:22px}.nav button svg.lucide{width:22px;height:22px}.nav .plus svg.lucide{width:26px;height:26px}

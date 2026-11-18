@@ -41,6 +41,15 @@ Fora desta fase: cartão de crédito real (Fase 6), mascote (Fase 4), identidade
 - **D-15:** As **Configurações** são reorganizadas em cartões com ícone (CENT-05): Contas e cartões (esqueleto até a Fase 6), Categorias (ícone, limite, Gastos e Receitas), Bancos conectados, Aparência e Notificações. O que já existe só muda de lugar.
 - **D-16:** O dono tem **prints de um app de referência ("Skunk")** e quer usá-los como referência forte. Respeitar a restrição do PROJECT.md (originalidade): usar para entender organização e densidade das telas, **não copiar** layout, textos nem mascote. Os prints precisam ser fornecidos antes/durante o gate de mockups.
 
+### Decisões do gate de mockups (2026-11-18)
+- **D-17:** **Paleta Moeda** (claro quente + verde-moeda, preto suave de ação) aprovada. Tokens em `.planning/sketches/themes/moeda.css`.
+- **D-18:** **Sem emojis na interface.** Ícones SVG da Lucide (o app já usa `lucide-react`); nada de emoji em rótulos, listas ou botões.
+- **D-19:** **Home = variante A** (arco de progresso, atalhos redondos Gasto/Receita/Fixos/Limites, "O mês em uma conta", limites, resumo da Central e dos Fixos), implementada de forma funcional (lançamento com teclado, alertas, ritmo, dados velhos). A referência Skunk é a base de design, mas o Coinki tem **mais funções** (Calendário, Transações, Contas Fixas, Metas, Relatórios, Casal, Porquinho, Central) que precisam caber; modernizar as telas atuais nessa mesma linha.
+- **D-20:** **Navegação = pílula flutuante**, adaptada ao número real de destinos (opções A/B/C em `006-navegacao-v2`, a escolher). O destino ＋ abre o lançamento em bottom sheet.
+- **D-21:** **Limites só se editam em Configurações > Categorias** (variante 003-C). A **Central apenas exibe** (estado, expansão dos lançamentos). Isto reforça D-12 e retira o "ajustar ali" de CENT-02.
+- **D-22:** **Fonte nova** (a padrão foi reprovada). Candidatas em `005-fonte-icones`; auto-hospedar no app (PWA). Decisão pendente do dono.
+- **D-23:** **Casal:** aba própria de **relatório e comparação** entre os dois; no **canto superior direito** um menu expansível troca para o **perfil do parceiro em somente leitura**; as visões mútuas atuais (calendário/agenda) continuam. Isto ajusta o D-05 da Fase 1 (os dois já veem tudo) e define o formato que a Fase 8 constrói.
+
 ### Claude's Discretion
 - Cortes numéricos exatos dos 5 níveis de ritmo (D-07).
 - Detalhe de UX do atalho Central → Configurações (D-12) e de como a Home mostra o "Gasto geral".

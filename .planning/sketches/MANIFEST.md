@@ -9,8 +9,11 @@ Referência máxima: prints do app Skunk em `references/skunk/` (não versionado
 ## Sketches
 | # | Nome | Pergunta de design | Variantes | Vencedora |
 |---|------|--------------------|-----------|-----------|
-| 001 | home | Como a Home mostra o Pode gastar, o ritmo e "O mês em uma conta"? | A arco e atalhos, B cartão herói, C limites primeiro | pendente |
-| 002 | navegacao | Qual a navegação mobile (IDEN-07)? | A pílula + Mais, B barra com rótulos, C 4 abas + botão flutuante | pendente |
-| 003 | central-limites | Como é a Central e onde se edita o limite? | A lista expansível, B cartões de status, C Configurações > Categorias | pendente |
-| 004 | aba-casal | Qual o formato da aba Casal? | A seletor no topo, B cartão na Home, C tela própria | pendente |
-| paleta | themes | Qual paleta? | Brasa, Moeda, Noite | pendente |
+| 001 | home | Como a Home mostra o Pode gastar, o ritmo e "O mês em uma conta"? | A arco e atalhos, B cartão herói, C limites primeiro | **A** (refinada em 007) |
+| 002 | navegacao | Qual a navegação mobile (IDEN-07)? | A pílula + Mais, B barra com rótulos, C 4 abas + botão flutuante | pílula flutuante, **adaptar às nossas abas** (rodada 006) |
+| 003 | central-limites | Como é a Central e onde se edita o limite? | A lista expansível, B cartões de status, C Configurações > Categorias | **C** para editar; a Central só exibe |
+| 004 | aba-casal | Qual o formato da aba Casal? | A seletor no topo, B cartão na Home, C tela própria | **Aba própria (relatório e comparação) + troca de perfil no canto superior direito** (testada em 006) |
+| paleta | themes | Qual paleta? | Brasa, Moeda, Noite | **Moeda** (claro quente + verde), aprovada pelo dono |
+| 005 | fonte-icones | Qual fonte e quais ícones? | 5 fontes (Bricolage Grotesque, Plus Jakarta Sans, Manrope, Sora, Figtree); ícones Lucide | pendente (fonte) · Lucide aprovado em princípio, sem emojis |
+| 006 | navegacao-v2 | Como a pílula atende todas as nossas abas? | A 5 + Planejar + Mais, B pílula rolável, C 4 + grade | pendente |
+| 007 | home-v2 | A Home A funcionando (teclado, limites, alertas, ritmo, dados velhos, perfil do parceiro) | única | para aprovar |

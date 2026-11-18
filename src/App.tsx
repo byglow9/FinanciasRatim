@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AreaProvider } from '@/contexts/AreaContext'
 import { CycleProvider } from '@/contexts/CycleContext'
+import { LimitAlertsProvider } from '@/contexts/LimitAlertsContext'
 import { ToastProvider } from '@/components/ui/toast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -41,9 +42,11 @@ function App() {
           <AreaProvider>
             <ProtectedRoute>
               <CycleProvider>
-                <MainLayout>
-                  <AnimatedRoutes />
-                </MainLayout>
+                <LimitAlertsProvider>
+                  <MainLayout>
+                    <AnimatedRoutes />
+                  </MainLayout>
+                </LimitAlertsProvider>
               </CycleProvider>
             </ProtectedRoute>
           </AreaProvider>

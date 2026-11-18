@@ -15,6 +15,7 @@ import { GoalsPage } from '@/pages/GoalsPage'
 import { ReportsPage } from '@/pages/ReportsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { CalendarPage } from '@/pages/CalendarPage'
+import { CouplePage } from '@/pages/CouplePage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -30,6 +31,7 @@ function AnimatedRoutes() {
         <Route path="/relatorios" element={<ReportsPage />} />
         <Route path="/configuracoes" element={<SettingsPage />} />
         <Route path="/calendario" element={<CalendarPage />} />
+        <Route path="/casal" element={<CouplePage />} />
       </Routes>
     </div>
   )

@@ -30,7 +30,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 ### Limites e "Pode gastar" (LIM)
 
 - [x] **LIM-01**: Usuário define um limite mensal por categoria, por pessoa, em Configurações > Categorias; passar do limite só avisa e soma quanto passou, nunca bloqueia (decisões D-09 e D-21 de 03-CONTEXT)
-- [ ] **LIM-02**: Usuário vê, para cada categoria, quanto gastou, o limite, a porcentagem usada e o que resta, e pode expandir a categoria para ver os lançamentos dela
+- [x] **LIM-02**: Usuário vê, para cada categoria, quanto gastou, o limite, a porcentagem usada e o que resta, e pode expandir a categoria para ver os lançamentos dela
 - [ ] **LIM-03**: Os gastos de categorias sem limite aparecem somados como "Gasto geral" e descontam do "Pode gastar"; as contas fixas ficam fora do dia a dia (já abatidas do dinheiro do ciclo). Substitui o antigo "limite do mês = soma dos limites" (D-05)
 - [ ] **LIM-04**: Usuário vê na Home o valor "Pode gastar" (renda esperada menos contas fixas menos todo gasto não fixo do ciclo), quanto pode por dia (restante dividido pelos dias que faltam) e o ritmo em 5 níveis (Folgado, No ritmo, Atenção, Acima do ritmo, Estourou) (D-05, D-06, D-07)
 - [ ] **LIM-05**: Usuário vê "O mês em uma conta" com Entra, Fixos, Dia a dia e Sobra, e a projeção do que ainda vai entrar e sair identificada como estimativa
@@ -43,7 +43,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 ### Central de Limites e Cartões e Configurações (CENT)
 
 - [ ] **CENT-01**: Existe uma página própria de Limites e Cartões, com um resumo na Home que leva até ela
-- [ ] **CENT-02**: A Central apenas exibe o estado de cada limite por categoria e os lançamentos dela; o ajuste é feito em Configurações > Categorias (D-21)
+- [x] **CENT-02**: A Central apenas exibe o estado de cada limite por categoria e os lançamentos dela; o ajuste é feito em Configurações > Categorias (D-21)
 - [ ] **CENT-03**: A Central mostra cada cartão: fatura aberta, dia de fechamento e de vencimento, limite disponível, próximas faturas, parcelas a vir e status (aberta, fechada, paga ou atrasada)
 - [ ] **CENT-04**: Os vencimentos de fatura aparecem também no Calendário e nos alertas
 - [x] **CENT-05**: Configurações são organizadas em cartões com ícone: Contas e cartões (com dia de fechamento e vencimento), Categorias (ícone, limite, Gastos e Receitas separados), Bancos conectados, Aparência e Notificações
@@ -157,7 +157,7 @@ Preenchida na criação do roadmap.
 | REV-06 | Phase 2 | Complete |
 | REV-07 | Phase 2 | Complete |
 | LIM-01 | Phase 3 | Complete |
-| LIM-02 | Phase 3 | Pending |
+| LIM-02 | Phase 3 | Complete |
 | LIM-03 | Phase 3 | Pending |
 | LIM-04 | Phase 3 | Pending |
 | LIM-05 | Phase 3 | Pending |
@@ -167,7 +167,7 @@ Preenchida na criação do roadmap.
 | LIM-09 | Phase 3 | Pending |
 | LIM-10 | Phase 3 | Pending |
 | CENT-01 | Phase 3 | Pending |
-| CENT-02 | Phase 3 | Pending |
+| CENT-02 | Phase 3 | Complete |
 | CENT-05 | Phase 3 | Complete |
 | CENT-06 | Phase 3 | Pending |
 | IDEN-07 | Phase 3 | Complete |

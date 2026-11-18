@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CATEGORY_ICONS } from '../../shared/core/categories.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8')
@@ -25,6 +26,9 @@ const NEW = [
   `${UI}icon-circle.tsx`,
   `${UI}collapsible.tsx`,
   `${UI}switch.tsx`,
+  `${UI}segmented-control.tsx`,
+  `${UI}money-keypad.tsx`,
+  'src/lib/categoryIcons.ts',
 ]
 
 const has = (src, needle, label) => assert.ok(src.includes(needle), `${label} sem ${needle}`)
@@ -103,6 +107,40 @@ test('Switch, Collapsible, Chip e Notice seguem o contrato do UI-SPEC', () => {
   }
   const ic = code(`${UI}icon-circle.tsx`)
   for (const n of ['aria-hidden', 'h-11 w-11', 'h-12 w-12', 'rounded-full', 'bg-surface-2']) has(ic, n, 'icon-circle.tsx')
+})
+
+test('SegmentedControl: tablist com setas, Home e End e sem reutilizar Tabs', () => {
+  const src = code(`${UI}segmented-control.tsx`)
+  for (const n of ['role="tablist"', 'role="tab"', 'aria-selected', 'ArrowRight', 'ArrowLeft', 'Home', 'End', 'aria-label={ariaLabel}', 'bg-card', 'rounded-full', 'bg-surface-2', 'h-11', 'tabIndex']) {
+    has(src, n, 'segmented-control.tsx')
+  }
+  assert.doesNotMatch(src, /from ["']\.\/tabs["']/, 'SegmentedControl nao pode reutilizar Tabs')
+})
+
+test('MoneyKeypad: usa a logica pura em centavos e nao usa input numerico (T-03-32)', () => {
+  const src = code(`${UI}money-keypad.tsx`)
+  assert.match(src, /import \{[^}]*applyKeypad[^}]*\} from ['"]@shared\/core\/format\.js['"]/)
+  for (const n of ["aria-label={key === \"backspace\" ? \"Apagar\"", "'00'", 'displayTier', 'formatMoneyParts', 'grid-cols-3', 'gap-2', 'h-14', 'h-12', 'text-[28px]', 'text-[56px]', 'num-display', 'Backspace', 'ctrlKey', 'metaKey', 'altKey', 'isContentEditable']) {
+    has(src, n, 'money-keypad.tsx')
+  }
+  assert.ok(read(`${UI}money-keypad.tsx`).includes('aria-label'), 'sem aria-label')
+  assert.match(code(`${UI}money-keypad.tsx`), /Apagar/)
+  assert.doesNotMatch(src, /type=["']number["']/, 'dinheiro nao entra por input type=number')
+  for (const tag of ['INPUT', 'TEXTAREA', 'SELECT']) has(src, tag, 'money-keypad.tsx')
+})
+
+test('categoryIcons: um componente Lucide para cada nome de CATEGORY_ICONS, com Tag de reserva', () => {
+  const src = code('src/lib/categoryIcons.ts')
+  assert.equal(CATEGORY_ICONS.length, 16)
+  for (const name of CATEGORY_ICONS) {
+    assert.match(src, new RegExp(`['"]${name}['"]\\s*:`), `categoryIcons.ts sem a chave ${name}`)
+  }
+  assert.match(src, /export function iconComponent/)
+  assert.match(src, /export const CATEGORY_ICON_COMPONENTS/)
+  assert.match(src, /return Tag/)
+  // Nenhuma chave alem das 16 permitidas.
+  const keys = [...src.matchAll(/^\s*['"]([a-z-]+)['"]\s*:/gm)].map((m) => m[1])
+  assert.deepEqual([...keys].sort(), [...CATEGORY_ICONS].sort())
 })
 
 test('Primitivos novos: sem pesos 500, 600 ou 800, sem emoji, sem HTML bruto e sem console', () => {

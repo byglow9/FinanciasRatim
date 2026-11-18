@@ -1,9 +1,9 @@
 ---
 phase: "03"
 slug: limites-pode-gastar-e-central
-status: draft
+status: ready
 nyquist_compliant: true
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-11-18"
 ---
 
@@ -79,9 +79,9 @@ Notação do Task ID: `03-NN-T#` = plano NN, tarefa #. Os testes novos nascem na
 
 ## Wave 0 Requirements
 
-- [ ] `shared/core/{cycle,limits,budget,alerts,format}.test.js` — testes novos nascem nas tarefas TDD dos planos 03, 04 e 06
-- [ ] `test/static/` — guardas de rotas, dock, âncoras, emoji, fontes (planos 02, 08, 09, 10 e 12 a 22, e a final do 23)
-- [ ] `lint` verde (4 erros pré-existentes em `badge/button/input/select.tsx`) — plano 02, tarefa 3
+- [x] `shared/core/{cycle,limits,budget,alerts,format}.test.js` — testes novos nascem nas tarefas TDD dos planos 03, 04 e 06 (234 testes em UTC e em Asia/Tokyo, 0 falhas)
+- [x] `test/static/` — guardas de rotas, dock, âncoras, emoji, fontes (planos 02, 08, 09, 10 e 12 a 22, e a final do 23) (173 testes, 172 passam, 0 falham, 1 pulado pré-existente por DIST_SCAN)
+- [x] `lint` verde (4 erros pré-existentes em `badge/button/input/select.tsx`) — plano 02, tarefa 3 (0 erros, 2 avisos `react-hooks/incompatible-library` pré-existentes)
 
 ---
 
@@ -97,11 +97,11 @@ Notação do Task ID: `03-NN-T#` = plano NN, tarefa #. Os testes novos nascem na
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90s
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 90s (medido: comando rápido em 1 s, suíte completa em 48 s)
 - [x] `nyquist_compliant: true` set in frontmatter (mapa preenchido; todas as tarefas dos planos 02 a 23 têm `<automated>`)
 
-**Approval:** pending (fechada no Plano 23, tarefa 2, depois da suíte completa verde)
+**Approval:** validado em 2026-11-18 (Plano 23, tarefa 2), depois da suíte completa verde: `test:core:tz` 234/234 em UTC e 234/234 em Asia/Tokyo; `test:static` 172 passam, 0 falham, 1 pulado pré-existente (DIST_SCAN); `test:rules` 12/12; `test:emu` 58/58; `npm --prefix server test` 81/81; `build` verde; `lint` 0 erros. Nenhum `.skip(` nem `.only(` em `test`, `shared` ou `server/test`. Tempo medido: rápida 1 s, completa 48 s. A parte humana (contraste, zoom, teclado, dock, avisos sem repetição) segue em `03-UAT-GUIDE.md`.

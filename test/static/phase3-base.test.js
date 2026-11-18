@@ -71,3 +71,38 @@ test('nenhum emoji em src/**/*.ts e *.tsx (D-18)', () => {
     .map((f) => path.relative(ROOT, f))
   assert.deepEqual(hits, [])
 })
+
+const css = () => read('src/index.css')
+
+test('index.css liga as familias de fonte do pacote (D-22)', () => {
+  assert.match(css(), /--font-sans:\s*'Sora Variable'/)
+  assert.match(css(), /--font-display:\s*'Bricolage Grotesque Variable'/)
+})
+
+test('index.css traz a paleta Moeda adotada (D-17, PR-17)', () => {
+  const c = css()
+  assert.match(c, /--muted-foreground:\s*45 6\.3% 37\.6%/)
+  assert.match(c, /--primary:\s*143\.8 61\.2% 20\.2%/)
+  for (const t of ['surface-2', 'track', 'brand', 'warn', 'danger', 'ok-ink', 'warn-ink', 'danger-ink']) {
+    assert.match(c, new RegExp(`--color-${t}:`), `token --color-${t} ausente`)
+  }
+  for (let n = 0; n <= 4; n++) {
+    for (const k of ['bg', 'fg']) {
+      assert.match(c, new RegExp(`--color-rhythm-${n}-${k}:`), `token rhythm-${n}-${k} ausente`)
+    }
+  }
+  assert.match(c, /--shadow-float:/)
+  for (const r of ['card', 'btn', 'chip']) assert.match(c, new RegExp(`--radius-${r}:`))
+})
+
+test('index.css e o dono das classes de animacao e do movimento reduzido', () => {
+  const c = css()
+  assert.match(c, /prefers-reduced-motion:\s*reduce/)
+  for (const cls of ['num-display', 'no-scrollbar', 'anim-sheet-in', 'anim-toast-in', 'anim-section-highlight']) {
+    assert.match(c, new RegExp(`\\.${cls}\\b`), `classe .${cls} ausente`)
+  }
+})
+
+test('o bloco .dark segue intacto (IDEN-05 e da Fase 5)', () => {
+  assert.match(css(), /\.dark\s*\{[^}]*--background:\s*222\.2 24% 5%/)
+})

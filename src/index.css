@@ -25,30 +25,69 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: 'Sora Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-surface-2: hsl(var(--surface-2));
+  --color-track: hsl(var(--track));
+  --color-brand: hsl(var(--brand));
+  --color-warn: hsl(var(--warn));
+  --color-danger: hsl(var(--danger));
+  --color-ok-ink: hsl(var(--ok-ink));
+  --color-warn-ink: hsl(var(--warn-ink));
+  --color-danger-ink: hsl(var(--danger-ink));
+
+  --color-rhythm-0-bg: #bbf7d0;
+  --color-rhythm-0-fg: #14532d;
+  --color-rhythm-1-bg: #dcfce7;
+  --color-rhythm-1-fg: #166534;
+  --color-rhythm-2-bg: #fef3c7;
+  --color-rhythm-2-fg: #92400e;
+  --color-rhythm-3-bg: #ffedd5;
+  --color-rhythm-3-fg: #9a3412;
+  --color-rhythm-4-bg: #fee2e2;
+  --color-rhythm-4-fg: #991b1b;
+
+  --shadow-float: 0 8px 30px rgba(40, 30, 0, 0.16);
+
+  --radius-card: 22px;
+  --radius-btn: 16px;
+  --radius-chip: 12px;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 40 52.9% 96.7%;
+    --foreground: 60 5.9% 10%;
+    --card: 42.9 33.3% 91.8%;
+    --card-foreground: 60 5.9% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142 76% 36%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142 76% 36%;
+    --popover-foreground: 60 5.9% 10%;
+    --primary: 143.8 61.2% 20.2%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42.9 33.3% 91.8%;
+    --secondary-foreground: 60 5.9% 10%;
+    --muted: 42.9 33.3% 91.8%;
+    --muted-foreground: 45 6.3% 37.6%;
+    --accent: 42.9 29.6% 86.1%;
+    --accent-foreground: 60 5.9% 10%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 42 29.4% 86.7%;
+    --input: 46.2 5.3% 51.6%;
+    --ring: 143.8 61.2% 20.2%;
     --radius: 0.5rem;
+
+    /* Tokens Moeda da Fase 3 (sem variante escura: IDEN-05, Fase 5) */
+    --surface-2: 0 0% 100%;
+    --track: 42.9 29.6% 86.1%;
+    --brand: 142.1 76.2% 36.3%;
+    --warn: 32.1 94.6% 43.7%;
+    --danger: 0 72.2% 50.6%;
+    --ok-ink: 142.8 64.2% 24.1%;
+    --warn-ink: 22.7 82.5% 31.4%;
+    --danger-ink: 0 73.7% 41.8%;
   }
 
   .dark {
@@ -82,8 +121,7 @@
     overflow-y: scroll;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-background text-foreground font-sans;
   }
 }
 
@@ -124,4 +162,157 @@
 
 .dialog-content-animate {
   animation: dialog-content-in 0.2s ease-out;
+}
+
+/* ---- Fase 3: classes de animacao e utilitarios (unico dono: este arquivo) ---- */
+
+.num-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  font-optical-sizing: auto;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes section-highlight {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  30% {
+    box-shadow: 0 0 0 4px hsl(var(--ring));
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fade-100 {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.anim-sheet-in {
+  animation: sheet-in 280ms ease-out;
+}
+
+.anim-sheet-out {
+  animation: sheet-out 200ms ease-in forwards;
+}
+
+.anim-overlay-in {
+  animation: overlay-in 200ms ease-out;
+}
+
+.anim-overlay-out {
+  animation: overlay-out 200ms ease-in forwards;
+}
+
+.anim-toast-in {
+  animation: toast-in 200ms ease-out;
+}
+
+.anim-section-highlight {
+  animation: section-highlight 1200ms ease-out;
+}
+
+.section-highlight-static {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.anim-pulse {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .anim-sheet-in,
+  .anim-toast-in {
+    animation: fade-100 100ms ease-out !important;
+  }
+
+  .anim-pulse {
+    animation: none !important;
+  }
+
+  .anim-section-highlight {
+    animation: none !important;
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }

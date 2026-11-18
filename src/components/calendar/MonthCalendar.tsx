@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   startOfMonth,
   startOfWeek,
@@ -62,6 +62,12 @@ const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 export function MonthCalendar({ month, transactions, fixedExpenses, payments, savings, contributions, goals, notes = [], onAddNote, onEditNote, onDeleteNote }: MonthCalendarProps) {
   const { categoryDefs } = useArea()
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
+
+  // A grade ocupa a tela: o detalhe do dia abre abaixo dela, entao rola ate ele (acima do dock).
+  useEffect(() => {
+    if (selectedDay) detailRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedDay])
 
   // Build 42-cell grid starting from Monday of the first week of the month
   const monthStart = startOfMonth(month)
@@ -157,7 +163,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-px sm:gap-1">
+      <div className="grid min-h-[max(320px,calc(100dvh-296px))] grid-cols-7 grid-rows-6 gap-px sm:gap-1">
         {cells.map((day, idx) => {
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
@@ -193,7 +199,7 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
               key={idx}
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
-                'relative aspect-square sm:aspect-auto sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors overflow-hidden',
+                'relative min-h-0 sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors overflow-hidden',
                 inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
                 isCurrentDay && inMonth && 'border-primary/60 bg-primary/[0.08]',
                 isSelected && 'border-primary/35 bg-primary/[0.05] ring-1 ring-primary/15',
@@ -264,8 +270,8 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
         const dayNum = getDate(selectedDay)
         const hasAnyFinance = dayTx.length > 0 || dayFixed.length > 0 || daySavings.length > 0 || dayContribs.length > 0
         return (
-          <div className={cn(
-            'border rounded-lg p-4 space-y-4 bg-card',
+          <div ref={detailRef} className={cn(
+            'scroll-mb-32 border rounded-lg p-4 space-y-4 bg-card',
             isToday(selectedDay) && 'border-primary/35 bg-primary/[0.04]'
           )}>
             <div className="flex items-center justify-between gap-3">
@@ -420,10 +426,10 @@ export function MonthCalendar({ month, transactions, fixedExpenses, payments, sa
                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.content}</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditNote(n)}>
+                        <Button size="iconSm" variant="ghost" onClick={() => onEditNote(n)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDeleteNote(n)}>
+                        <Button size="iconSm" variant="ghost" className="text-destructive" onClick={() => onDeleteNote(n)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>

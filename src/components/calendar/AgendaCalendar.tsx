@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   startOfMonth,
   startOfWeek,
@@ -28,6 +28,12 @@ const DEFAULT_COLOR = '#64748b'
 
 export function AgendaCalendar({ month, events, categories, onAddEvent, onEditEvent, onDeleteEvent }: AgendaCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
+
+  // A grade ocupa a tela: o detalhe do dia abre abaixo dela, entao rola ate ele (acima do dock).
+  useEffect(() => {
+    if (selectedDay) detailRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedDay])
 
   const categoryMap = new Map(categories.map((c) => [c.id, c]))
 
@@ -57,7 +63,7 @@ export function AgendaCalendar({ month, events, categories, onAddEvent, onEditEv
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-px sm:gap-1">
+      <div className="grid min-h-[max(320px,calc(100dvh-296px))] grid-cols-7 grid-rows-6 gap-px sm:gap-1">
         {cells.map((day, idx) => {
           const inMonth = isSameMonth(day, month)
           const isSelected = selectedDay && isSameDay(day, selectedDay)
@@ -69,7 +75,7 @@ export function AgendaCalendar({ month, events, categories, onAddEvent, onEditEv
               key={idx}
               onClick={() => setSelectedDay(isSelected ? null : day)}
               className={cn(
-                'group relative aspect-square sm:aspect-auto sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors overflow-hidden',
+                'group relative min-h-0 sm:min-h-[80px] p-0.5 sm:p-1 rounded border cursor-pointer transition-colors overflow-hidden',
                 inMonth ? 'bg-card' : 'bg-muted/40 opacity-50',
                 isCurrentDay && inMonth && 'border-primary/60 bg-primary/[0.08]',
                 isSelected && 'border-primary/35 bg-primary/[0.05] ring-1 ring-primary/15',
@@ -134,8 +140,8 @@ export function AgendaCalendar({ month, events, categories, onAddEvent, onEditEv
       {selectedDay && (() => {
         const dayEvents = getEventsForDay(selectedDay)
         return (
-          <div className={cn(
-            'border rounded-lg p-4 space-y-4 bg-card',
+          <div ref={detailRef} className={cn(
+            'scroll-mb-32 border rounded-lg p-4 space-y-4 bg-card',
             isToday(selectedDay) && 'border-primary/35 bg-primary/[0.04]'
           )}>
             <div className="flex items-center justify-between gap-3">
@@ -198,10 +204,10 @@ export function AgendaCalendar({ month, events, categories, onAddEvent, onEditEv
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditEvent(ev)}>
+                      <Button size="iconSm" variant="ghost" onClick={() => onEditEvent(ev)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDeleteEvent(ev)}>
+                      <Button size="iconSm" variant="ghost" className="text-destructive" onClick={() => onDeleteEvent(ev)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

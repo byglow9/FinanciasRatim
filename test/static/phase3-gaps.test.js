@@ -112,3 +112,80 @@ test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos s
   assert.doesNotMatch(dock, /\bGauge\b/)
   assert.equal([...dock.matchAll(/\{ href: '/g)].length, 8)
 })
+
+// ---------------------------------------------------------------- Tarefa 2: seletor de ciclo unico
+
+const PAGES = ['src/pages/TransactionsPage.tsx', 'src/pages/CalendarPage.tsx', 'src/pages/FixedExpensesPage.tsx']
+
+test('Transacoes, Calendario e Contas Fixas seguem o ciclo do topo, sem seletor de mes proprio', () => {
+  for (const f of PAGES) {
+    const src = code(f)
+    assert.doesNotMatch(src, /MonthSelector/, `${f} ainda usa o MonthSelector`)
+    assert.doesNotMatch(src, /setSelectedMonth/, `${f} ainda guarda mes proprio`)
+    assert.match(src, /const selectedMonth = useCycleMonth\(\)/, `${f} nao deriva o mes do ciclo`)
+  }
+  // Casal e Relatorios seguem com o seletor de grade (pendencia da Fase 3.1): o componente fica.
+  assert.ok(exists('src/components/shared/MonthSelector.tsx'))
+})
+
+test('o mes do ciclo e memoizado por cycle.key (sem laco de refetch)', () => {
+  const hook = code('src/hooks/useCycleMonth.ts')
+  assert.match(hook, /useMemo\(\(\) => cycleMonthDate\(cycle\), \[cycle\.key\]\)/)
+  const lib = code('src/lib/cycleMonth.ts')
+  assert.match(lib, /export function cycleMonthDate\b/)
+  assert.match(lib, /cycle\.startParts\.year, cycle\.startParts\.month - 1, 1/)
+})
+
+test('CycleSelector redesenhado: lista por ano com periodo, Atual e Check, sem truncar o rotulo', () => {
+  const src = code('src/components/layout/CycleSelector.tsx')
+  for (const needle of [
+    'role="listbox"',
+    'role="option"',
+    'role="group"',
+    'aria-selected',
+    'w-[min(320px,calc(100vw-32px))]',
+    'rounded-[22px]',
+    'h-12 w-full',
+    '<Chip tone="ok">Atual</Chip>',
+    '<Check ',
+    '<ChevronDown',
+    'dayMonth(cycle.startParts)',
+    'setOffset(-index)',
+    "'Home'",
+    "'End'",
+    "'Escape'",
+  ]) {
+    assert.ok(src.includes(needle), `CycleSelector sem ${needle}`)
+  }
+  // O rotulo nao trunca e nao ha aritmetica de data no fuso do host.
+  assert.doesNotMatch(src, /\btruncate\b[^'"]*text-base font-bold/)
+  assert.doesNotMatch(src, /new Date\(|date-fns/)
+})
+
+test('Calendario: legenda e + na linha do alternador, grade alta e detalhe do dia mantido', () => {
+  const page = code('src/pages/CalendarPage.tsx')
+  const tabsAt = page.indexOf('<Tabs ')
+  const infoAt = page.indexOf('<Info ')
+  const plusAt = page.indexOf('<Plus ')
+  const gridAt = page.indexOf('{loading ? (')
+  assert.ok(tabsAt > 0 && infoAt > tabsAt && plusAt > infoAt && gridAt > plusAt, 'ordem: alternador, legenda, +, grade')
+  assert.doesNotMatch(page, /sm:hidden absolute/, 'o + nao e mais absoluto nem so do celular')
+  for (const f of ['src/components/calendar/MonthCalendar.tsx', 'src/components/calendar/AgendaCalendar.tsx']) {
+    const src = code(f)
+    assert.match(src, /min-h-\[max\(320px,calc\(100dvh-296px\)\)\]/, `${f}: a grade nao cresce com a janela`)
+    assert.match(src, /grid-rows-6/)
+    assert.doesNotMatch(src, /aspect-square/, `${f}: celula quadrada impede a grade de ocupar a tela`)
+    // O detalhe do dia segue como painel abaixo da grade (nao virou Sheet) e rola ate ele.
+    assert.doesNotMatch(src, /ui\/sheet/)
+    assert.match(src, /scrollIntoView/)
+    assert.match(src, /size="iconSm"/)
+  }
+})
+
+test('Contas Fixas mantem os tres cartoes de total e o + Nova, sem seletor de mes', () => {
+  const src = code('src/pages/FixedExpensesPage.tsx')
+  for (const needle of ['Total Mensal', 'Pagas', 'Pendentes', 'Nova']) {
+    assert.ok(src.includes(needle), `FixedExpensesPage sem ${needle}`)
+  }
+  assert.doesNotMatch(src, /MonthSelector/)
+})

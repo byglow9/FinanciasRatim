@@ -9,13 +9,13 @@ import { getGoals } from '@/services/goals.service'
 import { getNotes, addNote, updateNote, deleteNote } from '@/services/notes.service'
 import { getEventsForMonth, addEvent, updateEvent, deleteEvent } from '@/services/events.service'
 import { getEventCategories } from '@/services/eventCategories.service'
-import { MonthSelector } from '@/components/shared/MonthSelector'
 import { MonthCalendar } from '@/components/calendar/MonthCalendar'
 import { AgendaCalendar } from '@/components/calendar/AgendaCalendar'
 import { EventForm } from '@/components/calendar/EventForm'
 import { NoteForm } from '@/components/notes/NoteForm'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useArea } from '@/contexts/AreaContext'
+import { useCycleMonth } from '@/hooks/useCycleMonth'
 import { Button } from '@/components/ui/button'
 import { Info, PiggyBank, Target, StickyNote, Wallet, CalendarDays, Plus } from 'lucide-react'
 
@@ -25,7 +25,8 @@ const modeToIndex: Record<CalendarMode, number> = { financeiro: 0, agenda: 1 }
 
 export function CalendarPage() {
   const { currentArea, settings } = useArea()
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
+  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
+  const selectedMonth = useCycleMonth()
   const [mode, setMode] = useState<CalendarMode>(() => {
     const stored = localStorage.getItem(MODE_STORAGE_KEY)
     return stored === 'agenda' ? 'agenda' : 'financeiro'
@@ -209,26 +210,40 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <div className="relative flex items-center gap-4">
-        <div className="hidden sm:block">
-          <h1 className="text-2xl font-bold">
-            Calendario — {mode === 'financeiro' ? areaLabel : 'Agenda'}
-          </h1>
-          <p className="text-muted-foreground">
-            {mode === 'financeiro'
-              ? `Visao mensal dos eventos financeiros de ${areaLabel}`
-              : 'Visao mensal dos nossos compromissos e eventos'}
-          </p>
-        </div>
-        <div className="flex-1 flex items-center gap-2 justify-center sm:flex-none sm:ml-auto">
-          <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
+      <div className="hidden sm:block">
+        <h1 className="text-2xl font-bold">
+          Calendario — {mode === 'financeiro' ? areaLabel : 'Agenda'}
+        </h1>
+        <p className="text-muted-foreground">
+          {mode === 'financeiro'
+            ? `Visao mensal dos eventos financeiros de ${areaLabel}`
+            : 'Visao mensal dos nossos compromissos e eventos'}
+        </p>
+      </div>
 
+      {/* Alternador Financeiro/Agenda com a legenda e o + na mesma linha */}
+      <div className="flex items-center gap-2">
+        <Tabs value={mode} onValueChange={handleModeChange} className="min-w-0 flex-1 sm:flex-none">
+          <TabsList className="grid w-full grid-cols-2 sm:w-[280px]" activeIndex={modeToIndex[mode]} itemCount={2}>
+            <TabsTrigger value="financeiro" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Financeiro
+            </TabsTrigger>
+            <TabsTrigger value="agenda" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Agenda
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
           {/* Legend Button */}
           <div className="relative" ref={legendRef}>
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              aria-label="Legenda de cores"
+              aria-expanded={showLegend}
               onClick={() => setShowLegend(!showLegend)}
             >
               <Info className="h-4 w-4" />
@@ -285,31 +300,17 @@ export function CalendarPage() {
               </div>
             )}
           </div>
+
+          {/* Atalho de criação rápida: nova nota no Financeiro, novo evento na Agenda */}
+          <Button
+            size="icon"
+            aria-label={mode === 'agenda' ? 'Novo evento' : 'Nova anotação'}
+            onClick={() => mode === 'agenda' ? handleAddEvent(getDefaultFormDate()) : handleAddNote(getDefaultFormDate())}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         </div>
-
-        {/* Atalho de criação rápida (mobile) */}
-        <Button
-          size="icon"
-          className="sm:hidden absolute right-0 top-1/2 -translate-y-1/2 bg-green-500 hover:bg-green-600 text-white shrink-0"
-          onClick={() => mode === 'agenda' ? handleAddEvent(getDefaultFormDate()) : handleAddNote(getDefaultFormDate())}
-        >
-          <Plus className="h-5 w-5" />
-        </Button>
       </div>
-
-      {/* Mode toggle */}
-      <Tabs value={mode} onValueChange={handleModeChange}>
-        <TabsList className="grid w-full grid-cols-2 sm:w-[280px]" activeIndex={modeToIndex[mode]} itemCount={2}>
-          <TabsTrigger value="financeiro" className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Financeiro
-          </TabsTrigger>
-          <TabsTrigger value="agenda" className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" />
-            Agenda
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {loading ? (
         <div className="flex justify-center py-12 text-muted-foreground">

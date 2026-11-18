@@ -12,7 +12,7 @@ O Coinki é uma evolução de um app que já funciona (lançamentos, fixas, meta
 - Decimal phases (2.1, 2.2): inserções urgentes (via `/gsd-phase --insert`)
 
 - [ ] **Phase 1: Fundação de dados e acesso** - Só o dono, logado no Firebase, lê e grava os dados, sem perder nada, sobre uma base pronta para tudo o que vem depois
-- [ ] **Phase 2: Revisão de importações, contas fixas e webhook** - O ledger fica confiável: itens em revisão resolvidos, fixas vinculadas ao banco e dados chegando na hora
+- [x] **Phase 2: Revisão de importações, contas fixas e webhook** - O ledger fica confiável: itens em revisão resolvidos, fixas vinculadas ao banco e dados chegando na hora (completed 2026-11-18)
 - [ ] **Phase 3: Limites, "Pode gastar" e Central** - Em segundos o usuário sabe quanto ainda pode gastar no mês, por categoria, com alertas
 - [ ] **Phase 4: Mascote Vintém** - O porquinho-cofre original reage ao ritmo e ao uso do limite, com falas próprias em tom ajustável
 - [ ] **Phase 5: Identidade Coinki, PWA e onboarding** - O app vira Coinki em coinki.web.app, instalável no celular, com tema e visual novos
@@ -113,7 +113,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-06-PLAN.md — Produção: segredo no Railway, push único, Hosting, registro dos webhooks, sonda do cartão e observação de D-07 (passos do dono agrupados)
+- [x] 02-06-PLAN.md — Produção: segredo no Railway, push único, Hosting, registro dos webhooks, sonda do cartão e observação de D-07 (passos do dono agrupados)
 
 ### Phase 3: Limites, "Pode gastar" e Central
 
@@ -228,7 +228,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
-| 2. Revisão de importações, contas fixas e webhook | 5/6 | In Progress|  |
+| 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 0/TBD | Not started | - |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |

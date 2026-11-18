@@ -25,7 +25,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [-] **REV-04**: ~~Quando o banco importa o pagamento de uma conta fixa, o sistema sugere vincular a ela (por valor, descrição e data); vinculado, o lançamento não conta no "Dia a dia" nem nos limites~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [-] **REV-05**: ~~Estornos entram como crédito na categoria e não como receita~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [x] **REV-06**: O servidor recebe webhooks da Pluggy (`item/updated`, `transactions/created`, `transactions/updated`, `transactions/deleted`), autenticados por cabeçalho secreto, sincroniza na hora e mantém o polling como reserva
-- [ ] **REV-07**: Usuário vê quando foi a última atualização dos dados do banco e se o consentimento está vencido ou prestes a vencer, com ação para reconectar
+- [x] **REV-07**: Usuário vê quando foi a última atualização dos dados do banco e se o consentimento está vencido ou prestes a vencer, com ação para reconectar
 
 ### Limites e "Pode gastar" (LIM)
 
@@ -154,7 +154,7 @@ Preenchida na criação do roadmap.
 | REV-04 | Phase 2 | Descartado (2026-11-17) |
 | REV-05 | Phase 2 | Descartado (2026-11-17) |
 | REV-06 | Phase 2 | Complete |
-| REV-07 | Phase 2 | Pending |
+| REV-07 | Phase 2 | Complete |
 | LIM-01 | Phase 3 | Pending |
 | LIM-02 | Phase 3 | Pending |
 | LIM-03 | Phase 3 | Pending |

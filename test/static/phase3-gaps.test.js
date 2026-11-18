@@ -189,3 +189,71 @@ test('Contas Fixas mantem os tres cartoes de total e o + Nova, sem seletor de me
   }
   assert.doesNotMatch(src, /MonthSelector/)
 })
+
+// ---------------------------------------------------------------- Tarefa 3: CR-01 e WR-01
+
+test('CR-01: o contexto expoe settingsStatus e reloadSettings e todo gravador checa o estado', () => {
+  const src = code('src/contexts/AreaContext.tsx')
+  assert.match(src, /type SettingsStatus = 'loading' \| 'ready' \| 'error'/)
+  assert.match(src, /settingsStatus: SettingsStatus/)
+  assert.match(src, /reloadSettings: \(\) => Promise<void>/)
+  // O catch de carga marca erro, nunca cai em padroes.
+  assert.match(src, /catch \{[\s\S]*?setSettingsStatus\('error'\)/)
+  assert.doesNotMatch(src, /console\.error\('Error loading settings/)
+  for (const writer of ['updateTabNames', 'updateCategoryDefs', 'updatePersonConfig', 'updateNotifications', 'updateTheme']) {
+    const at = src.indexOf(`const ${writer} = async`)
+    assert.ok(at > 0, `contexto sem ${writer}`)
+    const body = src.slice(at, at + 400)
+    assert.match(body, /assertReady\(\)/, `${writer} nao checa o estado antes de gravar`)
+  }
+  assert.match(src, /if \(statusRef\.current !== 'ready'\) throw settingsNotReadyError\(\)/)
+})
+
+test('CR-01: Home e Configuracoes mostram erro com Tentar de novo; hook e avaliador so rodam com ready', () => {
+  const home = code('src/pages/DashboardPage.tsx')
+  assert.match(home, /settingsStatus === 'error'/)
+  assert.match(home, /Não foi possível carregar suas configurações\./)
+  assert.match(home, /reloadSettings\(\)/)
+  const settings = code('src/pages/SettingsPage.tsx')
+  assert.match(settings, /settingsStatus === 'loading'/)
+  assert.match(settings, /settingsStatus === 'error'/)
+  assert.match(settings, /Tentar de novo/)
+  assert.match(code('src/hooks/useCycleBudget.ts'), /enabled && settingsStatus === 'ready'/)
+  const alerts = code('src/contexts/LimitAlertsContext.tsx')
+  assert.match(alerts, /settingsStatus === 'ready'/)
+  assert.doesNotMatch(alerts, /settingsLoading/)
+})
+
+test('WR-01: o servico grava por transacao e caminho pontilhado sobre o documento atual', () => {
+  const src = code('src/services/settings.service.ts')
+  assert.match(src, /runTransaction\(db,/)
+  assert.match(src, /transaction\.get\(settingsRef\(\)\)/)
+  assert.match(src, /\['personConfig\.' \+ person\]: next/)
+  assert.match(src, /updater: \(current: PersonConfig\) => PersonConfig/)
+  assert.match(src, /updater: \(current: CategoryDef\[\]\) => CategoryDef\[\]/)
+  assert.match(src, /reconcileCategoryDefs\(data\.categories/)
+  assert.match(src, /categoryDefs: next, categories: activeCategoryNames\(next\)/)
+  // O contexto usa a mesma reconciliacao do nucleo e guarda o valor devolvido, nao o snapshot velho.
+  const ctx = code('src/contexts/AreaContext.tsx')
+  assert.match(ctx, /reconcileCategoryDefs\(settings\.categories/)
+  assert.match(ctx, /const config = await savePersonConfig\(who, updater\)/)
+  assert.match(ctx, /const defs = await saveCategoryDefs\(updater\)/)
+})
+
+test('WR-01: nenhum gravador recebe lista ou no calculado a partir do estado do contexto', () => {
+  for (const f of ['src/components/settings/CategoryEditorSheet.tsx', 'src/components/settings/CycleIncomeCard.tsx']) {
+    const src = code(f)
+    assert.doesNotMatch(src, /updatePersonConfig\(\s*person,\s*(next|nextConfig)\b/, `${f} grava no pronto`)
+    assert.doesNotMatch(src, /updateCategoryDefs\(\s*nextDefs\b/, `${f} grava a lista pronta`)
+  }
+  const sheet = code('src/components/settings/CategoryEditorSheet.tsx')
+  assert.match(sheet, /updateCategoryDefs\(\(cur\) => buildDefs\(cur\)\.defs\)/)
+  assert.match(sheet, /updateCategoryDefs\(\(cur\) => archiveCategory\(cur, archivedId\)\)/)
+  assert.match(sheet, /updatePersonConfig\(person, \(cur\) => setCategoryLimit\(cur,/)
+  const income = code('src/components/settings/CycleIncomeCard.tsx')
+  assert.match(income, /updatePersonConfig\(person, \(cur\) => setSalaryDay\(cur, dayDraft\)\)/)
+  assert.match(income, /updatePersonConfig\(person, \(cur\) => setExpectedIncome\(cur, incomeCents, scopeKey\)\)/)
+  // Erro de regra lancado dentro do atualizador aparece sob o campo, nao como falha de conexao.
+  assert.match(sheet, /isRuleError\(err\)/)
+  assert.match(income, /isRuleError\(err\)/)
+})

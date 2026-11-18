@@ -62,8 +62,9 @@ test('T1: DEFAULT_CATEGORIES e DEFAULT_SETTINGS derivam de DEFAULT_CATEGORY_DEFS
 test('T1: AreaContext expoe categoryDefs e updateCategoryDefs (sem updateCategories)', () => {
   const src = read('src/contexts/AreaContext.tsx')
   assert.match(src, /categoryDefs\s*:\s*CategoryDef\[\]/, 'tipo do contexto sem categoryDefs')
-  assert.match(src, /updateCategoryDefs\s*:\s*\(defs:\s*CategoryDef\[\]\)\s*=>\s*Promise<void>/)
-  assert.match(src, /buildCategoryDefs\(/, 'derivacao a partir de settings.categories ausente')
+  // WR-01: o gravador recebe um atualizador puro (aplicado sobre o documento atual), nao a lista pronta.
+  assert.match(src, /updateCategoryDefs\s*:\s*\(updater:\s*\(current:\s*CategoryDef\[\]\)\s*=>\s*CategoryDef\[\]\)\s*=>\s*Promise<CategoryDef\[\]>/)
+  assert.match(src, /reconcileCategoryDefs\(/, 'derivacao a partir de settings.categories ausente')
   assert.match(src, /activeCategoryNames\(/, 'categories derivada das ativas ausente')
   assert.doesNotMatch(src, /\bupdateCategories\b/, 'updateCategories antigo deve sair')
 })

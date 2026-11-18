@@ -28,7 +28,7 @@ const LINK_BUTTON =
  * Sem view não há número: carregando e erro nunca mostram valor (T-03-75).
  */
 export function DashboardPage() {
-  const { currentArea } = useArea()
+  const { currentArea, settingsStatus, reloadSettings } = useArea()
   const { viewPerson } = useCycle()
   // Porquinho nunca tem Pode gastar (D-02): nem consulta o ciclo.
   const isPiggy = currentArea === 'porquinho'
@@ -45,6 +45,26 @@ export function DashboardPage() {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
         <Notice icon={PiggyBank} title="Na aba Porquinho não há Pode gastar nem limite." />
+      </div>
+    )
+  }
+
+  // CR-01: falha ao carregar as configuracoes nunca vira "Falta saber quanto entra".
+  if (settingsStatus === 'error') {
+    return (
+      <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
+        <Notice
+          tone="danger"
+          icon={CircleAlert}
+          title="Não foi possível carregar suas configurações."
+          action={
+            <Button type="button" variant="outline" size="sm" onClick={() => void reloadSettings()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
       </div>
     )
   }

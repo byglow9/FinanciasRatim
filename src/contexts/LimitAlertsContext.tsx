@@ -103,7 +103,9 @@ async function runEvaluation(
 
 export function LimitAlertsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const { personConfigFor, categoryDefs, loading: settingsLoading } = useArea()
+  const { personConfigFor, categoryDefs, settingsStatus } = useArea()
+  // So avalia com as configuracoes carregadas de verdade (CR-01): erro nunca avalia sobre padroes.
+  const settingsReady = settingsStatus === 'ready'
   const { now, dataVersion } = useCycle()
   // So a pessoa do claim avalia e grava (PR-04); nunca o perfil visto.
   const person: PersonType | null = user ? user.person : null
@@ -123,7 +125,7 @@ export function LimitAlertsProvider({ children }: { children: ReactNode }) {
   const self = useRef<() => Promise<void>>(() => Promise.resolve())
 
   const evaluate = useCallback((): Promise<void> => {
-    if (!person || settingsLoading) return Promise.resolve()
+    if (!person || !settingsReady) return Promise.resolve()
     if (running.current) {
       // Um lancamento durante a avaliacao pede mais uma rodada, nunca em paralelo.
       rerun.current = true
@@ -147,16 +149,20 @@ export function LimitAlertsProvider({ children }: { children: ReactNode }) {
           void self.current()
         }
       })
-  }, [person, settingsLoading])
+  }, [person, settingsReady])
 
   useEffect(() => {
     self.current = evaluate
   }, [evaluate])
 
-  // Ao montar com as configuracoes carregadas e quando um lancamento muda os dados.
+  // Chave do ciclo atual da pessoa (WR-03): a virada de ciclo com a aba aberta tambem reavalia.
+  const cycleKey = person ? cycleOf(now, personConfigFor(person).salaryDay).key : ''
+
+  // Ao montar com as configuracoes carregadas, quando um lancamento ou edicao muda os dados e
+  // quando o ciclo vira.
   useEffect(() => {
     void evaluate()
-  }, [evaluate, dataVersion])
+  }, [evaluate, dataVersion, cycleKey])
 
   // Ao voltar o foco da aba, no maximo uma avaliacao a cada 5 minutos.
   useEffect(() => {

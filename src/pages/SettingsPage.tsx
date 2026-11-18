@@ -1,6 +1,6 @@
 import { formatDistanceStrict } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Landmark, LogOut } from 'lucide-react'
+import { CircleAlert, Landmark, LogOut } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBankFreshness } from '@/hooks/useBankFreshness'
@@ -13,6 +13,8 @@ import { CategoriesCard } from '@/components/settings/CategoriesCard'
 import { CycleIncomeCard } from '@/components/settings/CycleIncomeCard'
 import { NotificationsCard } from '@/components/settings/NotificationsCard'
 import { SettingsCard } from '@/components/settings/SettingsCard'
+import { Button } from '@/components/ui/button'
+import { Notice } from '@/components/ui/notice'
 
 /**
  * Configurações em seis cartões (UI-SPEC S5, D-15, CENT-05), com âncoras #ciclo, #categorias,
@@ -20,12 +22,12 @@ import { SettingsCard } from '@/components/settings/SettingsCard'
  * foca o título. O limite por categoria só se edita aqui, em Categorias (D-21).
  */
 export function SettingsPage() {
-  const { loading } = useArea()
+  const { settingsStatus, reloadSettings } = useArea()
   const { signOut } = useAuth()
   const { items } = useBankFreshness()
   const now = useNow(60_000)
 
-  useHashReveal(undefined, !loading)
+  useHashReveal(undefined, settingsStatus === 'ready')
 
   // Dado mais antigo entre as conexões: a legenda não promete frescor que alguma conexão não tem.
   const dates = items.flatMap((item) => (item.updatedAt ? [item.updatedAt] : []))
@@ -34,12 +36,51 @@ export function SettingsPage() {
     ? `MeuPluggy · Atualizado há ${formatDistanceStrict(oldest, now, { locale: ptBR })}`
     : 'MeuPluggy'
 
+  const header = (
+    <div>
+      <h1 className="font-display text-[28px] font-bold leading-tight">Configurações</h1>
+      <p className="text-xs font-normal text-muted-foreground">Ciclo, categorias, bancos e aparência</p>
+    </div>
+  )
+
+  // CR-01: nenhum cartao editavel fora de 'ready' (carregando = esqueleto neutro; erro = nova tentativa).
+  if (settingsStatus === 'loading') {
+    return (
+      <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
+        {header}
+        <div className="space-y-4" aria-hidden="true">
+          {[144, 224, 112, 144].map((h) => (
+            <div key={h} className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
+          ))}
+        </div>
+        <span className="sr-only">Carregando suas configurações</span>
+      </div>
+    )
+  }
+
+  if (settingsStatus === 'error') {
+    return (
+      <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
+        {header}
+        <Notice
+          tone="danger"
+          icon={CircleAlert}
+          title="Não foi possível carregar suas configurações."
+          action={
+            <Button type="button" variant="outline" size="sm" onClick={() => void reloadSettings()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
-      <div>
-        <h1 className="font-display text-[28px] font-bold leading-tight">Configurações</h1>
-        <p className="text-xs font-normal text-muted-foreground">Ciclo, categorias, bancos e aparência</p>
-      </div>
+      {header}
 
       <CycleIncomeCard />
       <CategoriesCard />

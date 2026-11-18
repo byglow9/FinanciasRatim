@@ -56,7 +56,7 @@ test('SettingsPage tem o titulo, a legenda, os seis cartoes na ordem e o botao S
     return at
   })
   assert.deepEqual(order, [...order].sort((a, b) => a - b), 'os seis cartoes estao fora da ordem do UI-SPEC')
-  assert.match(src, /useHashReveal\(undefined,\s*!loading\)/)
+  assert.match(src, /useHashReveal\(undefined,\s*settingsStatus === 'ready'\)/)
   assert.match(src, /\bsignOut\b/)
 })
 
@@ -130,7 +130,7 @@ test('CategoryEditorSheet traz os campos, a ajuda, a confirmacao de arquivar e a
   assert.doesNotMatch(src, /cycleFor\(/, 'o limite nao usa o ciclo visto na tela')
   // O limite grava na configuracao antes das definicoes (limite orfao e inofensivo; retry idempotente).
   assert.ok(
-    src.indexOf('await updatePersonConfig(person, nextConfig)') < src.indexOf('await updateCategoryDefs(nextDefs)'),
+    src.indexOf('await updatePersonConfig(person,') < src.indexOf('await updateCategoryDefs('),
     'a configuracao grava antes das definicoes'
   )
 })

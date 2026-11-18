@@ -15,6 +15,7 @@ import { FieldRow } from '@/components/settings/FieldRow'
 import { SettingsCard } from '@/components/settings/SettingsCard'
 import { useCycleBudget } from '@/hooks/useCycleBudget'
 import { cn } from '@/lib/utils'
+import { isRuleError } from '@/lib/errors'
 import { cycleLabel, formatMoney } from '@shared/core/format.js'
 import { setExpectedIncome, setSalaryDay } from '@shared/core/limits.js'
 
@@ -97,7 +98,7 @@ function coreMessage(err: unknown): string {
 export function CycleIncomeCard() {
   const { personConfigFor, updatePersonConfig, readOnly, settings } = useArea()
   const { user } = useAuth()
-  const { viewPerson: person, cycleFor } = useCycle()
+  const { viewPerson: person, cycleFor, bumpData } = useCycle()
   const { rekeyForSalaryDay } = useLimitAlerts()
   const { show } = useToast()
 
@@ -156,9 +157,9 @@ export function CycleIncomeCard() {
   const confirmDay = async () => {
     if (locked || daySaving) return
     const oldDay = config.salaryDay
-    let next
+    // Pré-validação sobre o snapshot, só para mostrar o erro sob o campo antes de gravar.
     try {
-      next = setSalaryDay(config, dayDraft)
+      setSalaryDay(config, dayDraft)
     } catch (err) {
       setConfirming(false)
       setDayError(coreMessage(err))
@@ -167,11 +168,13 @@ export function CycleIncomeCard() {
     setDaySaving(true)
     setDayFailed(false)
     try {
-      await updatePersonConfig(person, next)
-    } catch {
-      setDayFailed(true)
+      // WR-01: o atualizador refaz a regra sobre o documento atual (a transação pode repeti-lo).
+      await updatePersonConfig(person, (cur) => setSalaryDay(cur, dayDraft))
+    } catch (err) {
       setConfirming(false)
       setDaySaving(false)
+      if (isRuleError(err)) setDayError(coreMessage(err))
+      else setDayFailed(true)
       return
     }
     // Melhor-esforço: o contexto de avisos já engole falhas, e o dia novo já está gravado.
@@ -180,6 +183,8 @@ export function CycleIncomeCard() {
     } catch {
       // sem efeito sobre o resultado da gravação
     }
+    // WR-03: reavalia os avisos DEPOIS do rekey, para nunca correr contra marcadores na chave antiga.
+    bumpData()
     setDaySaving(false)
     closeDay()
     show('Salvo')
@@ -196,9 +201,9 @@ export function CycleIncomeCard() {
 
   const saveIncome = async () => {
     if (locked || incomeSaving) return
-    let next
+    // Pré-validação sobre o snapshot, só para mostrar o erro sob o campo antes de gravar.
     try {
-      next = setExpectedIncome(config, incomeCents, scope === 'ciclo' ? viewedCycle.key : null)
+      setExpectedIncome(config, incomeCents, scope === 'ciclo' ? viewedCycle.key : null)
     } catch (err) {
       setIncomeError(coreMessage(err))
       return
@@ -207,12 +212,16 @@ export function CycleIncomeCard() {
     setIncomeError(null)
     setIncomeFailed(false)
     try {
-      await updatePersonConfig(person, next)
-    } catch {
-      setIncomeFailed(true)
+      const scopeKey = scope === 'ciclo' ? viewedCycle.key : null
+      await updatePersonConfig(person, (cur) => setExpectedIncome(cur, incomeCents, scopeKey))
+    } catch (err) {
       setIncomeSaving(false)
+      if (isRuleError(err)) setIncomeError(coreMessage(err))
+      else setIncomeFailed(true)
       return
     }
+    // WR-03: a renda muda o Pode gastar e os limites do ciclo; o avaliador de avisos roda de novo.
+    bumpData()
     setIncomeSaving(false)
     setIncomeOpen(false)
     show('Salvo')

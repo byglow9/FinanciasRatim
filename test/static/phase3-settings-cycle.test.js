@@ -114,7 +114,7 @@ test('a renda esperada passa pelo nucleo e oferece o escopo por ciclo (LIM-06, D
   assert.match(src, /view\.income\.receivedCents/)
   assert.match(src, /settings\.tabNames/, 'o nome da pessoa vem de settings.tabNames')
   assert.ok(
-    src.indexOf('setExpectedIncome(config') < src.indexOf('updatePersonConfig(person, next)', src.indexOf('saveIncome')),
+    src.indexOf('setExpectedIncome(config') < src.indexOf('updatePersonConfig(person, (cur)', src.indexOf('saveIncome')),
     'a renda grava pelo nucleo antes de updatePersonConfig'
   )
 })

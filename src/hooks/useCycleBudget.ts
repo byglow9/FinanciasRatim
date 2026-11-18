@@ -23,7 +23,9 @@ interface Options {
 export function useCycleBudget(person: PersonType, opts: Options = {}) {
   const { enabled = true, currentCycle = false } = opts
   const { now, cycleFor, dataVersion } = useCycle()
-  const { personConfigFor, categoryDefs } = useArea()
+  const { personConfigFor, categoryDefs, settingsStatus } = useArea()
+  // So consulta com as configuracoes carregadas de verdade (CR-01): nunca monta numero sobre padroes.
+  const active = enabled && settingsStatus === 'ready'
   const { suppress } = useBankFreshness()
 
   const config = personConfigFor(person)
@@ -43,7 +45,7 @@ export function useCycleBudget(person: PersonType, opts: Options = {}) {
   const latest = useRef(0)
 
   const fetchInputs = useCallback((): Promise<void> => {
-    if (!enabled) return Promise.resolve()
+    if (!active) return Promise.resolve()
     const id = ++latest.current
     return loadCycleInputs(person, cycle).then(
       (inputs) => {
@@ -59,7 +61,7 @@ export function useCycleBudget(person: PersonType, opts: Options = {}) {
         })
       }
     )
-  }, [enabled, person, cycle, loadKey])
+  }, [active, person, cycle, loadKey])
 
   useEffect(() => {
     // dataVersion so dispara a nova consulta depois de um lancamento.
@@ -69,8 +71,8 @@ export function useCycleBudget(person: PersonType, opts: Options = {}) {
     }
   }, [fetchInputs, dataVersion])
 
-  const current = enabled && loaded !== null && loaded.key === loadKey ? loaded.inputs : null
-  const error = enabled && failure?.key === loadKey ? failure.error : null
+  const current = active && loaded !== null && loaded.key === loadKey ? loaded.inputs : null
+  const error = active && failure?.key === loadKey ? failure.error : null
 
   const view = useMemo(
     () =>

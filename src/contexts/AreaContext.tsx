@@ -1,14 +1,19 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import type { AreaType, CategoryDef, PersonConfig, PersonType, Settings } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
 import {
   getSettings,
   updateSettings,
   updatePersonConfig as savePersonConfig,
+  updateCategoryDefs as saveCategoryDefs,
 } from '@/services/settings.service'
+import { settingsNotReadyError } from '@/lib/errors'
 import { useAuth } from './AuthContext'
-import { activeCategoryNames, buildCategoryDefs, resolveCategoryId } from '@shared/core/categories.js'
+import { activeCategoryNames, reconcileCategoryDefs } from '@shared/core/categories.js'
 import { normalizePersonConfig } from '@shared/core/limits.js'
+
+// Estado real do carregamento das configuracoes (CR-01): erro nunca cai em padroes.
+export type SettingsStatus = 'loading' | 'ready' | 'error'
 
 interface AreaContextType {
   currentArea: AreaType
@@ -20,15 +25,24 @@ interface AreaContextType {
   settings: Settings
   updateTabNames: (tabNames: Settings['tabNames']) => Promise<void>
   categoryDefs: CategoryDef[]
-  updateCategoryDefs: (defs: CategoryDef[]) => Promise<void>
+  // WR-01: recebem um atualizador puro, aplicado dentro de uma transacao sobre o documento atual.
+  // Devolvem o valor gravado. Lancam (antes de qualquer escrita) se settingsStatus !== 'ready'.
+  updateCategoryDefs: (updater: (current: CategoryDef[]) => CategoryDef[]) => Promise<CategoryDef[]>
   personConfigFor: (person: PersonType) => PersonConfig
-  updatePersonConfig: (person: PersonType, config: PersonConfig) => Promise<void>
+  updatePersonConfig: (
+    person: PersonType,
+    updater: (current: PersonConfig) => PersonConfig
+  ) => Promise<PersonConfig>
   updateNotifications: (
     partial: Partial<Pick<Settings, 'notificationsEnabled' | 'daysBeforeDueDate'>>
   ) => Promise<void>
   // Sem uso nesta fase: o tema escuro fica desligado ate a Fase 5 (PR-18).
   updateTheme: (theme: Settings['theme']) => Promise<void>
+  // `loading` e o mesmo que settingsStatus === 'loading' (consumidores antigos).
   loading: boolean
+  settingsStatus: SettingsStatus
+  // Volta a 'loading' e le de novo ("Tentar de novo").
+  reloadSettings: () => Promise<void>
 }
 
 const AreaContext = createContext<AreaContextType | undefined>(undefined)
@@ -42,19 +56,56 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     ...DEFAULT_SETTINGS,
     theme: 'light',
   })
-  const [loading, setLoading] = useState(true)
+  const [settingsStatus, setSettingsStatus] = useState<SettingsStatus>('loading')
+  const loading = settingsStatus === 'loading'
+  // Os gravadores leem o estado por ref: nunca gravam com um fechamento velho.
+  const statusRef = useRef<SettingsStatus>('loading')
+  useEffect(() => {
+    statusRef.current = settingsStatus
+  })
+  const loadId = useRef(0)
+
+  const loadSettings = useCallback(async () => {
+    const id = ++loadId.current
+    try {
+      const loadedSettings = await getSettings()
+      if (id !== loadId.current) return
+      if (loadedSettings) {
+        setSettings(loadedSettings)
+        setSettingsStatus('ready')
+      } else {
+        setSettingsStatus('error')
+      }
+    } catch {
+      // Sem registrar valores (T-qk-06): so o estado de erro, com nova tentativa na tela.
+      if (id === loadId.current) setSettingsStatus('error')
+    }
+  }, [])
+
+  const reloadSettings = useCallback(async () => {
+    setSettingsStatus('loading')
+    statusRef.current = 'loading'
+    await loadSettings()
+  }, [loadSettings])
 
   useEffect(() => {
-    if (user) {
-      loadSettings()
-    }
-  }, [user])
+    // Carga de dados no efeito: o setState so acontece depois do await de getSettings.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (user) void loadSettings()
+  }, [user, loadSettings])
+
+  // Todo gravador de configuracao passa por aqui ANTES de escrever (CR-01).
+  const assertReady = () => {
+    if (statusRef.current !== 'ready') throw settingsNotReadyError()
+  }
 
   // Abre na aba da pessoa do claim quando o usuario logado muda; as outras abas seguem livres (D-01, D-05).
   const uid = user?.uid
   const person = user?.person
   useEffect(() => {
     if (person) {
+      // Sincroniza a aba com a pessoa do claim ao trocar de usuario (codigo anterior a esta tarefa).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAreaState(person)
       setLastPerson(person)
     }
@@ -72,20 +123,8 @@ export function AreaProvider({ children }: { children: ReactNode }) {
 
   const readOnly = !!person && currentArea !== 'porquinho' && currentArea !== person
 
-  const loadSettings = async () => {
-    try {
-      const loadedSettings = await getSettings()
-      if (loadedSettings) {
-        setSettings(loadedSettings)
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const updateTabNames = async (tabNames: Settings['tabNames']) => {
+    assertReady()
     try {
       await updateSettings({ tabNames })
       setSettings(prev => ({ ...prev, tabNames }))
@@ -99,25 +138,20 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   // antigo (rollback) pode editar so essa lista; por isso `categories` e a fonte de quem esta ativo:
   // nome na lista = ativa, fora da lista = arquivada, nome novo ganha id. O servidor e o cliente
   // novo gravam as duas coisas juntas, entao nesse caso a reconciliacao nao muda nada.
-  const categoryDefs = useMemo<CategoryDef[]>(() => {
-    const names = settings.categories ?? []
-    return buildCategoryDefs(names, settings.categoryDefs ?? []).map((d) => {
-      const active = names.some((n) => resolveCategoryId(n, [d]) === d.id)
-      if (active === !d.archived) return d
-      return { ...d, archived: !active }
-    })
-  }, [settings.categories, settings.categoryDefs])
+  const categoryDefs = useMemo<CategoryDef[]>(
+    () => reconcileCategoryDefs(settings.categories ?? [], settings.categoryDefs ?? []),
+    [settings.categories, settings.categoryDefs]
+  )
 
   // categories (nomes ativos) continua gravada para o cliente antigo, o servidor e o rollback.
-  const updateCategoryDefs = async (defs: CategoryDef[]) => {
-    try {
-      const categories = activeCategoryNames(defs)
-      await updateSettings({ categoryDefs: defs, categories })
-      setSettings(prev => ({ ...prev, categoryDefs: defs, categories }))
-    } catch (error) {
-      console.error('Error updating categories:', error)
-      throw error
-    }
+  // WR-01: o servico aplica o atualizador sobre o documento atual (transacao) e devolve o que gravou;
+  // o estado local recebe ESSE valor, nunca o calculado sobre o snapshot velho.
+  const updateCategoryDefs = async (updater: (current: CategoryDef[]) => CategoryDef[]) => {
+    assertReady()
+    const defs = await saveCategoryDefs(updater)
+    const categories = activeCategoryNames(defs)
+    setSettings(prev => ({ ...prev, categoryDefs: defs, categories }))
+    return defs
   }
 
   // Normalizada uma vez por mudanca do no: a referencia estavel evita refazer consultas nos hooks.
@@ -133,22 +167,23 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     [normalizedConfigs]
   )
 
-  const updatePersonConfig = async (who: PersonType, config: PersonConfig) => {
-    try {
-      await savePersonConfig(who, config)
-      setSettings(prev => ({
-        ...prev,
-        personConfig: { ...prev.personConfig, [who]: config },
-      }))
-    } catch (error) {
-      console.error('Error updating person config')
-      throw error
-    }
+  const updatePersonConfig = async (
+    who: PersonType,
+    updater: (current: PersonConfig) => PersonConfig
+  ) => {
+    assertReady()
+    const config = await savePersonConfig(who, updater)
+    setSettings(prev => ({
+      ...prev,
+      personConfig: { ...prev.personConfig, [who]: config },
+    }))
+    return config
   }
 
   const updateNotifications = async (
     partial: Partial<Pick<Settings, 'notificationsEnabled' | 'daysBeforeDueDate'>>
   ) => {
+    assertReady()
     try {
       await updateSettings(partial)
       setSettings(prev => ({ ...prev, ...partial }))
@@ -159,6 +194,7 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   }
 
   const updateTheme = async (theme: Settings['theme']) => {
+    assertReady()
     try {
       await updateSettings({ theme })
       setSettings(prev => ({ ...prev, theme }))
@@ -184,6 +220,8 @@ export function AreaProvider({ children }: { children: ReactNode }) {
         updateNotifications,
         updateTheme,
         loading,
+        settingsStatus,
+        reloadSettings,
       }}
     >
       {children}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isRuleError } from '@/lib/errors'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCycle } from '@/contexts/CycleContext'
@@ -72,7 +73,7 @@ interface CategoryEditorSheetProps {
 export function CategoryEditorSheet({ open, onClose, mode, def, kind }: CategoryEditorSheetProps) {
   const { categoryDefs, updateCategoryDefs, personConfigFor, updatePersonConfig, readOnly } = useArea()
   const { user } = useAuth()
-  const { now, viewPerson: person } = useCycle()
+  const { now, viewPerson: person, bumpData } = useCycle()
   const { show } = useToast()
 
   // Só de interface (Fase 8 aplica nas regras): perfil do parceiro, inclusive visto pelo Porquinho.
@@ -124,20 +125,25 @@ export function CategoryEditorSheet({ open, onClose, mode, def, kind }: Category
       return
     }
 
-    let nextDefs: CategoryDef[]
+    // Regra de criar/editar aplicada sobre QUALQUER lista de definições. Roda sobre o snapshot (para
+    // mostrar o erro sob o campo antes de gravar) e de novo, dentro da transação, sobre o documento
+    // atual (WR-01). Pura: a transação pode repeti-la.
+    const buildDefs = (defs: CategoryDef[]): { defs: CategoryDef[]; categoryId: string | null } => {
+      if (mode === 'new') {
+        const added = addCategory(defs, trimmed, color, { icon, kind })
+        const id = resolveCategoryId(trimmed, added)
+        // Reativar uma arquivada ignora a cor do addCategory; setCategoryMeta aplica a escolha.
+        return { defs: id ? setCategoryMeta(added, id, { icon, color }) : added, categoryId: id }
+      }
+      if (!def) throw new Error('Categoria nao encontrada')
+      const renamed = trimmed !== def.name ? renameCategory(defs, def.id, trimmed) : defs
+      return { defs: setCategoryMeta(renamed, def.id, { icon, color }), categoryId: def.id }
+    }
+
+    if (mode === 'edit' && !def) return
     let categoryId: string | null
     try {
-      if (mode === 'new') {
-        const added = addCategory(categoryDefs, trimmed, color, { icon, kind })
-        categoryId = resolveCategoryId(trimmed, added)
-        // Reativar uma arquivada ignora a cor do addCategory; setCategoryMeta aplica a escolha.
-        nextDefs = categoryId ? setCategoryMeta(added, categoryId, { icon, color }) : added
-      } else {
-        if (!def) return
-        categoryId = def.id
-        const renamed = trimmed !== def.name ? renameCategory(categoryDefs, def.id, trimmed) : categoryDefs
-        nextDefs = setCategoryMeta(renamed, def.id, { icon, color })
-      }
+      categoryId = buildDefs(categoryDefs).categoryId
     } catch (err) {
       setErrors(coreError(err))
       setFailed(false)
@@ -146,11 +152,11 @@ export function CategoryEditorSheet({ open, onClose, mode, def, kind }: Category
 
     // O limite grava na configuração da pessoa só quando mudou (categoria nova parte de "sem limite").
     // Reativar uma arquivada pode trazer um limite antigo: compara com o vigente da própria categoria.
-    let nextConfig = null
     const currentLimit = categoryId ? limitForCycle(config.limits[categoryId], cycleKey) : null
-    if (hasLimit && categoryId && nextLimit !== currentLimit) {
+    const limitChanged = hasLimit && !!categoryId && nextLimit !== currentLimit
+    if (limitChanged && categoryId) {
       try {
-        nextConfig = setCategoryLimit(config, categoryId, cycleKey, nextLimit)
+        setCategoryLimit(config, categoryId, cycleKey, nextLimit)
       } catch (err) {
         setErrors(coreError(err))
         setFailed(false)
@@ -162,13 +168,23 @@ export function CategoryEditorSheet({ open, onClose, mode, def, kind }: Category
     clearFeedback()
     try {
       // Configuração primeiro: um limite órfão (sem categoria) é inofensivo e a nova tentativa é idempotente.
-      if (nextConfig) await updatePersonConfig(person, nextConfig)
-      await updateCategoryDefs(nextDefs)
-    } catch {
-      setFailed(true)
+      if (limitChanged && categoryId) {
+        const limitCategoryId = categoryId
+        await updatePersonConfig(person, (cur) => setCategoryLimit(cur, limitCategoryId, cycleKey, nextLimit))
+      }
+      await updateCategoryDefs((cur) => buildDefs(cur).defs)
+    } catch (err) {
       setSaving(false)
+      if (isRuleError(err)) {
+        setErrors(coreError(err))
+        setFailed(false)
+      } else {
+        setFailed(true)
+      }
       return
     }
+    // WR-03: um limite novo ou alterado muda os avisos; o avaliador roda de novo.
+    if (limitChanged) bumpData()
     setSaving(false)
     onClose()
     show('Salvo')
@@ -176,9 +192,9 @@ export function CategoryEditorSheet({ open, onClose, mode, def, kind }: Category
 
   const archive = async () => {
     if (locked || saving || !def) return
-    let nextDefs: CategoryDef[]
+    const archivedId = def.id
     try {
-      nextDefs = archiveCategory(categoryDefs, def.id)
+      archiveCategory(categoryDefs, archivedId)
     } catch (err) {
       setConfirmingArchive(false)
       setErrors(coreError(err))
@@ -187,11 +203,15 @@ export function CategoryEditorSheet({ open, onClose, mode, def, kind }: Category
     setSaving(true)
     clearFeedback()
     try {
-      await updateCategoryDefs(nextDefs)
-    } catch {
-      setFailed(true)
+      await updateCategoryDefs((cur) => archiveCategory(cur, archivedId))
+    } catch (err) {
       setConfirmingArchive(false)
       setSaving(false)
+      if (isRuleError(err)) {
+        setErrors(coreError(err))
+      } else {
+        setFailed(true)
+      }
       return
     }
     setSaving(false)

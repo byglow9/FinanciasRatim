@@ -1,6 +1,6 @@
 // Guarda estatica das ligacoes de dados da Fase 3 (LIM-04, LIM-06, LIM-08, LIM-10, IDEN-07, CENT-06).
 // Rodar: node --test test/static/phase3-data.test.js
-// O Plano 13 estende este arquivo com as assercoes do avaliador de avisos.
+// O Plano 13 estendeu este arquivo com as assercoes do avaliador de avisos (h a j).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -106,4 +106,41 @@ test('App monta ToastProvider por fora e CycleProvider dentro do ProtectedRoute'
   assert.ok(toast < open, 'ToastProvider deve vir antes do ProtectedRoute')
   assert.ok(open < cycleOpen, 'CycleProvider deve abrir dentro do ProtectedRoute')
   assert.ok(cycleClose < close, 'CycleProvider deve fechar dentro do ProtectedRoute')
+})
+
+test('LimitAlertsContext avalia pelo nucleo, e idempotente por ID e nao registra valor financeiro (h)', () => {
+  const src = code('src/contexts/LimitAlertsContext.tsx')
+  assert.match(src, /import\s*\{[^}]*\bthresholdsToFire\b[^}]*\}\s*from\s*['"]@shared\/core\/alerts\.js['"]/)
+  assert.match(src, /import\s*\{[^}]*\bbuildBudgetView\b[^}]*\}\s*from\s*['"]@shared\/core\/budget\.js['"]/)
+  assert.match(src, /\bcreateLimitAlertIfAbsent\(/, 'o aviso deve ser criado por createLimitAlertIfAbsent (ID deterministico)')
+  assert.match(src, /\bcatch\b/, 'a avaliacao e melhor-esforco: erro engolido')
+  assert.match(src, /\bvisibilitychange\b/, 'a volta do foco da aba reavalia')
+  assert.match(src, /\brekeyForSalaryDay\b/)
+  assert.match(src, /\brekeyAlerts\b/)
+  for (const m of src.matchAll(/console\.\w+\(([\s\S]*?)\)/g)) {
+    assert.doesNotMatch(m[1], /\b(spent|limit|amount|cents)\w*/i, `LimitAlertsContext registra valor financeiro: ${m[0]}`)
+  }
+})
+
+test('LimitAlertsContext fica no cliente da pessoa logada, sem onSnapshot nem perfil visto (i)', () => {
+  const src = code('src/contexts/LimitAlertsContext.tsx')
+  assert.doesNotMatch(src, /\bonSnapshot\b/, 'uma carga por avaliacao, sem listener novo (cota Spark)')
+  assert.doesNotMatch(src, /\bhttpsCallable\b/, 'sem Cloud Functions (Spark)')
+  assert.match(src, /\buser\.person\b/, 'a pessoa que avalia e a do claim')
+  assert.doesNotMatch(src, /\bviewPerson\b/, 'nunca gravar pelo perfil visto (PR-04)')
+  assert.doesNotMatch(src, /\blimitCents\s*\*\s*80\b/, 'o limiar vem de thresholdsToFire, nao de formula local')
+})
+
+test('App monta LimitAlertsProvider dentro de ProtectedRoute e de CycleProvider (j)', () => {
+  const src = code('src/App.tsx')
+  const protectedOpen = src.indexOf('<ProtectedRoute>')
+  const cycleOpen = src.indexOf('<CycleProvider>')
+  const alertsOpen = src.indexOf('<LimitAlertsProvider>')
+  const alertsClose = src.indexOf('</LimitAlertsProvider>')
+  const cycleClose = src.indexOf('</CycleProvider>')
+  const protectedClose = src.indexOf('</ProtectedRoute>')
+  assert.ok(alertsOpen >= 0 && alertsClose >= 0, 'LimitAlertsProvider ausente em App.tsx')
+  assert.ok(protectedOpen < alertsOpen, 'LimitAlertsProvider deve abrir depois do ProtectedRoute')
+  assert.ok(cycleOpen < alertsOpen, 'LimitAlertsProvider deve abrir depois do CycleProvider')
+  assert.ok(alertsClose < cycleClose && cycleClose < protectedClose, 'LimitAlertsProvider deve fechar dentro de CycleProvider e ProtectedRoute')
 })

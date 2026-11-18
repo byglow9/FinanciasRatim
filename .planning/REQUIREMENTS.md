@@ -29,20 +29,21 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Limites e "Pode gastar" (LIM)
 
-- [ ] **LIM-01**: Usuário define um limite mensal por categoria, por pessoa
+- [ ] **LIM-01**: Usuário define um limite mensal por categoria, por pessoa, em Configurações > Categorias; passar do limite só avisa e soma quanto passou, nunca bloqueia (decisões D-09 e D-21 de 03-CONTEXT)
 - [ ] **LIM-02**: Usuário vê, para cada categoria, quanto gastou, o limite, a porcentagem usada e o que resta, e pode expandir a categoria para ver os lançamentos dela
-- [ ] **LIM-03**: O limite do mês é a soma dos limites por categoria, e as contas fixas ficam fora do limite do dia a dia
-- [ ] **LIM-04**: Usuário vê na Home o valor "Pode gastar" (limite do mês menos o gasto), quanto pode por dia e o status de ritmo (por exemplo "No ritmo")
+- [ ] **LIM-03**: Os gastos de categorias sem limite aparecem somados como "Gasto geral" e descontam do "Pode gastar"; as contas fixas ficam fora do dia a dia (já abatidas do dinheiro do ciclo). Substitui o antigo "limite do mês = soma dos limites" (D-05)
+- [ ] **LIM-04**: Usuário vê na Home o valor "Pode gastar" (renda esperada menos contas fixas menos todo gasto não fixo do ciclo), quanto pode por dia (restante dividido pelos dias que faltam) e o ritmo em 5 níveis (Folgado, No ritmo, Atenção, Acima do ritmo, Estourou) (D-05, D-06, D-07)
 - [ ] **LIM-05**: Usuário vê "O mês em uma conta" com Entra, Fixos, Dia a dia e Sobra, e a projeção do que ainda vai entrar e sair identificada como estimativa
 - [ ] **LIM-06**: Usuário informa a renda esperada do mês, e a Home diferencia o que já entrou do que é esperado
-- [ ] **LIM-07**: Usuário recebe alertas dentro do app ao chegar a 80% e ao passar de 100% de um limite, uma única vez por limiar e por mês
+- [ ] **LIM-07**: Usuário recebe alertas dentro do app (no sino) ao chegar a 80% e ao passar de 100% de um limite, uma única vez por limiar e por ciclo
 - [ ] **LIM-08**: Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
-- [ ] **LIM-09**: A Home mostra atalhos para Gasto, Receita, Fixos e Limites
+- [ ] **LIM-09**: A Home mostra atalhos "Novo gasto", "Nova receita", "Contas fixas" e "Limites" (os dois últimos descem até a seção)
+- [ ] **LIM-10**: Usuário escolhe em Configurações o dia em que recebe o salário, e o ciclo de limites, "Pode gastar" e alertas começa e termina nesse dia (D-10, D-11)
 
 ### Central de Limites e Cartões e Configurações (CENT)
 
 - [ ] **CENT-01**: Existe uma página própria de Limites e Cartões, com um resumo na Home que leva até ela
-- [ ] **CENT-02**: A Central mostra o estado de cada limite por categoria e permite ajustá-lo ali
+- [ ] **CENT-02**: A Central apenas exibe o estado de cada limite por categoria e os lançamentos dela; o ajuste é feito em Configurações > Categorias (D-21)
 - [ ] **CENT-03**: A Central mostra cada cartão: fatura aberta, dia de fechamento e de vencimento, limite disponível, próximas faturas, parcelas a vir e status (aberta, fechada, paga ou atrasada)
 - [ ] **CENT-04**: Os vencimentos de fatura aparecem também no Calendário e nos alertas
 - [ ] **CENT-05**: Configurações são organizadas em cartões com ícone: Contas e cartões (com dia de fechamento e vencimento), Categorias (ícone, limite, Gastos e Receitas separados), Bancos conectados, Aparência e Notificações
@@ -164,6 +165,7 @@ Preenchida na criação do roadmap.
 | LIM-07 | Phase 3 | Pending |
 | LIM-08 | Phase 3 | Pending |
 | LIM-09 | Phase 3 | Pending |
+| LIM-10 | Phase 3 | Pending |
 | CENT-01 | Phase 3 | Pending |
 | CENT-02 | Phase 3 | Pending |
 | CENT-05 | Phase 3 | Pending |
@@ -211,10 +213,10 @@ Preenchida na criação do roadmap.
 
 **Coverage:**
 
-- v1 requirements: 67 total
-- Mapped to phases: 67
+- v1 requirements: 68 total
+- Mapped to phases: 68
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-11-17*
-*Last updated: 2026-11-17 after roadmap creation (traceability filled)*
+*Last updated: 2026-11-18 after phase 3 discuss (LIM-01/03/04/07/09, CENT-02 reescritos; LIM-10 adicionado)*

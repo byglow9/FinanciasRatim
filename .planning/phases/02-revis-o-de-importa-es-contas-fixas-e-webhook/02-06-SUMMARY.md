@@ -21,6 +21,7 @@ provides:
 affects: [fase-3-limites, fase-6-cartao]
 requirements-completed: [REV-06, REV-07]
 status: complete-with-open-observations
+card-probe: sem-cartao-credit
 completed: 2026-11-18
 ---
 
@@ -67,7 +68,9 @@ Dry-run: 4 a criar. Registro real: 4 criados, 0 atualizados, 0 reativados, 0 dup
 
 ## Sonda do cartao
 
-Pendente: o dono roda `probe-card.js` no shell dele. Se rodar, o resultado fica em `02-CARD-PROBE.md` (so formato). Pode ser pulada sem bloquear a fase (CARD-01 e da Fase 6).
+Rodada uma vez pelo dono (2026-11-18), so leitura. Resultado em `02-CARD-PROBE.md` (so formato; varredura de padroes sensiveis sem achados).
+
+**Achado para a Fase 6:** o MeuPluggy NAO entregou conta de cartao de credito: 0 contas CREDIT, so 2 contas BANK, na unica conexao existente. Item saudavel (UPDATED/SUCCESS, consentimento ~364 dias). Antes de planejar CARD-01 e preciso entender por que (cartao nao aparece no MeuPluggy, ou esta em outro item/banco nao conectado) e decidir se a fase segue, muda de abordagem ou fica fora do escopo.
 
 ## Observacoes abertas
 

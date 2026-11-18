@@ -23,9 +23,9 @@ describe('check-indexes', () => {
     await admin.app.delete()
   })
 
-  test('buildProbeQueries monta uma consulta por indice composto que comeca em ownerId (11)', () => {
+  test('buildProbeQueries monta uma consulta por indice composto que comeca em ownerId (12)', () => {
     const probes = buildProbeQueries(indexesJson, HID, admin.db)
-    assert.equal(probes.length, 11)
+    assert.equal(probes.length, 12)
     assert.ok(probes.every((p) => typeof p.query.get === 'function'))
   })
 
@@ -33,7 +33,7 @@ describe('check-indexes', () => {
     const result = await runChecks({ db: admin.db, hid: HID, indexesJson, waitSeconds: 0 })
     assert.equal(result.ok, true)
     assert.deepEqual(result.pending, [])
-    assert.equal(result.total, 11)
+    assert.equal(result.total, 12)
   })
 
   test('runChecks trata FAILED_PRECONDITION como pendente, repete e depois conclui', async () => {

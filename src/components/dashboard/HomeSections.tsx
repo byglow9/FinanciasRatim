@@ -23,13 +23,23 @@ interface HomeSectionsProps {
  * (com o Gasto geral, D-04), resumo da Central e Contas fixas do mês. Só exibe o que o núcleo
  * entrega; o único gesto é o "Marcar pago" manual, que nunca cria lançamento (CENT-06, REV-03).
  */
-export function HomeSections({ view, cycle, refetch }: HomeSectionsProps) {
+export function HomeSections({ view, cycle, loading, refetch }: HomeSectionsProps) {
   const { categoryDefs } = useArea()
   const { bumpData } = useCycle()
   const { readOnly, guard } = useReadOnly()
   const { show } = useToast()
 
-  if (!view) return null
+  if (!view) {
+    // Carregando: blocos neutros, nunca número nem "R$ 0". Sem view e sem carregar, o erro é da página.
+    if (!loading) return null
+    return (
+      <div className="space-y-4" aria-hidden="true">
+        {[176, 288, 80, 144].map((h) => (
+          <div key={h} className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
+        ))}
+      </div>
+    )
+  }
 
   const onMarkPaid = async (item: BillItem) => {
     if (guard('editar')) return

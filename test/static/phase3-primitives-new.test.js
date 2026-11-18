@@ -20,6 +20,11 @@ const UI = 'src/components/ui/'
 const NEW = [
   `${UI}sheet.tsx`,
   `${UI}toast.tsx`,
+  `${UI}notice.tsx`,
+  `${UI}chip.tsx`,
+  `${UI}icon-circle.tsx`,
+  `${UI}collapsible.tsx`,
+  `${UI}switch.tsx`,
 ]
 
 const has = (src, needle, label) => assert.ok(src.includes(needle), `${label} sem ${needle}`)
@@ -79,6 +84,25 @@ test('Toast: provider, fila de um por vez, 5000ms, status polite e camada 10001'
   assert.match(src, /onFocus/, 'toast.tsx nao pausa em foco')
   assert.match(src, /throw new Error\(/, 'useToast precisa lancar fora do provider')
   assert.match(read(`${UI}toast.tsx`), /eslint-disable-next-line react-refresh\/only-export-components/)
+})
+
+test('Switch, Collapsible, Chip e Notice seguem o contrato do UI-SPEC', () => {
+  const sw = code(`${UI}switch.tsx`)
+  for (const n of ['role="switch"', 'aria-checked', 'h-11 w-11', 'disabled']) has(sw, n, 'switch.tsx')
+  const co = code(`${UI}collapsible.tsx`)
+  for (const n of ['grid-rows-[0fr]', 'grid-rows-[1fr]', 'transition-[grid-template-rows]', 'duration-200', 'overflow-hidden', 'aria-hidden']) {
+    has(co, n, 'collapsible.tsx')
+  }
+  const chip = code(`${UI}chip.tsx`)
+  for (const n of ['min-h-11', 'aria-disabled', 'rounded-chip', 'text-xs font-bold', 'export function Chip', 'bg-[#dcfce7]']) {
+    has(chip, n, 'chip.tsx')
+  }
+  const notice = code(`${UI}notice.tsx`)
+  for (const n of ['export function Notice', 'rounded-2xl', 'aria-label', 'bg-card', 'p-3', 'role={tone === "danger" ? "alert" : "status"}', 'h-11 w-11']) {
+    has(notice, n, 'notice.tsx')
+  }
+  const ic = code(`${UI}icon-circle.tsx`)
+  for (const n of ['aria-hidden', 'h-11 w-11', 'h-12 w-12', 'rounded-full', 'bg-surface-2']) has(ic, n, 'icon-circle.tsx')
 })
 
 test('Primitivos novos: sem pesos 500, 600 ou 800, sem emoji, sem HTML bruto e sem console', () => {

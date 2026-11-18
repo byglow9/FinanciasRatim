@@ -89,16 +89,47 @@ const DialogContent = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
   const context = React.useContext(DialogContext)
+  const panelRef = React.useRef<HTMLDivElement>(null)
+  const open = context?.open ?? false
+  // Em ref: um onOpenChange inline nao pode reexecutar o efeito (e roubar o foco de um campo).
+  const onOpenChangeRef = React.useRef(context?.onOpenChange)
+  React.useEffect(() => {
+    onOpenChangeRef.current = context?.onOpenChange
+  })
+
+  React.useImperativeHandle(ref, () => panelRef.current as HTMLDivElement)
+
+  // Enquanto aberto: Esc fecha, o foco vai para o painel e volta ao elemento de origem ao fechar.
+  React.useEffect(() => {
+    if (!open) return
+    const origin = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        onOpenChangeRef.current?.(false)
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      if (origin && origin.isConnected) origin.focus()
+    }
+  }, [open])
+
   if (!context) throw new Error("DialogContent must be used within Dialog")
 
   return (
     <DialogPortal>
       <DialogOverlay />
       <div
-        ref={ref}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg rounded-2xl sm:rounded-xl dialog-content-animate",
+          "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg rounded-2xl sm:rounded-xl dialog-content-animate focus:outline-none",
           className
         )}
         {...props}
@@ -106,11 +137,12 @@ const DialogContent = React.forwardRef<
         {children}
         <button
           type="button"
+          aria-label="Fechar"
           onClick={() => context.onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
         >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
+          <X className="h-5 w-5" />
+          <span className="sr-only">Fechar</span>
         </button>
       </div>
     </DialogPortal>
@@ -153,7 +185,7 @@ const DialogTitle = React.forwardRef<
   <h2
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "text-base font-bold leading-snug",
       className
     )}
     {...props}

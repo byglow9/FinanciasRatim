@@ -17,7 +17,7 @@ const code = (f) =>
 const UI = 'src/components/ui/'
 
 // Primitivos reescritos: so pesos 400 e 700 (UI-SPEC Typography).
-const RESTYLED = ['progress', 'card', 'button', 'badge', 'alert']
+const RESTYLED = ['progress', 'card', 'button', 'badge', 'alert', 'input', 'label', 'select', 'dialog']
 
 test('Progress expoe progressbar com aria e as quatro tones (LIM-02)', () => {
   const src = code(`${UI}progress.tsx`)
@@ -72,6 +72,46 @@ test('Alert: formato notice sem borda, mantendo role alert e as exportacoes', ()
   assert.match(src, /text-danger-ink/)
   assert.doesNotMatch(src, /\bborder-(destructive|yellow|green)/)
   assert.match(src, /export \{ Alert, AlertTitle, AlertDescription \}/)
+})
+
+test('Input, Select e Label: campo de 48px, texto de 16px e rotulo 700', () => {
+  const input = code(`${UI}input.tsx`)
+  assert.match(input, /\bh-12\b/)
+  assert.match(input, /\btext-base\b/)
+  assert.match(input, /rounded-btn/)
+  const select = code(`${UI}select.tsx`)
+  assert.match(select, /\bh-12\b/)
+  assert.match(select, /\btext-base\b/)
+  assert.doesNotMatch(select, /\btext-sm\b/)
+  const label = code(`${UI}label.tsx`)
+  assert.match(label, /font-bold/)
+  assert.match(label, /text-base/)
+  assert.match(label, /peer-disabled/)
+})
+
+test('Dialog: role, aria-modal, Esc, retorno de foco e rotulo Fechar em portugues (T-03-28)', () => {
+  const src = code(`${UI}dialog.tsx`)
+  assert.match(src, /role="dialog"/)
+  assert.match(src, /aria-modal/)
+  assert.match(src, /Escape/)
+  assert.match(src, /\.focus\(\)/)
+  assert.match(src, /Fechar/)
+  assert.doesNotMatch(src, /\bClose\b/)
+  assert.match(src, /\bh-11 w-11\b/)
+  // Camadas e trava de rolagem preservadas.
+  assert.match(src, /z-\[9999\]/)
+  assert.match(src, /z-\[10000\]/)
+  assert.match(src, /document\.body\.style\.overflow/)
+})
+
+test('Dialog mantem todas as exportacoes publicas', () => {
+  const src = code(`${UI}dialog.tsx`)
+  for (const name of [
+    'Dialog', 'DialogPortal', 'DialogOverlay', 'DialogTrigger', 'DialogContent',
+    'DialogHeader', 'DialogFooter', 'DialogTitle', 'DialogDescription',
+  ]) {
+    assert.match(src, new RegExp(`\\b${name},?\\n`), `Dialog perdeu a exportacao ${name}`)
+  }
 })
 
 test('primitivos restilizados nao usam pesos fora de 400 e 700', () => {

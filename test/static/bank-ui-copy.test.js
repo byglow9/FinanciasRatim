@@ -41,13 +41,16 @@ test('bank.service le bankUpdatedAt e consentExpiresAt do Firestore', () => {
   assert.match(src, /data\.consentExpiresAt\?\.toDate\?\.\(\)/)
 })
 
-test('Home importa e renderiza BankStatusNotice, que liga a /configuracoes (D-08)', () => {
+test('Home importa e renderiza StaleNotice, que liga a /configuracoes#bancos (D-08)', () => {
   const page = code('src/pages/DashboardPage.tsx')
-  assert.match(page, /import \{ BankStatusNotice \} from/)
-  assert.match(page, /<BankStatusNotice\s*\/>/)
-  const notice = code('src/components/dashboard/BankStatusNotice.tsx')
-  assert.match(notice, /describeBankFreshness/)
-  assert.match(notice, /\/configuracoes/)
+  assert.match(page, /import \{ StaleNotice \} from/)
+  assert.match(page, /<StaleNotice/)
+  const notice = code('src/components/dashboard/StaleNotice.tsx')
+  assert.match(notice, /useBankFreshness/)
+  assert.match(notice, /\/configuracoes#bancos/)
+  const hook = code('src/hooks/useBankFreshness.ts')
+  assert.match(hook, /describeBankFreshness/)
+  assert.match(hook, /shouldSuppressVerdict/)
 })
 
 test('nenhuma tela, arquivo ou rota de revisao de importacoes existe (D-01)', () => {

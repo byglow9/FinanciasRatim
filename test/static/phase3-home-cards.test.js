@@ -151,8 +151,8 @@ test('LimitAlertNotice: so avisa, dispensa com 44px e abre o sino com varios avi
   ])
 })
 
-test('BankStatusNotice segue existindo ate o Plano 22 trocar a Home', () => {
-  assert.ok(fs.existsSync(path.join(ROOT, OLD_NOTICE)), 'BankStatusNotice.tsx foi apagado antes do Plano 22')
+test('BankStatusNotice foi removido pelo Plano 22: a Home usa StaleNotice', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, OLD_NOTICE)), 'BankStatusNotice.tsx deveria ter sido removido')
 })
 
 test('Cartoes da Home: escala tipografica, pesos, sem HTML bruto, emoji nem console', () => {

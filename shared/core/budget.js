@@ -115,8 +115,20 @@ import { limitState, limitsForCycle, normalizePersonConfig } from './limits.js'
  *   budgetCents: number,
  *   perDayCents: number,
  *   restPct: number,
+ *   rhythmLevel: RhythmLevel | null,
+ *   verdictSuppressed: boolean,
  *   counts: { ok: number, warn: number, over: number, total: number },
  * }} BudgetView
+ */
+
+/**
+ * Nivel do ritmo: 0 Folgado, 1 No ritmo, 2 Atencao, 3 Acima do ritmo, 4 Estourou.
+ * @typedef {0 | 1 | 2 | 3 | 4} RhythmLevel
+ */
+
+/**
+ * Cortes do ritmo em porcentagem do gasto esperado ate hoje (PR-19, D-07).
+ * @typedef {{ folgado: number, noRitmo: number, atencao: number }} RhythmCuts
  */
 
 const URGENCY = { over: 0, warn: 1, ok: 2 }
@@ -362,6 +374,50 @@ export function restPct({ safeCents, budgetCents }) {
 }
 
 /**
+ * Cortes do ritmo (PR-19): ate 75% do esperado e Folgado, ate 100% No ritmo, ate
+ * 115% Atencao e acima disso Acima do ritmo. Constante e parametro de `rhythm`
+ * para o dono ajustar depois do uso real sem mexer nas telas.
+ * @type {RhythmCuts}
+ */
+export const RHYTHM_CUTS = Object.freeze({ folgado: 75, noRitmo: 100, atencao: 115 })
+
+/**
+ * Ritmo do ciclo em 5 niveis (D-07). Estourou e o Pode gastar negativo. Os demais
+ * comparam o gasto real com o esperado ate hoje por multiplicacao cruzada de
+ * inteiros (gasto * dias do ciclo * 100 contra orcamento * dias decorridos *
+ * corte), sem divisao nem ponto flutuante. Sem folga no orcamento (renda menos
+ * contas menor ou igual a zero) e sem estouro devolve Atencao.
+ * @param {{
+ *   incomeCents: number,
+ *   fixedCents: number,
+ *   spentCents: number,
+ *   daysElapsed: number,
+ *   daysTotal: number,
+ *   cuts?: RhythmCuts,
+ * }} args
+ * @returns {RhythmLevel}
+ */
+export function rhythm({
+  incomeCents,
+  fixedCents,
+  spentCents,
+  daysElapsed,
+  daysTotal,
+  cuts = RHYTHM_CUTS,
+}) {
+  if (safeToSpend({ incomeCents, fixedCents, spentCents }) < 0) return 4
+  const budget = incomeCents - fixedCents
+  if (budget <= 0) return 2
+  const elapsed = Math.max(daysElapsed, 1)
+  const total = Math.max(daysTotal, 1)
+  const spent = spentCents * total * 100
+  if (spent <= budget * elapsed * cuts.folgado) return 0
+  if (spent <= budget * elapsed * cuts.noRitmo) return 1
+  if (spent <= budget * elapsed * cuts.atencao) return 2
+  return 3
+}
+
+/**
  * Composicao unica do numero do ciclo. Home, sheet, Central e alertas consomem
  * so isto. Lancamentos fora da janela do ciclo sao ignorados.
  * @param {{
@@ -372,6 +428,7 @@ export function restPct({ safeCents, budgetCents }) {
  *   bills: Bill[],
  *   payments: BillPayment[],
  *   categoryDefs: CategoryDef[],
+ *   suppressVerdict?: boolean,
  *   tz?: string,
  * }} args
  * @returns {BudgetView}
@@ -384,6 +441,7 @@ export function buildBudgetView({
   bills,
   payments,
   categoryDefs,
+  suppressVerdict = false,
   tz = DEFAULT_TZ,
 }) {
   const cfg = normalizePersonConfig(config)
@@ -416,6 +474,19 @@ export function buildBudgetView({
   })
   const budgetCents = income.effectiveCents - billsResult.totalCents
 
+  // O veredito (ritmo) so sai quando ha renda, o ciclo esta em andamento e o dado
+  // do banco nao esta velho; o numero absoluto continua valendo (T-03-18).
+  const rhythmLevel =
+    !isPast && income.hasIncome && !suppressVerdict
+      ? rhythm({
+          incomeCents: income.effectiveCents,
+          fixedCents: billsResult.totalCents,
+          spentCents: spend.totalCents,
+          daysElapsed,
+          daysTotal,
+        })
+      : null
+
   const counts = { ok: 0, warn: 0, over: 0, total: spend.rows.length }
   for (const row of spend.rows) counts[row.state] += 1
 
@@ -432,6 +503,8 @@ export function buildBudgetView({
     budgetCents,
     perDayCents: isPast ? 0 : perDayCents(safeCents, daysLeft),
     restPct: restPct({ safeCents, budgetCents }),
+    rhythmLevel,
+    verdictSuppressed: suppressVerdict === true,
     counts,
   }
 }

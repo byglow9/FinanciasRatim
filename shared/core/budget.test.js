@@ -9,6 +9,8 @@ import {
   safeToSpend,
   perDayCents,
   restPct,
+  RHYTHM_CUTS,
+  rhythm,
   buildBudgetView,
 } from './budget.js'
 import { cycleOf } from './cycle.js'
@@ -382,4 +384,142 @@ test('buildBudgetView: dado ausente nao quebra', () => {
   assert.equal(v.income.hasIncome, false)
   assert.equal(v.perDayCents, 0)
   assert.equal(v.restPct, 0)
+})
+
+// Ritmo: renda 3000, contas 1000 (orcamento 2000), 30 dias e 15 decorridos: esperado ate hoje 1000.
+const ritmo = (spentCents, extra = {}) =>
+  rhythm({
+    incomeCents: 300000,
+    fixedCents: 100000,
+    spentCents,
+    daysElapsed: 15,
+    daysTotal: 30,
+    ...extra,
+  })
+
+test('RHYTHM_CUTS: 75, 100 e 115 por cento', () => {
+  assert.deepEqual({ ...RHYTHM_CUTS }, { folgado: 75, noRitmo: 100, atencao: 115 })
+})
+
+test('rhythm: fronteiras exatas dos cortes', () => {
+  const tabela = [
+    [0, 0],
+    [70000, 0],
+    [75000, 0], // fronteira inclusiva
+    [75001, 1],
+    [100000, 1],
+    [100001, 2],
+    [115000, 2],
+    [115001, 3],
+    [200000, 3], // safe zero: ainda nao estourou
+    [200001, 4], // safe negativo
+  ]
+  for (const [gasto, nivel] of tabela) {
+    assert.equal(ritmo(gasto), nivel, `gasto ${gasto}`)
+  }
+})
+
+test('rhythm: sem folga no orcamento', () => {
+  const base = { daysElapsed: 15, daysTotal: 30 }
+  assert.equal(rhythm({ incomeCents: 100000, fixedCents: 100000, spentCents: 0, ...base }), 2)
+  assert.equal(rhythm({ incomeCents: 100000, fixedCents: 150000, spentCents: 0, ...base }), 4)
+})
+
+test('rhythm: primeiro e ultimo dia sem divisao por zero', () => {
+  const alto = rhythm({
+    incomeCents: 300000,
+    fixedCents: 100000,
+    spentCents: 100000,
+    daysElapsed: 1,
+    daysTotal: 30,
+  })
+  assert.equal(alto, 3)
+  const ultimo = rhythm({
+    incomeCents: 300000,
+    fixedCents: 100000,
+    spentCents: 200000,
+    daysElapsed: 30,
+    daysTotal: 30,
+  })
+  assert.equal(ultimo, 1)
+  // dias decorridos e total invalidos viram 1
+  const zero = rhythm({
+    incomeCents: 300000,
+    fixedCents: 100000,
+    spentCents: 0,
+    daysElapsed: 0,
+    daysTotal: 0,
+  })
+  assert.equal(zero, 0)
+})
+
+test('rhythm: cortes customizados mudam o nivel', () => {
+  const cuts = { folgado: 50, noRitmo: 100, atencao: 150 }
+  assert.equal(ritmo(75000), 0)
+  assert.equal(ritmo(75000, { cuts }), 1) // 75% esperado: acima de 50
+  assert.equal(ritmo(120000), 3)
+  assert.equal(ritmo(120000, { cuts }), 2) // 120%: ate 150
+  assert.equal(ritmo(150001, { cuts }), 3)
+})
+
+test('rhythm: valores no teto nao perdem precisao', () => {
+  const max = 99_999_999
+  const base = { incomeCents: max, fixedCents: 0, spentCents: max, daysTotal: 31 }
+  assert.equal(rhythm({ ...base, daysElapsed: 31 }), 1) // gasto igual ao orcamento no ultimo dia
+  assert.equal(rhythm({ ...base, daysElapsed: 30 }), 2) // 31/30 = 103%
+  assert.equal(rhythm({ ...base, daysElapsed: 27 }), 2) // 3100 <= 27 * 115 = 3105
+  assert.equal(rhythm({ ...base, daysElapsed: 26 }), 3) // 3100 > 26 * 115 = 2990
+})
+
+const viewWith = (extra = {}, config = { expectedIncomeCents: 600000 }, now) =>
+  buildBudgetView({
+    now: now ?? new Date('2026-11-17T15:00:00Z'),
+    cycle: CYCLE_NOV,
+    config,
+    transactions: [tx('saida', 1000, { categoryId: 'lazer' })],
+    bills: [{ id: 'aluguel', name: 'Aluguel', dueDay: 10, amountCents: 120000 }],
+    payments: [],
+    categoryDefs: DEFS,
+    ...extra,
+  })
+
+test('buildBudgetView: ritmo entra quando ha renda, ciclo em andamento e dado em dia', () => {
+  const v = viewWith()
+  // orcamento 4800, esperado ate hoje 4800*17/30 = 2720; gasto 1000 e 36%: Folgado
+  assert.equal(v.rhythmLevel, 0)
+  assert.equal(v.verdictSuppressed, false)
+})
+
+test('buildBudgetView: suppressVerdict zera o nivel e mantem os numeros', () => {
+  const livre = viewWith()
+  const sup = viewWith({ suppressVerdict: true })
+  assert.equal(sup.rhythmLevel, null)
+  assert.equal(sup.verdictSuppressed, true)
+  assert.equal(sup.safeCents, livre.safeCents)
+  assert.equal(sup.perDayCents, livre.perDayCents)
+  assert.equal(sup.restPct, livre.restPct)
+})
+
+test('buildBudgetView: sem renda ou em ciclo passado o nivel e nulo', () => {
+  const semRenda = viewWith({}, {})
+  assert.equal(semRenda.income.hasIncome, false)
+  assert.equal(semRenda.rhythmLevel, null)
+  const passado = viewWith({}, { expectedIncomeCents: 600000 }, new Date('2026-12-02T15:00:00Z'))
+  assert.equal(passado.isPast, true)
+  assert.equal(passado.rhythmLevel, null)
+})
+
+test('buildBudgetView: Pode gastar negativo da nivel Estourou', () => {
+  const v = buildBudgetView({
+    now: new Date('2026-11-17T15:00:00Z'),
+    cycle: CYCLE_NOV,
+    config: { expectedIncomeCents: 100000 },
+    transactions: [tx('saida', 1500, { categoryId: 'lazer' })],
+    bills: [],
+    payments: [],
+    categoryDefs: DEFS,
+  })
+  assert.equal(v.safeCents, -50000)
+  assert.equal(v.rhythmLevel, 4)
+  assert.equal(v.perDayCents, 0)
 })

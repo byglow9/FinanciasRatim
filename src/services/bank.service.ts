@@ -76,10 +76,12 @@ export function subscribeBankConnections(cb: (list: BankConnection[]) => void): 
   )
 }
 
-export const createConnectToken = (person: PersonType) =>
+// Banco novo: passa a pessoa. Reconectar um banco existente: passa { itemId } (o servidor
+// confere o dono e usa a pessoa do documento).
+export const createConnectToken = (target: PersonType | { itemId: string }) =>
   api<{ accessToken: string }>('/api/connect-token', {
     method: 'POST',
-    body: JSON.stringify({ person }),
+    body: typeof target === 'string' ? JSON.stringify({ person: target }) : JSON.stringify({ itemId: target.itemId }),
   })
 
 export const registerConnection = (person: PersonType, itemId: string) =>

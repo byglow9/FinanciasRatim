@@ -5,6 +5,7 @@ import { monthRange } from '../../shared/core/time.js'
 import { originGuard, requireOwner } from './auth.js'
 import {
   HANDLED_EVENTS,
+  ITEM_ID_RE,
   createSeenEvents,
   secretMatches,
   validateWebhookBody,
@@ -85,7 +86,23 @@ export function createApp({
   app.post(
     '/api/connect-token',
     handle(async (req, res) => {
-      const { person } = req.body ?? {}
+      const { person, itemId } = req.body ?? {}
+      if (itemId !== undefined) {
+        // Reconectar (REV-07): token para atualizar um item existente, so do dono.
+        if (typeof itemId !== 'string' || !ITEM_ID_RE.test(itemId)) {
+          return res.status(400).json({ error: 'Dados invalidos' })
+        }
+        const snap = await db.collection('bankConnections').doc(itemId).get()
+        if (!snap.exists) return res.status(404).json({ error: 'Conexao nao encontrada' })
+        const doc = snap.data()
+        // Dono vem do token do Firebase; documento sem dono tambem e barrado.
+        if (!doc.ownerId || doc.ownerId !== req.owner.hid) {
+          return res.status(403).json({ error: 'Sem acesso' })
+        }
+        // A pessoa e a do documento, nunca a do corpo.
+        const { accessToken } = await pluggy.createConnectToken(itemId, { clientUserId: doc.person })
+        return res.json({ accessToken })
+      }
       if (!PEOPLE.includes(person)) return res.status(400).json({ error: 'Pessoa invalida' })
       const { accessToken } = await pluggy.createConnectToken(undefined, { clientUserId: person })
       res.json({ accessToken })

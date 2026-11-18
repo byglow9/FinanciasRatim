@@ -169,7 +169,7 @@ test('IconPicker e um radiogroup de 6 colunas com os icones do nucleo e rotulos 
     'CATEGORY_ICONS',
     'grid-cols-6',
     'h-11 w-11',
-    'bg-primary text-primary-foreground',
+    'bg-action text-action-text',
     'ArrowRight',
     'ArrowDown',
     'DEFAULT_EVENT_CATEGORY_COLORS',

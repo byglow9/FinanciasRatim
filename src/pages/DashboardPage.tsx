@@ -22,7 +22,7 @@ import { formatMoney, perDayReais, plural, shortDate } from '@shared/core/format
 const NO_COUNTS = { ok: 0, warn: 0, over: 0, total: 0 }
 
 const LINK_BUTTON =
-  'mt-3 inline-flex h-12 items-center justify-center rounded-btn bg-primary px-4 text-base font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+  'mt-3 inline-flex h-12 items-center justify-center rounded-btn bg-action px-4 text-base font-bold text-action-text transition-colors hover:bg-action/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 /**
  * Home (D-19, D-24): o "Pode gastar" do perfil atual no arco, por dia, ritmo, atalhos e as

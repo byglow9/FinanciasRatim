@@ -79,7 +79,7 @@ test('DayPicker e um radiogroup acessivel de 1 a 31 em grade de 7 colunas', () =
     'aria-label="Dia do mês"',
     'grid-cols-7',
     'h-11 w-11',
-    'bg-primary text-primary-foreground',
+    'bg-action text-action-text',
     'ArrowRight',
     'ArrowLeft',
     'ArrowDown',

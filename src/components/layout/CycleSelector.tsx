@@ -129,7 +129,7 @@ export function CycleSelector() {
                 onClick={() => choose(option.index)}
                 className={cn(
                   'flex min-h-11 w-full items-center rounded-[14px] px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  selected ? 'bg-primary font-bold text-primary-foreground' : 'font-normal hover:bg-card'
+                  selected ? 'bg-action font-bold text-action-text' : 'font-normal hover:bg-card'
                 )}
               >
                 {option.label}

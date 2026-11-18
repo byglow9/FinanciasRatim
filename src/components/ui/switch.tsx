@@ -24,7 +24,7 @@ function Switch({ checked, onCheckedChange, id, disabled, ariaLabel }: SwitchPro
       <span
         className={cn(
           "relative inline-flex h-6 w-11 items-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-ring group-focus-visible:ring-offset-2",
-          checked ? "bg-primary" : "bg-track"
+          checked ? "bg-action" : "bg-track"
         )}
       >
         <span

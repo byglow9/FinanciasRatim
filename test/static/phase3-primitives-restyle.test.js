@@ -45,14 +45,18 @@ test('Card sem borda e sem sombra, com raio de cartao e titulo 16/700', () => {
 
 test('Button: alvos de 44px ou mais, raio do contrato e variantes circulares', () => {
   const src = code(`${UI}button.tsx`)
-  for (const token of ['rounded-btn', 'h-12', 'h-14', 'h-11', 'circle:', 'circleLg:', 'text-base font-bold']) {
+  for (const token of ['rounded-btn', 'h-12', 'h-14', 'h-11', 'circle:', 'circleLg:', 'iconSm:', 'text-base font-bold']) {
     assert.ok(src.includes(token), `Button sem ${token}`)
   }
-  assert.match(src, /bg-primary text-primary-foreground/)
-  // Nenhum tamanho interativo abaixo de 44px (h-11): h-9 e h-10 reprovam.
-  assert.doesNotMatch(src, /\bh-(8|9|10)\b/)
-  assert.doesNotMatch(src, /\bw-(8|9|10)\b/)
-  assert.doesNotMatch(src, /rounded-md/)
+  // Fundo e texto de acao por tokens com hex literal (nao dependem de hsl(var(--primary))).
+  assert.match(src, /bg-action text-action-text/)
+  // Nenhum tamanho interativo abaixo de 44px (h-11): h-9 e h-10 reprovam. O unico compacto e o
+  // iconSm (32px, so lista densa do celular), que tambem e o unico com rounded-md.
+  const semIconSm = src.split('\n').filter((l) => !l.includes('iconSm:')).join('\n')
+  assert.doesNotMatch(semIconSm, /\bh-(8|9|10)\b/)
+  assert.doesNotMatch(semIconSm, /\bw-(8|9|10)\b/)
+  assert.doesNotMatch(semIconSm, /rounded-md/)
+  assert.match(src, /iconSm:[^\n]*rounded-md/)
 })
 
 test('Badge: success e warning com tinta AA, nunca branco sobre verde ou amarelo', () => {

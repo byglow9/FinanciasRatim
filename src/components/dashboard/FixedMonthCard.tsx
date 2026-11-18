@@ -41,7 +41,7 @@ export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMon
           </p>
           <Link
             to="/contas-fixas"
-            className="mt-3 inline-flex h-11 min-w-[120px] items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="mt-3 inline-flex h-11 min-w-[120px] items-center justify-center rounded-xl bg-action px-4 text-base font-bold text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Nova conta fixa
           </Link>
@@ -69,7 +69,7 @@ export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMon
                     type="button"
                     disabled={readOnly}
                     onClick={() => onMarkPaid(item)}
-                    className="h-11 min-w-[120px] shrink-0 rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                    className="h-11 min-w-[120px] shrink-0 rounded-xl bg-action px-4 text-base font-bold text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                   >
                     Marcar pago
                   </button>

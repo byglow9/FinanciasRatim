@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-action text-action-text hover:bg-action/90",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-input bg-surface-2 hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-accent",
@@ -21,6 +21,9 @@ const buttonVariants = cva(
         sm: "h-11 rounded-btn px-3",
         lg: "h-14 rounded-btn px-8",
         icon: "h-11 w-11 rounded-btn",
+        // Compacto (32px) so em listas densas do celular. Raio dentro do tamanho (como `circle`):
+        // rounded-btn (16px) em 32px vira circulo e tailwind-merge nao o troca por rounded-md.
+        iconSm: "h-8 w-8 rounded-md p-0",
         circle: "h-11 w-11 rounded-full p-0",
         circleLg: "h-14 w-14 rounded-full p-0",
       },

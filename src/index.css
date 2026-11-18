@@ -38,6 +38,11 @@
   --color-warn-ink: hsl(var(--warn-ink));
   --color-danger-ink: hsl(var(--danger-ink));
 
+  /* Fundo e texto de acao em hex literal: espelham --primary/--primary-foreground
+     (UI-SPEC, cor de "Acao") para os botoes nao dependerem de hsl(var(...)) nem do nome "primary". */
+  --color-action: #14532d;
+  --color-action-text: #ffffff;
+
   --color-rhythm-0-bg: #bbf7d0;
   --color-rhythm-0-fg: #14532d;
   --color-rhythm-1-bg: #dcfce7;
@@ -58,6 +63,9 @@
 
 @layer base {
   :root {
+    /* Tema claro unico ate a Fase 5: impede o escurecimento automatico do navegador,
+       que pode inverter o fundo de acao e deixar o texto branco sobre fundo claro. */
+    color-scheme: light;
     --background: 40 52.9% 96.7%;
     --foreground: 60 5.9% 10%;
     --card: 42.9 33.3% 91.8%;

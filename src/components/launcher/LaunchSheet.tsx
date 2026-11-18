@@ -365,7 +365,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
         aria-disabled={cents <= 0 || saving ? true : undefined}
         aria-busy={saving || undefined}
         onClick={() => void submit()}
-        className="mt-3 h-14 w-full rounded-2xl bg-primary text-base font-bold text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:opacity-60"
+        className="mt-3 h-14 w-full rounded-2xl bg-action text-base font-bold text-action-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:opacity-60"
       >
         {ctaLabel}
       </button>

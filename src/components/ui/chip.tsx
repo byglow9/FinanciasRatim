@@ -16,7 +16,7 @@ interface ChipProps {
 const TONE: Record<ChipTone, string> = {
   neutral: "border border-border bg-surface-2 text-foreground",
   ok: "bg-[#dcfce7] text-ok-ink",
-  selected: "bg-primary text-primary-foreground",
+  selected: "bg-action text-action-text",
   muted: "text-muted-foreground",
 }
 

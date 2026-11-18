@@ -124,7 +124,7 @@ export function ProfileSwitcher() {
       >
         <span
           aria-hidden="true"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-action text-xs font-bold text-action-text"
         >
           {readOnly ? <Eye className="h-4 w-4" aria-hidden="true" /> : initial}
         </span>
@@ -192,7 +192,7 @@ function ProfileItem({
         <span className="block truncate text-base font-bold">{title}</span>
         <span className="block text-xs text-muted-foreground">{legend}</span>
       </span>
-      {checked && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
+      {checked && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-action" />}
     </button>
   )
 }

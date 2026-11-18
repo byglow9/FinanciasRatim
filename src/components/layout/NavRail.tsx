@@ -150,7 +150,7 @@ export function NavRail() {
                 'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors duration-150',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 active
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-action text-action-text'
                   : 'text-muted-foreground hover:bg-card'
               )}
             >

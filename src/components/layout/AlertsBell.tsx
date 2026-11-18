@@ -286,7 +286,7 @@ function LimitRow({
         <span
           role="img"
           aria-label="não lido"
-          className="h-2 w-2 shrink-0 rounded-full bg-primary"
+          className="h-2 w-2 shrink-0 rounded-full bg-action"
         />
       )}
     </button>

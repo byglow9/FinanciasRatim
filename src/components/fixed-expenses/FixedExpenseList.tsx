@@ -155,9 +155,9 @@ export function FixedExpenseList({
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Button
                     variant={isPaid ? 'default' : 'outline'}
-                    size="icon"
+                    size="iconSm"
                     className={cn(
-                      'shrink-0 h-8 w-8 transition-all duration-300',
+                      'shrink-0 transition-all duration-300',
                       isPaid && 'bg-green-600 hover:bg-green-700'
                     )}
                     onClick={(e) => {
@@ -199,16 +199,14 @@ export function FixedExpenseList({
                 <div className="flex gap-0.5">
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+                    size="iconSm"
                     onClick={() => onEdit(expense)}
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+                    size="iconSm"
                     onClick={() => handleDelete(expense.id)}
                     disabled={deletingId === expense.id}
                   >

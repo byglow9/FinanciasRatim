@@ -54,7 +54,7 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      className={`pointer-events-auto flex items-center gap-3 rounded-2xl bg-primary py-3 pl-4 pr-1 text-primary-foreground transition-opacity duration-200 anim-toast-in ${
+      className={`pointer-events-auto flex items-center gap-3 rounded-2xl bg-action py-3 pl-4 pr-1 text-action-text transition-opacity duration-200 anim-toast-in ${
         leaving ? "opacity-0" : "opacity-100"
       }`}
     >

@@ -247,7 +247,7 @@ export function LimitsList({
           </p>
           <Link
             to="/configuracoes#categorias"
-            className="mt-3 inline-flex h-12 items-center rounded-btn bg-primary px-4 text-base font-bold text-primary-foreground hover:bg-primary/90"
+            className="mt-3 inline-flex h-12 items-center rounded-btn bg-action px-4 text-base font-bold text-action-text hover:bg-action/90"
           >
             Definir limites
           </Link>

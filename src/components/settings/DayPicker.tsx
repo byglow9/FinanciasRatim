@@ -59,7 +59,7 @@ export function DayPicker({ value, onChange }: DayPickerProps) {
             onClick={() => onChange(day)}
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              selected ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground'
+              selected ? 'bg-action text-action-text' : 'bg-card text-foreground'
             )}
           >
             {day}

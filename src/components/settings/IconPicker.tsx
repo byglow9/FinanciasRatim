@@ -94,7 +94,7 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
             onClick={() => onChange(name)}
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-              selected ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground'
+              selected ? 'bg-action text-action-text' : 'bg-card text-foreground'
             )}
           >
             <Icon className="h-5 w-5" aria-hidden="true" />

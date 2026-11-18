@@ -1,36 +1,46 @@
-import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
-import type { AreaType, CategoryDef, Settings } from '@/types'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, type ReactNode } from 'react'
+import type { AreaType, CategoryDef, PersonConfig, PersonType, Settings } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
-import { getSettings, updateSettings } from '@/services/settings.service'
+import {
+  getSettings,
+  updateSettings,
+  updatePersonConfig as savePersonConfig,
+} from '@/services/settings.service'
 import { useAuth } from './AuthContext'
 import { activeCategoryNames, buildCategoryDefs, resolveCategoryId } from '@shared/core/categories.js'
-
-const THEME_CACHE_KEY = 'financias_theme'
+import { normalizePersonConfig } from '@shared/core/limits.js'
 
 interface AreaContextType {
   currentArea: AreaType
   setCurrentArea: (area: AreaType) => void
+  // Ultimo perfil de pessoa visto (o Porquinho nao conta): a Central e a Home leem dele.
+  lastPerson: PersonType
+  // Somente leitura derivado: perfil de pessoa diferente da pessoa do claim (so de interface, Fase 8 aplica nas regras).
+  readOnly: boolean
   settings: Settings
   updateTabNames: (tabNames: Settings['tabNames']) => Promise<void>
   categoryDefs: CategoryDef[]
   updateCategoryDefs: (defs: CategoryDef[]) => Promise<void>
+  personConfigFor: (person: PersonType) => PersonConfig
+  updatePersonConfig: (person: PersonType, config: PersonConfig) => Promise<void>
+  updateNotifications: (
+    partial: Partial<Pick<Settings, 'notificationsEnabled' | 'daysBeforeDueDate'>>
+  ) => Promise<void>
+  // Sem uso nesta fase: o tema escuro fica desligado ate a Fase 5 (PR-18).
   updateTheme: (theme: Settings['theme']) => Promise<void>
   loading: boolean
 }
 
 const AreaContext = createContext<AreaContextType | undefined>(undefined)
 
-function getCachedTheme(): Settings['theme'] {
-  return localStorage.getItem(THEME_CACHE_KEY) === 'dark' ? 'dark' : 'light'
-}
-
 export function AreaProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [currentArea, setCurrentArea] = useState<AreaType>(user?.person ?? 'ele')
+  const [currentArea, setAreaState] = useState<AreaType>(user?.person ?? 'ele')
+  const [lastPerson, setLastPerson] = useState<PersonType>(user?.person ?? 'ele')
   const [settings, setSettings] = useState<Settings>({
     id: 'default',
     ...DEFAULT_SETTINGS,
-    theme: getCachedTheme(),
+    theme: 'light',
   })
   const [loading, setLoading] = useState(true)
 
@@ -44,13 +54,23 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   const uid = user?.uid
   const person = user?.person
   useEffect(() => {
-    if (person) setCurrentArea(person)
+    if (person) {
+      setAreaState(person)
+      setLastPerson(person)
+    }
   }, [uid, person])
 
+  const setCurrentArea = useCallback((area: AreaType) => {
+    setAreaState(area)
+    if (area !== 'porquinho') setLastPerson(area)
+  }, [])
+
+  // Tema claro forcado ate a Fase 5 (PR-18): so garante que a classe escura nao esteja presente.
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', settings.theme === 'dark')
-    localStorage.setItem(THEME_CACHE_KEY, settings.theme)
-  }, [settings.theme])
+    document.documentElement.classList.remove('dark')
+  }, [])
+
+  const readOnly = !!person && currentArea !== 'porquinho' && currentArea !== person
 
   const loadSettings = async () => {
     try {
@@ -100,6 +120,44 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Normalizada uma vez por mudanca do no: a referencia estavel evita refazer consultas nos hooks.
+  const normalizedConfigs = useMemo<Record<PersonType, PersonConfig>>(
+    () => ({
+      ele: normalizePersonConfig(settings.personConfig?.ele),
+      ela: normalizePersonConfig(settings.personConfig?.ela),
+    }),
+    [settings.personConfig]
+  )
+  const personConfigFor = useCallback(
+    (who: PersonType): PersonConfig => normalizedConfigs[who],
+    [normalizedConfigs]
+  )
+
+  const updatePersonConfig = async (who: PersonType, config: PersonConfig) => {
+    try {
+      await savePersonConfig(who, config)
+      setSettings(prev => ({
+        ...prev,
+        personConfig: { ...prev.personConfig, [who]: config },
+      }))
+    } catch (error) {
+      console.error('Error updating person config')
+      throw error
+    }
+  }
+
+  const updateNotifications = async (
+    partial: Partial<Pick<Settings, 'notificationsEnabled' | 'daysBeforeDueDate'>>
+  ) => {
+    try {
+      await updateSettings(partial)
+      setSettings(prev => ({ ...prev, ...partial }))
+    } catch (error) {
+      console.error('Error updating notifications')
+      throw error
+    }
+  }
+
   const updateTheme = async (theme: Settings['theme']) => {
     try {
       await updateSettings({ theme })
@@ -111,7 +169,23 @@ export function AreaProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AreaContext.Provider value={{ currentArea, setCurrentArea, settings, updateTabNames, categoryDefs, updateCategoryDefs, updateTheme, loading }}>
+    <AreaContext.Provider
+      value={{
+        currentArea,
+        setCurrentArea,
+        lastPerson,
+        readOnly,
+        settings,
+        updateTabNames,
+        categoryDefs,
+        updateCategoryDefs,
+        personConfigFor,
+        updatePersonConfig,
+        updateNotifications,
+        updateTheme,
+        loading,
+      }}
+    >
       {children}
     </AreaContext.Provider>
   )

@@ -164,7 +164,7 @@ test('ONLY referencia services que existem e a selecao nao e vazia', () => {
   assert.ok(selected.length > 0, 'nenhum service selecionado')
   for (const name of selected) assert.ok(all.includes(name), `service inexistente: ${name}`)
   if (!only) {
-    assert.equal(all.length, 10, 'esperados 10 services')
+    assert.equal(all.length, 11, 'esperados 11 services')
   }
 })
 

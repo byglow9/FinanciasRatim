@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AreaProvider } from '@/contexts/AreaContext'
+import { CycleProvider } from '@/contexts/CycleContext'
+import { ToastProvider } from '@/components/ui/toast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -34,15 +36,19 @@ function AnimatedRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AreaProvider>
-          <ProtectedRoute>
-            <MainLayout>
-              <AnimatedRoutes />
-            </MainLayout>
-          </ProtectedRoute>
-        </AreaProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AreaProvider>
+            <ProtectedRoute>
+              <CycleProvider>
+                <MainLayout>
+                  <AnimatedRoutes />
+                </MainLayout>
+              </CycleProvider>
+            </ProtectedRoute>
+          </AreaProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }

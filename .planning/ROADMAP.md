@@ -184,6 +184,24 @@ Plans:
 
 - [x] 03-23-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
+### Phase 03.1: Redesign das abas no estilo da Home (UX mobile): Transações, Calendário, Contas Fixas, Relatórios, Metas, Porquinho, Casal, Login e dock (INSERTED)
+
+**Goal:** Todas as abas do app (dock, Transações, Calendário, Contas Fixas, Casal, Relatórios, Metas, Porquinho e Login) têm o visual e a usabilidade da Home no celular, com alvos de toque de 44px, sem rolagem horizontal em 360px e com o recorte exato do ciclo
+**Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-07, UX-08, UX-09
+**Depends on:** Phase 3
+**Success Criteria** (what must be TRUE):
+  1. O dock não tem fade de borda, usa um só verde e deixa só o próximo ícone da direita parcialmente visível
+  2. Transações, Calendário, Contas Fixas e Casal seguem os sketches aprovados 009, 010, 011 e 013 (mês que recolhe, mapa de calor, mini post-it no canto, categorias em ordem fixa, caixa quadrada de marcar, mistura A+B do Casal)
+  3. Marcar uma conta como paga nunca muda a ordem das categorias e não mostra aviso de desfazer
+  4. Relatórios, Metas, Porquinho e Login só são implementados depois de o dono escolher o layout em sketch
+  5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
+  6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 03.1 to break down)
+
 ### Phase 4: Mascote Vintém
 
 **Goal:** O usuário vê o Vintém, um porquinho-cofre original, reagindo ao ritmo e ao uso dos limites, com falas próprias em português no tom que ele escolheu

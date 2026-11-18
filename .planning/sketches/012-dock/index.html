@@ -1,0 +1,65 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css"><link rel="stylesheet" href="../themes/v31.css"><link rel="stylesheet" href="../themes/dock.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><title>012 Dock</title>
+<style>
+.phone{height:800px}
+.page{height:100%;overflow-y:auto;padding:16px 16px 120px;scrollbar-width:none}.page::-webkit-scrollbar{display:none}
+/* ANTES: o dock atual do app (fade de 24px na borda + ativo verde escuro + FAB verde vivo) */
+.dk-old nav{-webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%)}
+.dk-old .it.on{background:#14532d;color:#fff}
+.dk-old .fab{background:#16a34a;box-shadow:0 8px 30px rgba(40,30,0,.16)}
+.dk-old .it{width:48px;height:48px}
+.row3{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab active" data-k="old">Antes (atual)</button>
+<button class="variant-tab" data-k="a">A: Calmo, ativo em tinta</button>
+<button class="variant-tab" data-k="b">B: Ativo com rótulo</button>
+<button class="variant-tab" data-k="c">C: Pílula escura</button></div>
+<div class="phone"><div class="page">
+  <div class="top"><h1>Contas fixas</h1><button class="round act" aria-label="Nova conta"><i data-lucide="plus"></i></button></div>
+  <div class="card"><div class="muted small b" style="font-weight:700">A pagar este mês</div><div class="big" style="font-size:40px">R$ 1.026,10</div><div class="bar" style="margin-top:10px"><i style="width:62%"></i></div></div>
+  <div class="card"><div class="row sp"><b>Condomínio</b><b>R$ 380,00</b></div></div>
+  <div class="card"><div class="row sp"><b>Energia</b><b>R$ 142,00</b></div></div>
+  <div class="card"><div class="row sp"><b>Água</b><b>R$ 78,40</b></div></div>
+  <div class="card"><div class="row sp"><b>Celular</b><b>R$ 59,90</b></div></div>
+  <div class="card"><div class="row sp"><b>Academia</b><b>R$ 89,90</b></div></div>
+  <div class="card"><div class="row sp"><b>Seguro do carro</b><b>R$ 210,00</b></div></div>
+</div><div id="dockhost"></div></div>
+<div class="note" id="vnote"></div><div id="selftest"></div>
+<div id="sketch-tools">tema: <select id="themesel" onchange="setTheme(this.value)"><option>moeda</option><option>brasa</option><option>noite</option></select></div>
+<script src="../themes/sketch.js"></script><script src="../themes/dock.js"></script>
+<script>
+(function(){'use strict';
+var errors=[];window.addEventListener('error',function(e){errors.push(String(e.message))});
+var N={old:'Como está hoje: o fade de 24px corta o ícone da borda e há dois verdes diferentes (ativo escuro e botão + vivo).',
+a:'Sem fade: o último ícone aparece cortado de propósito (indica rolagem) e o dock usa um verde só. Ativo em tinta suave com ponto, fundo branco, sombra leve. Mais calmo e moderno.',
+b:'O destino ativo abre com o nome (o usuário nunca fica sem saber onde está). Os outros ficam só ícone. Um verde só, sem fade.',
+c:'Pílula escura (como a referência de preto como ação), ativo claro. Mais contraste e mais "marca"; o + fica verde vivo.'};
+var cur='old',activeIdx=3;
+function show(k){cur=k;var h=document.getElementById('dockhost');buildDock(h,k==='old'?'a':k,activeIdx,function(){});if(k==='old')h.classList.add('dk-old');
+ document.querySelectorAll('.variant-tab').forEach(function(b){b.classList.toggle('active',b.dataset.k===k)});document.getElementById('vnote').textContent=N[k]}
+document.querySelectorAll('.variant-tab').forEach(function(b){b.addEventListener('click',function(){show(b.dataset.k)})});
+document.getElementById('dockhost').addEventListener('dockgo',function(e){activeIdx=e.detail});
+var q=/[?&]k=(old|a|b|c)/.exec(location.search);show(q?q[1]:'old');lucide.createIcons();
+if(/[?&]test/.test(location.search)){var R=[];function ok(n,c,x){R.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ ['old','a','b','c'].forEach(function(k){try{show(k);var h=document.getElementById('dockhost'),nav=h.querySelector('nav'),T='['+k+'] ';
+  ok(T+'8 destinos + FAB',h.querySelectorAll('.it').length===8&&!!h.querySelector('.fab'));
+  ok(T+'todos os ícones viraram SVG',h.querySelectorAll('svg').length===9,h.querySelectorAll('svg').length);
+  var m=getComputedStyle(nav).webkitMaskImage||getComputedStyle(nav).maskImage;var hasMask=m&&m!=='none';
+  ok(T+(k==='old'?'(referência) tem máscara de fade':'sem máscara de fade'),k==='old'?hasMask:!hasMask,m);
+  var its=[].slice.call(h.querySelectorAll('.it')),minH=Math.min.apply(null,its.map(function(i){return i.getBoundingClientRect().height}));ok(T+'alvos >= 44px de altura (menor '+Math.round(minH)+')',minH>=44);
+  ok(T+'FAB >= 44px',h.querySelector('.fab').getBoundingClientRect().width>=44);
+  ok(T+'rola na horizontal (scrollWidth>clientWidth)',nav.scrollWidth>nav.clientWidth);
+  ok(T+'item ativo inicial visível',(function(){var a=nav.querySelector('.on').getBoundingClientRect(),n=nav.getBoundingClientRect();return a.left>=n.left-1&&a.right<=n.right+1})());
+  var last=its[7];last.click();ok(T+'clicar no último ativa só ele',h.querySelectorAll('.it.on').length===1&&last.classList.contains('on')&&last.getAttribute('aria-current')==='page');
+  var phone=document.querySelector('.phone').getBoundingClientRect(),hh=h.getBoundingClientRect();ok(T+'dock dentro da tela',hh.left>=phone.left&&hh.right<=phone.right+1&&hh.bottom<=phone.bottom);
+  if(k!=='old'){var on=nav.querySelector('.on'),bg=getComputedStyle(h.querySelector('.fab')).backgroundColor;
+   if(k!=='c'){ok(T+'um verde só: FAB = #14532d',bg==='rgb(20, 83, 45)',bg)}}
+  if(k==='b'){var onw=nav.querySelector('.on').getBoundingClientRect().width;ok(T+'ativo mostra rótulo (largura '+Math.round(onw)+')',onw>80)}
+ }catch(err){ok('['+k+'] EXCEÇÃO',false,err.message)}});
+ ok('sem erros de JS',errors.length===0,errors.join('|'));var f=R.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ document.getElementById('selftest').textContent='TOTAL '+R.length+' | FALHAS '+f+'\n'+R.join('\n')}
+})();
+</script></body></html>

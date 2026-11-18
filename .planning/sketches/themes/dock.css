@@ -1,0 +1,20 @@
+/* Dock da Fase 3.1: sem fade de borda, uma cor de acao so (#14532d) e FAB da mesma familia. */
+.dk{position:absolute;left:12px;right:12px;bottom:14px;display:flex;align-items:center;gap:8px;z-index:20}
+.dk nav{flex:1;min-width:0;display:flex;gap:8px;padding:6px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:6px;scrollbar-width:none;border-radius:999px;background:#fff;border:1px solid var(--color-border);box-shadow:0 6px 20px rgba(40,30,0,.10)}
+.dk nav::-webkit-scrollbar{display:none}
+.dk .it{flex:none;width:46px;height:46px;border-radius:999px;border:0;background:none;display:grid;place-items:center;color:var(--color-text-muted);cursor:pointer;scroll-snap-align:start;position:relative;transition:background .15s,color .15s}
+.dk .it svg{width:22px;height:22px}
+.dk .it:focus-visible,.dk .fab:focus-visible{outline:2px solid #14532d;outline-offset:2px}
+.dk .lbl{display:none}
+.dk .fab{flex:none;width:56px;height:56px;border-radius:50%;border:0;background:#14532d;color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(20,83,45,.35);cursor:pointer}
+.dk .fab svg{width:26px;height:26px}
+/* A: calmo, ativo em tinta suave com ponto */
+.dk-a .it.on{background:rgba(20,83,45,.10);color:#14532d}
+.dk-a .it.on::after{content:'';position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#14532d}
+/* B: o ativo abre com rotulo */
+.dk-b .it.on{width:auto;padding:0 16px 0 14px;background:#14532d;color:#fff;display:flex;align-items:center}
+.dk-b .it.on .lbl{display:inline;font:700 13px var(--font-sans);margin-left:8px;white-space:nowrap}
+/* C: pilula escura, ativo claro */
+.dk-c nav{background:#1b1b18;border-color:#1b1b18;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.dk-c .it{color:#b9b5a8}.dk-c .it.on{background:#f1ede3;color:#1b1b18}
+.dk-c .fab{background:#16a34a;box-shadow:0 6px 18px rgba(22,163,74,.4)}

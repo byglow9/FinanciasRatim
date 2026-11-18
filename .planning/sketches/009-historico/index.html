@@ -1,0 +1,81 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css"><link rel="stylesheet" href="../themes/v31.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><title>009 Histórico</title>
+<style>
+.hero{text-align:center;padding:6px 0 2px}.hero .big{font-size:44px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.pair .card{margin:0;padding:12px 14px}
+.srch{display:flex;align-items:center;gap:10px;background:var(--color-surface);border-radius:999px;height:48px;padding:0 16px;color:var(--color-text-muted);font-weight:600;font-size:14px}
+.sticky{position:sticky;top:-16px;background:var(--color-bg);margin:0 -16px;padding:10px 16px 6px;z-index:5}
+.dsum{font:700 12px var(--font-num);letter-spacing:0;text-transform:none}
+.swipe{position:relative;overflow:hidden;border-radius:0}
+.swipe .del{position:absolute;right:0;top:0;bottom:0;width:84px;background:var(--color-danger);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
+.swipe .tx{position:relative;background:var(--color-surface-2);transform:translateX(-84px)}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab active" onclick="showVariant('a',this)">A: Resumo herói + chips</button>
+<button class="variant-tab" onclick="showVariant('b',this)">B: Lista primeiro, resumo recolhível</button>
+<button class="variant-tab" onclick="showVariant('c',this)">C: Resumo em trilho + deslizar para apagar</button></div>
+
+<!-- ================= A ================= -->
+<div id="variant-a" class="variant"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Transações</h1><button class="round act" aria-label="Nova transação"><i data-lucide="plus"></i></button></div>
+  <div class="hero"><div class="muted small" style="font-weight:600">Saldo do ciclo</div><div class="big">R$ 1.284,50</div>
+    <div class="muted small">Entrou R$ 5.200,00 · saiu R$ 3.915,50</div></div>
+  <div class="split" style="margin-top:10px"><i style="width:75%;background:var(--color-primary)"></i></div>
+  <div class="row sp small muted" style="margin-top:6px"><span>75% da renda gasta</span><span>Saldo total R$ 8.940,10</span></div>
+  <div class="chips" style="margin-top:16px"><button class="fc on">Tudo</button><button class="fc"><i data-lucide="arrow-down-left" style="width:16px;height:16px"></i>Saídas</button><button class="fc"><i data-lucide="arrow-up-right" style="width:16px;height:16px"></i>Entradas</button><button class="fc"><i data-lucide="tags" style="width:16px;height:16px"></i>Categoria</button></div>
+  <div id="list-a"></div>
+</div>
+<div class="dock" id="dock-a"></div>
+<div class="sheet2" id="sh-a" onclick="this.style.display='none'"><div class="in" onclick="event.stopPropagation()"><div class="grab"></div>
+  <div class="row"><div class="ico"><i data-lucide="shopping-cart"></i></div><div><b>Mercado Pão de Açúcar</b><div class="muted small">Hoje, 18:42 · Mercado</div></div><b class="big" style="margin-left:auto;font-size:20px">R$ 186,30</b></div>
+  <div class="act-row"><i data-lucide="pencil"></i>Editar</div>
+  <div class="act-row" style="color:var(--color-danger)"><i data-lucide="trash-2"></i>Apagar</div></div></div>
+</div><div class="note">Toque numa linha abre o sheet com Editar e Apagar (alvos de 56px, substitui os dois ícones minúsculos por linha). O resumo vira uma frase e uma barra; Saldo total fica numa linha discreta.</div></div>
+
+<!-- ================= B ================= -->
+<div id="variant-b" class="variant" style="display:none"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Transações</h1><button class="round act" aria-label="Nova transação"><i data-lucide="plus"></i></button></div>
+  <div class="card" style="margin-top:12px;padding:14px" onclick="document.getElementById('more-b').classList.toggle('open')">
+    <div class="row sp"><div class="kpi"><small>Entradas</small><b style="color:#166534">R$ 5.200</b></div><div class="kpi"><small>Saídas</small><b>R$ 3.915</b></div><div class="kpi" style="text-align:right"><small>Saldo</small><b>R$ 1.284</b></div></div>
+    <div id="more-b" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)" class="row sp small"><span class="muted">Saldo total acumulado</span><b>R$ 8.940,10</b></div>
+    <div class="row small muted" style="justify-content:center;margin-top:8px;gap:4px">Detalhes <i data-lucide="chevron-down" style="width:14px;height:14px"></i></div></div>
+  <div class="sticky"><div class="srch"><i data-lucide="search"></i>Buscar transação</div>
+    <div class="chips" style="margin-top:10px"><button class="fc on">Tudo</button><button class="fc">Saídas</button><button class="fc">Entradas</button><button class="fc">Mercado</button><button class="fc">Transporte</button><button class="fc">Lazer</button></div></div>
+  <div id="list-b"></div>
+</div><div class="dock" id="dock-b"></div></div>
+<div class="note">Foco em achar e conferir: três números numa linha, busca e filtros fixos no topo ao rolar, total de cada dia no cabeçalho do grupo. "Detalhes" abre o saldo acumulado.</div></div>
+
+<!-- ================= C ================= -->
+<div id="variant-c" class="variant" style="display:none"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Transações</h1><button class="round act" aria-label="Nova transação"><i data-lucide="plus"></i></button></div>
+  <div class="chips" style="margin-top:14px;gap:10px">
+    <div class="card" style="margin:0;min-width:150px;padding:14px"><div class="row" style="gap:8px"><i data-lucide="arrow-up-right" style="color:#166534"></i><span class="muted small" style="font-weight:600">Entradas</span></div><div class="big" style="font-size:24px;margin-top:6px">R$ 5.200</div></div>
+    <div class="card" style="margin:0;min-width:150px;padding:14px"><div class="row" style="gap:8px"><i data-lucide="arrow-down-left" style="color:var(--color-danger)"></i><span class="muted small" style="font-weight:600">Saídas</span></div><div class="big" style="font-size:24px;margin-top:6px">R$ 3.915</div></div>
+    <div class="card" style="margin:0;min-width:150px;padding:14px;background:var(--color-action);color:var(--color-action-text)"><div class="row" style="gap:8px"><i data-lucide="wallet"></i><span class="small" style="font-weight:600;opacity:.85">Saldo do ciclo</span></div><div class="big" style="font-size:24px;margin-top:6px">R$ 1.284</div></div>
+    <div class="card" style="margin:0;min-width:150px;padding:14px"><div class="row" style="gap:8px"><i data-lucide="landmark"></i><span class="muted small" style="font-weight:600">Saldo total</span></div><div class="big" style="font-size:24px;margin-top:6px">R$ 8.940</div></div>
+  </div>
+  <div class="seg" style="margin-top:14px"><button class="on">Tudo</button><button>Saídas</button><button>Entradas</button></div>
+  <div class="note" style="margin:8px 2px 0;color:var(--color-text-muted)">Deslize a linha para a esquerda para apagar. Toque para editar.</div>
+  <div id="list-c"></div>
+</div><div class="dock" id="dock-c"></div></div>
+<div class="note">Resumo em trilho horizontal (quatro métricas sem espremer em 2x2), alternador segmentado no lugar de chips, e gesto de deslizar para apagar. A lista começa mais alto na tela.</div></div>
+
+<div id="sketch-tools">tema: <select id="themesel" onchange="setTheme(this.value)"><option>moeda</option><option>brasa</option><option>noite</option></select></div>
+<script src="../themes/sketch.js"></script>
+<script>
+var D=[["Hoje",[["shopping-cart","Mercado Pão de Açúcar","Mercado · Ele",-186.30],["fuel","Posto Shell","Transporte · Ela",-210.00]]],
+["Ontem",[["arrow-up-right","Salário","Renda · Ele",5200.00],["utensils","Restaurante Fogo","Alimentação · Ela",-94.50],["pill","Farmácia","Saúde · Ele",-58.90]]],
+["Sexta, 14 de novembro",[["film","Cinema","Lazer · Ela",-72.00],["car","Uber","Transporte · Ele",-31.40]]]];
+var brl=function(v){return (v<0?'-':'+')+' R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2})};
+function row(t,swipe){var h='<div class="tx"><div class="ic"><i data-lucide="'+t[0]+'"></i></div><div class="m"><b>'+t[1]+'</b><span>'+t[2]+'</span></div><div class="v '+(t[3]>0?'in':'out')+'">'+brl(t[3])+'</div></div>';return swipe?'<div class="swipe"><div class="del"><i data-lucide="trash-2"></i></div>'+h+'</div>':h}
+function render(id,opts){var o='';D.forEach(function(g){var sum=g[1].reduce(function(a,t){return a+t[3]},0);o+='<div class="day"><span>'+g[0]+'</span>'+(opts.sum?'<span class="dsum">'+brl(sum)+'</span>':'')+'</div><div class="group"'+(opts.sheet?' onclick="document.getElementById(\'sh-a\').style.display=\'block\'"':'')+'>'+g[1].map(function(t){return row(t,opts.swipe)}).join('')+'</div>'});document.getElementById(id).innerHTML=o}
+render('list-a',{sheet:1});render('list-b',{sum:1});render('list-c',{swipe:1});
+['a','b','c'].forEach(function(v){document.getElementById('dock-'+v).innerHTML='<button><i data-lucide="home"></i></button><button class="on"><i data-lucide="list"></i></button><button><i data-lucide="calendar"></i></button><button><i data-lucide="receipt"></i></button><button><i data-lucide="target"></i></button><button><i data-lucide="bar-chart-3"></i></button><button><i data-lucide="heart"></i></button><button><i data-lucide="piggy-bank"></i></button>'});
+document.getElementById('more-b').style.display='none';
+document.getElementById('more-b').classList.add('x');
+var s=document.createElement('style');s.textContent='#more-b.open{display:flex!important}';document.head.appendChild(s);
+lucide.createIcons();
+</script></body></html>

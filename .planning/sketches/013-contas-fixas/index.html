@@ -1,0 +1,217 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css"><link rel="stylesheet" href="../themes/v31.css"><link rel="stylesheet" href="../themes/dock.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><title>013 Contas fixas</title>
+<style>
+.phone{height:800px}
+.page{height:100%;overflow-y:auto;padding:16px 16px 120px;scrollbar-width:none;position:relative}.page::-webkit-scrollbar{display:none}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.kpi3{background:var(--color-surface);border-radius:18px;padding:10px 12px;min-width:0}
+.kpi3 small{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--color-text-muted)}.kpi3 small svg{width:13px;height:13px}
+.kpi3 b{display:block;font:800 16px var(--font-num);letter-spacing:-.02em;margin-top:2px;white-space:nowrap}
+.hero{background:var(--color-surface);border-radius:var(--radius-card);padding:16px;margin-top:12px}
+.hero .big{font-size:38px}
+.prog{height:10px;border-radius:99px;background:var(--color-track);overflow:hidden;margin-top:12px}.prog i{display:block;height:100%;border-radius:99px;background:var(--color-primary);transition:width .35s}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-muted)}
+.sec button{border:0;background:none;font:700 12px var(--font-sans);color:var(--color-text-muted);height:44px;padding:0 4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0}
+.sec .cnt{display:inline-block;min-width:20px;text-align:center;border-radius:99px;background:var(--color-surface);padding:1px 7px;margin-left:6px;font-size:11px}
+.bill{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:18px;padding:6px 12px 6px 6px;margin-bottom:8px}
+.bill.od{background:#fef2f2;border-color:#fecaca}.bill.soon{background:#fff7ed;border-color:#fed7aa}
+.bill.paid .nm{text-decoration:line-through;opacity:.7}.bill.paid .binfo{opacity:.8}
+.chk{width:44px;height:44px;border:0;background:none;padding:0;display:grid;place-items:center;cursor:pointer;flex:none}
+.bx{width:28px;height:28px;border-radius:8px;border:2px solid #b9b2a0;background:#fff;display:grid;place-items:center;color:transparent;transition:all .15s}
+.bx svg{width:18px;height:18px}.chk:hover .bx{border-color:#14532d}.chk:focus-visible .bx{outline:2px solid #14532d;outline-offset:2px}
+.chk[aria-pressed="true"] .bx{background:#14532d;border-color:#14532d;color:#fff}
+.binfo{display:flex;align-items:center;gap:10px;min-height:48px;border:0;background:none;padding:0;text-align:left;cursor:pointer;font-family:inherit;color:inherit;width:100%;min-width:0}
+.binfo .ic{width:36px;height:36px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center;flex:none}.binfo .ic svg{width:17px;height:17px}
+.binfo .m{flex:1;min-width:0}.binfo .nm{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.binfo .sb{display:block;font-size:12px;color:var(--color-text-muted);font-weight:600}.od .sb{color:#991b1b}.soon .sb{color:#9a3412}
+.binfo .v{font:800 15px var(--font-num);white-space:nowrap}
+.tl{position:relative;margin-top:12px}
+.tl .d{display:grid;grid-template-columns:46px 1fr;gap:8px;position:relative}
+.tl .dn{text-align:center;padding-top:10px;font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;position:relative}
+.tl .dn b{display:block;font:800 20px var(--font-num);color:var(--color-text)}
+.tl .d::before{content:'';position:absolute;left:22px;top:0;bottom:-8px;width:2px;background:var(--color-track)}
+.tl .d.todaydiv{align-items:center;margin:2px 0 10px}.tl .d.todaydiv::before{display:none}
+.todaymk{display:flex;align-items:center;gap:8px;grid-column:1/3;font-size:11px;font-weight:800;color:var(--color-primary);text-transform:uppercase;letter-spacing:.05em}.todaymk::before,.todaymk::after{content:'';height:2px;background:var(--color-primary);opacity:.35;flex:1;border-radius:2px}
+.cat{background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-card);padding:4px 12px 4px;margin-top:12px}
+.cat .hd{display:flex;align-items:center;gap:10px;padding:10px 0}.cat .hd .ic{width:36px;height:36px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center;flex:none}.cat .hd .ic svg{width:17px;height:17px}
+.cat .hd b{font-size:15px}.cat .hd small{display:block;font-size:12px;color:var(--color-text-muted);font-weight:600}.cat .hd .tot{margin-left:auto;font:800 15px var(--font-num)}
+.cat .bill{border-radius:14px;margin-bottom:6px;background:var(--color-bg)}.cat .bill.od{background:#fef2f2}.cat .bill.soon{background:#fff7ed}
+.cat .mini{height:5px;border-radius:9px;background:var(--color-track);overflow:hidden;margin:0 0 8px}.cat .mini i{display:block;height:100%;background:var(--color-primary)}
+.empty{text-align:center;padding:28px 8px;color:var(--color-text-muted);font-size:14px}
+.empty button{margin-top:10px;height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--color-action);color:var(--color-action-text);font:700 14px var(--font-sans);cursor:pointer}
+.sheetbg{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:50;display:flex;align-items:flex-end}
+.sheetin{width:100%;background:var(--color-bg);border-radius:28px 28px 0 0;padding:10px 16px 22px;max-height:92%;overflow:auto}
+.fld{margin-top:12px}.fld label{display:block;font-size:12px;font-weight:700;color:var(--color-text-muted);margin-bottom:4px}
+.fld input{width:100%;height:50px;border-radius:16px;border:1px solid var(--color-border);background:var(--color-surface-2);padding:0 16px;font:600 16px var(--font-sans);color:var(--color-text)}
+.fld input[aria-invalid="true"]{border-color:#dc2626}.err{color:#b91c1c;font-size:12px;font-weight:600;margin-top:4px;min-height:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.act-row{display:flex;align-items:center;gap:12px;height:56px;border-radius:16px;padding:0 14px;font:700 15px var(--font-sans);cursor:pointer;background:var(--color-surface);margin-top:8px;border:0;width:100%;color:var(--color-text)}
+.act-row.dg{color:#b91c1c}
+.row2{display:flex;gap:8px;margin-top:14px}.row2 button{flex:1;height:52px;border-radius:16px;border:0;font:700 15px var(--font-sans);cursor:pointer}
+.btn-p{background:var(--color-action);color:var(--color-action-text)}.btn-s{background:var(--color-surface);color:var(--color-text)}.btn-d{background:#b91c1c;color:#fff}
+.toast{position:absolute;left:16px;right:16px;top:12px;background:var(--color-action);color:var(--color-action-text);border-radius:16px;padding:6px 8px 6px 14px;font-size:13px;font-weight:700;z-index:60;display:flex;align-items:center;gap:8px;min-height:48px}
+.toast button{margin-left:auto;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;height:36px;padding:0 12px;font:700 13px var(--font-sans);cursor:pointer}
+#selftest{white-space:pre-wrap;font:11px monospace;max-width:420px;margin:8px auto;color:#333}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab" data-v="a">A: Por urgência</button>
+<button class="variant-tab" data-v="b">B: Linha do tempo do mês</button>
+<button class="variant-tab active" data-v="c">C: Por categoria + filtro (escolhida)</button></div>
+<div class="phone"><div id="app" style="height:100%"></div><div id="dockhost"></div></div>
+<div class="note" id="vnote"></div><div id="selftest"></div>
+<div id="sketch-tools">tema: <select id="themesel" onchange="setTheme(this.value)"><option>moeda</option><option>brasa</option><option>noite</option></select></div>
+<script src="../themes/sketch.js"></script><script src="../themes/dock.js"></script>
+<script>
+(function(){
+'use strict';
+var errors=[];window.addEventListener('error',function(e){errors.push(String(e.message))});
+var TODAY=18;
+var CATS={Moradia:'home',Transporte:'car',Lazer:'clapperboard',Saúde:'heart-pulse',Contas:'zap',Outros:'receipt'};
+var NOTES={a:'Lista por urgência: o que já venceu e o que vence em até 3 dias sobe para o topo (mesma regra do app). Pagas ficam recolhidas. A caixa quadrada marca como paga e, para desfazer, basta tocar de novo.',
+b:'Linha do tempo do mês na ordem de vencimento, com um marcador "Hoje" separando o que já passou do que vem. Boa para ver o mês inteiro como uma sequência.',
+c:'ESCOLHIDA. Categorias em ordem fixa (nunca mudam de lugar ao marcar paga), com subtotal e barra de progresso por grupo, e filtro Todas / Pendentes / Pagas. Boa para saber quanto de cada tipo de gasto fixo ainda falta pagar.'};
+var DEFAULT=[{id:'b1',name:'Aluguel',amount:1200,day:5,cat:'Moradia',paid:true},{id:'b2',name:'Internet',amount:99.9,day:10,cat:'Contas',paid:true},{id:'b3',name:'Streaming',amount:44.9,day:12,cat:'Lazer',paid:true},
+ {id:'b4',name:'Seguro do carro',amount:210,day:15,cat:'Transporte',paid:false},{id:'b5',name:'Condomínio',amount:380,day:18,cat:'Moradia',paid:false},{id:'b6',name:'Energia',amount:142,day:19,cat:'Contas',paid:false},
+ {id:'b7',name:'Água',amount:78.4,day:22,cat:'Contas',paid:false},{id:'b8',name:'Celular',amount:59.9,day:25,cat:'Contas',paid:false},{id:'b9',name:'Academia',amount:89.9,day:27,cat:'Saúde',paid:false}];
+var S={v:'c',bills:JSON.parse(JSON.stringify(DEFAULT)),seq:20,sheet:null,filter:'all',showPaid:false,toast:null,err:{}};
+function brl(v){return 'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function status(b){if(b.paid)return 'paid';if(b.day<TODAY)return 'od';if(b.day<=TODAY+3)return 'soon';return 'pending'}
+function sub(b){var s=status(b),d=b.day-TODAY;
+ if(s==='paid')return 'Paga · dia '+b.day;if(s==='od')return 'Venceu dia '+b.day+' · '+(-d)+(d===-1?' dia':' dias')+' de atraso';
+ if(d===0)return 'Vence hoje';if(d===1)return 'Vence amanhã · dia '+b.day;return 'Vence dia '+b.day+' · em '+d+' dias'}
+function totals(){var t=0,p=0,n=0;S.bills.forEach(function(b){t+=b.amount;if(b.paid){p+=b.amount;n++}});return {total:t,paid:p,pending:t-p,nPaid:n,n:S.bills.length}}
+function sorted(){return S.bills.slice().sort(function(a,b){return a.day-b.day||a.name.localeCompare(b.name)})}
+function find(id){return S.bills.filter(function(b){return b.id===id})[0]}
+function kpis(){var t=totals();return '<div class="kpis"><div class="kpi3"><small><i data-lucide="receipt"></i>Total mensal</small><b id="k-total">'+brl(t.total)+'</b></div><div class="kpi3"><small style="color:#166534"><i data-lucide="circle-check"></i>Pagas</small><b id="k-paid" style="color:#166534">'+brl(t.paid)+'</b></div><div class="kpi3"><small style="color:#c2410c"><i data-lucide="clock"></i>Pendentes</small><b id="k-pend" style="color:#c2410c">'+brl(t.pending)+'</b></div></div>'}
+function head(){return '<div class="top"><h1>Contas fixas</h1><button class="round act" data-act="new" aria-label="Nova conta fixa"><i data-lucide="plus"></i></button></div>'}
+function billHTML(b){var s=status(b),ic=CATS[b.cat]||'receipt';
+ return '<div class="bill '+s+'" data-id="'+b.id+'"><button class="chk" data-act="toggle" data-id="'+b.id+'" aria-pressed="'+b.paid+'" aria-label="'+(b.paid?'Desmarcar':'Marcar como paga')+': '+esc(b.name)+'"><span class="bx"><i data-lucide="check"></i></span></button>'+
+ '<button class="binfo" data-act="open" data-id="'+b.id+'" aria-label="Opções de '+esc(b.name)+'"><span class="ic"><i data-lucide="'+ic+'"></i></span><span class="m"><span class="nm">'+esc(b.name)+'</span><span class="sb">'+sub(b)+'</span></span><span class="v">'+brl(b.amount)+'</span></button></div>'}
+function emptyHTML(){return '<div class="empty">Nenhuma conta fixa cadastrada.<br><button data-act="new">Cadastrar a primeira</button></div>'}
+function bodyA(){var t=totals(),pct=t.total?Math.round(t.paid/t.total*100):0,g={od:[],soon:[],pending:[],paid:[]};sorted().forEach(function(b){g[status(b)].push(b)});
+ if(!S.bills.length)return kpis()+emptyHTML();
+ var h='<div class="hero"><div class="muted small" style="font-weight:700">Falta pagar neste mês</div><div class="big" id="hero-pend">'+brl(t.pending)+'</div><div class="prog" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100" aria-label="Contas pagas"><i style="width:'+pct+'%"></i></div><div class="row sp small muted" style="margin-top:6px;font-weight:600"><span>'+t.nPaid+' de '+t.n+' pagas</span><span>'+pct+'%</span></div></div>'+kpis();
+ function sec(title,list,id){return list.length?'<div class="sec"><span>'+title+'<span class="cnt">'+list.length+'</span></span></div><div id="'+id+'">'+list.map(billHTML).join('')+'</div>':''}
+ h+=sec('Atrasadas',g.od,'sec-od')+sec('Vencem em breve',g.soon,'sec-soon')+sec('Mais adiante',g.pending,'sec-pending');
+ if(g.paid.length)h+='<div class="sec"><span>Pagas<span class="cnt">'+g.paid.length+'</span></span><button data-act="showpaid" aria-expanded="'+S.showPaid+'">'+(S.showPaid?'Ocultar':'Mostrar')+'<i data-lucide="'+(S.showPaid?'chevron-up':'chevron-down')+'"></i></button></div>'+(S.showPaid?'<div id="sec-paid">'+g.paid.map(billHTML).join('')+'</div>':'');
+ return h}
+function bodyB(){if(!S.bills.length)return kpis()+emptyHTML();var l=sorted(),o='',mark=false;
+ l.forEach(function(b){if(!mark&&b.day>=TODAY){mark=true;o+='<div class="d todaydiv" id="today-mk"><div class="todaymk">Hoje · dia '+TODAY+'</div></div>'}
+  o+='<div class="d" data-d="'+b.day+'"><div class="dn">dia<b>'+b.day+'</b></div><div>'+billHTML(b)+'</div></div>'});
+ if(!mark)o+='<div class="d todaydiv" id="today-mk"><div class="todaymk">Hoje · dia '+TODAY+'</div></div>';
+ return kpis()+'<div class="tl" id="timeline">'+o+'</div>'}
+function bodyC(){var f=S.filter;var list=sorted().filter(function(b){return f==='all'||(f==='pend'&&!b.paid)||(f==='paid'&&b.paid)});
+ var seg='<div class="seg" style="margin-top:14px" role="tablist">'+[['all','Todas'],['pend','Pendentes'],['paid','Pagas']].map(function(x){return '<button role="tab" data-act="filter" data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" aria-selected="'+(f===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+ if(!S.bills.length)return kpis()+emptyHTML();
+ var groups={};list.forEach(function(b){(groups[b.cat]=groups[b.cat]||[]).push(b)});
+ var all={};S.bills.forEach(function(b){(all[b.cat]=all[b.cat]||[]).push(b)});
+ var o=Object.keys(CATS).concat(Object.keys(groups).filter(function(c){return !(c in CATS)})).filter(function(c){return groups[c]}).map(function(c){var g=groups[c],a=all[c],tot=a.reduce(function(s,b){return s+b.amount},0),pd=a.filter(function(b){return b.paid}).reduce(function(s,b){return s+b.amount},0),pct=tot?Math.round(pd/tot*100):0;
+  return '<div class="cat" data-cat="'+esc(c)+'"><div class="hd"><span class="ic"><i data-lucide="'+(CATS[c]||'receipt')+'"></i></span><div><b>'+esc(c)+'</b><small>'+a.filter(function(b){return b.paid}).length+' de '+a.length+' pagas</small></div><span class="tot">'+brl(tot)+'</span></div><div class="mini"><i style="width:'+pct+'%"></i></div>'+g.map(billHTML).join('')+'</div>'}).join('');
+ return kpis()+seg+(o||'<div class="empty">Nenhuma conta neste filtro.</div>')}
+function sheetHTML(){var sh=S.sheet;if(!sh)return '';
+ if(sh.kind==='menu'){var b=find(sh.id);if(!b)return '';
+  if(sh.confirm)return '<div class="sheetbg" data-act="close"><div class="sheetin" role="alertdialog" aria-label="Apagar conta"><div style="width:40px;height:4px;border-radius:9px;background:var(--color-track);margin:0 auto 10px"></div><b style="font-size:18px">Apagar '+esc(b.name)+'?</b><div class="muted small" style="margin-top:4px">A conta some de todos os meses. Isso não pode ser desfeito.</div><div class="row2"><button class="btn-s" data-act="close">Cancelar</button><button class="btn-d" data-act="confirmdel">Apagar</button></div></div></div>';
+  return '<div class="sheetbg" data-act="close"><div class="sheetin" role="dialog" aria-label="Opções de '+esc(b.name)+'"><div style="width:40px;height:4px;border-radius:9px;background:var(--color-track);margin:0 auto 10px"></div><div class="row"><div class="ico"><i data-lucide="'+(CATS[b.cat]||'receipt')+'"></i></div><div><b>'+esc(b.name)+'</b><div class="muted small">'+esc(b.cat)+' · dia '+b.day+'</div></div><b class="big" style="margin-left:auto;font-size:20px">'+brl(b.amount)+'</b></div>'+
+  '<button class="act-row" data-act="toggle" data-id="'+b.id+'" data-close="1"><i data-lucide="check"></i>'+(b.paid?'Desmarcar como paga':'Marcar como paga')+'</button><button class="act-row" data-act="edit" data-id="'+b.id+'"><i data-lucide="pencil"></i>Editar</button><button class="act-row dg" data-act="del"><i data-lucide="trash-2"></i>Apagar</button></div></div>'}
+ var ed=sh.kind==='edit',b2=ed?find(sh.id):null,v=sh.draft||{name:b2?b2.name:'',amount:b2?String(b2.amount).replace('.',','):'',day:b2?String(b2.day):'',cat:b2?b2.cat:'Contas'},E=S.err;
+ return '<div class="sheetbg" data-act="close"><div class="sheetin" role="dialog" aria-modal="true" aria-label="'+(ed?'Editar conta fixa':'Nova conta fixa')+'"><div style="width:40px;height:4px;border-radius:9px;background:var(--color-track);margin:0 auto 6px"></div><b style="font-size:18px">'+(ed?'Editar conta fixa':'Nova conta fixa')+'</b>'+
+ '<div class="fld"><label for="f-name">Nome</label><input id="f-name" type="text" maxlength="40" value="'+esc(v.name)+'" placeholder="Ex.: Plano de saúde" aria-invalid="'+!!E.name+'" aria-describedby="e-name"><div class="err" id="e-name" role="alert">'+(E.name||'')+'</div></div>'+
+ '<div class="two"><div class="fld"><label for="f-amount">Valor (R$)</label><input id="f-amount" type="text" inputmode="decimal" value="'+esc(v.amount)+'" placeholder="0,00" aria-invalid="'+!!E.amount+'" aria-describedby="e-amount"><div class="err" id="e-amount" role="alert">'+(E.amount||'')+'</div></div>'+
+ '<div class="fld"><label for="f-day">Dia do vencimento</label><input id="f-day" type="text" inputmode="numeric" maxlength="2" value="'+esc(v.day)+'" placeholder="1 a 31" aria-invalid="'+!!E.day+'" aria-describedby="e-day"><div class="err" id="e-day" role="alert">'+(E.day||'')+'</div></div></div>'+
+ '<div class="fld"><label>Categoria</label><div class="chips" role="radiogroup">'+Object.keys(CATS).map(function(c){return '<button class="fc'+(v.cat===c?' on':'')+'" role="radio" aria-checked="'+(v.cat===c)+'" data-act="cat" data-c="'+c+'"><i data-lucide="'+CATS[c]+'" style="width:16px;height:16px"></i>'+c+'</button>'}).join('')+'</div></div>'+
+ '<div class="row2"><button class="btn-s" data-act="close">Cancelar</button><button class="btn-p" data-act="save">Salvar</button></div></div></div>'}
+function toastHTML(){var t=S.toast;return t?'<div class="toast" role="status"><span>'+esc(t.text)+'</span>'+''+'</div>':''}
+var tt=null;function toast(text,undo){S.toast={text:text,undo:undo||null};clearTimeout(tt);render();tt=setTimeout(function(){S.toast=null;render()},4200)}
+function render(){var app=document.getElementById('app'),pg=app.querySelector('.page'),st=pg?pg.scrollTop:0;
+ app.innerHTML='<div class="page" id="page">'+head()+(S.v==='a'?bodyA():S.v==='b'?bodyB():bodyC())+'</div>'+sheetHTML()+toastHTML();
+ app.querySelector('.page').scrollTop=st;if(window.lucide)lucide.createIcons();
+ document.querySelectorAll('.variant-tab').forEach(function(b){b.classList.toggle('active',b.dataset.v===S.v)});document.getElementById('vnote').textContent=NOTES[S.v];
+ if(S.sheet&&S.sheet.kind!=='menu'){var f=document.getElementById(S.sheet.focus||'f-name');if(f){f.focus()}}}
+function readDraft(){var n=document.getElementById('f-name');if(!n)return null;var cur=S.sheet.draft||{};return {name:n.value,amount:document.getElementById('f-amount').value,day:document.getElementById('f-day').value,cat:cur.cat||(S.sheet.kind==='edit'?find(S.sheet.id).cat:'Contas')}}
+function validate(d){var e={},name=d.name.trim(),amt=parseFloat(String(d.amount).replace(/\./g,'').replace(',','.')),day=parseInt(d.day,10);
+ if(!name)e.name='Informe o nome da conta.';if(!(amt>0))e.amount='Informe um valor maior que zero.';if(!(day>=1&&day<=31)||!/^\d{1,2}$/.test(String(d.day).trim()))e.day='Dia de 1 a 31.';return {e:e,name:name,amt:Math.round(amt*100)/100,day:day}}
+function act(el){var a=el.dataset.act,id=el.dataset.id;
+ if(a==='toggle'){var b=find(id);b.paid=!b.paid;if(el.dataset.close)S.sheet=null;render()}
+ else if(a==='open'){S.sheet={kind:'menu',id:id};render()}
+ else if(a==='new'){S.err={};S.sheet={kind:'new'};render()}
+ else if(a==='edit'){S.err={};S.sheet={kind:'edit',id:id};render()}
+ else if(a==='del'){S.sheet.confirm=true;render()}
+ else if(a==='confirmdel'){var nm=find(S.sheet.id).name;S.bills=S.bills.filter(function(b){return b.id!==S.sheet.id});S.sheet=null;toast('Apagada: '+nm)}
+ else if(a==='close'){S.sheet=null;S.err={};render()}
+ else if(a==='cat'){var d=readDraft();d.cat=el.dataset.c;S.sheet.draft=d;S.sheet.focus=null;render()}
+ else if(a==='save'){var d2=readDraft(),r=validate(d2);S.err=r.e;
+  if(Object.keys(r.e).length){S.sheet.draft=d2;S.sheet.focus=r.e.name?'f-name':r.e.amount?'f-amount':'f-day';render();return}
+  if(S.sheet.kind==='edit'){var b3=find(S.sheet.id);b3.name=r.name;b3.amount=r.amt;b3.day=r.day;b3.cat=d2.cat;S.sheet=null;S.err={};toast('Conta atualizada')}
+  else{S.bills.push({id:'n'+(S.seq++),name:r.name,amount:r.amt,day:r.day,cat:d2.cat,paid:false});S.sheet=null;S.err={};toast('Conta adicionada')}}
+ else if(a==='showpaid'){S.showPaid=!S.showPaid;render()}
+ else if(a==='filter'){S.filter=el.dataset.f;render()}}
+var app=document.getElementById('app');
+app.addEventListener('click',function(e){var el=e.target.closest('[data-act]');if(!el)return;if(el.dataset.act==='close'&&el!==e.target&&!el.classList.contains('btn-s'))return;act(el)});
+app.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.sheet){S.sheet=null;S.err={};render()}else if(e.key==='Enter'&&e.target.closest&&e.target.closest('.fld')&&S.sheet){var b=document.querySelector('[data-act="save"]');if(b)act(b)}});
+document.querySelectorAll('.variant-tab').forEach(function(b){b.addEventListener('click',function(){S.v=b.dataset.v;S.sheet=null;render()})});
+buildDock(document.getElementById('dockhost'),'a',3,function(){toast('O + do dock abre o lançamento de gasto ou receita')});
+var qs=location.search;if(/[?&]w=(\d+)/.test(qs)){var s0=document.createElement('style');s0.textContent='.phone{width:'+RegExp.$1+'px!important}';document.head.appendChild(s0)}
+if(/[?&]v=([abc])/.test(qs))S.v=RegExp.$1;if(/[?&]paid=1/.test(qs))S.showPaid=true;if(/[?&]sheet=new/.test(qs))S.sheet={kind:'new'};if(/[?&]sheet=menu/.test(qs))S.sheet={kind:'menu',id:'b5'};
+render();
+if(/[?&]test/.test(qs)){var R=[];function ok(n,c,x){R.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ function click(sel){var e=document.querySelector(sel);if(!e)throw new Error('sem elemento '+sel);e.click()}
+ function txt(id){return document.getElementById(id).textContent}
+ function typeIn(id,v){var i=document.getElementById(id);i.value=v}
+ function reset(v){S.v=v;S.bills=JSON.parse(JSON.stringify(DEFAULT));S.sheet=null;S.filter='all';S.showPaid=false;S.toast=null;S.err={};render()}
+ ['a','b','c'].forEach(function(v){try{var T='['+v+'] ';reset(v);
+  ok(T+'totais iniciais (Total 2.305,00 / Pagas 1.344,80 / Pendentes 960,20)',txt('k-total')==='R$ 2.305,00'&&txt('k-paid')==='R$ 1.344,80'&&txt('k-pend')==='R$ 960,20',txt('k-total')+' '+txt('k-paid')+' '+txt('k-pend'));
+  ok(T+'tem + Nova e 3 cartões',!!document.querySelector('[data-act="new"].round')&&document.querySelectorAll('.kpi3').length===3);
+  var chk=document.querySelector('.chk');var cs=[].slice.call(document.querySelectorAll('.chk')),minC=Math.min.apply(null,cs.map(function(c){return Math.min(c.getBoundingClientRect().width,c.getBoundingClientRect().height)}));ok(T+'área de toque da caixa >= 44px (menor '+Math.round(minC)+')',minC>=44);var bx=document.querySelector('.chk .bx'),bs=getComputedStyle(bx);ok(T+'caixa quadrada 28px com raio 8px, não círculo',Math.round(bx.getBoundingClientRect().width)===28&&Math.round(bx.getBoundingClientRect().height)===28&&parseFloat(bs.borderRadius)===8,bs.borderRadius+' '+bx.getBoundingClientRect().width);
+  var visibleBefore=document.querySelectorAll('.bill').length;
+  if(v==='a'){ok(T+'seções: 1 atrasada (Seguro), 2 em breve (Condomínio e Energia), 3 adiante',document.querySelectorAll('#sec-od .bill').length===1&&document.querySelectorAll('#sec-soon .bill').length===2&&document.querySelectorAll('#sec-pending .bill').length===3);
+   ok(T+'Seguro do carro marcado como atraso de 3 dias',document.querySelector('#sec-od').textContent.indexOf('3 dias de atraso')>-1);
+   ok(T+'Condomínio diz "Vence hoje"',document.querySelector('#sec-soon').textContent.indexOf('Vence hoje')>-1);
+   ok(T+'Pagas começam recolhidas',!document.getElementById('sec-paid'));click('[data-act="showpaid"]');ok(T+'Mostrar abre as 3 pagas',document.querySelectorAll('#sec-paid .bill').length===3);click('[data-act="showpaid"]');
+   ok(T+'hero mostra o que falta (R$ 959,30) e 3 de 9',txt('hero-pend')==='R$ 960,20'&&document.querySelector('.hero').textContent.indexOf('3 de 9 pagas')>-1)}
+  if(v==='b'){var days=[].map.call(document.querySelectorAll('#timeline .d[data-d]'),function(d){return +d.dataset.d});ok(T+'ordem por dia de vencimento',days.join()===days.slice().sort(function(a,b){return a-b}).join(),days.join());
+   var mk=document.getElementById('today-mk'),after=mk.nextElementSibling;ok(T+'marcador Hoje antes do dia 18',!!after&&after.dataset.d==='18'&&mk.previousElementSibling.dataset.d==='15')}
+  if(v==='c'){var ord0=[].map.call(document.querySelectorAll('.cat'),function(c){return c.dataset.cat}).join();ok(T+'categorias em ordem fixa (Moradia, Transporte, Lazer, Saúde, Contas)',ord0==='Moradia,Transporte,Lazer,Saúde,Contas',ord0);
+   click('.bill[data-id="b4"] .chk');click('.bill[data-id="b5"] .chk');click('.bill[data-id="b9"] .chk');ok(T+'pagar contas não muda a ordem das categorias',[].map.call(document.querySelectorAll('.cat'),function(c){return c.dataset.cat}).join()===ord0);click('.bill[data-id="b4"] .chk');click('.bill[data-id="b5"] .chk');click('.bill[data-id="b9"] .chk');
+   ok(T+'3 grupos: Contas, Lazer... (Moradia, Transporte, Lazer, Saúde, Contas = 5)',document.querySelectorAll('.cat').length===5,document.querySelectorAll('.cat').length);
+   var cm=document.querySelector('.cat[data-cat="Moradia"]');ok(T+'subtotal Moradia R$ 1.580,00 e 1 de 2 pagas',cm.textContent.indexOf('R$ 1.580,00')>-1&&cm.textContent.indexOf('1 de 2 pagas')>-1);
+   click('[data-f="pend"]');ok(T+'filtro Pendentes esconde pagas ('+document.querySelectorAll('.bill').length+' linhas)',document.querySelectorAll('.bill').length===6&&!document.querySelector('.bill.paid'));
+   click('[data-f="paid"]');var fo=[].map.call(document.querySelectorAll('.cat'),function(c){return c.dataset.cat}).join();ok(T+'filtro mantém ordem relativa das categorias',fo==='Moradia,Lazer,Contas',fo);ok(T+'filtro Pagas mostra só pagas',document.querySelectorAll('.bill').length===3&&document.querySelectorAll('.bill:not(.paid)').length===0);click('[data-f="all"]')}
+  // marcar pago + desfazer
+  click('.bill[data-id="b5"] .chk');ok(T+'marcar Condomínio altera Pagas e Pendentes',txt('k-paid')==='R$ 1.724,80'&&txt('k-pend')==='R$ 580,20',txt('k-paid')+' '+txt('k-pend'));
+  ok(T+'sem aviso de Desfazer',!document.querySelector('.toast')&&!document.querySelector('[data-act="undo"]'));
+  if(v==='a'&&!document.getElementById('sec-paid'))click('[data-act="showpaid"]');
+  click('.bill[data-id="b5"] .chk');ok(T+'tocar de novo restaura os totais',txt('k-paid')==='R$ 1.344,80'&&txt('k-pend')==='R$ 960,20'&&find('b5').paid===false);
+  if(v==='a'&&document.getElementById('sec-paid'))click('[data-act="showpaid"]');
+  // menu / editar
+  click('.bill[data-id="b6"] .binfo');ok(T+'tocar na linha abre menu com Marcar, Editar e Apagar',document.querySelectorAll('.sheetin .act-row').length===3);
+  click('.sheetin [data-act="toggle"]');ok(T+'Marcar pelo menu fecha o menu e atualiza',!document.querySelector('.sheetbg')&&find('b6').paid);
+  if(v==='a'){ok(T+'conta marcada some das ativas e vai para Pagas (recolhida)',!document.querySelector('.bill[data-id="b6"]'));click('[data-act="showpaid"]')}
+  click('.bill[data-id="b6"] .binfo');click('.sheetin [data-act="toggle"]');ok(T+'desmarcar pelo menu',!find('b6').paid);
+  click('.bill[data-id="b6"] .binfo');click('.sheetin [data-act="edit"]');ok(T+'Editar abre formulário preenchido',document.getElementById('f-name').value==='Energia'&&document.getElementById('f-amount').value==='142'&&document.getElementById('f-day').value==='19');
+  typeIn('f-name','Energia elétrica');typeIn('f-amount','150,50');typeIn('f-day','20');click('[data-act="save"]');var e6=find('b6');ok(T+'edição grava nome, valor e dia',e6.name==='Energia elétrica'&&e6.amount===150.5&&e6.day===20&&!document.querySelector('.sheetbg'));
+  ok(T+'Total recalculado (2.313,50)',txt('k-total')==='R$ 2.313,50',txt('k-total'));
+  // validação
+  click('[data-act="new"].round');typeIn('f-name','  ');typeIn('f-amount','0');typeIn('f-day','45');click('[data-act="save"]');
+  ok(T+'validação mostra 3 erros e não grava',!!document.querySelector('.sheetbg')&&txt('e-name')!==''&&txt('e-amount')!==''&&txt('e-day')!==''&&S.bills.length===9);
+  ok(T+'campos inválidos marcados (aria-invalid) e foco no primeiro erro',document.getElementById('f-name').getAttribute('aria-invalid')==='true'&&document.activeElement.id==='f-name');
+  typeIn('f-name','Plano de saúde');typeIn('f-amount','1.234,56');typeIn('f-day','7');click('.sheetin [data-c="Saúde"]');ok(T+'categoria muda sem perder o que digitou',document.getElementById('f-name').value==='Plano de saúde'&&document.getElementById('f-amount').value==='1.234,56'&&document.querySelector('.sheetin [data-c="Saúde"]').getAttribute('aria-checked')==='true');
+  click('[data-act="save"]');var nb=S.bills[S.bills.length-1];ok(T+'nova conta gravada (valor 1234,56, dia 7, Saúde, pendente)',nb.name==='Plano de saúde'&&nb.amount===1234.56&&nb.day===7&&nb.cat==='Saúde'&&!nb.paid&&!document.querySelector('.sheetbg'));
+  ok(T+'nova conta aparece na lista',!!document.querySelector('.bill[data-id="'+nb.id+'"]')||(v==='a'&&false),'não renderizou');
+  // apagar em duas etapas
+  click('.bill[data-id="'+nb.id+'"] .binfo');click('.sheetin [data-act="del"]');ok(T+'apagar pede confirmação',!!document.querySelector('[role="alertdialog"]')&&S.bills.some(function(b){return b.id===nb.id}));
+  click('.sheetin .btn-s');ok(T+'cancelar mantém a conta',S.bills.some(function(b){return b.id===nb.id})&&!document.querySelector('.sheetbg'));
+  click('.bill[data-id="'+nb.id+'"] .binfo');click('.sheetin [data-act="del"]');click('[data-act="confirmdel"]');ok(T+'confirmar apaga e atualiza o total',!S.bills.some(function(b){return b.id===nb.id})&&txt('k-total')==='R$ 2.313,50');
+  // vazio
+  S.bills=[];render();ok(T+'estado vazio com botão de cadastro',!!document.querySelector('.empty [data-act="new"]'));
+  // Esc
+  reset(v);click('[data-act="new"].round');app.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));ok(T+'Esc fecha o formulário',!document.querySelector('.sheetbg'));
+  var pg=document.getElementById('page');ok(T+'sem rolagem horizontal ('+pg.scrollWidth+'/'+pg.clientWidth+')',pg.scrollWidth<=pg.clientWidth+1);
+  var nmEl=document.querySelector('.bill .binfo');ok(T+'linha da conta >= 56px de altura (toque)',document.querySelector('.bill').getBoundingClientRect().height>=56,document.querySelector('.bill').getBoundingClientRect().height);
+ }catch(err){ok('['+v+'] EXCEÇÃO',false,err.message+' @ '+(err.stack||'').split('\n')[1])}});
+ ok('sem erros de JS',errors.length===0,errors.join('|'));var f=R.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ document.getElementById('selftest').textContent='TOTAL '+R.length+' | FALHAS '+f+'\n'+R.join('\n')}
+})();
+</script></body></html>

@@ -1,0 +1,105 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css"><link rel="stylesheet" href="../themes/v31.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><title>010 Casal v2</title>
+<style>
+.mrow{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:center;padding:12px 0}.mrow+.mrow{border-top:1px solid var(--color-border)}
+.mrow .lbl{font-size:12px;font-weight:700;color:var(--color-text-muted)}
+.dual{display:grid;gap:6px}.dual .l{display:flex;align-items:center;gap:8px}.dual .b{flex:1;height:10px;background:var(--color-track);border-radius:99px;overflow:hidden}.dual .b i{display:block;height:100%;border-radius:99px;background:var(--pc)}
+.dual .n{font:800 13px var(--font-num);min-width:84px;text-align:right}
+.pcard{flex:none;width:250px;scroll-snap-align:start;margin:0}
+.snap{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:14px -16px 0;padding:0 16px}.snap::-webkit-scrollbar{display:none}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:10px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--color-track)}.dots i:first-child{background:var(--color-action)}
+.pig{display:flex;align-items:center;gap:14px}.pig .ico{width:52px;height:52px;background:#fce7f3;color:#be185d}
+.cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center}
+.vs{width:34px;height:34px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center;font-weight:800;font-size:11px;color:var(--color-text-muted)}
+.cat2{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:14px}.cat2+.cat2{border-top:1px solid var(--color-border)}
+.cat2 .pc{font:800 12px var(--font-num);padding:4px 9px;border-radius:99px;color:#fff}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab active" onclick="showVariant('m',this)">Mistura A+B (proposta)</button>
+<button class="variant-tab" onclick="showVariant('a',this)">A: Juntos + barras duplas</button>
+<button class="variant-tab" onclick="showVariant('b',this)">B: Barra dividida + categorias</button>
+<button class="variant-tab" onclick="showVariant('c',this)">C: Cartões por pessoa (deslizar)</button></div>
+
+<!-- ================= MISTURA ================= -->
+<div id="variant-m" class="variant"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Casal</h1><div class="seg" style="width:150px;flex:none"><button class="on">Ciclo</button><button>Mês</button></div></div>
+  <div style="text-align:center;margin-top:14px"><div class="muted small" style="font-weight:600">Juntos neste ciclo</div><div class="big" style="font-size:44px">R$ 2.568,30</div><div class="muted small">saldo somado dos dois</div></div>
+  <div class="pair"><div class="card" style="margin:0"><div class="kpi"><small>Entradas juntos</small><b>R$ 9.250</b></div></div><div class="card" style="margin:0"><div class="kpi"><small>Saídas juntos</small><b>R$ 7.325</b></div></div></div>
+  <div class="card" style="padding:16px">
+    <div class="row sp"><b>Quem gastou mais</b><span class="muted small">Saídas do ciclo</span></div>
+    <div class="split" style="margin-top:12px;gap:3px;background:none"><i style="width:53%;background:#14532d;border-radius:99px 0 0 99px"></i><i style="width:47%;background:#c2410c;border-radius:0 99px 99px 0"></i></div>
+    <div class="row sp" style="margin-top:10px"><span class="ptag c-ele small"><span class="dot" style="background:#14532d"></span>Ele · 53%</span><span class="ptag c-ela small">Ela · 47%<span class="dot" style="background:#c2410c;margin:0 0 0 6px"></span></span></div></div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row sp" style="padding:12px 0"><span class="ptag c-ele"><span class="av">E</span>Ele</span><span class="ptag c-ela">Ela<span class="av">L</span></span></div>
+    <div class="mrow" style="border-top:1px solid var(--color-border)"><span class="lbl">Entradas</span><div class="dual"><div class="l c-ele"><div class="b"><i style="width:100%"></i></div><span class="n">R$ 5.200</span></div><div class="l c-ela"><div class="b"><i style="width:78%"></i></div><span class="n">R$ 4.050</span></div></div></div>
+    <div class="mrow"><span class="lbl">Saídas</span><div class="dual"><div class="l c-ele"><div class="b"><i style="width:72%"></i></div><span class="n">R$ 3.915</span></div><div class="l c-ela"><div class="b"><i style="width:63%"></i></div><span class="n">R$ 3.410</span></div></div></div>
+    <div class="mrow"><span class="lbl">Saldo</span><div class="dual"><div class="l c-ele"><div class="b"><i style="width:48%"></i></div><span class="n">R$ 1.285</span></div><div class="l c-ela"><div class="b"><i style="width:24%"></i></div><span class="n">R$ 640</span></div></div></div></div>
+  <div class="day"><span>Onde cada um mais gasta</span></div>
+  <div class="group" style="padding:2px 16px">
+    <div class="cat2"><span><b>Mercado</b><div class="muted small">maior gasto de Ele</div></span><span class="pc" style="background:#14532d">R$ 1.210</span></div>
+    <div class="cat2"><span><b>Transporte</b><div class="muted small">maior gasto de Ela</div></span><span class="pc" style="background:#c2410c">R$ 980</span></div>
+    <div class="cat2"><span><b>Restaurantes</b><div class="muted small">quase empatado</div></span><span class="muted small" style="font-weight:700">R$ 410 · R$ 395</span></div></div>
+  <div class="card"><div class="pig"><div class="ico"><i data-lucide="piggy-bank"></i></div><div style="flex:1"><div class="muted small" style="font-weight:600">Porquinho</div><div class="big" style="font-size:26px">R$ 643,30</div></div><i data-lucide="chevron-right" class="muted"></i></div></div>
+</div><div class="dock" id="dock-m"></div></div>
+<div class="note">Mistura: saldo "Juntos" e barras duplas por métrica (A) + barra dividida "Quem gastou mais" e categorias por pessoa (B). Cartões por pessoa (C) ficam de fora.</div></div>
+
+<!-- ================= A ================= -->
+<div id="variant-a" class="variant" style="display:none"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Casal</h1><div class="seg" style="width:150px;flex:none"><button class="on">Ciclo</button><button>Mês</button></div></div>
+  <div style="text-align:center;margin-top:14px"><div class="muted small" style="font-weight:600">Juntos neste ciclo</div><div class="big" style="font-size:44px">R$ 2.568,30</div>
+    <div class="muted small">saldo somado dos dois</div></div>
+  <div class="card" style="padding:4px 16px">
+    <div class="row sp" style="padding:12px 0"><span class="ptag c-ele"><span class="av">E</span>Ele</span><span class="ptag c-ela">Ela<span class="av">L</span></span></div>
+    <div class="mrow" style="border-top:1px solid var(--color-border)"><span class="lbl">Entradas</span><div class="dual">
+      <div class="l c-ele"><div class="b"><i style="width:100%"></i></div><span class="n">R$ 5.200</span></div><div class="l c-ela"><div class="b"><i style="width:78%"></i></div><span class="n">R$ 4.050</span></div></div></div>
+    <div class="mrow"><span class="lbl">Saídas</span><div class="dual">
+      <div class="l c-ele"><div class="b"><i style="width:72%"></i></div><span class="n">R$ 3.915</span></div><div class="l c-ela"><div class="b"><i style="width:63%"></i></div><span class="n">R$ 3.410</span></div></div></div>
+    <div class="mrow"><span class="lbl">Saldo</span><div class="dual">
+      <div class="l c-ele"><div class="b"><i style="width:48%"></i></div><span class="n">R$ 1.285</span></div><div class="l c-ela"><div class="b"><i style="width:24%"></i></div><span class="n">R$ 640</span></div></div></div></div>
+  <div class="card"><div class="pig"><div class="ico"><i data-lucide="piggy-bank"></i></div><div style="flex:1"><div class="muted small" style="font-weight:600">Porquinho</div><div class="big" style="font-size:26px">R$ 643,30</div></div><i data-lucide="chevron-right" class="muted"></i></div></div>
+</div><div class="dock" id="dock-a"></div></div>
+<div class="note">Hierarquia: primeiro o número do casal, depois a comparação. Cada métrica tem barras Ele (verde) e Ela (laranja) na mesma escala, então a diferença se vê sem ler. Substitui o gráfico Recharts e as duas grades de 4 colunas com texto de 10px. O aviso "chega em breve" some.</div></div>
+
+<!-- ================= B ================= -->
+<div id="variant-b" class="variant" style="display:none"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Casal</h1><div class="seg" style="width:150px;flex:none"><button class="on">Ciclo</button><button>Mês</button></div></div>
+  <div class="card" style="padding:18px">
+    <div class="muted small" style="font-weight:600">Gastos do casal</div><div class="big" style="font-size:38px">R$ 7.325,00</div>
+    <div class="split" style="margin-top:14px;gap:3px;background:none"><i style="width:53%;background:#14532d;border-radius:99px 0 0 99px"></i><i style="width:47%;background:#c2410c;border-radius:0 99px 99px 0"></i></div>
+    <div class="row sp" style="margin-top:10px"><span class="ptag c-ele small"><span class="dot" style="background:#14532d"></span>Ele · R$ 3.915 · 53%</span><span class="ptag c-ela small">Ela · R$ 3.410 · 47%<span class="dot" style="background:#c2410c;margin:0 0 0 6px"></span></span></div></div>
+  <div class="pair"><div class="card" style="margin:0"><div class="kpi"><small>Entradas juntos</small><b>R$ 9.250</b></div></div><div class="card" style="margin:0"><div class="kpi"><small>Sobra juntos</small><b style="color:#166534">R$ 1.925</b></div></div></div>
+  <div class="day"><span>Onde cada um mais gasta</span></div>
+  <div class="group" style="padding:2px 16px">
+    <div class="cat2"><span><b>Mercado</b><div class="muted small">maior gasto de Ele</div></span><span class="pc" style="background:#14532d">R$ 1.210</span></div>
+    <div class="cat2"><span><b>Transporte</b><div class="muted small">maior gasto de Ela</div></span><span class="pc" style="background:#c2410c">R$ 980</span></div>
+    <div class="cat2"><span><b>Restaurantes</b><div class="muted small">quase empatado</div></span><span class="muted small" style="font-weight:700">R$ 410 · R$ 395</span></div></div>
+  <div class="card"><div class="pig"><div class="ico"><i data-lucide="piggy-bank"></i></div><div style="flex:1"><div class="muted small" style="font-weight:600">Porquinho</div><div class="big" style="font-size:26px">R$ 643,30</div></div><i data-lucide="chevron-right" class="muted"></i></div></div>
+</div><div class="dock" id="dock-b"></div></div>
+<div class="note">Foco em "quem gasta quanto": uma barra dividida mostra a proporção dos gastos, e as categorias contam onde cada um concentra. Mais narrativo, menos tabela.</div></div>
+
+<!-- ================= C ================= -->
+<div id="variant-c" class="variant" style="display:none"><div class="phone"><div class="scroll">
+  <div class="top"><h1>Casal</h1><div class="seg" style="width:150px;flex:none"><button class="on">Ciclo</button><button>Mês</button></div></div>
+  <div class="snap">
+    <div class="card pcard c-ele"><div class="ptag"><span class="av">E</span>Ele</div><div class="big" style="font-size:34px;margin-top:12px">R$ 1.285</div><div class="muted small">saldo do ciclo</div>
+      <div class="row sp small" style="margin-top:14px"><span class="muted">Entradas</span><b>R$ 5.200</b></div><div class="row sp small" style="margin-top:6px"><span class="muted">Saídas</span><b>R$ 3.915</b></div><div class="row sp small" style="margin-top:6px"><span class="muted">Saldo total</span><b>R$ 8.940</b></div></div>
+    <div class="card pcard c-ela"><div class="ptag"><span class="av">L</span>Ela</div><div class="big" style="font-size:34px;margin-top:12px">R$ 640</div><div class="muted small">saldo do ciclo</div>
+      <div class="row sp small" style="margin-top:14px"><span class="muted">Entradas</span><b>R$ 4.050</b></div><div class="row sp small" style="margin-top:6px"><span class="muted">Saídas</span><b>R$ 3.410</b></div><div class="row sp small" style="margin-top:6px"><span class="muted">Saldo total</span><b>R$ 5.120</b></div></div>
+    <div class="card pcard" style="background:var(--color-action);color:var(--color-action-text)"><div class="ptag"><span class="av" style="background:#fff;color:var(--color-action)"><i data-lucide="heart" style="width:16px"></i></span>Juntos</div><div class="big" style="font-size:34px;margin-top:12px">R$ 1.925</div><div style="opacity:.8" class="small">sobra somada</div></div>
+  </div><div class="dots"><i></i><i></i><i></i></div>
+  <div class="card"><b>Comparativo</b>
+    <div class="cmp" style="margin-top:12px"><div class="kpi c-ele"><small>Ele</small><b style="color:var(--pc)">R$ 3.915</b></div><span class="vs">vs</span><div class="kpi c-ela"><small>Ela</small><b style="color:var(--pc)">R$ 3.410</b></div></div>
+    <div class="split" style="margin-top:12px;gap:3px;background:none"><i style="width:53%;background:#14532d;border-radius:99px 0 0 99px"></i><i style="width:47%;background:#c2410c;border-radius:0 99px 99px 0"></i></div>
+    <div class="muted small" style="margin-top:8px;text-align:center">Saídas do ciclo</div></div>
+  <div class="card"><div class="pig"><div class="ico"><i data-lucide="piggy-bank"></i></div><div style="flex:1"><div class="muted small" style="font-weight:600">Porquinho</div><div class="big" style="font-size:26px">R$ 643,30</div></div><i data-lucide="chevron-right" class="muted"></i></div></div>
+</div><div class="dock" id="dock-c"></div></div>
+<div class="note">Cada pessoa tem seu cartão (deslizar de lado, no padrão da Home) e o comparativo fica simples e abaixo. Bom se o casal quiser ver os números completos de cada um.</div></div>
+
+<div id="sketch-tools">tema: <select id="themesel" onchange="setTheme(this.value)"><option>moeda</option><option>brasa</option><option>noite</option></select></div>
+<script src="../themes/sketch.js"></script>
+<script>
+['m','a','b','c'].forEach(function(v){document.getElementById('dock-'+v).innerHTML='<button><i data-lucide="home"></i></button><button><i data-lucide="list"></i></button><button><i data-lucide="calendar"></i></button><button><i data-lucide="receipt"></i></button><button><i data-lucide="target"></i></button><button><i data-lucide="bar-chart-3"></i></button><button class="on"><i data-lucide="heart"></i></button><button><i data-lucide="piggy-bank"></i></button>'});
+lucide.createIcons();
+</script></body></html>

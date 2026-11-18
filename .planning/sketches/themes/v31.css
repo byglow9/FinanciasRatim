@@ -1,0 +1,38 @@
+/* Base compartilhada dos sketches da Fase 3.1 (Moeda + Bricolage Grotesque + Lucide) */
+:root{--font-sans:'Bricolage Grotesque',system-ui,sans-serif;--font-num:'Bricolage Grotesque',system-ui,sans-serif}
+.big{font-family:var(--font-num)}body{padding-top:52px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top h1{font:800 24px var(--font-num);letter-spacing:-.03em}
+.round{width:44px;height:44px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center;border:0;color:var(--color-text);cursor:pointer;flex:none}
+.round.act{background:var(--color-action);color:var(--color-action-text)}
+.seg{display:flex;background:var(--color-surface);border-radius:999px;padding:4px;gap:2px}
+.seg button{flex:1;border:0;background:none;border-radius:999px;height:40px;font:700 13px var(--font-sans);color:var(--color-text-muted);cursor:pointer}
+.seg button.on{background:var(--color-surface-2);color:var(--color-text);box-shadow:0 1px 3px rgba(40,30,0,.12)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.chips::-webkit-scrollbar{display:none}
+.fc{flex:none;height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--color-surface);font:700 13px var(--font-sans);color:var(--color-text);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.fc.on{background:var(--color-action);color:var(--color-action-text)}
+.day{display:flex;justify-content:space-between;align-items:baseline;margin:20px 2px 6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-muted)}
+.group{background:var(--color-surface-2);border-radius:var(--radius-card);padding:2px 14px;border:1px solid var(--color-border)}
+.tx{display:flex;align-items:center;gap:12px;min-height:64px;cursor:pointer}
+.tx+.tx{border-top:1px solid var(--color-border)}
+.tx .ic{width:42px;height:42px;border-radius:50%;background:var(--color-surface);display:grid;place-items:center;flex:none}
+.tx .m{flex:1;min-width:0}.tx .m b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tx .m span{font-size:12px;color:var(--color-text-muted)}
+.tx .v{font:800 15px var(--font-num);white-space:nowrap}.v.in{color:#166534}.v.out{color:var(--color-text)}
+.sheet2{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none;z-index:40}
+.sheet2 .in{position:absolute;left:0;right:0;bottom:0;background:var(--color-bg);border-radius:28px 28px 0 0;padding:10px 16px 20px}
+.sheet2 .grab{width:40px;height:4px;border-radius:9px;background:var(--color-track);margin:0 auto 12px}
+.act-row{display:flex;align-items:center;gap:12px;height:56px;border-radius:16px;padding:0 12px;font-weight:700;cursor:pointer;background:var(--color-surface);margin-top:8px}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;background:var(--color-surface-2);border-radius:999px;box-shadow:var(--shadow-nav);border:1px solid var(--color-border);display:flex;gap:4px;align-items:center;padding:6px;overflow:hidden}
+.dock button{flex:none;border:0;background:none;width:48px;height:48px;border-radius:999px;display:grid;place-items:center;color:var(--color-text);cursor:pointer}
+.dock button.on{background:var(--color-action);color:var(--color-action-text)}
+.dock .sp{flex:1}.dock .plus{background:var(--color-action);color:var(--color-action-text);width:52px;height:52px}
+.kpi{display:grid;gap:2px}.kpi small{font-size:12px;color:var(--color-text-muted);font-weight:600}.kpi b{font:800 20px var(--font-num);letter-spacing:-.02em}
+.split{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--color-track)}
+.split i{display:block;height:100%}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.c-ele{--pc:#14532d}.c-ela{--pc:#c2410c}
+.ptag{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;background:var(--pc)}
+.note{max-width:420px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.pair .card{margin:0;padding:12px 14px}

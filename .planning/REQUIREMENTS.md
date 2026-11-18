@@ -31,23 +31,23 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 - [x] **LIM-01**: Usuário define um limite mensal por categoria, por pessoa, em Configurações > Categorias; passar do limite só avisa e soma quanto passou, nunca bloqueia (decisões D-09 e D-21 de 03-CONTEXT)
 - [x] **LIM-02**: Usuário vê, para cada categoria, quanto gastou, o limite, a porcentagem usada e o que resta, e pode expandir a categoria para ver os lançamentos dela
-- [ ] **LIM-03**: Os gastos de categorias sem limite aparecem somados como "Gasto geral" e descontam do "Pode gastar"; as contas fixas ficam fora do dia a dia (já abatidas do dinheiro do ciclo). Substitui o antigo "limite do mês = soma dos limites" (D-05)
-- [ ] **LIM-04**: Usuário vê na Home o valor "Pode gastar" (renda esperada menos contas fixas menos todo gasto não fixo do ciclo), quanto pode por dia (restante dividido pelos dias que faltam) e o ritmo em 5 níveis (Folgado, No ritmo, Atenção, Acima do ritmo, Estourou) (D-05, D-06, D-07)
-- [ ] **LIM-05**: Usuário vê "O mês em uma conta" com Entra, Fixos, Dia a dia e Sobra, e a projeção do que ainda vai entrar e sair identificada como estimativa
-- [ ] **LIM-06**: Usuário informa a renda esperada do mês, e a Home diferencia o que já entrou do que é esperado
+- [x] **LIM-03**: Os gastos de categorias sem limite aparecem somados como "Gasto geral" e descontam do "Pode gastar"; as contas fixas ficam fora do dia a dia (já abatidas do dinheiro do ciclo). Substitui o antigo "limite do mês = soma dos limites" (D-05)
+- [x] **LIM-04**: Usuário vê na Home o valor "Pode gastar" (renda esperada menos contas fixas menos todo gasto não fixo do ciclo), quanto pode por dia (restante dividido pelos dias que faltam) e o ritmo em 5 níveis (Folgado, No ritmo, Atenção, Acima do ritmo, Estourou) (D-05, D-06, D-07)
+- [x] **LIM-05**: Usuário vê "O mês em uma conta" com Entra, Fixos, Dia a dia e Sobra, e a projeção do que ainda vai entrar e sair identificada como estimativa
+- [x] **LIM-06**: Usuário informa a renda esperada do mês, e a Home diferencia o que já entrou do que é esperado
 - [ ] **LIM-07**: Usuário recebe alertas dentro do app (no sino) ao chegar a 80% e ao passar de 100% de um limite, uma única vez por limiar e por ciclo
-- [ ] **LIM-08**: Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
-- [ ] **LIM-09**: A Home mostra atalhos "Novo gasto", "Nova receita", "Contas fixas" e "Limites" (os dois últimos descem até a seção)
+- [x] **LIM-08**: Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
+- [x] **LIM-09**: A Home mostra atalhos "Novo gasto", "Nova receita", "Contas fixas" e "Limites" (os dois últimos descem até a seção)
 - [ ] **LIM-10**: Usuário escolhe em Configurações o dia em que recebe o salário, e o ciclo de limites, "Pode gastar" e alertas começa e termina nesse dia (D-10, D-11)
 
 ### Central de Limites e Cartões e Configurações (CENT)
 
-- [ ] **CENT-01**: Existe uma página própria de Limites e Cartões, com um resumo na Home que leva até ela
+- [x] **CENT-01**: Existe uma página própria de Limites e Cartões, com um resumo na Home que leva até ela
 - [x] **CENT-02**: A Central apenas exibe o estado de cada limite por categoria e os lançamentos dela; o ajuste é feito em Configurações > Categorias (D-21)
 - [ ] **CENT-03**: A Central mostra cada cartão: fatura aberta, dia de fechamento e de vencimento, limite disponível, próximas faturas, parcelas a vir e status (aberta, fechada, paga ou atrasada)
 - [ ] **CENT-04**: Os vencimentos de fatura aparecem também no Calendário e nos alertas
 - [x] **CENT-05**: Configurações são organizadas em cartões com ícone: Contas e cartões (com dia de fechamento e vencimento), Categorias (ícone, limite, Gastos e Receitas separados), Bancos conectados, Aparência e Notificações
-- [ ] **CENT-06**: A página de Contas Fixas continua separada, e a Home mostra um resumo dela com atalho
+- [x] **CENT-06**: A página de Contas Fixas continua separada, e a Home mostra um resumo dela com atalho
 
 ### Mascote Vintém (MASC)
 
@@ -158,18 +158,18 @@ Preenchida na criação do roadmap.
 | REV-07 | Phase 2 | Complete |
 | LIM-01 | Phase 3 | Complete |
 | LIM-02 | Phase 3 | Complete |
-| LIM-03 | Phase 3 | Pending |
-| LIM-04 | Phase 3 | Pending |
-| LIM-05 | Phase 3 | Pending |
-| LIM-06 | Phase 3 | Pending |
+| LIM-03 | Phase 3 | Complete |
+| LIM-04 | Phase 3 | Complete |
+| LIM-05 | Phase 3 | Complete |
+| LIM-06 | Phase 3 | Complete |
 | LIM-07 | Phase 3 | Pending |
-| LIM-08 | Phase 3 | Pending |
-| LIM-09 | Phase 3 | Pending |
+| LIM-08 | Phase 3 | Complete |
+| LIM-09 | Phase 3 | Complete |
 | LIM-10 | Phase 3 | Pending |
-| CENT-01 | Phase 3 | Pending |
+| CENT-01 | Phase 3 | Complete |
 | CENT-02 | Phase 3 | Complete |
 | CENT-05 | Phase 3 | Complete |
-| CENT-06 | Phase 3 | Pending |
+| CENT-06 | Phase 3 | Complete |
 | IDEN-07 | Phase 3 | Complete |
 | MASC-01 | Phase 4 | Pending |
 | MASC-02 | Phase 4 | Pending |

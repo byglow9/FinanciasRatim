@@ -68,19 +68,28 @@ test('T1: AreaContext expoe categoryDefs e updateCategoryDefs (sem updateCategor
   assert.doesNotMatch(src, /\bupdateCategories\b/, 'updateCategories antigo deve sair')
 })
 
-test('T1: SettingsPage adiciona, renomeia e arquiva pelo nucleo e nao bloqueia por lancamentos', () => {
-  const src = read('src/pages/SettingsPage.tsx')
-  const imp = src.match(/import\s*\{([^}]*)\}\s*from\s*['"]@shared\/core\/categories\.js['"]/)
-  assert.ok(imp, 'SettingsPage deve importar de @shared/core/categories.js')
+test('T1: o editor de categoria, o cartao e a pagina adicionam, renomeiam e arquivam pelo nucleo e nao bloqueiam por lancamentos', () => {
+  // A logica de categoria mudou de SettingsPage para o editor (Fase 3, plano 19); a intencao
+  // (ID estavel, arquivar em vez de apagar, sem bloqueio por lancamentos) e a mesma e agora
+  // vale para os tres arquivos em conjunto.
+  const editor = read('src/components/settings/CategoryEditorSheet.tsx')
+  const src = [
+    editor,
+    read('src/components/settings/CategoriesCard.tsx'),
+    read('src/pages/SettingsPage.tsx'),
+  ].join('\n')
+  const imp = editor.match(/import\s*\{([^}]*)\}\s*from\s*['"]@shared\/core\/categories\.js['"]/)
+  assert.ok(imp, 'CategoryEditorSheet deve importar de @shared/core/categories.js')
   for (const fn of ['addCategory', 'renameCategory', 'archiveCategory']) {
     assert.match(imp[1], new RegExp(`\\b${fn}\\b`), `${fn} nao importado`)
   }
   assert.match(src, /updateCategoryDefs/)
+  assert.match(src, /renameCategory\(/, 'renomear deve passar pelo nucleo')
+  assert.match(src, /archiveCategory\(/, 'arquivar deve passar pelo nucleo')
   assert.doesNotMatch(src, /getTransactionsByCategory/)
   assert.doesNotMatch(src, /getFixedExpensesByCategory/)
   assert.doesNotMatch(src, /Nao e possivel remover/)
   assert.match(src, /Arquivar categoria/)
-  assert.match(src, /Renomear categoria/)
 })
 
 // ---------------------------------------------------------------- T2

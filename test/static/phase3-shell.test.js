@@ -106,11 +106,11 @@ test('AppShell compoe barra superior, faixa de somente leitura, conteudo, dock e
   assert.match(code(SHELL), /export function AppShell\b/)
 })
 
-test('App.tsx usa AppShell na ordem dos providers e registra /casal', () => {
+test('App.tsx usa AppShell na ordem dos providers e registra /casal e /limites', () => {
   const src = code(APP)
   assert.doesNotMatch(src, /\bMainLayout\b/, 'App.tsx voltou a usar MainLayout')
   assert.match(src, /<Route\s+path="\/casal"\s+element=\{<CouplePage\s*\/>\}/)
-  assert.doesNotMatch(src, /path="\/limites"/, 'a rota /limites e do Plano 21')
+  assert.match(src, /<Route\s+path="\/limites"\s+element=\{<LimitsPage\s*\/>\}/, 'a rota /limites e da Central (Plano 21)')
   const order = ['<ToastProvider', '<ProtectedRoute', '<CycleProvider', '<LimitAlertsProvider', '<LaunchProvider', '<AppShell']
   let last = -1
   for (const tag of order) {

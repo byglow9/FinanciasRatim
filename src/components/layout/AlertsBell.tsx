@@ -5,6 +5,7 @@ import { IconCircle } from '@/components/ui/icon-circle'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useLimitAlerts } from '@/contexts/LimitAlertsContext'
+import { limitHref } from '@/lib/limitHash'
 import { getFixedExpenses, getPaymentsForMonths } from '@/services/fixedExpenses.service'
 import type { LimitAlert } from '@/types'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -161,7 +162,7 @@ export function AlertsBell() {
   function openLimit(alert: LimitAlert) {
     void markRead(alert.id)
     closePanel(false)
-    navigate(`/limites#cat-${encodeURIComponent(alert.categoryId)}`)
+    navigate(limitHref(alert.categoryId))
   }
 
   function openDue() {

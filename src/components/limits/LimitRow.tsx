@@ -191,8 +191,6 @@ interface LimitsListProps {
   generalCents: number
   generalByCategory: Array<{ categoryId: string | null; cents: number }>
   categoryDefs: CategoryDef[]
-  /** Máximo de linhas de categoria (6 na Home); sem valor, mostra todas. */
-  max?: number
   /** Mostra o link "Editar em Configurações" no cabeçalho. */
   showEditLink?: boolean
   neutralOk?: boolean
@@ -208,7 +206,6 @@ export function LimitsList({
   generalCents,
   generalByCategory,
   categoryDefs,
-  max,
   showEditLink = false,
   neutralOk = false,
   expandId,
@@ -218,8 +215,6 @@ export function LimitsList({
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const titleId = useId()
 
-  const visible = max !== undefined && rows.length > max ? rows.slice(0, max) : rows
-  const hidden = rows.length - visible.length
   const isOpen = (key: string, fallback: boolean) => (key in toggled ? toggled[key] : fallback)
   const setOpen = (key: string, open: boolean) => setToggled((t) => ({ ...t, [key]: open }))
 
@@ -255,7 +250,7 @@ export function LimitsList({
       )}
 
       <ul>
-        {visible.map((row) => (
+        {rows.map((row) => (
           <LimitRow
             key={row.categoryId}
             row={row}
@@ -265,13 +260,6 @@ export function LimitsList({
             onToggle={(open) => setOpen(row.categoryId, open)}
           />
         ))}
-        {hidden > 0 && (
-          <li>
-            <Link to="/limites" className={LINK_44}>
-              {hidden === 1 ? 'Ver o outro limite' : `Ver os outros ${hidden} limites`}
-            </Link>
-          </li>
-        )}
         <GeneralRow
           generalCents={generalCents}
           generalByCategory={generalByCategory}

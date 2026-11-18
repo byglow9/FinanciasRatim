@@ -111,7 +111,6 @@ test('LimitRow e LimitsList: acessibilidade, copia exata e estados do limite', (
     'Nenhum limite definido',
     'Escolha um limite por categoria para acompanhar o gasto. Passar do limite só avisa.',
     'Definir limites',
-    'Ver os outros',
     'Limites do mês',
     'Editar em Configurações',
     'Ver todos em Transações',
@@ -132,7 +131,6 @@ test('LimitRow e LimitsList: acessibilidade, copia exata e estados do limite', (
     'Progress',
     'neutralOk',
     '/configuracoes#categorias',
-    '/limites',
     '/transacoes',
     'import type { BudgetRow }',
   ]) {

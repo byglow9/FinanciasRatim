@@ -47,13 +47,12 @@ function listSrc(dir) {
   return out
 }
 
-test('NavRail traz os 9 destinos, cada um com nome e rota, e o contrato do dock', () => {
+test('NavRail traz os 8 destinos (sem a Central de Limites), cada um com nome e rota, e o contrato do dock', () => {
   const src = code(NAVRAIL)
   const destinations = [
     ['/', 'Início'],
     ['/transacoes', 'Transações'],
     ['/calendario', 'Calendário'],
-    ['/limites', 'Central de limites'],
     ['/contas-fixas', 'Contas fixas'],
     ['/metas', 'Metas'],
     ['/relatorios', 'Relatórios'],
@@ -92,7 +91,7 @@ test('NavRail traz os 9 destinos, cada um com nome e rota, e o contrato do dock'
 
 test('NavRail so tem icones (sem rotulo visivel) e a regra do Porquinho vem da rota', () => {
   const src = code(NAVRAIL)
-  for (const icon of ['House', 'Receipt', 'Calendar', 'Gauge', 'Repeat', 'Flag', 'ChartPie', 'Users', 'PiggyBank', 'Plus']) {
+  for (const icon of ['House', 'Receipt', 'Calendar', 'Repeat', 'Flag', 'ChartPie', 'Users', 'PiggyBank', 'Plus']) {
     assert.match(src, new RegExp(`\\b${icon}\\b`), `${NAVRAIL} sem o icone ${icon}`)
   }
   assert.doesNotMatch(src, /<span\b/, 'o dock nao tem rotulo de texto')
@@ -106,11 +105,11 @@ test('AppShell compoe barra superior, faixa de somente leitura, conteudo, dock e
   assert.match(code(SHELL), /export function AppShell\b/)
 })
 
-test('App.tsx usa AppShell na ordem dos providers e registra /casal e /limites', () => {
+test('App.tsx usa AppShell na ordem dos providers e registra /casal', () => {
   const src = code(APP)
   assert.doesNotMatch(src, /\bMainLayout\b/, 'App.tsx voltou a usar MainLayout')
   assert.match(src, /<Route\s+path="\/casal"\s+element=\{<CouplePage\s*\/>\}/)
-  assert.match(src, /<Route\s+path="\/limites"\s+element=\{<LimitsPage\s*\/>\}/, 'a rota /limites e da Central (Plano 21)')
+  assert.doesNotMatch(src, /\/limites|LimitsPage/, 'a Central de Limites foi removida do app')
   const order = ['<ToastProvider', '<ProtectedRoute', '<CycleProvider', '<LimitAlertsProvider', '<LaunchProvider', '<AppShell']
   let last = -1
   for (const tag of order) {

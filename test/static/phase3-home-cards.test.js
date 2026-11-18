@@ -16,7 +16,6 @@ const code = (f) =>
     .replace(/^\s*\/\/.*$/gm, '')
 
 const MONTH = 'src/components/dashboard/MonthInOneCard.tsx'
-const CENTRAL = 'src/components/dashboard/CentralSummaryCard.tsx'
 const FIXED = 'src/components/dashboard/FixedMonthCard.tsx'
 const SHORTCUTS = 'src/components/dashboard/ShortcutRow.tsx'
 const READONLY = 'src/components/dashboard/ReadOnlyBanner.tsx'
@@ -25,7 +24,7 @@ const ALERT = 'src/components/dashboard/LimitAlertNotice.tsx'
 const OLD_NOTICE = 'src/components/dashboard/BankStatusNotice.tsx'
 
 // Componentes de apresentacao deste plano.
-const FILES = [MONTH, CENTRAL, FIXED, SHORTCUTS, READONLY, STALE, ALERT]
+const FILES = [MONTH, FIXED, SHORTCUTS, READONLY, STALE, ALERT]
 
 function assertIncludes(file, texts) {
   const src = code(file)
@@ -52,19 +51,6 @@ test('MonthInOneCard: titulo, linhas, estimativa e link sem renda', () => {
     'text-[28px]',
     'font-display',
     'min-h-11',
-  ])
-})
-
-test('CentralSummaryCard: link inteiro para /limites com as contagens', () => {
-  assertIncludes(CENTRAL, [
-    'to="/limites"',
-    'Central de Limites',
-    'Nenhum limite definido ainda',
-    'passou do limite',
-    'passaram do limite',
-    'em atenção',
-    'em dia',
-    'min-h-14',
   ])
 })
 
@@ -143,7 +129,7 @@ test('LimitAlertNotice: so avisa, dispensa com 44px e abre o sino com varios avi
     'topAlert',
     'Dispensar aviso',
     'Ver aviso',
-    '/limites#cat-',
+    'limitHref(top.categoryId)',
     'coinki:open-alerts',
     'passou de 100% do limite',
     'chegou a 80% do limite',

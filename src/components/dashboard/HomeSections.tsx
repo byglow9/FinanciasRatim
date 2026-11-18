@@ -3,7 +3,6 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { useToast } from '@/components/ui/toast'
 import { LimitsList } from '@/components/limits/LimitRow'
-import { CentralSummaryCard } from '@/components/dashboard/CentralSummaryCard'
 import { FixedMonthCard } from '@/components/dashboard/FixedMonthCard'
 import { MonthInOneCard } from '@/components/dashboard/MonthInOneCard'
 import { markAsPaid } from '@/services/fixedExpenses.service'
@@ -16,14 +15,16 @@ interface HomeSectionsProps {
   cycle: Cycle
   loading: boolean
   refetch: () => Promise<void>
+  /** Id da linha de limite (`cat-{id}`) que abre expandida, vindo do hash da URL. */
+  expandId?: string
 }
 
 /**
- * As quatro seções da Home sobre a BudgetView (D-19, D-24): O mês em uma conta, Limites do mês
- * (com o Gasto geral, D-04), resumo da Central e Contas fixas do mês. Só exibe o que o núcleo
+ * As três seções da Home sobre a BudgetView (D-19, D-24): O mês em uma conta, Limites do mês
+ * (todas as linhas e o Gasto geral, D-04) e Contas fixas do mês. Só exibe o que o núcleo
  * entrega; o único gesto é o "Marcar pago" manual, que nunca cria lançamento (CENT-06, REV-03).
  */
-export function HomeSections({ view, cycle, loading, refetch }: HomeSectionsProps) {
+export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSectionsProps) {
   const { categoryDefs } = useArea()
   const { bumpData } = useCycle()
   const { readOnly, guard } = useReadOnly()
@@ -34,7 +35,7 @@ export function HomeSections({ view, cycle, loading, refetch }: HomeSectionsProp
     if (!loading) return null
     return (
       <div className="space-y-4" aria-hidden="true">
-        {[176, 288, 80, 144].map((h) => (
+        {[176, 288, 144].map((h) => (
           <div key={h} className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
         ))}
       </div>
@@ -62,11 +63,10 @@ export function HomeSections({ view, cycle, loading, refetch }: HomeSectionsProp
         generalCents={view.spend.generalCents}
         generalByCategory={view.spend.generalByCategory}
         categoryDefs={categoryDefs}
-        max={6}
+        expandId={expandId}
         showEditLink
         neutralOk={view.verdictSuppressed}
       />
-      <CentralSummaryCard counts={view.counts} />
       <FixedMonthCard bills={view.bills} readOnly={readOnly} onMarkPaid={(item) => void onMarkPaid(item)} />
     </div>
   )

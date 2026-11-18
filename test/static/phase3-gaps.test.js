@@ -99,3 +99,16 @@ test('LaunchSheet compacto: chips na linha da categoria e teclado/CTA por altura
   // O Sheet compartilhado nao foi alterado para esconder a rolagem.
   assert.match(code('src/components/ui/sheet.tsx'), /max-h-\[92dvh\] overflow-y-auto/)
 })
+
+// ---------------------------------------------------------------- Tarefa 2: Central removida
+
+test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos sem Gauge', () => {
+  assert.ok(!exists('src/pages/LimitsPage.tsx'))
+  assert.ok(!exists('src/components/dashboard/CentralSummaryCard.tsx'))
+  const app = code('src/App.tsx')
+  assert.doesNotMatch(app, /\/limites|LimitsPage/)
+  assert.equal([...app.matchAll(/<Route\s+path=/g)].length, 9)
+  const dock = code('src/components/layout/NavRail.tsx')
+  assert.doesNotMatch(dock, /\bGauge\b/)
+  assert.equal([...dock.matchAll(/\{ href: '/g)].length, 8)
+})

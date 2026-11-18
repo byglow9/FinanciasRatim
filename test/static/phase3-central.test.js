@@ -1,5 +1,7 @@
-// Guarda estatica da Central de Limites e Cartoes (CENT-01, CENT-02, LIM-02, LIM-03, IDEN-07):
-// textos, ordem, somente exibicao, hash seguro e rota.
+// Guarda de AUSENCIA da Central de Limites e Cartoes. Decisao do dono (UAT de 2026-11-18, tarefa
+// rapida 261118-mkh): a Central sai do app. Isso substitui D-20 (dock com 9 destinos) e D-21 (a
+// Central so exibe) e torna CENT-01 e CENT-02 obsoletos. Os limites ficam so na secao "Limites do
+// mes" da Home e em Configuracoes > Categorias.
 // Rodar: node --test test/static/phase3-central.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -8,6 +10,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const exists = (f) => fs.existsSync(path.join(ROOT, f))
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8')
 // Remove comentarios para nao dar falso positivo em texto explicativo.
 const code = (f) =>
@@ -15,104 +18,61 @@ const code = (f) =>
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '')
 
-const PAGE = 'src/pages/LimitsPage.tsx'
-const APP = 'src/App.tsx'
-
-function assertIncludes(file, texts) {
-  const src = code(file)
-  for (const text of texts) {
-    assert.ok(src.includes(text), `${file} sem ${text}`)
+function walk(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) walk(full, out)
+    else out.push(full)
   }
+  return out
 }
+const srcFiles = () => walk(path.join(ROOT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f))
 
-test('LimitsPage: textos exatos da Central, dos estados e do esqueleto de Cartoes', () => {
-  assertIncludes(PAGE, [
-    'Central de Limites',
-    'Passar do limite só avisa. Nada é bloqueado.',
-    'Em dia',
-    'Atenção',
-    'Passaram',
-    'Ajustar em Configurações',
-    '/configuracoes#categorias',
-    'Cartões',
-    'em breve',
-    'Fatura, fechamento e parcelas chegam junto com o suporte a cartão de crédito.',
-    'Os dois juntos',
-    'Somado',
-    'Cada um no seu ciclo',
-    'Carregando seus números',
-    'Não foi possível carregar seus números.',
-    'Tentar de novo',
-  ])
+test('a pagina e o cartao de resumo da Central nao existem mais', () => {
+  assert.ok(!exists('src/pages/LimitsPage.tsx'), 'LimitsPage.tsx deveria ter sido apagada')
+  assert.ok(!exists('src/components/dashboard/CentralSummaryCard.tsx'), 'CentralSummaryCard.tsx deveria ter sido apagado')
 })
 
-test('LimitsPage: usa a BudgetView, a lista de limites, a rolagem do hash e o layout largo', () => {
-  assertIncludes(PAGE, [
-    'useCycleBudget',
-    'LimitsList',
-    'useHashReveal',
-    'decodeURIComponent',
-    'max-w-[960px]',
-    '340px',
-    'grid-cols-3',
-  ])
-  const src = code(PAGE)
-  // A Central mostra todas as linhas e nao edita: sem teto de linhas nem link de edicao do cabecalho.
-  assert.doesNotMatch(src, /\bmax=\{/, 'a Central nao limita as linhas (sem teto de 6)')
-  assert.doesNotMatch(src, /\bshowEditLink\b/, 'a Central nao mostra o link de edicao do cabecalho')
-  // O hash e lido so por decodeURIComponent dentro de try, sem estado.
-  assert.match(src, /try\s*\{[\s\S]*decodeURIComponent\(hash\.slice\(1\)\)[\s\S]*\}\s*catch/, 'hash fora de try')
-  assert.match(src, /useHashReveal\(undefined,\s*view !== null\)/, 'a rolagem tem de esperar a view carregar')
-})
-
-test('LimitsPage: ordem totais, limites, ajuste, cartoes e os dois juntos', () => {
-  const src = code(PAGE)
-  const page = src.slice(src.indexOf('export function LimitsPage'))
-  const order = ['<Totals', '<LimitsList', 'Ajustar em Configurações', '<CardsSkeleton', '{together}']
-  const idx = order.map((t) => page.indexOf(t))
-  idx.forEach((i, n) => assert.ok(i >= 0, `LimitsPage sem ${order[n]}`))
-  assert.deepEqual([...idx].sort((a, b) => a - b), idx, 'secoes da Central fora de ordem')
-})
-
-test('LimitsPage: somente exibicao, sem edicao de limite nem formula de orcamento', () => {
-  const src = code(PAGE)
-  for (const bad of [
-    'MoneyKeypad',
-    'setCategoryLimit',
-    'setLimit',
-    'updatePersonConfig',
-    'querySelector(',
-    'safeCents -',
-    'incomeCents -',
-    'limitCents * 80',
-    'safeToSpend',
-    'perDayCents',
-    'buildBudgetView',
-    '<input',
-    '<Input',
-  ]) {
-    assert.ok(!src.includes(bad), `${PAGE} contem ${bad}`)
+test('nenhum arquivo de src cita a rota /limites, a LimitsPage nem o cartao da Central', () => {
+  for (const f of srcFiles()) {
+    const src = code(path.relative(ROOT, f))
+    const rel = path.relative(ROOT, f)
+    assert.doesNotMatch(src, /['"`]\/limites\b/, `${rel} aponta para a rota /limites`)
+    assert.doesNotMatch(src, /\bLimitsPage\b/, `${rel} cita LimitsPage`)
+    assert.doesNotMatch(src, /\bCentralSummaryCard\b/, `${rel} cita CentralSummaryCard`)
+    assert.doesNotMatch(src, /Central de [Ll]imites/, `${rel} cita a Central de Limites`)
   }
-  // Sem gravacao: so a leitura da BudgetView e o link para Configuracoes.
-  assert.doesNotMatch(src, /@\/services\//, 'a Central nao importa servicos de gravacao')
 })
 
-test('App.tsx registra a rota /limites com LimitsPage', () => {
-  const src = code(APP)
-  assert.match(src, /import\s*\{\s*LimitsPage\s*\}\s*from\s*'@\/pages\/LimitsPage'/)
-  assert.match(src, /<Route\s+path="\/limites"\s+element=\{<LimitsPage\s*\/>\}/)
+test('a Home trata o hash #cat- por expandIdFromHash e repassa expandId ao HomeSections', () => {
+  const lib = code('src/lib/limitHash.ts')
+  assert.match(lib, /export function expandIdFromHash\b/)
+  assert.match(lib, /startsWith\('#cat-'\)/)
+  assert.match(lib, /try\s*\{[\s\S]*decodeURIComponent\(hash\.slice\(1\)\)[\s\S]*\}\s*catch/, 'hash fora de try')
+  // O hash nunca vira seletor.
+  assert.doesNotMatch(lib, /querySelector/)
+  const home = code('src/pages/DashboardPage.tsx')
+  assert.match(home, /expandIdFromHash\(hash\)/)
+  assert.match(home, /useHashReveal\(undefined,/)
+  assert.match(home, /expandId=\{expandId\}/)
+  const sections = code('src/components/dashboard/HomeSections.tsx')
+  assert.match(sections, /expandId=\{expandId\}/)
 })
 
-test('LimitsPage: sem HTML bruto, console, emoji, pesos 500 e 600, fontes fora da escala nem Ele e Ela fixos', () => {
-  const src = code(PAGE)
-  const rawHtml = 'dangerously' + 'SetInnerHTML'
-  assert.ok(!src.includes(rawHtml), 'LimitsPage injeta HTML bruto (T-03-82)')
-  assert.doesNotMatch(src, /\bconsole\./, 'LimitsPage usa console')
-  assert.doesNotMatch(src, /\p{Extended_Pictographic}/u, 'LimitsPage contem emoji (D-18)')
-  for (const bad of ['font-medium', 'font-semibold', 'font-extrabold', 'text-sm', 'text-lg', 'text-xl', 'text-2xl']) {
-    assert.ok(!src.includes(bad), `LimitsPage usa ${bad}`)
-  }
-  // Os nomes vem de settings.tabNames, nunca escritos no codigo.
-  assert.doesNotMatch(src, /\b(Ele|Ela)\b/, 'LimitsPage escreve Ele ou Ela fixos')
-  assertIncludes(PAGE, ['settings.tabNames.area1', 'settings.tabNames.area2'])
+test('LimitsList mostra todas as linhas: sem a prop max nem o link "Ver os outros"', () => {
+  const src = code('src/components/limits/LimitRow.tsx')
+  assert.doesNotMatch(src, /\bmax\??:\s*number/)
+  assert.doesNotMatch(src, /Ver os outros|Ver o outro limite/)
+  assert.doesNotMatch(code('src/components/dashboard/HomeSections.tsx'), /\bmax=\{/)
+})
+
+test('o aviso da Home e o sino levam a Home com a linha do limite expandida', () => {
+  assert.match(code('src/lib/limitHash.ts'), /return `\/#cat-\$\{encodeURIComponent\(categoryId\)\}`/)
+  assert.match(code('src/components/dashboard/LimitAlertNotice.tsx'), /limitHref\(top\.categoryId\)/)
+  assert.match(code('src/components/layout/AlertsBell.tsx'), /navigate\(limitHref\(alert\.categoryId\)\)/)
+})
+
+test('na aba Porquinho a Home so mostra o aviso, sem link nem cartao de resumo', () => {
+  const src = code('src/pages/DashboardPage.tsx')
+  assert.match(src, /Na aba Porquinho não há Pode gastar nem limite\./)
 })

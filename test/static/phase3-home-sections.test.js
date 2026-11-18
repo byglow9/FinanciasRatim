@@ -26,11 +26,10 @@ function assertIncludes(file, texts) {
   }
 }
 
-test('HomeSections: importa e usa os quatro cartoes, o servico, as guardas e o toast', () => {
+test('HomeSections: importa e usa os tres cartoes, o servico, as guardas e o toast', () => {
   assertIncludes(SECTIONS, [
     'MonthInOneCard',
     'LimitsList',
-    'CentralSummaryCard',
     'FixedMonthCard',
     'markAsPaid',
     'useReadOnly',
@@ -42,11 +41,11 @@ test('HomeSections: importa e usa os quatro cartoes, o servico, as guardas e o t
 
 test('HomeSections: ordem das secoes e ancoras', () => {
   const src = code(SECTIONS)
-  const order = ['<MonthInOneCard', '<LimitsList', '<CentralSummaryCard', '<FixedMonthCard']
+  const order = ['<MonthInOneCard', '<LimitsList', '<FixedMonthCard']
   const idx = order.map((t) => src.indexOf(t))
   idx.forEach((i, n) => assert.ok(i >= 0, `HomeSections sem ${order[n]}`))
   assert.deepEqual([...idx].sort((a, b) => a - b), idx, 'secoes da Home fora da ordem')
-  assertIncludes(SECTIONS, ['id="lm"', 'max={6}', 'showEditLink', 'neutralOk', 'cycleEnd={cycle.endParts}'])
+  assertIncludes(SECTIONS, ['id="lm"', 'expandId={expandId}', 'showEditLink', 'neutralOk', 'cycleEnd={cycle.endParts}'])
   // A ancora fx vem do proprio cartao, nao de um invólucro.
   assertIncludes(FIXED, ['id="fx"'])
 })

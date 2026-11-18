@@ -43,7 +43,7 @@ test('AlertsBell traz o contrato de acessibilidade e os textos do UI-SPEC', () =
     'aria-label="não lido"',
     'Escape',
     'coinki:open-alerts',
-    '/limites#cat-',
+    'limitHref(alert.categoryId)',
     '/contas-fixas',
   ])
 })

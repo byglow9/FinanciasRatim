@@ -4,7 +4,6 @@ import {
   Calendar,
   ChartPie,
   Flag,
-  Gauge,
   House,
   PiggyBank,
   Plus,
@@ -17,7 +16,7 @@ import { useArea } from '@/contexts/AreaContext'
 import { useLaunch } from '@/contexts/LaunchContext'
 import { cn } from '@/lib/utils'
 
-// Dock flutuante da casca nova (S1, IDEN-07, D-20): pilula rolavel so de icones com os 9 destinos e
+// Dock flutuante da casca nova (S1, IDEN-07, D-20): pilula rolavel so de icones com os 8 destinos e
 // o botao + de lancamento ao lado. Uma so navegacao: o Header, a BottomNav e o AreaSelector sairam.
 
 interface Destination {
@@ -30,7 +29,6 @@ const DESTINATIONS: Destination[] = [
   { href: '/', label: 'Início', icon: House },
   { href: '/transacoes', label: 'Transações', icon: Receipt },
   { href: '/calendario', label: 'Calendário', icon: Calendar },
-  { href: '/limites', label: 'Central de limites', icon: Gauge },
   { href: '/contas-fixas', label: 'Contas fixas', icon: Repeat },
   { href: '/metas', label: 'Metas', icon: Flag },
   { href: '/relatorios', label: 'Relatórios', icon: ChartPie },

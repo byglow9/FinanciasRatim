@@ -1,4 +1,4 @@
-# Fase 3 — Roteiro de UAT humano (Limites, Pode gastar e Central)
+# Fase 3 — Roteiro de UAT humano (Limites e Pode gastar)
 
 Este roteiro cobre o que a suíte automatizada não consegue ver: tela real, teclado, contraste, zoom, rolagem e dois contextos de navegador. A suíte completa já passou (ver `03-VALIDATION.md`); aqui o dono confere no celular e no desktop.
 
@@ -39,7 +39,7 @@ Marque `[x]` no que passou. O que falhar, anote no quadro da seção 3 com o pas
 ### (b) Ampliação de texto a 200%
 
 1. No celular, ampliar o texto do sistema ao máximo, ou no desktop usar zoom de texto de 200%, a 360 px de largura.
-2. Percorrer a Home, o sheet de lançamento (botão "+"), a Central (`/limites`) e Configurações.
+2. Percorrer a Home (incluindo a seção "Limites do mês"), o sheet de lançamento (botão "+") e Configurações.
 3. Esperado:
    - [ ] nada fica cortado nem sobreposto;
    - [ ] as linhas quebram; só o nome de categoria em linha trunca com reticências, e o nome completo aparece no painel expandido ou no `title`;
@@ -47,7 +47,7 @@ Marque `[x]` no que passou. O que falhar, anote no quadro da seção 3 com o pas
 
 ### (c) Contraste
 
-1. Rodar uma verificação automatizada de contraste (extensão axe ou equivalente) na Home e na Central.
+1. Rodar uma verificação automatizada de contraste (extensão axe ou equivalente) na Home e na seção "Limites do mês".
 2. Esperado:
    - [ ] nenhuma falha de contraste nos textos de tinta (`-ink`) e nas pílulas de ritmo.
 3. Conferir também à luz do dia, no celular:
@@ -74,12 +74,11 @@ Marque `[x]` no que passou. O que falhar, anote no quadro da seção 3 com o pas
 
 ### (e) Dock
 
-1. Rolar o dock horizontalmente (9 ícones: Início, Transações, Calendário, Central de limites, Contas fixas, Metas, Relatórios, Casal, Porquinho).
+1. Rolar o dock horizontalmente (8 ícones: Início, Transações, Calendário, Contas fixas, Metas, Relatórios, Casal, Porquinho).
 2. Esperado:
    - [ ] o esmaecimento (fade) aparece só do lado que tem conteúdo escondido;
    - [ ] o item ativo fica centralizado;
-   - [ ] cada um dos 9 destinos abre a página certa, com o nome da página como título;
-   - [ ] a Central abre em `/limites`;
+   - [ ] cada um dos 8 destinos abre a página certa, com o nome da página como título;
    - [ ] entrar no Porquinho troca a área para Porquinho e, ao sair, volta ao último perfil de pessoa;
    - [ ] o botão "+" fica ao lado do dock, sempre visível.
 
@@ -126,8 +125,8 @@ Pré-requisito: índice de `limitAlerts` Habilitado (seção 0.1).
 4. Recarregar a página e abrir o app em **outra aba** (ou outro navegador):
    - [ ] nenhum aviso se repete, nem o de 80% nem o de 100%.
 5. Abrir o aviso pelo sino:
-   - [ ] a Central abre com a linha da categoria expandida, destacada e com o foco nela.
-6. Na Central:
+   - [ ] a Home abre com a linha da categoria expandida na seção "Limites do mês", destacada e com o foco nela.
+6. Na seção "Limites do mês" da Home:
    - [ ] o "Gasto geral" aparece para o que não tem limite;
    - [ ] o excesso aparece como "passou R$ x do limite";
    - [ ] **nada bloqueia** um novo lançamento (passar do limite só avisa).
@@ -165,7 +164,7 @@ Pré-requisito: índice de `limitAlerts` Habilitado (seção 0.1).
 
 ### (m) Originalidade e nomes travados (D-16, P-05)
 
-1. Comparar a Home e a Central com os prints de referência.
+1. Comparar a Home com os prints de referência.
 2. Esperado:
    - [ ] nenhum texto, layout ou mascote foi copiado;
    - [ ] decidir se os nomes travados "Pode gastar", "O mês em uma conta", "No ritmo", "Limites do mês" e "Fixos" ficam. Eles aparecem nos prints da referência; o dono os travou em D-24 e a conferência de textos da Fase 4 pode reprová-los.
@@ -175,12 +174,12 @@ Pré-requisito: índice de `limitAlerts` Habilitado (seção 0.1).
 Estas premissas foram aceitas em `03-01-PREMISES.md` (resposta do dono em `03-01-SUMMARY.md`) e **não** são defeitos a corrigir nesta fase. Ao assinar o quadro final, o dono reconhece cada uma.
 
 - **PR-02, conta fixa paga pelo banco é descontada duas vezes.** Quando uma conta fixa é paga pelo banco, o lançamento importado entra como gasto comum e a conta fixa também é descontada. O "Pode gastar" cai duas vezes por esse pagamento. Nenhuma heurística casa os dois, e o `classify.js` não muda. Ao conferir o número, lembre que esse pagamento pesa duas vezes.
-- **PR-11, Transações, Relatórios e Calendário seguem por mês-calendário.** Só a Home, a Central e os avisos usam o ciclo do salário. Os recortes dessas três telas podem diferir da Home até uma fase futura.
+- **PR-11, Transações, Calendário e Contas fixas seguem o ciclo escolhido no topo; Relatórios e Casal mantêm seletor de mês próprio.** Transações, Calendário e Contas fixas não têm mais seletor de mês: usam o ciclo do `CycleSelector` do topo (recorte = mês-calendário em que o ciclo começa; com dia de salário diferente de 1 é uma aproximação, e o recorte exato fica para a Fase 3.1). Relatórios e Casal continuam com seletor de mês próprio e por mês-calendário até a Fase 3.1.
 - **PR-14, transferência entre as duas pessoas não é detectada.** Em lançamento importado não há como saber que é uma transferência; o núcleo aceita o campo opcional `transfer: true`, mas não há interface para ele. Aporte e saque do Porquinho (D-03) não contam como gasto.
 - **PR-20, lançamento só online.** Sem rede o lançamento mostra o erro "Não foi possível lançar" e preserva os dígitos. Gravação offline depende de persistência local e do service worker (Fase 5).
 - **Tema escuro adiado para a Fase 5 (IDEN-05).** O interruptor sumiu e o app fica sempre claro. Quem usava o escuro perde a opção até lá.
 - **Escala tipográfica em páginas legadas.** O conteúdo de `/casal` (totais e comparativo, realocado do Dashboard antigo) e o `DialogDescription` mantêm os tamanhos e pesos antigos; a normalização é IDEN-06 (Fase 5). `/casal` mostra o aviso "O relatório do casal completo chega em breve." (a aba funcional é da Fase 8, PR-15).
-- **Ritmo e cartões.** Os cortes do ritmo (75, 100 e 115 por cento, PR-19) são constantes ajustáveis no núcleo. A seção de Cartões da Central é só esqueleto até a Fase 6.
+- **Ritmo e cartões.** Os cortes do ritmo (75, 100 e 115 por cento, PR-19) são constantes ajustáveis no núcleo. O cartão de crédito só entra na Fase 6.
 
 ## 3. Quadro final para o dono
 
@@ -206,7 +205,7 @@ Marque uma opção por passo. O que for "corrigir" volta como lacuna da Fase 3.
 Limitações reconhecidas pelo dono:
 
 - [ ] PR-02 (dupla contagem de conta fixa paga pelo banco)
-- [ ] PR-11 (Transações, Relatórios e Calendário por mês-calendário)
+- [ ] PR-11 (Transações, Calendário e Contas fixas pelo ciclo do topo; Relatórios e Casal por mês-calendário)
 - [ ] PR-14 (transferência entre as duas pessoas não detectada)
 - [ ] PR-20 (lançamento só online)
 - [ ] Tema escuro adiado para a Fase 5
@@ -220,3 +219,5 @@ Observações:
 - Apagar os lançamentos, limites e avisos de teste criados nos passos acima.
 - A publicação do Hosting do cliente é **decisão do dono, depois do UAT**. Nada neste plano publicou Hosting, regras nem índice.
 - Aprovado o roteiro, seguir para `/gsd-verify-work` da Fase 3.
+
+> Nota de 2026-11-18 (tarefa rápida 261118-mkh): a Central de Limites (`/limites`) saiu do app por decisão do dono. Isso substitui D-20 e D-21 e torna CENT-01 e CENT-02 obsoletos; os limites ficam só em "Limites do mês" na Home e em Configurações > Categorias.

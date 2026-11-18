@@ -32,7 +32,7 @@ const srcFiles = (exts) =>
 
 const PHASE_DIR = '.planning/phases/03-limites-pode-gastar-e-central'
 
-test('App.tsx registra as 10 rotas do app (a)', () => {
+test('App.tsx registra as 9 rotas do app, sem a Central de Limites (a)', () => {
   const src = code('src/App.tsx')
   const paths = [...src.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]).sort()
   const expected = [
@@ -44,7 +44,6 @@ test('App.tsx registra as 10 rotas do app (a)', () => {
     '/relatorios',
     '/configuracoes',
     '/calendario',
-    '/limites',
     '/casal',
   ].sort()
   assert.deepEqual(paths, expected)
@@ -143,8 +142,9 @@ const NEW_AND_REWRITTEN = [
   'src/lib/rhythm.ts',
   'src/lib/categoryIcons.ts',
   'src/lib/cycleData.ts',
+  'src/lib/limitHash.ts',
   // Home
-  ...['ArcGauge', 'RhythmPill', 'MonthInOneCard', 'CentralSummaryCard', 'FixedMonthCard', 'ShortcutRow', 'ReadOnlyBanner', 'StaleNotice', 'LimitAlertNotice', 'HomeSections'].map(
+  ...['ArcGauge', 'RhythmPill', 'MonthInOneCard', 'FixedMonthCard', 'ShortcutRow', 'ReadOnlyBanner', 'StaleNotice', 'LimitAlertNotice', 'HomeSections'].map(
     (n) => `src/components/dashboard/${n}.tsx`,
   ),
   'src/components/limits/LimitRow.tsx',
@@ -160,7 +160,6 @@ const NEW_AND_REWRITTEN = [
   ),
   // paginas, contextos e hooks
   'src/pages/DashboardPage.tsx',
-  'src/pages/LimitsPage.tsx',
   'src/pages/SettingsPage.tsx',
   'src/contexts/CycleContext.tsx',
   'src/contexts/LimitAlertsContext.tsx',

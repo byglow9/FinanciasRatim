@@ -5,6 +5,7 @@ import { useArea } from '@/contexts/AreaContext'
 import { useLimitAlerts } from '@/contexts/LimitAlertsContext'
 import { topAlert, visibleAlerts } from '@shared/core/alerts.js'
 import { categoryDisplayName } from '@shared/core/categories.js'
+import { limitHref } from '@/lib/limitHash'
 
 // Evento da window que o sino ouve para abrir o painel (AlertsBell).
 const OPEN_EVENT = 'coinki:open-alerts'
@@ -50,7 +51,7 @@ export function LimitAlertNotice() {
             Ver aviso
           </button>
         ) : (
-          <Link to={`/limites#cat-${encodeURIComponent(top.categoryId)}`} className={ACTION_CLASS}>
+          <Link to={limitHref(top.categoryId)} className={ACTION_CLASS}>
             Ver aviso
           </Link>
         )

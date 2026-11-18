@@ -1,25 +1,23 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { CircleAlert, PiggyBank } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useLaunch } from '@/contexts/LaunchContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { useCycleBudget } from '@/hooks/useCycleBudget'
-import { useSectionReveal } from '@/hooks/useSectionReveal'
+import { useHashReveal, useSectionReveal } from '@/hooks/useSectionReveal'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
 import { StaleNotice } from '@/components/dashboard/StaleNotice'
 import { LimitAlertNotice } from '@/components/dashboard/LimitAlertNotice'
-import { CentralSummaryCard } from '@/components/dashboard/CentralSummaryCard'
 import { HomeSections } from '@/components/dashboard/HomeSections'
 import { MoneyValue } from '@/components/ui/money-keypad'
 import { Notice } from '@/components/ui/notice'
 import { Button } from '@/components/ui/button'
 import { arcToneFor } from '@/lib/rhythm'
+import { expandIdFromHash } from '@/lib/limitHash'
 import { formatMoney, perDayReais, plural, shortDate } from '@shared/core/format.js'
-
-const NO_COUNTS = { ok: 0, warn: 0, over: 0, total: 0 }
 
 const LINK_BUTTON =
   'mt-3 inline-flex h-12 items-center justify-center rounded-btn bg-action px-4 text-base font-bold text-action-text transition-colors hover:bg-action/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -38,19 +36,15 @@ export function DashboardPage() {
   const { open } = useLaunch()
   const { readOnly } = useReadOnly()
   const reveal = useSectionReveal()
+  // Aviso de limite leva à Home com `#cat-{id}`: a linha abre expandida e a seção rola até ela.
+  const { hash } = useLocation()
+  const expandId = expandIdFromHash(hash)
+  useHashReveal(undefined, view !== null && !isPiggy)
 
   if (isPiggy) {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
-        <Notice icon={PiggyBank} title="Na aba Porquinho não há Pode gastar nem limite.">
-          <Link
-            to="/limites"
-            className="inline-flex min-h-11 items-center text-xs font-bold text-foreground underline underline-offset-4"
-          >
-            Abrir Central de Limites
-          </Link>
-        </Notice>
-        <CentralSummaryCard counts={NO_COUNTS} />
+        <Notice icon={PiggyBank} title="Na aba Porquinho não há Pode gastar nem limite." />
       </div>
     )
   }
@@ -162,7 +156,7 @@ export function DashboardPage() {
         readOnly={readOnly}
       />
 
-      <HomeSections view={view} cycle={cycle} loading={loading} refetch={refetch} />
+      <HomeSections view={view} cycle={cycle} loading={loading} refetch={refetch} expandId={expandId} />
     </div>
   )
 }

@@ -12,13 +12,15 @@ interface FixedMonthCardProps {
   bills: BudgetView['bills']
   onMarkPaid: (item: BillItem) => void
   readOnly?: boolean
+  // Chaves `billId-ano-mes` com gravacao em andamento (WR-07): o botao fica desabilitado.
+  pendingKeys?: ReadonlySet<string>
 }
 
 /**
  * Contas fixas do mês (CENT-01, CENT-06): lista as que a BudgetView entrega, não pagas primeiro.
  * Marcar como pago é manual e não muda o Pode gastar, porque as fixas já estão descontadas (REV-03).
  */
-export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMonthCardProps) {
+export function FixedMonthCard({ bills, onMarkPaid, readOnly = false, pendingKeys }: FixedMonthCardProps) {
   const shown = bills.items.slice(0, MAX_BILLS)
 
   return (
@@ -49,9 +51,12 @@ export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMon
       ) : (
         <>
           <ul className="mt-2">
-            {shown.map((item) => (
+            {shown.map((item) => {
+              const itemKey = `${item.billId}-${item.occurrence.year}-${item.occurrence.month}`
+              const pending = pendingKeys?.has(itemKey) === true
+              return (
               <li
-                key={`${item.billId}-${item.occurrence.year}-${item.occurrence.month}`}
+                key={itemKey}
                 className="flex min-h-14 items-center justify-between gap-3 border-b border-border py-2 last:border-b-0"
               >
                 <div className="min-w-0">
@@ -67,7 +72,8 @@ export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMon
                 ) : (
                   <button
                     type="button"
-                    disabled={readOnly}
+                    disabled={readOnly || pending}
+                    aria-busy={pending || undefined}
                     onClick={() => onMarkPaid(item)}
                     className="h-11 min-w-[120px] shrink-0 rounded-xl bg-action px-4 text-base font-bold text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                   >
@@ -75,7 +81,8 @@ export function FixedMonthCard({ bills, onMarkPaid, readOnly = false }: FixedMon
                   </button>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
           {bills.items.length > MAX_BILLS ? (
             <Link to="/contas-fixas" className={LINK_44}>

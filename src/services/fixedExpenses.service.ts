@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -14,6 +15,7 @@ import { db } from '@/lib/firebase'
 import type { FixedExpense, FixedExpensePayment, PersonType } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
+import { paymentDocId } from '@shared/core/ids.js'
 
 type RawExpense = Omit<FixedExpense, 'createdAt'> & { createdAt: string }
 type RawPayment = Omit<FixedExpensePayment, 'paidAt'> & { paidAt: string }
@@ -153,18 +155,21 @@ export async function markAsPaid(
   year: number,
   paidAmount: number
 ): Promise<string> {
+  // WR-07: ID deterministico por conta e mes. Marcar duas vezes (duplo toque) sobrescreve o mesmo
+  // documento em vez de criar dois pagamentos. As regras por dono continuam valendo (T-qk-04).
+  const id = paymentDocId(fixedExpenseId, year, month)
+
   if (MOCK) {
-    const id = mId()
-    const all = mList<RawPayment>(PAY_COL)
+    const all = mList<RawPayment>(PAY_COL).filter((p) => p.id !== id)
     all.push({ id, fixedExpenseId, month, year, paidAmount, paidAt: new Date().toISOString() })
     mSave(PAY_COL, all)
     return id
   }
 
-  const docRef = await addDoc(collection(db, PAY_COL), {
+  await setDoc(doc(db, PAY_COL, id), {
     ownerId: ownerId(), fixedExpenseId, month, year, paidAmount, paidAt: Timestamp.now(),
   })
-  return docRef.id
+  return id
 }
 
 export async function unmarkAsPaid(paymentId: string): Promise<void> {

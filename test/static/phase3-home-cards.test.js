@@ -69,7 +69,7 @@ test('FixedMonthCard: ancora fx, titulo focavel, marcar pago e vazio', () => {
     'Nova conta fixa',
     'min-w-[120px]',
     'h-11',
-    'disabled={readOnly}',
+    'disabled={readOnly || pending}',
     'onMarkPaid(item)',
   ])
 })

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { FixedExpense, FixedExpensePayment, PersonType } from '@/types'
 import {
   getFixedExpenses,
@@ -16,6 +16,8 @@ export function useFixedExpenses(person?: PersonType | 'conjunto', selectedMonth
   const [payments, setPayments] = useState<FixedExpensePayment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  // WR-07: contas com marcar/desmarcar em andamento; toque repetido enquanto isso e ignorado.
+  const pendingToggles = useRef(new Set<string>())
 
   const month = selectedMonth ? getMonth(selectedMonth) + 1 : getMonth(new Date()) + 1
   const year = selectedMonth ? getYear(selectedMonth) : getYear(new Date())
@@ -57,18 +59,30 @@ export function useFixedExpenses(person?: PersonType | 'conjunto', selectedMonth
   }
 
   const togglePaid = async (expenseId: string, amount: number) => {
-    const existingPayment = payments.find(
+    if (pendingToggles.current.has(expenseId)) return
+    pendingToggles.current.add(expenseId)
+    try {
+      await runToggle(expenseId, amount)
+    } finally {
+      pendingToggles.current.delete(expenseId)
+    }
+  }
+
+  const runToggle = async (expenseId: string, amount: number) => {
+    // Ao desmarcar apaga TODOS os pagamentos da conta no mes (pode haver duplicados legados).
+    const existingPayments = payments.filter(
       (p) => p.fixedExpenseId === expenseId
     )
 
-    if (existingPayment) {
-      // Remover pagamento otimisticamente
-      setPayments(prev => prev.filter(p => p.id !== existingPayment.id))
+    if (existingPayments.length > 0) {
+      // Remover pagamentos otimisticamente
+      const removed = new Set(existingPayments.map((p) => p.id))
+      setPayments(prev => prev.filter(p => !removed.has(p.id)))
       try {
-        await unmarkAsPaid(existingPayment.id)
+        await Promise.all(existingPayments.map((p) => unmarkAsPaid(p.id)))
       } catch {
         // Reverter em caso de erro
-        setPayments(prev => [...prev, existingPayment])
+        setPayments(prev => [...prev, ...existingPayments])
       }
     } else {
       // Adicionar pagamento otimisticamente

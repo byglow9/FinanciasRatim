@@ -257,3 +257,65 @@ test('WR-01: nenhum gravador recebe lista ou no calculado a partir do estado do 
   assert.match(sheet, /isRuleError\(err\)/)
   assert.match(income, /isRuleError\(err\)/)
 })
+
+// ---------------------------------------------------------------- Tarefa 3: WR-03, WR-07 e WR-08
+
+test('WR-03: bumpData depois de limite, renda, dia do salario e de lancar, editar ou apagar em Transacoes', () => {
+  const sheet = code('src/components/settings/CategoryEditorSheet.tsx')
+  assert.match(sheet, /if \(limitChanged\) bumpData\(\)/)
+  const income = code('src/components/settings/CycleIncomeCard.tsx')
+  assert.equal((income.match(/\bbumpData\(\)/g) ?? []).length, 2, 'renda e dia do salario chamam bumpData')
+  // No dia do salario o avaliador roda DEPOIS do rekey (marcadores ja na chave nova).
+  assert.ok(income.indexOf('await rekeyForSalaryDay(') < income.lastIndexOf('bumpData()'), 'bumpData do dia vem depois do rekey')
+  const tx = code('src/pages/TransactionsPage.tsx')
+  assert.match(tx, /await update\(editingTransaction\.id, data\)[\s\S]*await add\(data\)[\s\S]*bumpData\(\)/)
+  assert.match(tx, /await remove\(id\)\s*bumpData\(\)/)
+  assert.match(tx, /onDelete=\{handleDelete\}/)
+  // O gatilho nao mora em useTransactions (Casal e Relatorios tambem o usam).
+  assert.doesNotMatch(code('src/hooks/useTransactions.ts'), /bumpData/)
+  // Virada de ciclo com a aba aberta reavalia.
+  const alerts = code('src/contexts/LimitAlertsContext.tsx')
+  assert.match(alerts, /const cycleKey = person \? cycleOf\(now, personConfigFor\(person\)\.salaryDay\)\.key : ''/)
+  assert.match(alerts, /\[evaluate, dataVersion, cycleKey\]/)
+})
+
+test('WR-07: markAsPaid grava por setDoc com ID deterministico e a interface trava o duplo toque', () => {
+  const svc = code('src/services/fixedExpenses.service.ts')
+  assert.match(svc, /paymentDocId\(fixedExpenseId, year, month\)/)
+  assert.match(svc, /await setDoc\(doc\(db, PAY_COL, id\)/)
+  const markAt = svc.indexOf('export async function markAsPaid')
+  assert.doesNotMatch(svc.slice(markAt, svc.indexOf('export async function unmarkAsPaid')), /addDoc\(/)
+  const hook = code('src/hooks/useFixedExpenses.ts')
+  assert.match(hook, /pendingToggles = useRef\(new Set<string>\(\)\)/)
+  assert.match(hook, /if \(pendingToggles\.current\.has\(expenseId\)\) return/)
+  assert.match(hook, /payments\.filter\(\s*\(p\) => p\.fixedExpenseId === expenseId/, 'desmarcar apaga todos os pagamentos da conta')
+  assert.match(hook, /Promise\.all\(existingPayments\.map\(\(p\) => unmarkAsPaid\(p\.id\)\)\)/)
+  const sections = code('src/components/dashboard/HomeSections.tsx')
+  // O estado de pendencia vem antes do retorno antecipado (regra dos hooks).
+  assert.ok(sections.indexOf('useState<ReadonlySet<string>>') < sections.indexOf('if (!view)'))
+  assert.match(sections, /finally \{\s*setPendingKeys/)
+  assert.match(sections, /pendingKeys=\{pendingKeys\}/)
+  const card = code('src/components/dashboard/FixedMonthCard.tsx')
+  assert.match(card, /disabled=\{readOnly \|\| pending\}/)
+  assert.match(card, /aria-busy=\{pending \|\| undefined\}/)
+})
+
+test('WR-08: LaunchSheet grava com prazo e ID estavel; os servicos aceitam o ID e gravam por setDoc', () => {
+  const sheet = code('src/components/launcher/LaunchSheet.tsx')
+  assert.match(sheet, /import \{ withTimeout \} from "@shared\/core\/async\.js"/)
+  assert.match(sheet, /SAVE_TIMEOUT_MS = 8000/)
+  assert.equal((sheet.match(/withTimeout\(/g) ?? []).length, 2, 'gasto/receita e porquinho usam o prazo')
+  assert.match(sheet, /docIds\.current\.tx \?\?= newTransactionId\(\)/)
+  assert.match(sheet, /docIds\.current\.savings \?\?= newSavingsId\(\)/)
+  assert.match(sheet, /Sem confirmação do servidor\. Confira em Transações antes de tentar de novo\./)
+  assert.match(sheet, /\} finally \{\s*setSaving\(false\)/, 'saving sempre e liberado')
+  for (const [f, fn] of [
+    ['src/services/transactions.service.ts', 'newTransactionId'],
+    ['src/services/savings.service.ts', 'newSavingsId'],
+  ]) {
+    const src = code(f)
+    assert.match(src, new RegExp(`export function ${fn}\\(\\)`))
+    assert.match(src, /id\?: string/)
+    assert.match(src, /await setDoc\(doc\(db, COL, docId\)/)
+  }
+})

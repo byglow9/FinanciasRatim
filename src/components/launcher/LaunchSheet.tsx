@@ -17,9 +17,10 @@ import { useArea } from "@/contexts/AreaContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCycle } from "@/contexts/CycleContext"
 import { useCycleBudget } from "@/hooks/useCycleBudget"
-import { addTransaction } from "@/services/transactions.service"
-import { addSavingsTransaction } from "@/services/savings.service"
+import { addTransaction, newTransactionId } from "@/services/transactions.service"
+import { addSavingsTransaction, newSavingsId } from "@/services/savings.service"
 import type { PersonType } from "@/types"
+import { withTimeout } from "@shared/core/async.js"
 import { categoryKind } from "@shared/core/categories.js"
 import { fromCents } from "@shared/core/ledger.js"
 import { formatMoney, shortDate } from "@shared/core/format.js"
@@ -31,6 +32,10 @@ const TAB_OPTIONS: { value: LaunchTab; label: string }[] = [
   { value: "receita", label: "Receita" },
   { value: "porquinho", label: "Porquinho" },
 ]
+
+// Prazo da gravacao (WR-08): o SDK nao rejeita quando a conexao cai depois do envio; sem prazo o
+// botao ficaria em "Lancando..." sem fim.
+const SAVE_TIMEOUT_MS = 8000
 
 type PiggyMode = "deposito" | "saque"
 
@@ -95,7 +100,11 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
   const [note, setNote] = useState("")
   const [attempted, setAttempted] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<"erro" | "timeout" | null>(null)
+  // ID de documento gerado no cliente UMA vez por montagem do formulario e reaproveitado em toda
+  // tentativa (WR-08): se a primeira gravacao chegou ao servidor, a nova tentativa sobrescreve o
+  // mesmo documento e o gasto nao duplica.
+  const docIds = useRef<{ tx?: string; savings?: string }>({})
 
   const kind = tab === "receita" ? "receita" : "gasto"
   const categories = categoryDefs.filter((d) => !d.archived && categoryKind(d) === kind)
@@ -112,7 +121,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
     setDescription("")
     setNote("")
     setAttempted(false)
-    setFailed(false)
+    setFailed(null)
   }
 
   const preview = view ? previewLaunch(view, tab, cents) : null
@@ -127,7 +136,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
     }
     if (tab !== "porquinho" && !category) return
     setSaving(true)
-    setFailed(false)
+    setFailed(null)
     try {
       // Gravacao so online (PR-20): sem rede o envio falharia sem resposta e ficaria na fila.
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -144,30 +153,44 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       let message: string
 
       if (tab === "porquinho") {
-        await addSavingsTransaction({
-          type: piggyMode,
-          amount: fromCents(cents),
-          description: typed || (piggyMode === "deposito" ? "Guardado" : "Retirado"),
-          person,
-          date,
-        })
+        const savingsId = (docIds.current.savings ??= newSavingsId())
+        await withTimeout(
+          addSavingsTransaction(
+            {
+              type: piggyMode,
+              amount: fromCents(cents),
+              description: typed || (piggyMode === "deposito" ? "Guardado" : "Retirado"),
+              person,
+              date,
+            },
+            savingsId
+          ),
+          SAVE_TIMEOUT_MS
+        )
         message =
           piggyMode === "deposito"
             ? `Guardado no Porquinho: ${money}. O Pode gastar não mudou.`
             : `Retirado do Porquinho: ${money}. O Pode gastar não mudou.`
       } else if (category) {
         const typedNote = note.trim()
-        await addTransaction({
-          person,
-          type: tab === "gasto" ? "saida" : "entrada",
-          amount: fromCents(cents),
-          description: typed || category.name,
-          // category (texto) e categoryId seguem juntos durante a transicao (D-07 da Fase 1).
-          category: category.name,
-          categoryId: category.id,
-          date,
-          ...(typedNote ? { note: typedNote } : {}),
-        })
+        const txId = (docIds.current.tx ??= newTransactionId())
+        await withTimeout(
+          addTransaction(
+            {
+              person,
+              type: tab === "gasto" ? "saida" : "entrada",
+              amount: fromCents(cents),
+              description: typed || category.name,
+              // category (texto) e categoryId seguem juntos durante a transicao (D-07 da Fase 1).
+              category: category.name,
+              categoryId: category.id,
+              date,
+              ...(typedNote ? { note: typedNote } : {}),
+            },
+            txId
+          ),
+          SAVE_TIMEOUT_MS
+        )
         message = tab === "gasto" ? `Gasto lançado em ${category.name}: ${money}` : `Receita lançada: ${money}`
       } else {
         return
@@ -182,9 +205,9 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       bumpData()
       onClose()
       toast.show(message, { icon: Check })
-    } catch {
+    } catch (err) {
       // Nada de valor ou descricao em log: so o aviso na tela, com os digitos preservados.
-      setFailed(true)
+      setFailed(err instanceof Error && (err as Error & { code?: string }).code === "timeout" ? "timeout" : "erro")
     } finally {
       setSaving(false)
     }
@@ -364,7 +387,9 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
             </Button>
           }
         >
-          Não foi possível lançar. Confira a conexão e tente de novo.
+          {failed === "timeout"
+            ? "Sem confirmação do servidor. Confira em Transações antes de tentar de novo."
+            : "Não foi possível lançar. Confira a conexão e tente de novo."}
         </Notice>
       ) : null}
 

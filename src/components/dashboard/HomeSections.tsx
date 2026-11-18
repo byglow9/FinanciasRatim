@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
@@ -29,6 +30,8 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
   const { bumpData } = useCycle()
   const { readOnly, guard } = useReadOnly()
   const { show } = useToast()
+  // WR-07: chaves `billId-ano-mes` em gravacao. Declarado ANTES do retorno antecipado (regra dos hooks).
+  const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(() => new Set())
 
   if (!view) {
     // Carregando: blocos neutros, nunca número nem "R$ 0". Sem view e sem carregar, o erro é da página.
@@ -44,6 +47,9 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
 
   const onMarkPaid = async (item: BillItem) => {
     if (guard('editar')) return
+    const key = `${item.billId}-${item.occurrence.year}-${item.occurrence.month}`
+    if (pendingKeys.has(key)) return
+    setPendingKeys((prev) => new Set(prev).add(key))
     try {
       await markAsPaid(item.billId, item.occurrence.month, item.occurrence.year, fromCents(item.plannedCents))
       await refetch()
@@ -51,6 +57,12 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
       show(`Marcado como pago: ${item.name}. O Pode gastar não muda, porque as fixas já estão descontadas.`)
     } catch {
       show('Não foi possível marcar como pago. Tente de novo.')
+    } finally {
+      setPendingKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
     }
   }
 
@@ -67,7 +79,12 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
         showEditLink
         neutralOk={view.verdictSuppressed}
       />
-      <FixedMonthCard bills={view.bills} readOnly={readOnly} onMarkPaid={(item) => void onMarkPaid(item)} />
+      <FixedMonthCard
+        bills={view.bills}
+        readOnly={readOnly}
+        pendingKeys={pendingKeys}
+        onMarkPaid={(item) => void onMarkPaid(item)}
+      />
     </div>
   )
 }

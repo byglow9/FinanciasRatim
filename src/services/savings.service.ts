@@ -1,7 +1,7 @@
 import {
   collection,
   doc,
-  addDoc,
+  setDoc,
   deleteDoc,
   query,
   orderBy,
@@ -37,24 +37,33 @@ export async function getSavingsTransactions(): Promise<SavingsTransaction[]> {
   })) as SavingsTransaction[]
 }
 
+/** ID de documento gerado no cliente, sem rede (WR-08): a mesma tentativa reaproveita o mesmo ID. */
+export function newSavingsId(): string {
+  return MOCK ? mId() : doc(collection(db, COL)).id
+}
+
+/** Com `id`, grava nesse documento (setDoc) e a repeticao nao duplica (WR-08); sem `id`, gera um. */
 export async function addSavingsTransaction(
-  transaction: Omit<SavingsTransaction, 'id' | 'createdAt'>
+  transaction: Omit<SavingsTransaction, 'id' | 'createdAt'>,
+  id?: string
 ): Promise<string> {
   if (MOCK) {
-    const id = mId()
-    const all = mList<RawSavings>(COL)
-    all.push({ ...transaction, id, date: transaction.date.toISOString(), createdAt: new Date().toISOString() })
+    const docId = id ?? mId()
+    const all = mList<RawSavings>(COL).filter((t) => t.id !== docId)
+    all.push({ ...transaction, id: docId, date: transaction.date.toISOString(), createdAt: new Date().toISOString() })
     mSave(COL, all)
-    return id
+    return docId
   }
 
-  const docRef = await addDoc(collection(db, COL), {
+  // Sempre por setDoc: sem `id` o ID e gerado aqui (sem rede), igual ao do addDoc.
+  const docId = id ?? newSavingsId()
+  await setDoc(doc(db, COL, docId), {
     ...transaction,
     ownerId: ownerId(),
     date: Timestamp.fromDate(transaction.date),
     createdAt: Timestamp.now(),
   })
-  return docRef.id
+  return docId
 }
 
 export async function deleteSavingsTransaction(id: string): Promise<void> {

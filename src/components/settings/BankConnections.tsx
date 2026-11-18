@@ -68,6 +68,31 @@ export function BankConnections() {
       })
     })
 
+  // Renovar consentimento ou credenciais: widget em modo de atualizacao do item (REV-07, D-08).
+  // So sincroniza depois; nunca cria conexao nova nem atualiza o item pela API.
+  const reconnect = (c: BankConnection) =>
+    run(`reconnect-${c.itemId}`, async () => {
+      const { accessToken } = await createConnectToken({ itemId: c.itemId })
+      await new Promise<void>((resolve, reject) => {
+        const widget = new PluggyConnect({
+          connectToken: accessToken,
+          updateItem: c.itemId,
+          includeSandbox: false,
+          onSuccess: ({ item }) => {
+            registerConnection(c.person, item.id)
+              .then((s) => {
+                setMessage(`Banco reconectado: ${s.imported} novos.`)
+                resolve()
+              })
+              .catch(reject)
+          },
+          onError: (error) => reject(new Error(error.message)),
+          onClose: () => resolve(),
+        })
+        widget.init()
+      })
+    })
+
   const sync = () =>
     run('sync', async () => {
       const { results } = await syncNow()
@@ -152,6 +177,16 @@ export function BankConnections() {
                       </p>
                     )}
                   </div>
+                  {(f.needsReconnect || f.consent === 'expiring' || f.consent === 'expired') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busy !== null}
+                      onClick={() => reconnect(c)}
+                    >
+                      Reconectar
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"

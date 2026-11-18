@@ -263,6 +263,11 @@ export async function syncConnection(db, pluggy, connection) {
           name: a.marketingName || a.name || '',
         })),
         bankUpdatedAt: item.lastUpdatedAt ? Timestamp.fromDate(new Date(item.lastUpdatedAt)) : null,
+        // Consentimento e estado de execucao para a tela de Bancos (REV-07, D-08).
+        // Item sem consentimento grava null; so o codigo do erro, nunca a mensagem.
+        executionStatus: item.executionStatus ?? null,
+        consentExpiresAt: item.consentExpiresAt ? Timestamp.fromDate(new Date(item.consentExpiresAt)) : null,
+        errorCode: item.error?.code ?? null,
         lastSyncAt: Timestamp.now(),
         lastSyncError: null,
       },

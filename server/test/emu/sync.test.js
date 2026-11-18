@@ -22,11 +22,16 @@ const daysAgo = (n) => {
 }
 
 // Pluggy falsa: cada item tem uma conta e uma lista de lancamentos.
-function fakePluggy(itemsById, { onFetchItem } = {}) {
+function fakePluggy(itemsById, { onFetchItem, item } = {}) {
   return {
     async fetchItem(itemId) {
       if (onFetchItem) await onFetchItem(itemId)
-      return { id: itemId, status: 'UPDATED', connector: { name: 'Banco Falso', imageUrl: null } }
+      return {
+        id: itemId,
+        status: 'UPDATED',
+        connector: { name: 'Banco Falso', imageUrl: null },
+        ...(item ?? {}),
+      }
     },
     async fetchAccounts(itemId) {
       return { results: [{ id: `acc-${itemId}`, type: 'BANK', name: 'Conta' }] }
@@ -426,6 +431,49 @@ describe('sync com dono', () => {
     const conn = (await db.collection('bankConnections').doc('item-sem-dono-1').get()).data()
     assert.ok(conn.lastSyncError)
     assert.equal(await countOf('bankImports'), 0)
+  })
+
+  test('grava executionStatus, bankUpdatedAt e consentExpiresAt do item, errorCode nulo (REV-07)', async () => {
+    await seedConnection('item-consent-1', HID_A)
+    const lastUpdatedAt = '2026-11-16T10:00:00.000Z'
+    const consentExpiresAt = '2027-02-10T12:30:00.000Z'
+    const pluggy = fakePluggy({}, { item: { executionStatus: 'SUCCESS', lastUpdatedAt, consentExpiresAt } })
+
+    await syncItem(db, pluggy, 'item-consent-1')
+
+    const conn = (await db.collection('bankConnections').doc('item-consent-1').get()).data()
+    assert.equal(conn.executionStatus, 'SUCCESS')
+    assert.ok(conn.bankUpdatedAt instanceof Timestamp)
+    assert.equal(conn.bankUpdatedAt.toDate().toISOString(), lastUpdatedAt)
+    assert.ok(conn.consentExpiresAt instanceof Timestamp)
+    assert.equal(conn.consentExpiresAt.toDate().toISOString(), consentExpiresAt)
+    assert.equal(conn.errorCode, null)
+  })
+
+  test('item sem consentimento nem estado de execucao grava null nos tres campos', async () => {
+    await seedConnection('item-consent-2', HID_A)
+    await syncItem(db, fakePluggy({}), 'item-consent-2')
+
+    const conn = (await db.collection('bankConnections').doc('item-consent-2').get()).data()
+    assert.ok('consentExpiresAt' in conn)
+    assert.equal(conn.consentExpiresAt, null)
+    assert.equal(conn.executionStatus, null)
+    assert.equal(conn.errorCode, null)
+  })
+
+  test('item com erro grava so o codigo, nunca a mensagem da Pluggy', async () => {
+    await seedConnection('item-consent-3', HID_A)
+    const texto = 'texto livre com dados do banco'
+    const pluggy = fakePluggy(
+      {},
+      { item: { status: 'LOGIN_ERROR', error: { code: 'ACCOUNT_NEEDS_ACTION', message: texto } } }
+    )
+
+    await syncItem(db, pluggy, 'item-consent-3')
+
+    const conn = (await db.collection('bankConnections').doc('item-consent-3').get()).data()
+    assert.equal(conn.errorCode, 'ACCOUNT_NEEDS_ACTION')
+    assert.equal(JSON.stringify(conn).includes(texto), false)
   })
 
   test('syncItem: itemId vazio ou nao string rejeita citando itemId', async () => {

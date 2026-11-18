@@ -57,3 +57,12 @@ test('nenhuma tela, arquivo ou rota de revisao de importacoes existe (D-01)', ()
   assert.deepEqual(hits, [])
   assert.doesNotMatch(code('src/App.tsx'), /revis/i)
 })
+
+test('Reconectar abre o widget em modo updateItem ligado ao connect-token do item (REV-07, D-08)', () => {
+  const ui = code('src/components/settings/BankConnections.tsx')
+  assert.match(ui, /updateItem/)
+  assert.match(ui, /createConnectToken\(\{ itemId/)
+  assert.match(ui, />\s*Reconectar\s*</)
+  const svc = code('src/services/bank.service.ts')
+  assert.match(svc, /JSON\.stringify\(\{ itemId/)
+})

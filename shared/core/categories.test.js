@@ -15,6 +15,7 @@ import {
   setCategoryMeta,
   categoryIcon,
   categoryKind,
+  reconcileCategoryDefs,
 } from './categories.js'
 import { mapCategory } from './classify.js'
 
@@ -209,4 +210,49 @@ test('categoryKind: usa o gravado, cai no padrao do id e por fim em gasto', () =
   assert.equal(categoryKind({ id: 'pets' }), 'gasto')
   assert.equal(categoryKind({ id: 'pets', kind: 'receita' }), 'receita')
   assert.equal(categoryKind(undefined), 'gasto')
+})
+
+test('reconcileCategoryDefs: documento antigo so com nomes ganha definicoes ativas com id', () => {
+  const defs = reconcileCategoryDefs(['Mercado', 'Lazer'], [])
+  assert.deepEqual(
+    defs.map((d) => [d.id, d.name, !!d.archived]),
+    [
+      ['mercado', 'Mercado', false],
+      ['lazer', 'Lazer', false],
+    ]
+  )
+})
+
+test('reconcileCategoryDefs: nome fora da lista vira arquivada (rollback edita so a lista)', () => {
+  const stored = [
+    { id: 'mercado', name: 'Mercado' },
+    { id: 'lazer', name: 'Lazer' },
+  ]
+  const defs = reconcileCategoryDefs(['Mercado'], stored)
+  assert.equal(defs.find((d) => d.id === 'lazer').archived, true)
+  assert.notEqual(defs.find((d) => d.id === 'mercado').archived, true)
+})
+
+test('reconcileCategoryDefs: categoria arquivada volta a ativa quando o nome esta na lista', () => {
+  const stored = [{ id: 'lazer', name: 'Lazer', archived: true }]
+  const defs = reconcileCategoryDefs(['Lazer'], stored)
+  assert.equal(defs[0].archived, false)
+})
+
+test('reconcileCategoryDefs: nome novo ganha id unico sem recalcular os existentes', () => {
+  const stored = [{ id: 'mercado', name: 'Mercado', color: '#111111' }]
+  const defs = reconcileCategoryDefs(['Mercado', 'Pets'], stored)
+  assert.deepEqual(defs[0], stored[0])
+  assert.deepEqual(
+    defs.map((d) => d.id),
+    ['mercado', 'pets']
+  )
+})
+
+test('reconcileCategoryDefs: nao muta a entrada e devolve a mesma referencia quando nada muda', () => {
+  const stored = [{ id: 'mercado', name: 'Mercado' }]
+  const snapshot = JSON.stringify(stored)
+  const defs = reconcileCategoryDefs(['Mercado'], stored)
+  assert.equal(JSON.stringify(stored), snapshot)
+  assert.equal(defs[0], stored[0])
 })

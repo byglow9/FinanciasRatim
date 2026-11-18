@@ -239,6 +239,24 @@ export function archiveCategory(defs, id) {
 }
 
 /**
+ * Definicoes reconciliadas com a lista de nomes ativos. Documentos antigos so tem a lista de nomes,
+ * e um cliente antigo (rollback) pode editar so essa lista; por isso `names` e a fonte de quem esta
+ * ativo: nome na lista = ativa, fora da lista = arquivada, nome novo ganha id. O cliente novo grava
+ * as duas coisas juntas, entao nesse caso a reconciliacao nao muda nada. Nao muta a entrada.
+ * @param {string[]} names
+ * @param {CategoryDef[]} defs
+ * @returns {CategoryDef[]}
+ */
+export function reconcileCategoryDefs(names, defs) {
+  const list = names ?? []
+  return buildCategoryDefs(list, defs ?? []).map((d) => {
+    const active = list.some((n) => resolveCategoryId(n, [d]) === d.id)
+    if (active === !d.archived) return d
+    return { ...d, archived: !active }
+  })
+}
+
+/**
  * Nomes das categorias ativas (para listas de escolha).
  * @param {CategoryDef[]} defs
  * @returns {string[]}

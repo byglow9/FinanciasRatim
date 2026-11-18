@@ -9,9 +9,14 @@
 // fixo (inclui o Gasto geral). Limites por categoria so acompanham e avisam; nao
 // entram na conta e nunca bloqueiam nada (D-09).
 // Renda efetiva (PR-01) = maior entre a renda esperada do ciclo e a recebida.
+// Por dia (D-06) = piso do Pode gastar dividido pelos dias que faltam, contando
+// hoje. Ritmo (D-07) compara o gasto com o esperado ate hoje em 5 niveis.
+// "O mes em uma conta" (LIM-05) mostra Entra, Fixos, Dia a dia e Sobra; a Sobra
+// do ciclo atual e uma projecao pela media diaria (PR-05), a do passado e real.
 // Premissas implementadas: PR-01, PR-02 (conta paga pelo banco conta duas vezes,
-// sem casamento), PR-06 (Investimentos conta como gasto), PR-07 (categoria
-// arquivada: limite ignorado no ciclo atual), PR-14 (transfer true fora do gasto).
+// sem casamento), PR-05 (projecao por media diaria), PR-06 (Investimentos conta
+// como gasto), PR-07 (categoria arquivada: limite ignorado no ciclo atual),
+// PR-14 (transfer true fora do gasto) e PR-19 (cortes do ritmo 75/100/115).
 //
 // Tudo em centavos inteiros e sem relogio: o "agora" e sempre argumento.
 
@@ -117,8 +122,20 @@ import { limitState, limitsForCycle, normalizePersonConfig } from './limits.js'
  *   restPct: number,
  *   rhythmLevel: RhythmLevel | null,
  *   verdictSuppressed: boolean,
+ *   monthInOne: MonthInOne,
  *   counts: { ok: number, warn: number, over: number, total: number },
  * }} BudgetView
+ */
+
+/**
+ * "O mes em uma conta": quatro linhas. `sobra.projected` diz se a tela mostra o
+ * chip de estimativa (ciclo atual) ou o valor real (ciclo passado).
+ * @typedef {{
+ *   entra: { expectedCents: number, receivedCents: number, effectiveCents: number },
+ *   fixos: { totalCents: number, paidCount: number, totalCount: number },
+ *   diaADia: { spentCents: number },
+ *   sobra: { cents: number, projected: boolean },
+ * }} MonthInOne
  */
 
 /**
@@ -418,6 +435,74 @@ export function rhythm({
 }
 
 /**
+ * Projecao do gasto do ciclo pela media diaria (PR-05): gasto * dias do ciclo /
+ * dias decorridos, arredondado. E so uma estimativa.
+ * @param {{ spentCents: number, daysElapsed: number, daysTotal: number }} args
+ * @returns {number}
+ */
+export function projectCycle({ spentCents, daysElapsed, daysTotal }) {
+  return Math.round((spentCents * Math.max(daysTotal, 1)) / Math.max(daysElapsed, 1))
+}
+
+/**
+ * "O mes em uma conta" (LIM-05): Entra, Fixos, Dia a dia e Sobra. A Sobra e a
+ * renda efetiva menos fixos menos o gasto projetado no ciclo atual, ou menos o
+ * gasto real no ciclo passado.
+ * @param {{
+ *   income: IncomeResult,
+ *   bills: BillsResult,
+ *   spentCents: number,
+ *   daysElapsed: number,
+ *   daysTotal: number,
+ *   isPast: boolean,
+ * }} args
+ * @returns {MonthInOne}
+ */
+export function monthInOne({ income, bills, spentCents, daysElapsed, daysTotal, isPast }) {
+  const dayToDay = isPast ? spentCents : projectCycle({ spentCents, daysElapsed, daysTotal })
+  return {
+    entra: {
+      expectedCents: income.expectedCents,
+      receivedCents: income.receivedCents,
+      effectiveCents: income.effectiveCents,
+    },
+    fixos: {
+      totalCents: bills.totalCents,
+      paidCount: bills.paidCount,
+      totalCount: bills.totalCount,
+    },
+    diaADia: { spentCents },
+    sobra: { cents: income.effectiveCents - bills.totalCents - dayToDay, projected: !isPast },
+  }
+}
+
+/**
+ * Efeito de um lancamento no Pode gastar, para o sheet mostrar antes de gravar
+ * (LIM-04). Gasto subtrai; receita so sobe o Pode gastar pela parte que passa da
+ * renda esperada (PR-01); Porquinho nunca muda (D-03). Valor zero nao muda nada.
+ * Le a view pronta e nao recalcula a composicao.
+ * @param {{ safeCents: number, income: IncomeResult }} view
+ * @param {'gasto' | 'receita' | 'porquinho'} kind
+ * @param {number} cents
+ * @returns {{ safeAfterCents: number, overspends: boolean, raisesSafe: boolean }}
+ */
+export function previewLaunch(view, kind, cents) {
+  const unchanged = { safeAfterCents: view.safeCents, overspends: false, raisesSafe: false }
+  if (!Number.isFinite(cents) || cents <= 0) return unchanged
+  if (kind === 'gasto') {
+    const safeAfterCents = view.safeCents - cents
+    return { safeAfterCents, overspends: safeAfterCents < 0, raisesSafe: false }
+  }
+  if (kind === 'receita') {
+    const newReceived = view.income.receivedCents + cents
+    const newEffective = Math.max(view.income.expectedCents, newReceived)
+    const delta = newEffective - view.income.effectiveCents
+    return { safeAfterCents: view.safeCents + delta, overspends: false, raisesSafe: delta > 0 }
+  }
+  return unchanged
+}
+
+/**
  * Composicao unica do numero do ciclo. Home, sheet, Central e alertas consomem
  * so isto. Lancamentos fora da janela do ciclo sao ignorados.
  * @param {{
@@ -505,6 +590,14 @@ export function buildBudgetView({
     restPct: restPct({ safeCents, budgetCents }),
     rhythmLevel,
     verdictSuppressed: suppressVerdict === true,
+    monthInOne: monthInOne({
+      income,
+      bills: billsResult,
+      spentCents: spend.totalCents,
+      daysElapsed,
+      daysTotal,
+      isPast,
+    }),
     counts,
   }
 }

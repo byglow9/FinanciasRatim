@@ -11,6 +11,9 @@ import {
   restPct,
   RHYTHM_CUTS,
   rhythm,
+  projectCycle,
+  monthInOne,
+  previewLaunch,
   buildBudgetView,
 } from './budget.js'
 import { cycleOf } from './cycle.js'
@@ -522,4 +525,123 @@ test('buildBudgetView: Pode gastar negativo da nivel Estourou', () => {
   assert.equal(v.safeCents, -50000)
   assert.equal(v.rhythmLevel, 4)
   assert.equal(v.perDayCents, 0)
+})
+
+test('projectCycle: media diaria arredondada', () => {
+  assert.equal(projectCycle({ spentCents: 90000, daysElapsed: 10, daysTotal: 30 }), 270000)
+  assert.equal(projectCycle({ spentCents: 90000, daysElapsed: 30, daysTotal: 30 }), 90000)
+  assert.equal(projectCycle({ spentCents: 100, daysElapsed: 3, daysTotal: 31 }), 1033)
+  assert.equal(projectCycle({ spentCents: 500, daysElapsed: 0, daysTotal: 30 }), 15000)
+  assert.equal(projectCycle({ spentCents: 0, daysElapsed: 10, daysTotal: 30 }), 0)
+})
+
+const INCOME_M = { expectedCents: 500000, receivedCents: 450000, effectiveCents: 500000, hasIncome: true }
+const BILLS_M = { totalCents: 200000, paidCount: 2, totalCount: 3, items: [] }
+const miu = (extra = {}) =>
+  monthInOne({
+    income: INCOME_M,
+    bills: BILLS_M,
+    spentCents: 90000,
+    daysElapsed: 10,
+    daysTotal: 30,
+    isPast: false,
+    ...extra,
+  })
+
+test('monthInOne: ciclo atual projeta a Sobra', () => {
+  assert.deepEqual(miu(), {
+    entra: { expectedCents: 500000, receivedCents: 450000, effectiveCents: 500000 },
+    fixos: { totalCents: 200000, paidCount: 2, totalCount: 3 },
+    diaADia: { spentCents: 90000 },
+    sobra: { cents: 30000, projected: true },
+  })
+})
+
+test('monthInOne: ciclo passado usa o gasto real', () => {
+  assert.deepEqual(miu({ isPast: true }).sobra, { cents: 210000, projected: false })
+})
+
+test('monthInOne: Sobra negativa mantem o sinal e sem renda nao quebra', () => {
+  // projeta 600000: 500000 - 200000 - 600000
+  assert.equal(miu({ spentCents: 200000 }).sobra.cents, -300000)
+  const semRenda = miu({
+    income: { expectedCents: 0, receivedCents: 0, effectiveCents: 0, hasIncome: false },
+    bills: { totalCents: 0, paidCount: 0, totalCount: 0, items: [] },
+    spentCents: 0,
+  })
+  assert.equal(semRenda.entra.expectedCents, 0)
+  assert.equal(semRenda.sobra.cents, 0)
+})
+
+test('buildBudgetView: monthInOne coerente com o resto da composicao', () => {
+  const passado = viewWith({}, { expectedIncomeCents: 600000 }, new Date('2026-12-02T15:00:00Z'))
+  assert.equal(passado.monthInOne.sobra.projected, false)
+  assert.equal(passado.monthInOne.sobra.cents, passado.safeCents)
+
+  const atual = viewWith()
+  assert.equal(atual.monthInOne.sobra.projected, true)
+  assert.equal(atual.monthInOne.entra.effectiveCents, atual.income.effectiveCents)
+  assert.equal(atual.monthInOne.fixos.totalCents, atual.bills.totalCents)
+  assert.equal(atual.monthInOne.diaADia.spentCents, atual.spend.totalCents)
+  // gasto 100000 em 17 de 30 dias: projeta 176471; sobra 600000 - 120000 - 176471
+  assert.equal(
+    atual.monthInOne.sobra.cents,
+    600000 - 120000 - projectCycle({ spentCents: 100000, daysElapsed: 17, daysTotal: 30 })
+  )
+  assert.equal(atual.monthInOne.sobra.cents, 303529)
+})
+
+test('buildBudgetView: consistencia completa (Pode gastar, counts e Sobra do passado)', () => {
+  const v = buildScenario(new Date('2026-12-02T15:00:00Z'))
+  assert.equal(v.monthInOne.sobra.cents, v.safeCents)
+  assert.equal(v.counts.total, v.spend.rows.length)
+  assert.equal(v.counts.ok + v.counts.warn + v.counts.over, v.counts.total)
+  assert.equal(v.safeCents, v.budgetCents - v.spend.totalCents)
+})
+
+const PREVIEW_VIEW = (received = 450000, safe = 380000) => ({
+  safeCents: safe,
+  income: {
+    expectedCents: 600000,
+    receivedCents: received,
+    effectiveCents: Math.max(600000, received),
+    hasIncome: true,
+  },
+})
+
+test('previewLaunch: gasto subtrai e avisa quando fica negativo', () => {
+  assert.deepEqual(previewLaunch(PREVIEW_VIEW(), 'gasto', 5000), {
+    safeAfterCents: 375000,
+    overspends: false,
+    raisesSafe: false,
+  })
+  const estoura = previewLaunch(PREVIEW_VIEW(), 'gasto', 400000)
+  assert.equal(estoura.safeAfterCents, -20000)
+  assert.equal(estoura.overspends, true)
+})
+
+test('previewLaunch: receita so sobe o Pode gastar acima da renda esperada', () => {
+  const abaixo = previewLaunch(PREVIEW_VIEW(450000), 'receita', 100000)
+  assert.deepEqual(abaixo, { safeAfterCents: 380000, overspends: false, raisesSafe: false })
+  // recebida iria a 650000, 50000 acima da esperada de 600000
+  const acima = previewLaunch(PREVIEW_VIEW(550000, 380000), 'receita', 100000)
+  assert.equal(acima.raisesSafe, true)
+  assert.equal(acima.overspends, false)
+  assert.equal(acima.safeAfterCents, 430000)
+})
+
+test('previewLaunch: Porquinho e valor zero nao mudam nada', () => {
+  const sem = { safeAfterCents: 380000, overspends: false, raisesSafe: false }
+  assert.deepEqual(previewLaunch(PREVIEW_VIEW(), 'porquinho', 123456), sem)
+  assert.deepEqual(previewLaunch(PREVIEW_VIEW(), 'gasto', 0), sem)
+  assert.deepEqual(previewLaunch(PREVIEW_VIEW(), 'receita', 0), sem)
+  assert.deepEqual(previewLaunch(PREVIEW_VIEW(), 'gasto', Number.NaN), sem)
+})
+
+test('previewLaunch: com Pode gastar ja negativo, gasto positivo continua estourando', () => {
+  const r = previewLaunch(PREVIEW_VIEW(450000, -1000), 'gasto', 500)
+  assert.equal(r.safeAfterCents, -1500)
+  assert.equal(r.overspends, true)
+  const zero = previewLaunch(PREVIEW_VIEW(450000, -1000), 'gasto', 0)
+  assert.equal(zero.overspends, false)
 })

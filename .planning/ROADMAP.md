@@ -130,17 +130,17 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: 0/23 plans executed
+**Plans**: 2/23 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Gates humanos: pacotes de fonte (Sora e Bricolage, D-22) e confirmação das premissas PR-01 a PR-20 do cálculo e do ciclo (D-05)
+- [x] 03-01-PLAN.md — Gates humanos: pacotes de fonte (Sora e Bricolage, D-22) e confirmação das premissas PR-01 a PR-20 do cálculo e do ciclo (D-05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Fontes auto-hospedadas, tokens Moeda, movimento reduzido e lint verde (IDEN-07, D-17, D-22)
+- [x] 03-02-PLAN.md — Fontes auto-hospedadas, tokens Moeda, movimento reduzido e lint verde (IDEN-07, D-17, D-22)
 - [ ] 03-03-PLAN.md — Núcleo: ciclo do salário, ocorrências de vencimento e limites por categoria (LIM-10, LIM-01, LIM-02, CENT-06)
 - [ ] 03-04-PLAN.md — Núcleo: alertas idempotentes, supressão do veredito, categorias com ícone e formatação (LIM-07, LIM-08, CENT-05, LIM-04)
 - [ ] 03-05-PLAN.md — Dados: tipos, personConfig em settings (provado no emulador) e consultas por ciclo (LIM-01, LIM-06, LIM-10, CENT-06)
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 0/23 | Planned | - |
+| 3. Limites, "Pode gastar" e Central | 2/23 | In Progress|  |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

@@ -67,7 +67,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **IDEN-04**: Usuário recebe um aviso para atualizar quando há versão nova, sem tela branca depois de um deploy
 - [ ] **IDEN-05**: O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
 - [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
-- [ ] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
+- [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
 - [ ] **IDEN-08**: Usuário vê um onboarding curto de 3 telas e um login novo no visual do Coinki
 
 ### Cartão de crédito (CARD)
@@ -170,7 +170,7 @@ Preenchida na criação do roadmap.
 | CENT-02 | Phase 3 | Pending |
 | CENT-05 | Phase 3 | Pending |
 | CENT-06 | Phase 3 | Pending |
-| IDEN-07 | Phase 3 | Pending |
+| IDEN-07 | Phase 3 | Complete |
 | MASC-01 | Phase 4 | Pending |
 | MASC-02 | Phase 4 | Pending |
 | MASC-03 | Phase 4 | Pending |

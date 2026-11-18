@@ -130,7 +130,7 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: 6/23 plans executed
+**Plans**: 7/23 plans executed
 **UI hint**: yes
 
 Plans:
@@ -148,7 +148,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 03-06-PLAN.md — Núcleo: Pode gastar, por dia, ritmo em 5 níveis, projeção e "O mês em uma conta" (LIM-02 a LIM-06, CENT-06)
-- [ ] 03-07-PLAN.md — limitAlerts: regras, índice e serviço, com os testes que quebram de propósito atualizados (LIM-07)
+- [x] 03-07-PLAN.md — limitAlerts: regras, índice e serviço, com os testes que quebram de propósito atualizados (LIM-07)
 - [ ] 03-08-PLAN.md — Primitivos existentes restilizados: Progress com tone, Card, Button, Alert, Input e Dialog acessível (IDEN-07)
 - [ ] 03-09-PLAN.md — Primitivos novos: Sheet, Toast, Notice, Chip, Switch, SegmentedControl e MoneyKeypad (IDEN-07, LIM-09)
 
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 6/23 | In Progress|  |
+| 3. Limites, "Pode gastar" e Central | 7/23 | In Progress|  |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

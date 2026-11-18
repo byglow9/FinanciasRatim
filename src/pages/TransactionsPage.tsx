@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
+import { useCycleMonth } from '@/hooks/useCycleMonth'
 import { useTransactions } from '@/hooks/useTransactions'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { TransactionList } from '@/components/transactions/TransactionList'
-import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, TrendingUp, TrendingDown, Wallet, Landmark } from 'lucide-react'
@@ -12,7 +12,8 @@ import type { Transaction, PersonType } from '@/types'
 
 export function TransactionsPage() {
   const { currentArea } = useArea()
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
+  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
+  const selectedMonth = useCycleMonth()
   const [formOpen, setFormOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
@@ -46,16 +47,9 @@ export function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-8 sm:hidden" />
-        <div className="hidden sm:block sm:flex-1">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">Transacoes</h1>
-          <p className="text-muted-foreground">Gerencie suas entradas e saidas</p>
-        </div>
-        <div className="flex-1 sm:flex-none flex justify-center sm:justify-end">
-          <MonthSelector
-            selectedDate={selectedMonth}
-            onChange={setSelectedMonth}
-          />
+          <p className="hidden text-muted-foreground sm:block">Gerencie suas entradas e saidas</p>
         </div>
         <Button size="sm" onClick={() => {
           setEditingTransaction(null)

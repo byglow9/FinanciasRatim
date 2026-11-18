@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
+import { useCycleMonth } from '@/hooks/useCycleMonth'
 import { useFixedExpenses } from '@/hooks/useFixedExpenses'
 import { FixedExpenseForm } from '@/components/fixed-expenses/FixedExpenseForm'
 import { FixedExpenseList } from '@/components/fixed-expenses/FixedExpenseList'
-import { MonthSelector } from '@/components/shared/MonthSelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Receipt, CheckCircle, Clock } from 'lucide-react'
@@ -12,7 +12,8 @@ import type { FixedExpense, PersonType } from '@/types'
 
 export function FixedExpensesPage() {
   const { currentArea } = useArea()
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
+  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
+  const selectedMonth = useCycleMonth()
   const [formOpen, setFormOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<FixedExpense | null>(null)
 
@@ -53,16 +54,9 @@ export function FixedExpensesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-8 sm:hidden" />
-        <div className="hidden sm:block sm:flex-1">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">Contas Fixas</h1>
-          <p className="text-muted-foreground">Gerencie suas contas mensais</p>
-        </div>
-        <div className="flex-1 sm:flex-none flex justify-center sm:justify-end">
-          <MonthSelector
-            selectedDate={selectedMonth}
-            onChange={setSelectedMonth}
-          />
+          <p className="hidden text-muted-foreground sm:block">Gerencie suas contas mensais</p>
         </div>
         <Button size="sm" onClick={() => {
           setEditingExpense(null)

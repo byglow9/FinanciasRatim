@@ -5,7 +5,7 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import type { Settings } from '@/types'
+import type { PersonConfig, PersonType, Settings } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
 import { MOCK, mGetDoc, mSetDoc } from '@/lib/mockStorage'
 import { ownerId } from '@/lib/scope'
@@ -47,4 +47,20 @@ export async function updateSettings(settings: Partial<Omit<Settings, 'id'>>): P
   }
 
   await updateDoc(settingsRef(), settings)
+}
+
+// Grava so o no da propria pessoa (a interface do parceiro e somente leitura). O caminho pontilhado
+// vai ate o nivel da pessoa, nunca ate a categoria, e nao menciona ownerId (o dono e imutavel).
+export async function updatePersonConfig(person: PersonType, config: PersonConfig): Promise<void> {
+  if (MOCK) {
+    // mSetDoc faz mescla rasa: o objeto aninhado e montado a mao para nao apagar o no do parceiro.
+    const existing = mGetDoc<Settings>(DOC_KEY) ?? { id: SETTINGS_DOC_ID, ...DEFAULT_SETTINGS }
+    mSetDoc(DOC_KEY, {
+      ...existing,
+      personConfig: { ...existing.personConfig, [person]: config },
+    })
+    return
+  }
+
+  await updateDoc(settingsRef(), { ['personConfig.' + person]: config })
 }

@@ -214,4 +214,40 @@ describe('matriz de regras do Firestore', () => {
     await assertFails(getDoc(doc(ele, 'settings', 'main')))
     await assertSucceeds(getDoc(doc(outro, 'settings', 'main')))
   })
+
+  test('personConfig: updateDoc com caminho pontilhado cria o mapa pai e nao apaga o no da outra pessoa (A3)', async () => {
+    // espelha o que getSettings faz: cria settings/main com o dono e o que o app grava
+    await assertSucceeds(
+      setDoc(doc(ele, 'settings', 'main'), {
+        ownerId: HID_A,
+        tabNames: { area1: 'Ele', area2: 'Ela', piggy: 'Porquinho' },
+      })
+    )
+    const noEle = { salaryDay: 5, expectedIncomeCents: 600000, incomeOverrides: {}, limits: {} }
+    const noEla = { salaryDay: 10, expectedIncomeCents: 450000, incomeOverrides: {}, limits: {} }
+
+    // primeira gravacao, sem o mapa pai: a chamada replica a de updatePersonConfig
+    await assertSucceeds(updateDoc(doc(ele, 'settings', 'main'), { 'personConfig.ele': noEle }))
+    // segunda pessoa grava o proprio no sem apagar o de ele
+    await assertSucceeds(updateDoc(doc(ela, 'settings', 'main'), { 'personConfig.ela': noEla }))
+
+    const snap = await assertSucceeds(getDoc(doc(ele, 'settings', 'main')))
+    const data = snap.data()
+    assert.equal(data.ownerId, HID_A)
+    assert.deepEqual(data.personConfig.ele, noEle)
+    assert.deepEqual(data.personConfig.ela, noEla)
+    assert.equal(data.personConfig.ele.salaryDay, 5)
+    assert.equal(data.personConfig.ela.salaryDay, 10)
+
+    // regravar o proprio no preserva o do parceiro
+    await assertSucceeds(
+      updateDoc(doc(ele, 'settings', 'main'), { 'personConfig.ele': { ...noEle, salaryDay: 6 } })
+    )
+    const depois = (await assertSucceeds(getDoc(doc(ela, 'settings', 'main')))).data()
+    assert.equal(depois.personConfig.ele.salaryDay, 6)
+    assert.deepEqual(depois.personConfig.ela, noEla)
+
+    // outro casal nao grava no documento do casal A
+    await assertFails(updateDoc(doc(outro, 'settings', 'main'), { 'personConfig.ele': noEle }))
+  })
 })

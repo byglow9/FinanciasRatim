@@ -11,6 +11,10 @@ export interface Transaction {
   description: string
   category: string
   categoryId?: string
+  // Transferencia entre as duas pessoas: o nucleo ignora na soma de gasto (PR-14). Sem interface de edicao nesta fase.
+  transfer?: boolean
+  // Nota digitada no sheet de lancamento; as paginas legadas ignoram.
+  note?: string
   date: Date
   createdAt: Date
 }
@@ -58,6 +62,35 @@ export interface Settings {
   categories: string[]
   categoryDefs?: CategoryDef[]
   theme: 'light' | 'dark'
+  // Configuracao por pessoa (PR-10). Parcial: documentos antigos nao tem o no;
+  // quem le normaliza com normalizePersonConfig do nucleo.
+  personConfig?: Partial<Record<PersonType, Partial<PersonConfig>>>
+}
+
+// Limite de uma categoria a partir de um ciclo (from no formato YYYY-MM); cents null = sem limite.
+export interface LimitEntry {
+  from: string
+  cents: number | null
+}
+
+export interface PersonConfig {
+  salaryDay: number
+  expectedIncomeCents: number
+  incomeOverrides: Record<string, number>
+  limits: Record<string, LimitEntry[]>
+}
+
+export interface LimitAlert {
+  id: string
+  person: PersonType
+  categoryId: string
+  threshold: 80 | 100
+  cycleKey: string
+  spentCents: number
+  limitCents: number
+  silent: boolean
+  createdAt: Date
+  readAt: Date | null
 }
 
 // Categoria com id estavel (D-07): renomear troca so o nome; arquivar nunca apaga (D-08).
@@ -66,6 +99,8 @@ export interface CategoryDef {
   name: string
   color?: string
   archived?: boolean
+  icon?: string
+  kind?: 'gasto' | 'receita'
 }
 
 export interface Goal {

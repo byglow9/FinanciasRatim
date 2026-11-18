@@ -15,7 +15,7 @@ service cloud.firestore {
     function ownsIncoming() { return request.resource.data.ownerId == request.auth.token.hid; }
     function clientCollections() {
       return ['transactions', 'fixedExpenses', 'fixedExpensePayments', 'savings', 'goals',
-              'goalContributions', 'events', 'eventCategories', 'notes', 'settings'];
+              'goalContributions', 'events', 'eventCategories', 'notes', 'settings', 'limitAlerts'];
     }
 
     // Colecoes que o cliente le e escreve
@@ -24,8 +24,9 @@ service cloud.firestore {
       allow create: if isMember() && col in clientCollections() && ownsIncoming();
       allow update: if isMember() && col in clientCollections() && ownsExisting()
         && request.resource.data.ownerId == resource.data.ownerId;
-      // O cliente cria settings/main quando ainda nao existe (get de documento inexistente)
-      allow get: if isMember() && col == 'settings' && resource == null;
+      // O cliente cria settings/main e o marcador de limitAlerts quando ainda nao existem: le o
+      // documento antes de cria-lo (get de documento inexistente). So estas duas colecoes.
+      allow get: if isMember() && col in ['settings', 'limitAlerts'] && resource == null;
     }
 
     // Somente leitura para o cliente; a escrita e do servidor

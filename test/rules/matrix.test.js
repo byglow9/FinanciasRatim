@@ -18,6 +18,7 @@ import {
   deleteDoc,
   runTransaction,
   setLogLevel,
+  Timestamp,
 } from 'firebase/firestore'
 
 // O SDK registra cada PERMISSION_DENIED esperado; silenciar para a saida dos testes ficar legivel.
@@ -39,6 +40,7 @@ const CLIENT_COLS = [
   'eventCategories',
   'notes',
   'settings',
+  'limitAlerts',
 ]
 const BANK_COLS = ['bankConnections', 'bankImports']
 
@@ -82,7 +84,7 @@ describe('matriz de regras do Firestore', () => {
     await env.cleanup()
   })
 
-  test('anonimo: leitura e escrita negadas nas 10 colecoes e nas 2 de banco', async () => {
+  test('anonimo: leitura e escrita negadas nas 11 colecoes e nas 2 de banco', async () => {
     for (const col of [...CLIENT_COLS, ...BANK_COLS]) {
       await assertFails(getDoc(doc(anon, col, 'a1')))
       await assertFails(byOwner(anon, col, HID_A))
@@ -102,7 +104,7 @@ describe('matriz de regras do Firestore', () => {
     }
   })
 
-  test('Ele e Ela (mesmo hid, persons diferentes): create, get, list, update parcial e delete em todas as 10 colecoes (D-05)', async () => {
+  test('Ele e Ela (mesmo hid, persons diferentes): create, get, list, update parcial e delete em todas as 11 colecoes (D-05)', async () => {
     for (const [nome, db] of [
       ['ele', ele],
       ['ela', ela],
@@ -205,7 +207,7 @@ describe('matriz de regras do Firestore', () => {
     await assertSucceeds(getDoc(doc(ela, 'settings', 'main')))
     await assertFails(getDoc(doc(anon, 'settings', 'main')))
     await assertFails(getDoc(doc(semClaim, 'settings', 'main')))
-    // so settings tem essa excecao: documento inexistente em outras colecoes continua negado
+    // so settings e limitAlerts tem essa excecao: documento inexistente em outras colecoes continua negado
     await assertFails(getDoc(doc(ele, 'transactions', 'nao-existe')))
     // settings/main existente de outro casal continua negado
     await env.withSecurityRulesDisabled(async (ctx) => {
@@ -249,5 +251,54 @@ describe('matriz de regras do Firestore', () => {
 
     // outro casal nao grava no documento do casal A
     await assertFails(updateDoc(doc(outro, 'settings', 'main'), { 'personConfig.ele': noEle }))
+  })
+
+  test('limitAlerts: get de inexistente so para membro; criar-se-ausente por transacao e idempotente (LIM-07)', async () => {
+    const ALERT_ID = 'ele__2026-11__alimentacao__80'
+
+    // (a) get de documento inexistente: membro passa; anonimo e sem claim falham; outras colecoes continuam negadas
+    await assertSucceeds(getDoc(doc(ele, 'limitAlerts', ALERT_ID)))
+    await assertSucceeds(getDoc(doc(ela, 'limitAlerts', ALERT_ID)))
+    await assertFails(getDoc(doc(anon, 'limitAlerts', ALERT_ID)))
+    await assertFails(getDoc(doc(semClaim, 'limitAlerts', ALERT_ID)))
+    await assertFails(getDoc(doc(ele, 'transactions', 'nao-existe')))
+
+    // (b) criar-se-ausente por transacao, como o servico: le o marcador e so grava se nao existe
+    const createIfAbsent = (db) =>
+      runTransaction(db, async (transaction) => {
+        const ref = doc(db, 'limitAlerts', ALERT_ID)
+        const snap = await transaction.get(ref)
+        if (snap.exists()) return false
+        transaction.set(ref, {
+          ownerId: HID_A,
+          person: 'ele',
+          categoryId: 'alimentacao',
+          threshold: 80,
+          cycleKey: '2026-11',
+          spentCents: 8000,
+          limitCents: 10000,
+          silent: false,
+          createdAt: Timestamp.now(),
+          readAt: null,
+        })
+        return true
+      })
+    assert.equal(await assertSucceeds(createIfAbsent(ele)), true)
+
+    // (c) a parceira marca como lido (so readAt muda)
+    await assertSucceeds(updateDoc(doc(ela, 'limitAlerts', ALERT_ID), { readAt: Timestamp.now() }))
+
+    // (d) repetir a transacao nao cria de novo e nao zera readAt
+    assert.equal(await assertSucceeds(createIfAbsent(ele)), false)
+    const lido = (await assertSucceeds(getDoc(doc(ele, 'limitAlerts', ALERT_ID)))).data()
+    assert.notEqual(lido.readAt, null, 'readAt nao pode ser zerado pela segunda transacao')
+
+    // (e) trocar o ownerId num update e negado
+    await assertFails(updateDoc(doc(ele, 'limitAlerts', ALERT_ID), { ownerId: HID_B }))
+
+    // (f) outro casal nao le o marcador nem lista pelo ownerId do casal A
+    await assertFails(getDoc(doc(outro, 'limitAlerts', ALERT_ID)))
+    await assertFails(byOwner(outro, 'limitAlerts', HID_A))
+    await assertSucceeds(byOwner(ele, 'limitAlerts', HID_A))
   })
 })

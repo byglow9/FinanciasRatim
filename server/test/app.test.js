@@ -226,6 +226,69 @@ describe('createApp', () => {
     assert.deepEqual(await ok.json(), { accessToken: 'connect-token-falso' })
   })
 
+  describe('POST /api/connect-token com itemId (reconectar, REV-07)', () => {
+    const tokenCall = (body, token = 'tok-ele') =>
+      call('/api/connect-token', { method: 'POST', token, body })
+    const tokenCalls = () => calls.filter((c) => c[0] === 'createConnectToken')
+
+    test('dono: 200 e token emitido para o item com a pessoa do documento', async () => {
+      db.store.set('bankConnections/item-reconnect-1', { ownerId: 'casalA', person: 'ele' })
+      const res = await tokenCall({ itemId: 'item-reconnect-1' })
+      assert.equal(res.status, 200)
+      assert.deepEqual(await res.json(), { accessToken: 'connect-token-falso' })
+      assert.deepEqual(tokenCalls(), [
+        ['createConnectToken', 'item-reconnect-1', { clientUserId: 'ele' }],
+      ])
+    })
+
+    test('a pessoa do corpo e ignorada: vale a do documento', async () => {
+      db.store.set('bankConnections/item-reconnect-1', { ownerId: 'casalA', person: 'ele' })
+      const res = await tokenCall({ itemId: 'item-reconnect-1', person: 'ela' })
+      assert.equal(res.status, 200)
+      assert.equal(tokenCalls()[0][2].clientUserId, 'ele')
+    })
+
+    test('conexao de outro dono: 403 sem chamar a Pluggy', async () => {
+      db.store.set('bankConnections/item-reconnect-1', { ownerId: 'casalA', person: 'ele' })
+      const res = await tokenCall({ itemId: 'item-reconnect-1' }, 'tok-outro')
+      assert.equal(res.status, 403)
+      assert.deepEqual(await res.json(), { error: 'Sem acesso' })
+      assert.equal(tokenCalls().length, 0)
+    })
+
+    test('documento sem ownerId: 403 sem chamar a Pluggy', async () => {
+      db.store.set('bankConnections/item-reconnect-2', { person: 'ele' })
+      const res = await tokenCall({ itemId: 'item-reconnect-2' })
+      assert.equal(res.status, 403)
+      assert.equal(tokenCalls().length, 0)
+    })
+
+    test('conexao inexistente: 404 sem chamar a Pluggy', async () => {
+      const res = await tokenCall({ itemId: 'item-nao-existe' })
+      assert.equal(res.status, 404)
+      assert.deepEqual(await res.json(), { error: 'Conexao nao encontrada' })
+      assert.equal(tokenCalls().length, 0)
+    })
+
+    test('itemId malformado: 400 sem chamar a Pluggy', async () => {
+      for (const itemId of ['../x', 12345678, '', 'curto', null]) {
+        const res = await tokenCall({ itemId })
+        assert.equal(res.status, 400, `itemId ${JSON.stringify(itemId)}`)
+        assert.deepEqual(await res.json(), { error: 'Dados invalidos' })
+      }
+      assert.equal(tokenCalls().length, 0)
+    })
+
+    test('sem itemId e sem pessoa valida: 400 Pessoa invalida; so pessoa continua 200', async () => {
+      const bad = await tokenCall({})
+      assert.equal(bad.status, 400)
+      assert.deepEqual(await bad.json(), { error: 'Pessoa invalida' })
+      const ok = await tokenCall({ person: 'ela' })
+      assert.equal(ok.status, 200)
+      assert.deepEqual(tokenCalls(), [['createConnectToken', undefined, { clientUserId: 'ela' }]])
+    })
+  })
+
   test('POST /api/connections grava ownerId do token e ignora o do corpo', async () => {
     const res = await call('/api/connections', {
       method: 'POST',

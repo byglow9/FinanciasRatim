@@ -134,6 +134,19 @@ export async function getPaymentsForMonth(
   })) as FixedExpensePayment[]
 }
 
+// Pagamentos dos ate dois meses que um ciclo cobre (o ciclo pode atravessar a virada do mes).
+// Sem consulta nova: reaproveita getPaymentsForMonth; pares repetidos sao consultados uma vez.
+export async function getPaymentsForMonths(
+  pairs: Array<{ month: number; year: number }>
+): Promise<FixedExpensePayment[]> {
+  const unique = new Map<string, { month: number; year: number }>()
+  for (const p of pairs) unique.set(`${p.year}-${p.month}`, p)
+  const lists = await Promise.all(
+    [...unique.values()].map((p) => getPaymentsForMonth(p.month, p.year))
+  )
+  return lists.flat()
+}
+
 export async function markAsPaid(
   fixedExpenseId: string,
   month: number,

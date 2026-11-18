@@ -60,6 +60,40 @@ export async function getTransactions(
   })) as Transaction[]
 }
 
+// Lancamentos da janela exata do ciclo. start e end vem do nucleo (cycle.start e cycle.end,
+// fuso de Sao Paulo): nada de date-fns aqui. Usa o indice (ownerId, person, date DESC).
+export async function getTransactionsInRange(
+  person: PersonType,
+  start: Date,
+  end: Date
+): Promise<Transaction[]> {
+  if (MOCK) {
+    return mList<RawTransaction>(COL)
+      .filter((t) => {
+        const d = new Date(t.date)
+        return t.person === person && d >= start && d <= end
+      })
+      .map((t) => ({ ...t, date: new Date(t.date), createdAt: new Date(t.createdAt) }))
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+  }
+
+  const q = query(
+    collection(db, COL),
+    ...ownerScope(),
+    where('person', '==', person),
+    where('date', '>=', Timestamp.fromDate(start)),
+    where('date', '<=', Timestamp.fromDate(end)),
+    orderBy('date', 'desc')
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    date: doc.data().date.toDate(),
+    createdAt: doc.data().createdAt.toDate(),
+  })) as Transaction[]
+}
+
 export async function getAllTransactionsForMonth(month: Date): Promise<Transaction[]> {
   if (MOCK) {
     const start = startOfMonth(month)

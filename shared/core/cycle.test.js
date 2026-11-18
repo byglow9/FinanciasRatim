@@ -8,6 +8,9 @@ import {
   daysLeftInCycle,
   isCycleOver,
   cycleMonths,
+  billOccurrences,
+  nextOccurrence,
+  daysBetweenParts,
 } from './cycle.js'
 
 const at = (iso) => new Date(iso)
@@ -182,4 +185,65 @@ test('cycleMonths: um mes, dois meses e virada de ano', () => {
     { month: 12, year: 2026 },
     { month: 1, year: 2027 },
   ])
+})
+
+const d = (year, month, day) => ({ year, month, day })
+
+test('billOccurrences em ciclo de 5 nov a 4 dez', () => {
+  const c = nov5()
+  assert.deepEqual(billOccurrences(10, c), [d(2026, 11, 10)])
+  assert.deepEqual(billOccurrences(2, c), [d(2026, 12, 2)])
+  assert.deepEqual(billOccurrences(5, c), [d(2026, 11, 5)])
+  assert.deepEqual(billOccurrences(4, c), [d(2026, 12, 4)])
+  assert.deepEqual(billOccurrences(31, c), [d(2026, 11, 30)])
+})
+
+test('billOccurrences em fevereiro: dia 31 cai no 28 e no bissexto o 29 e 29', () => {
+  const feb27 = cycleOf(at('2027-02-10T12:00:00Z'), 1)
+  assert.deepEqual(billOccurrences(31, feb27), [d(2027, 2, 28)])
+  const feb28 = cycleOf(at('2028-02-10T12:00:00Z'), 1)
+  assert.deepEqual(billOccurrences(29, feb28), [d(2028, 2, 29)])
+  assert.deepEqual(billOccurrences(31, feb28), [d(2028, 2, 29)])
+})
+
+test('billOccurrences com dia do salario 31: duas ocorrencias, uma ou nenhuma', () => {
+  const feb = cycleOf(at('2027-02-28T12:00:00Z'), 31)
+  assert.equal(feb.key, '2027-02')
+  assert.deepEqual(billOccurrences(30, feb), [d(2027, 2, 28), d(2027, 3, 30)])
+  assert.deepEqual(billOccurrences(31, feb), [d(2027, 2, 28)])
+  const mar = cycleOf(at('2027-03-31T12:00:00Z'), 31)
+  assert.equal(mar.key, '2027-03')
+  assert.deepEqual(cycleMonths(mar).length, 2)
+  assert.deepEqual(billOccurrences(30, mar), [])
+})
+
+test('billOccurrences recusa dia de vencimento invalido', () => {
+  for (const bad of [0, 32, 1.5, NaN, '10']) {
+    assert.throws(() => billOccurrences(bad, nov5()), /Dia de vencimento invalido/)
+  }
+})
+
+test('nextOccurrence: mes corrente, o proprio dia e proximo mes', () => {
+  const now = at('2026-11-17T15:00:00Z')
+  assert.deepEqual(nextOccurrence(10, now), d(2026, 12, 10))
+  assert.deepEqual(nextOccurrence(17, now), d(2026, 11, 17))
+  assert.deepEqual(nextOccurrence(31, now), d(2026, 11, 30))
+  assert.deepEqual(nextOccurrence(30, at('2027-01-31T15:00:00Z')), d(2027, 2, 28))
+  assert.deepEqual(nextOccurrence(5, at('2026-12-20T15:00:00Z')), d(2027, 1, 5))
+})
+
+test('nextOccurrence usa a data de Sao Paulo (02:30Z de 18 nov ainda e dia 17)', () => {
+  assert.deepEqual(nextOccurrence(17, at('2026-11-18T02:30:00Z')), d(2026, 11, 17))
+})
+
+test('nextOccurrence recusa dia de vencimento invalido', () => {
+  assert.throws(() => nextOccurrence(0, at('2026-11-17T15:00:00Z')), /Dia de vencimento invalido/)
+})
+
+test('daysBetweenParts cruza mes e ano sem erro de horario de verao', () => {
+  assert.equal(daysBetweenParts(d(2026, 11, 17), d(2026, 12, 10)), 23)
+  assert.equal(daysBetweenParts(d(2026, 11, 17), d(2026, 11, 17)), 0)
+  assert.equal(daysBetweenParts(d(2026, 12, 20), d(2027, 1, 5)), 16)
+  assert.equal(daysBetweenParts(d(2018, 10, 31), d(2018, 11, 10)), 10)
+  assert.equal(daysBetweenParts(d(2026, 11, 20), d(2026, 11, 17)), -3)
 })

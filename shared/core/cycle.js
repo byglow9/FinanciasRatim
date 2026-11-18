@@ -194,3 +194,42 @@ export function cycleMonths(cycle) {
   return [first, last]
 }
 
+/**
+ * Datas em que um vencimento cai dentro do ciclo (0 a 2 itens). O dia e
+ * limitado ao tamanho do mes de cada candidato.
+ * @param {number} dueDay dia de vencimento de 1 a 31
+ * @param {Cycle} cycle
+ * @param {string} [tz]
+ * @returns {DateParts[]}
+ */
+export function billOccurrences(dueDay, cycle, tz = DEFAULT_TZ) {
+  if (!isDayOfMonth(dueDay)) throw new Error('Dia de vencimento invalido')
+  const nextMonth = addMonths(cycle.startParts.year, cycle.startParts.month, 1)
+  const candidates = [
+    clampedDate(cycle.startParts.year, cycle.startParts.month, dueDay),
+    clampedDate(nextMonth.year, nextMonth.month, dueDay),
+  ]
+  return candidates.filter((c) => {
+    const at = startInstant(c, tz).getTime()
+    return at >= cycle.start.getTime() && at <= cycle.end.getTime()
+  })
+}
+
+/**
+ * Primeira data de vencimento em ou depois de hoje (calendario do fuso).
+ * @param {number} dueDay dia de vencimento de 1 a 31
+ * @param {Date} now
+ * @param {string} [tz]
+ * @returns {DateParts}
+ */
+export function nextOccurrence(dueDay, now, tz = DEFAULT_TZ) {
+  if (!isDayOfMonth(dueDay)) throw new Error('Dia de vencimento invalido')
+  const t = zonedParts(now, tz)
+  const today = { year: t.year, month: t.month, day: t.day }
+  const next = addMonths(t.year, t.month, 1)
+  const candidates = [
+    clampedDate(t.year, t.month, dueDay),
+    clampedDate(next.year, next.month, dueDay),
+  ]
+  return candidates.find((c) => daysBetweenParts(today, c) >= 0) ?? candidates[1]
+}

@@ -14,7 +14,7 @@ const ASC = 'ASCENDING'
 const DESC = 'DESCENDING'
 const f = (fieldPath, order = ASC) => ({ fieldPath, order })
 
-// 11 indices novos, ownerId sempre primeiro (Query & Index Inventory do RESEARCH)
+// 12 indices novos, ownerId sempre primeiro (Query & Index Inventory do RESEARCH)
 const NEW_INDEXES = [
   ['transactions', [f('ownerId'), f('person'), f('date', DESC)]],
   ['transactions', [f('ownerId'), f('date', DESC)]],
@@ -27,6 +27,7 @@ const NEW_INDEXES = [
   ['eventCategories', [f('ownerId'), f('createdAt')]],
   ['notes', [f('ownerId'), f('person'), f('createdAt', DESC)]],
   ['savings', [f('ownerId'), f('date', DESC)]],
+  ['limitAlerts', [f('ownerId'), f('person'), f('createdAt', DESC)]],
 ]
 
 // 7 indices antigos, mantidos ate nao haver cliente velho
@@ -43,13 +44,13 @@ const OLD_INDEXES = [
 const key = (collectionGroup, fields) => JSON.stringify([collectionGroup, fields.map((x) => [x.fieldPath, x.order])])
 const present = (indexes) => new Set(indexes.map((i) => key(i.collectionGroup, i.fields)))
 
-test('firestore.indexes.json: JSON valido com 18 indices (7 antigos e 11 novos)', () => {
+test('firestore.indexes.json: JSON valido com 19 indices (7 antigos e 12 novos)', () => {
   const { indexes } = readJson('firestore.indexes.json')
-  assert.equal(indexes.length, 18)
+  assert.equal(indexes.length, 19)
   for (const i of indexes) assert.equal(i.queryScope, 'COLLECTION')
 })
 
-test('os 11 indices novos existem com campos na ordem e direcao exigidas', () => {
+test('os 12 indices novos existem com campos na ordem e direcao exigidas', () => {
   const { indexes } = readJson('firestore.indexes.json')
   const have = present(indexes)
   for (const [col, fields] of NEW_INDEXES) {
@@ -68,7 +69,7 @@ test('os 7 indices antigos continuam', () => {
 test('todo indice com ownerId comeca em ownerId ASCENDING', () => {
   const { indexes } = readJson('firestore.indexes.json')
   const withOwner = indexes.filter((i) => i.fields.some((x) => x.fieldPath === 'ownerId'))
-  assert.equal(withOwner.length, 11)
+  assert.equal(withOwner.length, 12)
   for (const i of withOwner) {
     assert.deepEqual(i.fields[0], { fieldPath: 'ownerId', order: ASC })
   }

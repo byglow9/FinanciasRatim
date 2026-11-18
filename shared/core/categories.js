@@ -5,21 +5,48 @@
 
 import { normalize } from './classify.js'
 
-/** @typedef {{ id: string, name: string, color?: string, archived?: boolean }} CategoryDef */
+/** @typedef {'gasto' | 'receita'} CategoryKind */
+/**
+ * `kind` so filtra listas de escolha (gasto ou receita); nunca decide o que e
+ * gasto no calculo (isso e o type da transacao).
+ * @typedef {{ id: string, name: string, color?: string, archived?: boolean, icon?: string, kind?: CategoryKind }} CategoryDef
+ */
+
+/** Nomes de icone Lucide permitidos nas categorias (UI-SPEC). */
+export const CATEGORY_ICONS = [
+  'shopping-cart',
+  'utensils',
+  'car',
+  'house',
+  'heart-pulse',
+  'party-popper',
+  'graduation-cap',
+  'shirt',
+  'wrench',
+  'banknote',
+  'trending-up',
+  'tag',
+  'credit-card',
+  'wallet',
+  'landmark',
+  'layout-grid',
+]
+
+const KINDS = ['gasto', 'receita']
 
 /** @type {CategoryDef[]} */
 export const DEFAULT_CATEGORY_DEFS = [
-  { id: 'alimentacao', name: 'Alimentacao', color: '#f97316' },
-  { id: 'transporte', name: 'Transporte', color: '#3b82f6' },
-  { id: 'moradia', name: 'Moradia', color: '#8b5cf6' },
-  { id: 'saude', name: 'Saude', color: '#ef4444' },
-  { id: 'lazer', name: 'Lazer', color: '#22c55e' },
-  { id: 'educacao', name: 'Educacao', color: '#06b6d4' },
-  { id: 'vestuario', name: 'Vestuario', color: '#ec4899' },
-  { id: 'servicos', name: 'Servicos', color: '#f59e0b' },
-  { id: 'salario', name: 'Salario', color: '#10b981' },
-  { id: 'investimentos', name: 'Investimentos', color: '#6366f1' },
-  { id: 'outros', name: 'Outros', color: '#64748b' },
+  { id: 'alimentacao', name: 'Alimentacao', color: '#f97316', icon: 'utensils', kind: 'gasto' },
+  { id: 'transporte', name: 'Transporte', color: '#3b82f6', icon: 'car', kind: 'gasto' },
+  { id: 'moradia', name: 'Moradia', color: '#8b5cf6', icon: 'house', kind: 'gasto' },
+  { id: 'saude', name: 'Saude', color: '#ef4444', icon: 'heart-pulse', kind: 'gasto' },
+  { id: 'lazer', name: 'Lazer', color: '#22c55e', icon: 'party-popper', kind: 'gasto' },
+  { id: 'educacao', name: 'Educacao', color: '#06b6d4', icon: 'graduation-cap', kind: 'gasto' },
+  { id: 'vestuario', name: 'Vestuario', color: '#ec4899', icon: 'shirt', kind: 'gasto' },
+  { id: 'servicos', name: 'Servicos', color: '#f59e0b', icon: 'wrench', kind: 'gasto' },
+  { id: 'salario', name: 'Salario', color: '#10b981', icon: 'banknote', kind: 'receita' },
+  { id: 'investimentos', name: 'Investimentos', color: '#6366f1', icon: 'trending-up', kind: 'receita' },
+  { id: 'outros', name: 'Outros', color: '#64748b', icon: 'tag', kind: 'gasto' },
 ]
 
 /**
@@ -102,24 +129,85 @@ function requireName(name) {
 }
 
 /**
+ * Valida icone e tipo opcionais (T-03-11); devolve so o que veio.
+ * @param {{ icon?: string, kind?: string }} [extra]
+ * @returns {{ icon?: string, kind?: CategoryKind }}
+ */
+function checkMeta(extra = {}) {
+  /** @type {{ icon?: string, kind?: CategoryKind }} */
+  const out = {}
+  if (extra.icon !== undefined) {
+    if (!CATEGORY_ICONS.includes(extra.icon)) throw new Error('Icone invalido')
+    out.icon = extra.icon
+  }
+  if (extra.kind !== undefined) {
+    if (!KINDS.includes(extra.kind)) throw new Error('Tipo invalido')
+    out.kind = /** @type {CategoryKind} */ (extra.kind)
+  }
+  return out
+}
+
+/**
  * Cria uma categoria; se o nome for de uma arquivada, reativa (mesmo id).
+ * `extra` (icone e tipo) e opcional e a assinatura de tres parametros segue valida.
  * @param {CategoryDef[]} defs
  * @param {string} name
  * @param {string} [color]
+ * @param {{ icon?: string, kind?: string }} [extra]
  * @returns {CategoryDef[]}
  */
-export function addCategory(defs, name, color) {
+export function addCategory(defs, name, color, extra = {}) {
   const trimmed = requireName(name)
+  const meta = checkMeta(extra)
   const key = normalize(trimmed)
   const same = defs.find((d) => normalize(d.name) === key)
   if (same) {
     if (!same.archived) throw new Error('Categoria ja existe')
-    return defs.map((d) => (d === same ? { ...d, archived: false } : d))
+    return defs.map((d) => (d === same ? { ...d, ...meta, archived: false } : d))
   }
   /** @type {CategoryDef} */
   const def = { id: slugify(trimmed, defs.map((d) => d.id)), name: trimmed }
   if (color) def.color = color
+  Object.assign(def, meta)
   return [...defs, def]
+}
+
+/**
+ * Troca icone, cor e/ou tipo; id e nome nunca mudam. Imutavel.
+ * @param {CategoryDef[]} defs
+ * @param {string} id
+ * @param {{ icon?: string, color?: string, kind?: string }} patch
+ * @returns {CategoryDef[]}
+ */
+export function setCategoryMeta(defs, id, patch) {
+  if (!defs.some((d) => d.id === id)) throw new Error('Categoria nao encontrada')
+  const meta = checkMeta(patch)
+  /** @type {{ color?: string }} */
+  const colorPatch = {}
+  if (patch.color !== undefined) colorPatch.color = patch.color
+  return defs.map((d) => (d.id === id ? { ...d, ...meta, ...colorPatch } : d))
+}
+
+/**
+ * Icone da categoria: o gravado quando valido; senao o padrao do id estavel
+ * (documento antigo sem o campo); senao 'tag'.
+ * @param {{ id?: string, icon?: string } | null | undefined} def
+ * @returns {string}
+ */
+export function categoryIcon(def) {
+  if (def?.icon && CATEGORY_ICONS.includes(def.icon)) return def.icon
+  return DEFAULT_CATEGORY_DEFS.find((d) => d.id === def?.id)?.icon ?? 'tag'
+}
+
+/**
+ * Tipo da categoria: o gravado quando valido; senao o padrao do id; senao 'gasto'.
+ * Serve so para filtrar listas de escolha.
+ * @param {{ id?: string, kind?: string } | null | undefined} def
+ * @returns {CategoryKind}
+ */
+export function categoryKind(def) {
+  if (def?.kind && KINDS.includes(def.kind)) return /** @type {CategoryKind} */ (def.kind)
+  return DEFAULT_CATEGORY_DEFS.find((d) => d.id === def?.id)?.kind ?? 'gasto'
 }
 
 /**

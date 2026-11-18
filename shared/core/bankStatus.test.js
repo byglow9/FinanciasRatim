@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { describeBankFreshness } from './bankStatus.js'
+import { describeBankFreshness, shouldSuppressVerdict } from './bankStatus.js'
 
 const NOW = new Date('2026-11-17T15:00:00Z')
 const H = 3600 * 1000
@@ -141,4 +141,36 @@ test('nao muta a entrada e usa so o now recebido', () => {
   assert.equal(r2.stale, true)
   assert.equal(r1.ageHours, 3)
   assert.equal(r2.ageHours, 103)
+})
+
+// ---- shouldSuppressVerdict (LIM-08)
+
+const item = (over = {}) => ({ stale: false, consent: 'none', needsReconnect: false, ...over })
+
+test('shouldSuppressVerdict: lista vazia (so manual) nao suprime', () => {
+  assert.equal(shouldSuppressVerdict([]), false)
+})
+
+test('shouldSuppressVerdict: stale, consentimento vencido ou reconectar suprimem', () => {
+  assert.equal(shouldSuppressVerdict([item({ stale: true })]), true)
+  assert.equal(shouldSuppressVerdict([item({ consent: 'expired' })]), true)
+  assert.equal(shouldSuppressVerdict([item({ needsReconnect: true })]), true)
+})
+
+test('shouldSuppressVerdict: consentimento so perto de vencer (dado fresco) nao suprime', () => {
+  assert.equal(shouldSuppressVerdict([item({ consent: 'expiring' })]), false)
+  assert.equal(shouldSuppressVerdict([item({ consent: 'ok' })]), false)
+})
+
+test('shouldSuppressVerdict: uma conexao ok e outra stale suprime', () => {
+  assert.equal(shouldSuppressVerdict([item(), item({ stale: true })]), true)
+})
+
+test('shouldSuppressVerdict: resultado real de describeBankFreshness, atualizada ha 3 h, nao suprime', () => {
+  const r = describeBankFreshness({ status: 'UPDATED', bankUpdatedAt: ago(3 * H) }, NOW)
+  assert.equal(shouldSuppressVerdict([r]), false)
+  const old = describeBankFreshness({ status: 'UPDATED', bankUpdatedAt: ago(60 * H) }, NOW)
+  assert.equal(shouldSuppressVerdict([r, old]), true)
+  const lost = describeBankFreshness({ status: 'LOGIN_ERROR', bankUpdatedAt: ago(H) }, NOW)
+  assert.equal(shouldSuppressVerdict([lost]), true)
 })

@@ -94,3 +94,14 @@ export function describeBankFreshness(conn, now, opts = {}) {
 
   return { updatedAt, updatedSource, ageHours, stale, consent, daysToExpire, needsReconnect, level }
 }
+
+/**
+ * Suprime elogio e bronca (veredito) quando qualquer conexao tem dado velho,
+ * consentimento vencido ou precisa reconectar (LIM-08). Consentimento so perto
+ * de vencer nao suprime. Lista vazia (usuario so manual) nao suprime.
+ * @param {Array<Pick<BankFreshness, 'stale' | 'consent' | 'needsReconnect'>>} freshnessList resultados de describeBankFreshness
+ * @returns {boolean}
+ */
+export function shouldSuppressVerdict(freshnessList) {
+  return freshnessList.some((f) => f.stale || f.consent === 'expired' || f.needsReconnect)
+}

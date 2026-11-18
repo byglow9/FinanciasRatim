@@ -11,6 +11,10 @@ import {
   archiveCategory,
   activeCategoryNames,
   categoryDisplayName,
+  CATEGORY_ICONS,
+  setCategoryMeta,
+  categoryIcon,
+  categoryKind,
 } from './categories.js'
 import { mapCategory } from './classify.js'
 
@@ -116,4 +120,93 @@ test('mapCategory devolve { id, name }, ignora arquivadas e tem fallback', () =>
   const noOutros = DEFAULT_CATEGORY_DEFS.filter((d) => d.id !== 'outros')
   assert.equal(mapCategory([], noOutros).id, 'alimentacao')
   assert.deepEqual(mapCategory([], []), { id: 'outros', name: 'Outros' })
+})
+
+// ---- icone e tipo (CENT-05)
+
+test('CATEGORY_ICONS tem os 16 nomes permitidos, sem repetir', () => {
+  assert.equal(CATEGORY_ICONS.length, 16)
+  assert.equal(new Set(CATEGORY_ICONS).size, 16)
+  for (const n of ['shopping-cart', 'utensils', 'tag', 'layout-grid', 'landmark']) {
+    assert.ok(CATEGORY_ICONS.includes(n), n)
+  }
+})
+
+test('padroes mantem ids e nomes e ganham icone permitido e tipo', () => {
+  const expected = {
+    alimentacao: ['Alimentacao', 'utensils', 'gasto'],
+    transporte: ['Transporte', 'car', 'gasto'],
+    moradia: ['Moradia', 'house', 'gasto'],
+    saude: ['Saude', 'heart-pulse', 'gasto'],
+    lazer: ['Lazer', 'party-popper', 'gasto'],
+    educacao: ['Educacao', 'graduation-cap', 'gasto'],
+    vestuario: ['Vestuario', 'shirt', 'gasto'],
+    servicos: ['Servicos', 'wrench', 'gasto'],
+    salario: ['Salario', 'banknote', 'receita'],
+    investimentos: ['Investimentos', 'trending-up', 'receita'],
+    outros: ['Outros', 'tag', 'gasto'],
+  }
+  assert.equal(DEFAULT_CATEGORY_DEFS.length, 11)
+  for (const d of DEFAULT_CATEGORY_DEFS) {
+    assert.deepEqual([d.name, d.icon, d.kind], expected[d.id], d.id)
+    assert.ok(CATEGORY_ICONS.includes(d.icon))
+  }
+})
+
+test('addCategory com extra grava icone e tipo; sem extra o objeto continua sem eles', () => {
+  const withMeta = addCategory(DEFAULT_CATEGORY_DEFS, 'Pets', '#abc', { icon: 'heart-pulse', kind: 'gasto' })
+  assert.deepEqual(withMeta.at(-1), { id: 'pets', name: 'Pets', color: '#abc', icon: 'heart-pulse', kind: 'gasto' })
+  const plain = addCategory(DEFAULT_CATEGORY_DEFS, 'Pets')
+  assert.deepEqual(plain.at(-1), { id: 'pets', name: 'Pets' })
+  assert.ok(!('icon' in plain.at(-1)) && !('kind' in plain.at(-1)))
+})
+
+test('addCategory valida icone e tipo e o nome continua obrigatorio', () => {
+  assert.throws(() => addCategory(DEFAULT_CATEGORY_DEFS, 'Pets', '#abc', { icon: 'rocket' }), /Icone invalido/)
+  assert.throws(() => addCategory(DEFAULT_CATEGORY_DEFS, 'Pets', '#abc', { kind: 'outro' }), /Tipo invalido/)
+  assert.throws(() => addCategory(DEFAULT_CATEGORY_DEFS, '  ', '#abc', { icon: 'tag' }), /Nome da categoria nao pode ser vazio/)
+})
+
+test('addCategory reativa arquivada com o mesmo nome sem trocar o id', () => {
+  const archived = archiveCategory(DEFAULT_CATEGORY_DEFS, 'lazer')
+  const back = addCategory(archived, 'Lazer', undefined, { icon: 'wallet' })
+  assert.equal(back.length, archived.length)
+  const lazer = back.find((d) => d.id === 'lazer')
+  assert.equal(lazer?.archived, false)
+  assert.equal(lazer?.icon, 'wallet')
+})
+
+test('setCategoryMeta troca icone, cor e tipo sem mexer em id e nome, e nao muta a lista', () => {
+  const before = JSON.stringify(DEFAULT_CATEGORY_DEFS)
+  const next = setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'lazer', { icon: 'wallet', color: '#111111' })
+  const lazer = next.find((d) => d.id === 'lazer')
+  assert.deepEqual([lazer?.id, lazer?.name, lazer?.icon, lazer?.color, lazer?.kind], ['lazer', 'Lazer', 'wallet', '#111111', 'gasto'])
+  assert.equal(next.length, DEFAULT_CATEGORY_DEFS.length)
+  assert.equal(JSON.stringify(DEFAULT_CATEGORY_DEFS), before)
+  const kind = setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'outros', { kind: 'receita' })
+  assert.equal(kind.find((d) => d.id === 'outros')?.kind, 'receita')
+})
+
+test('setCategoryMeta: id inexistente, icone e tipo invalidos lancam', () => {
+  assert.throws(() => setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'nao-existe', { icon: 'tag' }), /Categoria nao encontrada/)
+  assert.throws(() => setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'lazer', { icon: 'rocket' }), /Icone invalido/)
+  assert.throws(() => setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'lazer', { kind: 'x' }), /Tipo invalido/)
+})
+
+test('categoryIcon: usa o gravado, cai no padrao do id e por fim em tag', () => {
+  assert.equal(categoryIcon({ id: 'lazer', icon: 'wallet' }), 'wallet')
+  assert.equal(categoryIcon({ id: 'lazer' }), 'party-popper')
+  assert.equal(categoryIcon({ id: 'lazer', icon: 'rocket' }), 'party-popper')
+  assert.equal(categoryIcon({ id: 'pets' }), 'tag')
+  assert.equal(categoryIcon({ id: 'pets', icon: 'car' }), 'car')
+  assert.equal(categoryIcon(null), 'tag')
+})
+
+test('categoryKind: usa o gravado, cai no padrao do id e por fim em gasto', () => {
+  assert.equal(categoryKind({ id: 'salario' }), 'receita')
+  assert.equal(categoryKind({ id: 'salario', kind: 'gasto' }), 'gasto')
+  assert.equal(categoryKind({ id: 'lazer' }), 'gasto')
+  assert.equal(categoryKind({ id: 'pets' }), 'gasto')
+  assert.equal(categoryKind({ id: 'pets', kind: 'receita' }), 'receita')
+  assert.equal(categoryKind(undefined), 'gasto')
 })

@@ -1,7 +1,8 @@
 ---
 phase: "3"
 slug: "limites-pode-gastar-e-central"
-status: draft
+status: approved
+reviewed_at: "2026-11-18"
 shadcn_initialized: false
 preset: none
 created: "2026-11-18"
@@ -59,7 +60,7 @@ A tabela é uma lista **não exaustiva** do que existe hoje; criar ou usar um co
 
 | Component | Import path | Estado atual | Mudança na Fase 3 |
 |-----------|-------------|--------------|-------------------|
-| Button | `@/components/ui/button` | variantes default/destructive/outline/secondary/ghost/link; `rounded-md`; alturas 36/40/44/40 | `default` passa a usar `bg-primary` (agora verde escuro de ação) com texto branco. Raio `rounded-btn` (16px). Tamanhos: `default` h-12 (48), `lg` h-14 (56, CTA de largura total), `icon` 44x44, novo `circle` (círculo 44/56). Nenhum botão interativo abaixo de 44px |
+| Button | `@/components/ui/button` | variantes default/destructive/outline/secondary/ghost/link; `rounded-md`; alturas 36/40/44/40 | `default` passa a usar `bg-primary` (agora verde escuro de ação) com texto branco Sora 16/700. Raio `rounded-btn` (16px). Tamanhos: `default` h-12 (48), `lg` h-14 (56, CTA de largura total), `icon` 44x44, novo `circle` (círculo 44/56). Nenhum botão interativo abaixo de 44px |
 | Card (+Header/Title/Content/Footer) | `@/components/ui/card` | `rounded-lg border shadow-sm`, padding 24, título `text-2xl` | Sem borda e sem sombra, `rounded-card` (22px), `bg-card` (agora `surface`), padding 16. `CardTitle` passa a Sora 16/700 (hoje 24px). Corrige o uso em todas as páginas legadas sem editá-las |
 | Badge | `@/components/ui/badge` | `success` = branco sobre `green-500` (2,28:1) e `warning` = branco sobre `yellow-500` (1,92:1): **reprovam AA** | Trocar `success`/`warning` pelos pares de tinta do contrato (fundo suave + texto `ok-ink`/`warn-ink`). Não usar `Badge` para o ritmo: usar `RhythmPill` |
 | Alert (+Description) | `@/components/ui/alert` | variantes com borda; texto `yellow-700`/`green-700` | Restilizar para o formato "notice" (fundo `surface`, raio 16, sem borda, ícone à esquerda). `BankStatusNotice` e os avisos da Home usam esse formato |
@@ -67,7 +68,7 @@ A tabela é uma lista **não exaustiva** do que existe hoje; criar ou usar um co
 | Tabs | `@/components/ui/tabs` | controle segmentado com "slider" deslizante, usado por `AreaSelector` | Mantido para as páginas legadas. **Não** usar para Gasto/Receita/Porquinho nem para o perfil: criar `SegmentedControl` (abaixo) |
 | Dialog | `@/components/ui/dialog` | modal central, `z-[9999]/[10000]`, sem `role="dialog"`, sem Esc, sem trap de foco, botão fechar com `sr-only` "Close" | Mantido para formulários legados. Correções mínimas exigidas nesta fase: `role="dialog"`, `aria-modal="true"`, fechar com Esc, devolver o foco ao elemento que abriu, rótulo "Fechar" em pt-BR |
 | Input | `@/components/ui/input` | h-10, `text-sm`, `border-input` | h-12 (48), texto 16px (evita zoom no iOS), borda `--input` escurecida (≥3:1, ver Acessibilidade), raio 16 |
-| Label | `@/components/ui/label` | Sora via herança | Sora 14/700 (`text-sm font-bold`); rótulo sempre visível, nunca só placeholder |
+| Label | `@/components/ui/label` | Sora via herança | Sora 16/700 (`text-base font-bold`); rótulo sempre visível, nunca só placeholder |
 | Select | `@/components/ui/select` | nativo estilizado | Mesma altura e borda do Input |
 
 ### A criar nesta fase
@@ -118,48 +119,58 @@ A tabela é uma lista **não exaustiva** do que existe hoje; criar ou usar um co
 
 ## Spacing Scale
 
-Valores declarados (todos múltiplos de 4):
+Escala base declarada (4 / 8 / 16 / 24 / 32 / 48 / 64, todos múltiplos de 4). **Nenhum valor de espaçamento fora desta escala e da tabela de exceções abaixo pode aparecer no contrato nem na implementação** (o mockup tem 6, 7, 10 e 1,5; todos foram normalizados):
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Folga entre itens do dock, intervalo ícone-texto em chips, padding do controle segmentado |
-| sm | 8px | Intervalo entre botões do teclado, entre chips, entre sino/engrenagem/perfil |
-| sm+ | 12px | Intervalo interno de linhas (ícone para texto), recuo vertical de linhas de lista |
+| xs | 4px | Folga entre itens do dock, intervalo ícone-texto em chips e na pílula de ritmo, padding do controle segmentado, margem da legenda do resumo da Central |
+| sm | 8px | Intervalo entre botões do teclado, entre chips, entre sino/engrenagem/perfil, abaixo do rótulo e da pílula do hero, entre círculo e rótulo dos atalhos, margem do divisor e da barra de limite |
 | md | 16px | Padding de cartão, padding horizontal da página, espaço entre cartões |
 | lg | 24px | Espaço acima da linha de atalhos, padding do hero |
 | xl | 32px | Espaço entre grupos de seções |
 | 2xl | 48px | Quebra de seção maior (Configurações) |
 | 3xl | 64px | Reservado |
 
-**Desvio do mockup:** o mockup usa 14px entre cartões e 18px acima dos atalhos; normalizados para 16 e 24.
+**Desvio do mockup:** o mockup usa valores fora da escala entre cartões e acima dos atalhos; normalizados para 16 e 24.
 
 Exceções (todas múltiplos de 4 e justificadas):
 
 | Valor | Onde | Motivo |
 |-------|------|--------|
+| 12px | Padding vertical de linhas de lista e do cartão "O mês em uma conta"; padding de `Notice`, toast, `FieldRow`, item do sino e pílula de ritmo (horizontal); intervalo ícone-texto em linhas e `Notice`; intervalo entre opções do seletor de categoria; margem superior do controle segmentado, do teclado e do CTA do sheet; laterais do dock | Meio-passo entre 8 e 16, herdado do mockup 008 aprovado: com texto de 16px e alvo mínimo de 44px, 8 deixa as linhas apertadas e 16 estoura a altura das linhas e faixas. Só para ritmo interno de linhas e faixas; nunca entre cartões nem entre seções (esses usam 16 ou mais) |
 | 44px | Sino, engrenagem, perfil, fechar sheet, botão do mês, linhas tocáveis (altura mínima), chips clicáveis, "Marcar pago" | Alvo de toque mínimo (mockup usa 40) |
 | 48px | Botões do dock, círculo da categoria no seletor, campos de formulário | Alvo confortável para polegar |
 | 56px | "+" flutuante, círculo dos atalhos, teclas do teclado, CTA do sheet | Ações principais (mockup 58/50, normalizado) |
 | 84px | Slot central do mascote no arco | Mockup 84, mantido; a Fase 4 troca o conteúdo |
 | 112px + área segura | Padding inferior do conteúdo | Dock (64) + margem (16) + folga (32); somar `env(safe-area-inset-bottom)` |
 
-Rodapé do dock: `bottom: calc(16px + env(safe-area-inset-bottom))`, laterais 12px. Topo (PWA instalado): `padding-top: env(safe-area-inset-top)`.
+Rodapé do dock: `bottom: calc(16px + env(safe-area-inset-bottom))`, laterais 12px (exceção declarada acima). Topo (PWA instalado): `padding-top: env(safe-area-inset-top)`.
 
 ---
 
 ## Typography
 
-Duas famílias, duas espessuras, cinco tamanhos declarados. As famílias têm escalas independentes: **Sora** para texto (3 tamanhos) e **Bricolage Grotesque** para números e títulos grandes (2 tamanhos). Espessuras em todo o app: **400 (regular) e 700 (bold)**; nenhuma 500/600/800.
+Duas famílias, duas espessuras, **quatro tamanhos no total, também como renderizados: 12, 16, 28 e 56 px**. Nenhum outro tamanho de fonte é renderizado nas telas da Fase 3, nem por ajuste automático (o ajuste do Display reaproveita o 28, ver Regras). As famílias têm escalas independentes: **Sora** para texto (2 tamanhos: 12 e 16) e **Bricolage Grotesque** para números e títulos grandes (2 tamanhos: 28 e 56). Espessuras em todo o app: **400 (regular) e 700 (bold)**; nenhuma 500/600/800.
 
-**Desvio do mockup:** o mockup usa 600 e 800 e vários tamanhos soltos (10, 11, 13, 20, 22, 26, 46, 54). Normalizados para a escala abaixo. Mínimo absoluto de fonte: 12px (o mockup tem 10 e 11).
+**Desvio do mockup:** o mockup usa 600 e 800 e vários tamanhos soltos (10, 11, 13, 14, 20, 22, 26, 46, 54). Normalizados para a escala acima. Mínimo absoluto de fonte: 12px (o mockup tem 10 e 11).
+
+**Papéis que mudaram nesta revisão (o antigo papel de 14px deixou de existir):**
+- Body (texto corrido, descrição de linhas, rótulos de campo, nome de categoria, valores nas linhas, itens de menu, abas do controle segmentado, seletor de ciclo, texto de toast e de `Notice`, texto de botões) passou de 14 para **16**.
+- Pílula de ritmo passou de 14/700 para **16/700** (altura 32 mantida: 16 × 1,5 = 24 de linha + 4 + 4).
+- Display com ajuste automático: os degraus de 44 e 36 foram **removidos**; o degrau único agora é o **28** (papel Heading).
+- Nada foi movido para 12 além do que já era Caption.
+
+**Hierarquia sem o tamanho intermediário:** em Sora, o nível "primário" é 16/700 em `--foreground` (nome, valor, título de cartão, botão) e o "corrido" é 16/400 em `--foreground`; o "secundário" é 12/400 em `--muted-foreground` (legendas, metadados) e o "de ênfase compacta" é 12/700 (chips, atalhos, valores de limite). A distância 12 para 16, mais peso e cor, separa os níveis; Bricolage 28 e 56 dão os dois degraus altos (títulos e números). Em cartões e linhas, o padrão é **uma linha primária 16/700 + no máximo uma legenda 12/400 muted**.
+
+**Escopo:** esta escala vale para todas as telas novas ou reescritas na Fase 3 (casca, Home, sheet, Central, Configurações, sino, Casal). Páginas legadas não reescritas continuam com os tamanhos Tailwind que já têm (ver "Páginas legadas"); a normalização delas é IDEN-06 (Fase 5).
 
 ### Sora (`--font-sans`): texto e rótulos
 
 | Role | Size | Weight | Line Height | Uso |
 |------|------|--------|-------------|-----|
 | Caption | 12px | 400 (700 em chips e rótulos de atalho) | 1.5 | Metadados, "de R$ 400", legendas, rótulo dos atalhos, texto dos chips |
-| Body | 14px | 400 (700 em rótulos e valores de linha) | 1.5 | Texto corrido, descrição de linhas, rótulos de campo, nome de categoria, pílula de ritmo, valores nas linhas |
-| Label | 16px | 700 | 1.5 | Título de cartão, texto de botões e CTA, texto de campos de formulário (mínimo 16 para não dar zoom no iOS), título do sheet |
+| Body | 16px | 400 | 1.5 | Texto corrido, descrição de linhas e de lançamentos, rótulo do `FieldRow`, texto de campos de formulário (mínimo 16 para não dar zoom no iOS) |
+| Label | 16px | 700 | 1.5 | Título de cartão e do sheet, nome de categoria, valores nas linhas, rótulos de campo, texto de botões e CTA, itens de menu, abas do controle segmentado, seletor de ciclo, pílula de ritmo, texto de toast e título de `Notice` |
 
 ### Bricolage Grotesque (`--font-display`): números e títulos grandes
 
@@ -170,7 +181,7 @@ Duas famílias, duas espessuras, cinco tamanhos declarados. As famílias têm es
 
 Regras:
 
-- **Ajuste automático do Display** (não é um tamanho novo, é o mesmo papel com degraus): até 9 caracteres formatados = 56px; 10 a 12 = 44px; 13 ou mais = 36px (piso). Vale para o hero e para o valor do sheet (máximo 8 dígitos = "R$ 999.999,99", 13 caracteres, 36px). Implementar por contagem de caracteres, sem medir DOM.
+- **Ajuste automático do Display** (não cria tamanho novo: reaproveita o Heading de 28px): até **11 caracteres** formatados, contados **sem o sinal** (ex.: "R$ 984,06" = 9, "R$ 9.999,99" = 11) = **56px**; **12 ou mais** = **28px** (Heading, 700). Vale para o hero e para o valor do sheet (máximo 8 dígitos = "R$ 999.999,99", 13 caracteres, 28px). No hero, ao cair para 28 os centavos continuam em 28/700 `--muted-foreground` e a parte inteira em `--foreground` (ou `--danger-ink`): a distinção passa a ser só de cor. Implementar por contagem de caracteres, sem medir DOM. Conferência de caber a 360px (conteúdo de 328px): 11 caracteres em 56px ocupam cerca de 300px; o planejador deve validar no navegador.
 - Números grandes: `letter-spacing: -0.04em` (mockup), `font-variant-numeric: tabular-nums` quando a fonte suportar (inofensivo se não suportar).
 - Bricolage: importar com eixo óptico (`opsz`) para combinar com o mockup aprovado (o mockup carregou `opsz 12..96`) e usar `font-optical-sizing: auto`.
 - `font-display: swap`; pilha de reserva `system-ui, -apple-system, 'Segoe UI', sans-serif`.
@@ -254,8 +265,8 @@ Tokens: `--rhythm-0-bg`, `--rhythm-0-fg` ... `--rhythm-4-bg`, `--rhythm-4-fg` em
 | Estado | Condição | Barra (preenchimento) | Legenda | Ícone |
 |--------|----------|-----------------------|---------|-------|
 | Em dia | gasto < 80% do limite | `--brand` | `{pct}% · restam {R$}` em `--muted-foreground` | nenhum |
-| Atenção | 80% ≤ gasto ≤ 100% | `--warn` | `{pct}% · restam {R$}` em `--warn-ink`, peso 700 | `triangle-alert` 14px |
-| Passou | gasto > 100% | `--danger`, 100% de largura | `passou {R$} do limite` em `--danger-ink`, peso 700 | `circle-alert` 14px |
+| Atenção | 80% ≤ gasto ≤ 100% | `--warn` | `{pct}% · restam {R$}` em `--warn-ink`, peso 700 | `triangle-alert` 16px |
+| Passou | gasto > 100% | `--danger`, 100% de largura | `passou {R$} do limite` em `--danger-ink`, peso 700 | `circle-alert` 16px |
 | Sem limite | categoria sem limite | sem barra | linha "Gasto geral" | n/a |
 | Dado velho | `StaleNotice` ativo | "Em dia" vira neutro (`--muted-foreground`); "Atenção" e "Passou" mantêm cor, porque dado faltando só pode piorar esses estados | igual | igual |
 
@@ -296,17 +307,17 @@ Convenção: "rolagem" = coluna única `max-w-[480px]` no celular, centralizada 
 ### S1. Casca: barra superior, dock e rotas
 
 **Barra superior** (`TopBar`, não é fixa: rola com a página):
-- Esquerda: `CycleSelector`, pílula `bg-card`, raio 16, altura 44, Sora 14/700. Rótulo: "5 nov a 4 dez" quando o dia do salário ≠ 1; nome do mês ("Novembro") quando = 1. Chevrons com `aria-label` "Ciclo anterior" e "Próximo ciclo"; o rótulo é um botão que abre o seletor de ciclos (reaproveita a grade de meses do `MonthSelector` enquanto o ciclo for derivado do mês de início).
+- Esquerda: `CycleSelector`, pílula `bg-card`, raio 16, altura 44, Sora 16/700. Rótulo: "5 nov a 4 dez" quando o dia do salário ≠ 1; nome do mês ("Novembro") quando = 1. Chevrons com `aria-label` "Ciclo anterior" e "Próximo ciclo"; o rótulo é um botão que abre o seletor de ciclos (reaproveita a grade de meses do `MonthSelector` enquanto o ciclo for derivado do mês de início).
 - Direita, em linha com intervalo 8px: `AlertsBell` (44x44, círculo `bg-card`), engrenagem (44x44, círculo `bg-card`, `aria-label` "Configurações", `title` "Configurações", rota `/configuracoes`), `ProfileSwitcher`.
 - Largura mínima suportada: 360px. Em 360px o seletor de ciclo encolhe (`min-w-0`, rótulo com reticências); os três botões da direita não encolhem.
 - O logotipo "Financias Ratimbum" e o botão de sair deixam o cabeçalho (o nome do app é IDEN-01, Fase 5; sair vai para o menu do perfil e para o fim de Configurações).
 
 **Seletor de perfil** (`ProfileSwitcher`):
 - Gatilho: pílula `bg-card`, altura 44, raio 999: avatar de 28px (círculo `--primary`, inicial em branco 12/700) + chevron-down 16px. `aria-haspopup="menu"`, `aria-expanded`, `aria-label` "Perfil: {Nome}. Trocar perfil", `title` igual.
-- Menu: `role="menu"`, 240px, fundo `surface-2`, borda 1px `border`, raio 20, sombra `shadow-float`, padding 8, ancorado à direita, 8px abaixo do gatilho. Itens `role="menuitemradio"` com `aria-checked`, altura mínima 44, raio 14, Sora 14/700 + legenda 12/400 muted:
+- Menu: `role="menu"`, 240px, fundo `surface-2`, borda 1px `border`, raio 20, sombra `shadow-float`, padding 8, ancorado à direita, 8px abaixo do gatilho. Itens `role="menuitemradio"` com `aria-checked`, altura mínima 44, raio 14, Sora 16/700 + legenda 12/400 muted:
   1. `user` + "{Nome} (você)" / "seu perfil" (o "(você)" vai no perfil do claim `person` do usuário logado, não fixo em Ela ou Ele).
   2. `eye` + "Ver perfil de {Nome do parceiro}" / "somente leitura".
-  3. Divisor (`border-t`, 6px de margem).
+  3. Divisor (`border-t`, 8px de margem).
   4. `log-out` + "Sair" (`role="menuitem"`).
 - **Nomes vêm de `settings.tabNames.area1` / `area2`** (hoje "Nirigue" / "Nirigua"). Nunca escrever "Ele" ou "Ela" no código; os exemplos "Ela (você)" deste documento são ilustrativos. Nomes longos truncam com reticências no menu e no `title`.
 - Teclado: Enter/Espaço abre; setas navegam; Esc fecha e devolve o foco ao gatilho; clique fora fecha. (O código atual do sino só trata clique fora.)
@@ -348,17 +359,17 @@ Ordem de cima para baixo (pré-preenchido de 008): barra superior; faixa somente
 - Contêiner centralizado, margem superior 8px.
 - **Arco** SVG `viewBox="0 0 200 110"`: trilho `--track` e preenchimento, ambos em semicírculo `M16 104 A84 84 0 0 1 184 104`, traço 13, `stroke-linecap: round`, `stroke-dasharray: 264`. Largura renderizada `min(272px, 100% - 32px)`, altura automática. `stroke-dashoffset = 264 × (1 − r)`, onde `r = clamp(PodeGastar ÷ (rendaEsperada − fixos), 0, 1)` (0 quando o divisor ≤ 0). Cor do preenchimento: tabela dos 5 papéis; "dado velho" = neutro.
 - `role="img"` com `aria-label` "Restam {pct}% do dinheiro do ciclo" (o valor exato está no texto abaixo).
-- **Slot do mascote:** círculo de 84px, fundo `--card`, centralizado sobre o arco (`top: 62px`), contém `piggy-bank` Lucide 42px em `--brand`, `aria-hidden`. Na Fase 4 o conteúdo vira o Vintém; manter o contêiner de 84px e a posição.
-- Rótulo "Pode gastar": Sora 14/700, `--muted-foreground`, 6px abaixo do arco.
+- **Slot do mascote:** círculo de 84px, fundo `--card`, centralizado sobre o arco (`top: 64px`), contém `piggy-bank` Lucide 42px em `--brand`, `aria-hidden`. Na Fase 4 o conteúdo vira o Vintém; manter o contêiner de 84px e a posição.
+- Rótulo "Pode gastar": Sora 16/700, `--muted-foreground`, 8px abaixo do arco.
 - **Valor:** Display (Bricolage 56/700, ajuste automático), parte inteira em `--foreground` (ou `--danger-ink` se negativo e sem dado velho); centavos em Heading (28/700) `--muted-foreground`, alinhados à linha de base. Ex.: "R$ 984" + ",06".
 - **Linha por dia:** Sora 12/400 muted: "R$ 57 por dia · 17 dias até 4 dez". O valor por dia é arredondado **para baixo** em reais inteiros (nunca promete mais do que existe). Quando o restante ≤ 0: "Sem folga neste ciclo". "1 dia" no singular.
-- **Pílula de ritmo:** 10px abaixo. `RhythmPill`: Sora 14/700, altura 32, padding 0 12px, raio 999, ícone 16px, intervalo 6px; cores da tabela dos 5 papéis. Não interativa (não precisa de 44px).
+- **Pílula de ritmo:** 8px abaixo da linha por dia. `RhythmPill`: Sora 16/700, altura 32, padding 0 12px, raio 999, ícone 16px, intervalo 4px; cores da tabela dos 5 papéis. Não interativa (não precisa de 44px).
 - **Região viva:** um `<p class="sr-only" aria-live="polite">` com "Pode gastar agora: R$ 864, R$ 57 por dia" atualizada após cada lançamento (o hero em si não é região viva, para não reler a cada renderização).
 - **Estado sem renda esperada** (renda do ciclo = 0 e nenhuma receita no ciclo): o arco aparece só com o trilho e o bloco de valor é substituído por estado vazio (ver Copywriting > Hero sem renda). A pílula não aparece.
 - **Estado de carregamento:** arco com trilho e blocos `bg-card` no lugar do valor; **nunca** mostrar "R$ 0" como marcador (seria número falso). Sem animação de pulso quando `prefers-reduced-motion`.
 - **Ciclo passado:** rótulo "Sobrou no ciclo" (≥ 0) ou "Passou no ciclo" (< 0) no lugar de "Pode gastar"; linha por dia vira "Ciclo encerrado em 4 dez"; sem pílula; atalhos Novo gasto/Nova receita lançam com data de hoje e mostram toast informando "Lançado em {hoje}, fora do ciclo que você está vendo" (padrão, ver P-07). Ciclo futuro: bloqueado pelo chevron desabilitado.
 
-**Atalhos** (`ShortcutRow`): grade de 4 colunas, margem superior 24px, cada coluna é um `<button type="button">` com altura ≥ 80 (círculo 56 + intervalo 6 + rótulo 18), largura da coluna (≥ 72). Círculo `--card` (hover `--track`, pressionado `--track`), raio 999, ícone 22px. Rótulo Sora 12/700 abaixo, centralizado.
+**Atalhos** (`ShortcutRow`): grade de 4 colunas, margem superior 24px, cada coluna é um `<button type="button">` com altura ≥ 80 (círculo 56 + intervalo 8 + rótulo de uma linha 12 × 1,5), largura da coluna (≥ 72). Círculo `--card` (hover `--track`, pressionado `--track`), raio 999, ícone 22px. Rótulo Sora 12/700 abaixo, centralizado.
 
 | Atalho | Ícone | Cor do ícone | Ação |
 |--------|-------|--------------|------|
@@ -368,19 +379,19 @@ Ordem de cima para baixo (pré-preenchido de 008): barra superior; faixa somente
 | Limites | `gauge` | `--foreground` | Rola até `#lm` com destaque |
 
 - **Desvio do mockup:** o mockup usa `--color-ok` (`#16a34a`, 2,82:1 sobre o cartão) para o ícone de receita; aqui `--ok-ink`. A legenda de teste "Gasto e receita abrem o lançamento..." do mockup não existe no produto.
-- **Rolagem com destaque:** `scrollIntoView({ behavior: 'smooth', block: 'start' })` com `scroll-margin-top: 16px`; depois da rolagem o foco vai para o título da seção (`tabIndex={-1}`) para teclado e leitor de tela. Destaque: anel de 3px `--ring` por 1.200ms (keyframes: 0% e 100% sem sombra, 30% com anel). Com `prefers-reduced-motion`: `behavior: 'auto'` e um contorno estático de 2px `--ring` por 1.200ms, sem animação.
+- **Rolagem com destaque:** `scrollIntoView({ behavior: 'smooth', block: 'start' })` com `scroll-margin-top: 16px`; depois da rolagem o foco vai para o título da seção (`tabIndex={-1}`) para teclado e leitor de tela. Destaque: anel de 4px `--ring` por 1.200ms (keyframes: 0% e 100% sem sombra, 30% com anel). Com `prefers-reduced-motion`: `behavior: 'auto'` e um contorno estático de 2px `--ring` por 1.200ms, sem animação.
 - Somente leitura: "Novo gasto" e "Nova receita" `aria-disabled="true"`, ícone e rótulo `--muted-foreground`, toque mostra o toast de somente leitura. "Contas fixas" e "Limites" seguem ativos.
 
 **"O mês em uma conta"** (`MonthInOneCard`): cartão `bg-card`, raio 22, padding 16, margem superior 16.
 - Cabeçalho: `wallet` 20px + título Sora 16/700; à direita `Chip` "estimativa" (Sora 12/700, fundo `--surface-2`, borda 1px `border`, raio 12; **Desvio do mockup:** no 008 o chip é `surface` sobre cartão `surface` e some).
-- Quatro linhas (`line`: flex, `space-between`, padding vertical 12, separador 1px `border` entre elas), rótulo Sora 14/400 + legenda 12/400 muted à esquerda; valor Sora 14/700 à direita:
+- Quatro linhas (`line`: flex, `space-between`, padding vertical 12, separador 1px `border` entre elas), rótulo Sora 16/400 + legenda 12/400 muted à esquerda; valor Sora 16/700 à direita:
 
 | Linha | Legenda | Valor | Cor do valor |
 |-------|---------|-------|--------------|
 | Entra | "já entrou R$ {x} · esperado R$ {y}" (LIM-06: separa o que entrou do esperado) | "+R$ {rendaEsperada}" | `--ok-ink` |
 | Fixos | "{n} de {m} pagos" | "−R$ {fixos}" | `--foreground` |
 | Dia a dia | "tudo que não é fixo" | "−R$ {gastoNaoFixo}" | `--foreground` |
-| Sobra (linha final, separador de 1.5px) | "projeção até {4 dez}" | Heading (Bricolage 28/700) "R$ {sobra}" | `--foreground`, `--danger-ink` se negativo |
+| Sobra (linha final, separador de 2px) | "projeção até {4 dez}" | Heading (Bricolage 28/700) "R$ {sobra}" | `--foreground`, `--danger-ink` se negativo |
 
 - **Desvio do mockup:** a legenda da Sobra do 008 ("contando o que ainda vai entrar e sair") reproduz a frase do print de referência (skunk-02). Usar texto próprio: "projeção até {data fim do ciclo}". Ver P-05.
 - Sem renda esperada: a linha Entra mostra "Defina a renda" como link para `/configuracoes#ciclo` (alvo 44px) e o valor "R$ 0".
@@ -390,29 +401,29 @@ Ordem de cima para baixo (pré-preenchido de 008): barra superior; faixa somente
 - Linhas ordenadas por **urgência** (Passou, Atenção, Em dia; dentro do estado, % decrescente), **máximo 6**; se houver mais, última linha "Ver os outros {n} limites" (alvo 44px) para `/limites`.
 - **Linha colapsada** (`LimitRow`): o cabeçalho inteiro é um `<button>` com `aria-expanded` e `aria-controls`, altura mínima 56, padding vertical 12:
   - Esquerda: `IconCircle` 44px (`--surface-2`, ícone Lucide da categoria 20px).
-  - Centro (flex 1, `min-w-0`): linha 1 = nome (Sora 14/700, truncado com `title`) à esquerda e "R$ 320" (Sora 12/700) + " de R$ 400" (Sora 12/400 muted) à direita; linha 2 = barra de 8px (`Progress` tom conforme estado, 7px de margem superior); linha 3 = legenda de estado (Sora 12), conforme tabela "Estados de limite".
+  - Centro (flex 1, `min-w-0`): linha 1 = nome (Sora 16/700, truncado com `title`) à esquerda e "R$ 320" (Sora 12/700) + " de R$ 400" (Sora 12/400 muted) à direita; linha 2 = barra de 8px (`Progress` tom conforme estado, 8px de margem superior); linha 3 = legenda de estado (Sora 12), conforme tabela "Estados de limite".
   - Direita: `chevron-down` 20px; gira 180° ao expandir (200ms).
   - **Desvio do mockup:** o 008 não mostra porcentagem nem "o que resta" na linha, mas LIM-02 exige gasto, limite, porcentagem e o que resta. A legenda de estado (linha 3) cumpre isso.
-- **Painel expandido** (`Collapsible`, transição de altura 200ms): lista dos lançamentos da categoria no ciclo, mais recentes primeiro, recuo esquerdo de 56px; cada item = descrição (Sora 14/400 muted, `dd/mm` antes) e valor (Sora 14/700 `--foreground`) à direita; padding vertical 8. Até 8 itens; acima disso, "Ver todos em Transações" (alvo 44px). Vazio: "Nenhum lançamento neste ciclo".
-- **Linha "Gasto geral"** (sempre por último, D-04): `IconCircle` com `layout-grid`; "Gasto geral" (Sora 14/700); à direita "R$ 410" (12/700) + " sem limite" (12/400 muted); legenda "categorias sem limite, somadas. Já descontado do Pode gastar." Expansível: lista cada categoria sem limite com seu subtotal (em vez de lançamentos). Sem barra.
+- **Painel expandido** (`Collapsible`, transição de altura 200ms): lista dos lançamentos da categoria no ciclo, mais recentes primeiro, recuo esquerdo de 56px; cada item = descrição (Sora 16/400 muted, `dd/mm` antes) e valor (Sora 16/700 `--foreground`) à direita; padding vertical 8. Até 8 itens; acima disso, "Ver todos em Transações" (alvo 44px). Vazio: "Nenhum lançamento neste ciclo".
+- **Linha "Gasto geral"** (sempre por último, D-04): `IconCircle` com `layout-grid`; "Gasto geral" (Sora 16/700); à direita "R$ 410" (12/700) + " sem limite" (12/400 muted); legenda "categorias sem limite, somadas. Já descontado do Pode gastar." Expansível: lista cada categoria sem limite com seu subtotal (em vez de lançamentos). Sem barra.
 - **Estado vazio** (nenhum limite definido): ver Copywriting > Limites vazios. A linha "Gasto geral" continua aparecendo.
 
-**"Central de Limites"** (`CentralSummaryCard`): cartão inteiro é um `<Link>` para `/limites`, altura mínima 56. Cabeçalho: `scale` 20px + título Sora 16/700 + `chevron-right` à direita. Abaixo (Sora 12/400 muted, margem 6px): "1 passou do limite · 2 em atenção · 3 em dia" (singular/plural; contagem por categoria com limite). Sem limites: "Nenhum limite definido ainda".
+**"Central de Limites"** (`CentralSummaryCard`): cartão inteiro é um `<Link>` para `/limites`, altura mínima 56. Cabeçalho: `scale` 20px + título Sora 16/700 + `chevron-right` à direita. Abaixo (Sora 12/400 muted, margem 4px): "1 passou do limite · 2 em atenção · 3 em dia" (singular/plural; contagem por categoria com limite). Sem limites: "Nenhum limite definido ainda".
 
 **"Contas fixas do mês"** (`FixedMonthCard`, `id="fx"`): cartão `bg-card`.
-- Cabeçalho: `repeat` + título; à direita link "Gerenciar" (Sora 12/700, alvo 44px) para `/contas-fixas`.
-- Até 4 linhas: não pagas primeiro (por dia de vencimento), depois pagas. Cada linha: nome (Sora 14/700) + legenda "dia 10" (12/400 muted) à esquerda; à direita, se paga, `Chip` "pago" (`check` + texto, fundo `#dcfce7`, texto `--ok-ink`, 6,49:1), senão botão "Marcar pago" (fundo `--primary`, texto branco, Sora 14/700, raio 12, altura 44, largura ≥ 96). Mais de 4: "Ver todas ({n})" (alvo 44px).
+- Cabeçalho: `repeat` + título; à direita link "Gerenciar contas fixas" (Sora 12/700, alvo 44px) para `/contas-fixas`.
+- Até 4 linhas: não pagas primeiro (por dia de vencimento), depois pagas. Cada linha: nome (Sora 16/700) + legenda "dia 10" (12/400 muted) à esquerda; à direita, se paga, `Chip` "pago" (`check` + texto, fundo `#dcfce7`, texto `--ok-ink`, 6,49:1), senão botão "Marcar pago" (fundo `--primary`, texto branco, Sora 16/700, raio 12, altura 44, padding horizontal 16, largura ≥ 120). Mais de 4: "Ver todas ({n})" (alvo 44px).
 - Ao marcar: toast "Marcado como pago: {nome}. O Pode gastar não muda, porque as fixas já estão descontadas." Pagamento é manual e fora do dia a dia (REV-03).
 - Vazio: ver Copywriting > Contas fixas vazias. Somente leitura: botão "Marcar pago" `disabled` (aqui `disabled` é aceitável: o motivo é dito na faixa de topo).
 
 **Aviso de dado velho** (`StaleNotice`, reescrita de `BankStatusNotice`):
-- Mantém `describeBankFreshness` e o conjunto de mensagens existentes (consentimento vencido, reconexão, dados velhos, consentimento perto de vencer); novo visual `Notice`: fundo `--card`, raio 16, padding 12, `landmark` 20px à esquerda, título Sora 14/700, texto Sora 12/400 muted, link "Abrir Bancos conectados" (`/configuracoes#bancos`, Sora 12/700, alvo 44px).
+- Mantém `describeBankFreshness` e o conjunto de mensagens existentes (consentimento vencido, reconexão, dados velhos, consentimento perto de vencer); novo visual `Notice`: fundo `--card`, raio 16, padding 12, `landmark` 20px à esquerda, título Sora 16/700, texto Sora 12/400 muted, link "Abrir Bancos conectados" (`/configuracoes#bancos`, Sora 12/700, alvo 44px).
 - **Suprime o veredito** (pílula, elogio e bronca) quando qualquer conexão tem `stale`, `consent === 'expired'` ou `needsReconnect`. **Não suprime** quando só `consent === 'expiring'` (dado fresco); nesse caso o aviso aparece, o veredito continua.
 - Sem nenhuma conexão bancária (usuário só manual): componente não renderiza, veredito normal.
 - Com tudo em dia: mantém a linha discreta "Banco atualizado há 23 horas" (Sora 12/400 muted), agora logo abaixo do hero em vez de acima. Não vira cartão.
 - Durante o aviso: pílula substituída por "Aguardando dados do banco" (neutra), arco neutro, hero em `--foreground`, e a Fase 4 (mascote) herda a regra "neutro quando dado velho".
 
-**Aviso discreto de limite na Home** (D-13): `Notice` abaixo do cabeçalho com o aviso não lido mais grave (100% antes de 80%; depois o mais recente): ícone `triangle-alert` ou `circle-alert` conforme o limiar, texto "Restaurantes passou de 100% do limite", link "Ver" (para `/limites#cat-{id}`) e botão de dispensar `x` 44x44 (`aria-label` "Dispensar aviso"). Se houver mais de um, o texto termina com " · +{n} avisos" e o link "Ver" abre o sino. Dispensar marca como lido e não reaparece.
+**Aviso discreto de limite na Home** (D-13): `Notice` abaixo do cabeçalho com o aviso não lido mais grave (100% antes de 80%; depois o mais recente): ícone `triangle-alert` ou `circle-alert` conforme o limiar, texto "Restaurantes passou de 100% do limite", link "Ver aviso" (para `/limites#cat-{id}`) e botão de dispensar `x` 44x44 (`aria-label` "Dispensar aviso"). Se houver mais de um, o texto termina com " · +{n} avisos" e o link "Ver aviso" abre o sino. Dispensar marca como lido e não reaparece.
 
 ### S3. Lançamento em bottom sheet (`LaunchSheet`)
 
@@ -424,7 +435,7 @@ Abre pelo "+" do dock (aba Gasto), por "Novo gasto" (Gasto) e "Nova receita" (Re
 
 **Cabeçalho:** título "Novo lançamento" (Sora 16/700) e botão fechar `x` (44x44, círculo `--card`, `aria-label` "Fechar").
 
-**Abas** (`SegmentedControl`, `role="tablist"`): Gasto | Receita | Porquinho. Trilho `--card`, raio 999, padding 4, margem superior 12; cada aba altura 44, raio 999, Sora 14/700; ativa = fundo `--surface-2` + sombra `0 1px 4px rgba(0,0,0,.08)` + texto `--foreground`; inativa = texto `--muted-foreground`. Setas esquerda/direita movem e ativam; `aria-selected`.
+**Abas** (`SegmentedControl`, `role="tablist"`): Gasto | Receita | Porquinho. Trilho `--card`, raio 999, padding 4, margem superior 12; cada aba altura 44, raio 999, Sora 16/700; ativa = fundo `--surface-2` + sombra `0 1px 4px rgba(0,0,0,.08)` + texto `--foreground`; inativa = texto `--muted-foreground`. Setas esquerda/direita movem e ativam; `aria-selected`.
 
 **Valor:** centralizado, margem 16px acima e 4px abaixo; Display com ajuste automático ("R$ 0,00" inicial). Linha de contexto abaixo (Sora 12/400 muted):
 
@@ -461,7 +472,7 @@ H1 "Central de Limites" (Bricolage 28/700), `CycleSelector` na barra superior. S
    - "Em dia" (`check`, `--ok-ink`), "Atenção" (`triangle-alert`, `--warn-ink`), "Passaram" (`circle-alert`, `--danger-ink`). Ícone e rótulo acompanham a cor (não só cor).
 2. **"Limites do mês"**: o mesmo `LimitsList` da Home, **sem teto de 6**, ordenado por urgência, com "Gasto geral" por último; cada linha tem `id="cat-{id}"` (alvo dos avisos do sino). Abaixo da lista, botão secundário de largura total "Ajustar em Configurações" (altura 48, borda `--input`, texto `--foreground`, ícone `settings`) para `/configuracoes#categorias`. **Não há edição aqui** (D-21).
 3. **"Cartões"** (esqueleto): cartão `bg-card`: `credit-card` + título + `Chip` "em breve" à direita; texto Sora 12/400 muted: "Fatura, fechamento e parcelas chegam junto com o suporte a cartão de crédito." Sem dados falsos, sem botões.
-4. **"Os dois juntos"** (D-01, resumo do casal): cartão com `users`; três linhas: "{Nome 1}", "{Nome 2}" (valor do Pode gastar de cada um, Sora 14/700 à direita) e "Somado" (linha final, valor em Heading 28/700). Somente leitura por natureza.
+4. **"Os dois juntos"** (D-01, resumo do casal): cartão com `users`; três linhas: "{Nome 1}", "{Nome 2}" (valor do Pode gastar de cada um, Sora 16/700 à direita) e "Somado" (linha final, valor em Heading 28/700). Somente leitura por natureza.
 
 No ≥1024px: contêiner `max-w-[960px]`, grade de duas colunas (1fr | 340px): coluna principal = totais + limites; coluna lateral = cartões + dois juntos.
 
@@ -480,7 +491,7 @@ H1 "Configurações" (Bricolage 28/700) com legenda "Ciclo, categorias, bancos e
 
 Ao fim da página: botão de texto "Sair da conta" (`log-out`, `--danger-ink`, altura 48).
 
-`FieldRow`: linha `bg-surface-2`, raio 16, altura mínima 56, padding 12 16, rótulo Sora 14/400 à esquerda, valor Sora 14/700 + `chevron-right` à direita, `<button>` que abre o editor. Margem 8 entre linhas.
+`FieldRow`: linha `bg-surface-2`, raio 16, altura mínima 56, padding 12 16, rótulo Sora 16/400 à esquerda, valor Sora 16/700 + `chevron-right` à direita, `<button>` que abre o editor. Margem 8 entre linhas.
 
 **Cartão 1: Ciclo e renda (por pessoa, premissa D-11):**
 - "Dia em que recebo o salário": valor "5". Editor = `Sheet` com `DayPicker`: grade de 7 colunas, botões 44x44, dias 1 a 31, selecionado `--primary`/branco. Ajuda: "O ciclo começa nesse dia e termina na véspera do próximo. Em meses sem esse dia, vale o último dia do mês." Ao salvar um dia diferente do atual: confirmação inline antes de gravar (ver Copywriting > Destrutivas).
@@ -488,9 +499,9 @@ Ao fim da página: botão de texto "Sair da conta" (`log-out`, `--danger-ink`, a
 - Em somente leitura (S7): linhas desabilitadas e legenda "Volte ao seu perfil para editar".
 
 **Cartão 2: Categorias (limite editado só aqui, D-21):**
-- Cabeçalho: botão "+ Nova" (alvo 44px, Sora 14/700).
+- Cabeçalho: botão "+ Nova" (alvo 44px, Sora 16/700).
 - Controle segmentado "Gastos | Receitas | Calendário". Gastos e Receitas listam `CategoryDef` filtradas por `kind` e não arquivadas; "Calendário" lista as `EventCategory` atuais (cor + nome; comportamento existente preservado, apenas realocado).
-- Linha de categoria (Gastos): `IconCircle` + nome (Sora 14/700) + legenda "limite mensal" ou "sem limite" (12/400 muted); à direita valor "R$ 400" (14/700) com `chevron-right`, ou "Definir" (14/700, `--muted-foreground`). Altura mínima 56. Receitas não mostram limite.
+- Linha de categoria (Gastos): `IconCircle` + nome (Sora 16/700) + legenda "limite mensal" ou "sem limite" (12/400 muted); à direita valor "R$ 400" (16/700) com `chevron-right`, ou "Definir" (16/700, `--muted-foreground`). Altura mínima 56. Receitas não mostram limite.
 - **Editor** (`CategoryEditorSheet`, `Sheet`): Nome (Input), Ícone (`IconPicker`: grade de 6 colunas, botões 44x44, selecionado `--primary`/branco), Cor (paleta existente `DEFAULT_EVENT_CATEGORY_COLORS`, bolinhas de 32 com alvo 44), **Limite mensal** (apenas Gastos): valor com `MoneyKeypad` + `Switch` "Sem limite". Ajuda sob o limite: "Vale para este ciclo e os próximos. Ciclos passados mantêm o limite da época." (premissa, ver P-03). Botão "Salvar categoria" (CTA) e "Arquivar categoria" (texto `--danger-ink`, abre confirmação inline). Erros do núcleo (`addCategory`, `renameCategory`, `archiveCategory`) aparecem em pt-BR sob o campo, em `--danger-ink`, `role="alert"`.
 - **Lista de ícones permitidos** (`IconPicker`, chave = nome Lucide, todos verificados como existentes): `shopping-cart`, `utensils`, `car`, `house`, `heart-pulse`, `party-popper`, `graduation-cap`, `shirt`, `wrench`, `banknote`, `trending-up`, `tag`, `credit-card`, `wallet`, `landmark`, `layout-grid`. Padrão por id estável de categoria existente: `alimentacao` `utensils`, `transporte` `car`, `moradia` `house`, `saude` `heart-pulse`, `lazer` `party-popper`, `educacao` `graduation-cap`, `vestuario` `shirt`, `servicos` `wrench`, `salario` `banknote`, `investimentos` `trending-up`, `outros` `tag`; qualquer outra categoria sem ícone usa `tag`. Sem emoji (D-18).
 
@@ -502,20 +513,20 @@ Ao fim da página: botão de texto "Sair da conta" (`log-out`, `--danger-ink`, a
 
 **Cartão 6: Notificações:** `Switch` "Avisos de vencimento" (hoje `notificationsEnabled`), campo "Dias de antecedência" (hoje `daysBeforeDueDate`) e linha informativa "Avisos de limite: sempre ligados, em 80% e em 100%." (sem interruptor, ver P-06).
 
-**Salvar:** os campos de texto do cartão 5 e 6 mantêm o botão "Salvar" atual (padrão do app, `handleSave`), agora CTA do contêiner; editores em `Sheet` salvam ao tocar no CTA do sheet. Confirmação visual: toast "Salvo".
+**Salvar:** os campos de texto dos cartões 5 e 6 mantêm um botão de salvar por cartão (padrão do app, `handleSave`), agora CTA do contêiner, com rótulo de verbo + objeto: **"Salvar nomes das abas"** (cartão 5, Aparência) e **"Salvar avisos"** (cartão 6, Notificações); nunca "Salvar" sozinho; editores em `Sheet` salvam ao tocar no CTA do sheet. Confirmação visual: toast "Salvo".
 
 ### S6. Sino e lista de avisos (`AlertsBell`)
 
-- **Gatilho:** círculo 44x44 `--card`, ícone `bell` 20px, `aria-label` "Avisos", `aria-expanded`, `aria-haspopup="dialog"`. **Selo** de contagem: círculo 20px mínimo (`min-width: 20px; height: 20px`), fundo `--destructive`, texto branco Sora 12/700 (4,83:1), canto superior direito (-2px), "9+" acima de 9. **Desvio do mockup:** o 008 usa texto de 10px no selo; mínimo aqui 12px. A contagem soma avisos de limite não lidos + contas fixas perto do vencimento (comportamento atual).
+- **Gatilho:** círculo 44x44 `--card`, ícone `bell` 20px, `aria-label` "Avisos", `aria-expanded`, `aria-haspopup="dialog"`. **Selo** de contagem: círculo 20px mínimo (`min-width: 20px; height: 20px`), fundo `--destructive`, texto branco Sora 12/700 (4,83:1), canto superior direito (deslocado -4px), "9+" acima de 9. **Desvio do mockup:** o 008 usa texto abaixo de 12px no selo; mínimo aqui 12px. A contagem soma avisos de limite não lidos + contas fixas perto do vencimento (comportamento atual).
 - **Painel:** ancorado à direita, largura `min(360px, 100vw - 32px)`, `max-height: 70dvh`, rolagem interna, fundo `--surface-2`, borda 1px `border`, raio 20, sombra `shadow-float`, padding 8. `role="dialog"`, `aria-label` "Avisos". Esc fecha e devolve o foco; clique fora fecha; foco inicial no primeiro item (ou no título se vazio).
 - **Cabeçalho:** "Avisos" (Sora 16/700) e à direita botão "Marcar todos como lidos" (Sora 12/700, alvo 44px), oculto quando não há não lidos.
-- **Itens** (mais recentes primeiro; avisos de limite e vencimentos na mesma lista, vencimentos com `calendar-days`): `<button>`/`<Link>` altura mínima 56, padding 12, `IconCircle` 44 (limite 80%: `triangle-alert` em `--warn-ink`; limite 100%: `circle-alert` em `--danger-ink`; vencimento: `calendar-days` em `--foreground`), título Sora 14/700, legenda Sora 12/400 muted, ponto de não lido (8px, `--primary`, `aria-label` "não lido") à direita. Tocar em aviso de limite: marca como lido e vai para `/limites#cat-{id}` abrindo a linha; tocar em vencimento leva a `/contas-fixas`.
+- **Itens** (mais recentes primeiro; avisos de limite e vencimentos na mesma lista, vencimentos com `calendar-days`): `<button>`/`<Link>` altura mínima 56, padding 12, `IconCircle` 44 (limite 80%: `triangle-alert` em `--warn-ink`; limite 100%: `circle-alert` em `--danger-ink`; vencimento: `calendar-days` em `--foreground`), título Sora 16/700, legenda Sora 12/400 muted, ponto de não lido (8px, `--primary`, `aria-label` "não lido") à direita. Tocar em aviso de limite: marca como lido e vai para `/limites#cat-{id}` abrindo a linha; tocar em vencimento leva a `/contas-fixas`.
 - **Regras de conteúdo (D-13, LIM-07):** um aviso por limiar (80%, 100%) por categoria por ciclo; texto fixo por limiar (ver Copywriting). A lista é guardada (persistente, por pessoa dona do limite). O sino é sempre o do usuário logado, mesmo quando se vê o perfil do parceiro.
 - **Vazio:** ver Copywriting.
 
 ### S7. Faixa e comportamento do perfil somente leitura
 
-- `ReadOnlyBanner` (`Notice`) logo abaixo da barra superior em todas as telas de perfil enquanto o modo estiver ligado: `eye` 20px, "Perfil de {Nome}, somente leitura" (Sora 14/700), "Você vê tudo, mas não lança nem edita." (12/400 muted).
+- `ReadOnlyBanner` (`Notice`) logo abaixo da barra superior em todas as telas de perfil enquanto o modo estiver ligado: `eye` 20px, "Perfil de {Nome}, somente leitura" (Sora 16/700), "Você vê tudo, mas não lança nem edita." (12/400 muted).
 - Desabilitado: "+" do dock, "Novo gasto", "Nova receita", "Marcar pago", editores de Configurações (campos `disabled`/`readOnly` com a legenda "Volte ao seu perfil para editar"), botões de excluir/editar das listas legadas quando o perfil exibido for o do parceiro.
 - Habilitado: navegar, expandir limites, rolar até seções, abrir Central, abrir o sino (do próprio usuário), trocar de perfil.
 - Em tentativa de ação bloqueada: toast "Perfil em somente leitura. Volte ao seu perfil para lançar." (texto adaptado ao verbo: "...para editar.").
@@ -523,7 +534,7 @@ Ao fim da página: botão de texto "Sair da conta" (`log-out`, `--danger-ink`, a
 
 ### S8. Toasts
 
-`Toaster` fixo no topo (`top: calc(16px + env(safe-area-inset-top))`), `left/right: 16px`, `max-width: 448px` centralizado. Um toast por vez; fila. Fundo `--primary`, texto branco Sora 14/700 (9,11:1), raio 16, padding 12 16, ícone à esquerda (20px), `role="status"` e `aria-live="polite"`. **Duração 5s** (o mockup usa 3,2s, curto demais para leitura), pausa ao passar o ponteiro/focar, botão `x` de 44x44 opcional. Entrada: opacidade + `translateY(-8px)` para 0 em 200ms (sem movimento com `prefers-reduced-motion`).
+`Toaster` fixo no topo (`top: calc(16px + env(safe-area-inset-top))`), `left/right: 16px`, `max-width: 448px` centralizado. Um toast por vez; fila. Fundo `--primary`, texto branco Sora 16/700 (9,11:1), raio 16, padding 12 16, ícone à esquerda (20px), `role="status"` e `aria-live="polite"`. **Duração 5s** (o mockup usa 3,2s, curto demais para leitura), pausa ao passar o ponteiro/focar, botão `x` de 44x44 opcional. Entrada: opacidade + `translateY(-8px)` para 0 em 200ms (sem movimento com `prefers-reduced-motion`).
 
 ### S9. Casal (`/casal`), realocação na Fase 3
 
@@ -539,7 +550,7 @@ H1 "Casal". Conteúdo: o que hoje está no Dashboard e não cabe na nova Home: c
 | Barra de limite | `width` e cor | 400ms | ease-out | |
 | Chevron da linha | `transform: rotate(180deg)` | 200ms | ease | |
 | Expandir/recolher linha | altura (via `grid-template-rows` 0fr/1fr) | 200ms | ease-out | |
-| Destaque de seção | `box-shadow` (anel 3px `--ring`) | 1.200ms | keyframes 0/30/100% | |
+| Destaque de seção | `box-shadow` (anel 4px `--ring`) | 1.200ms | keyframes 0/30/100% | |
 | Sheet (abrir) | `translateY(100%)` para 0 | 280ms | ease-out | Escuro: opacidade 200ms |
 | Sheet (fechar) | `translateY` para 100% | 200ms | ease-in | |
 | Item do dock | cor/fundo | 150ms | ease | |
@@ -692,7 +703,7 @@ Idioma: português do Brasil, tom neutro e direto, **sem emoji, sem ponto de exc
 | Painel vazio de categoria | "Nenhum lançamento neste ciclo" |
 | Mais lançamentos | "Ver todos em Transações" |
 | Resumo da Central na Home | "1 passou do limite · 2 em atenção · 3 em dia" (plural: "2 passaram do limite"); sem limites: "Nenhum limite definido ainda" |
-| Contas fixas do mês | Título "Contas fixas do mês"; link "Gerenciar"; chips "pago" e botão "Marcar pago"; "Ver todas ({n})" |
+| Contas fixas do mês | Título "Contas fixas do mês"; link "Gerenciar contas fixas"; chips "pago" e botão "Marcar pago"; "Ver todas ({n})" |
 | Contas fixas vazias: título | "Nenhuma conta fixa neste ciclo" |
 | Contas fixas vazias: corpo | "Cadastre aluguel, internet e outras contas que se repetem todo mês." + botão "Nova conta fixa" |
 | Pago | "Marcado como pago: {nome}. O Pode gastar não muda, porque as fixas já estão descontadas." |
@@ -726,7 +737,7 @@ Idioma: português do Brasil, tom neutro e direto, **sem emoji, sem ponto de exc
 | Marcar lidos | "Marcar todos como lidos" |
 | Vazio: título | "Sem avisos por enquanto" |
 | Vazio: corpo | "Você será avisado ao chegar a 80% e ao passar de 100% de um limite." |
-| Aviso na Home | "{Categoria} passou de 100% do limite" / "{Categoria} chegou a 80% do limite"; "Ver"; " · +{n} avisos"; botão `aria-label` "Dispensar aviso" |
+| Aviso na Home | "{Categoria} passou de 100% do limite" / "{Categoria} chegou a 80% do limite"; "Ver aviso"; " · +{n} avisos"; botão `aria-label` "Dispensar aviso" |
 
 ### Central
 
@@ -752,8 +763,8 @@ Idioma: português do Brasil, tom neutro e direto, **sem emoji, sem ponto de exc
 | Editor de categoria | Campos "Nome", "Ícone", "Cor", "Limite mensal"; interruptor "Sem limite"; ajuda "Vale para este ciclo e os próximos. Ciclos passados mantêm o limite da época."; botões "Salvar categoria", "Arquivar categoria" |
 | Contas e cartões | chip "em breve"; "Fechamento e vencimento do cartão chegam junto com o cartão de crédito." |
 | Bancos | legenda "MeuPluggy · Atualizado há {tempo}" |
-| Aparência | "Nomes das abas"; "Tema claro. O tema escuro chega numa próxima fase." |
-| Notificações | "Avisos de vencimento"; "Dias de antecedência"; "Avisos de limite: sempre ligados, em 80% e em 100%." |
+| Aparência | "Nomes das abas"; "Tema claro. O tema escuro chega numa próxima fase."; botão "Salvar nomes das abas" |
+| Notificações | "Avisos de vencimento"; "Dias de antecedência"; "Avisos de limite: sempre ligados, em 80% e em 100%."; botão "Salvar avisos" |
 | Somente leitura | "Volte ao seu perfil para editar" |
 | Salvo | Toast "Salvo" |
 | Sair | "Sair da conta" |
@@ -763,7 +774,7 @@ Idioma: português do Brasil, tom neutro e direto, **sem emoji, sem ponto de exc
 | Ação | Confirmação |
 |------|-------------|
 | Arquivar categoria | "Arquivar {nome}? O histórico continua mostrando o nome e o limite da época. Para reativar, crie uma categoria com o mesmo nome." Botões "Arquivar" (`--destructive`, texto branco) e "Manter" |
-| Mudar o dia do salário | "Mudar o dia do salário muda o começo e o fim do ciclo atual. Avisos de limite já enviados neste ciclo não se repetem." Botões "Mudar dia" (`--primary`) e "Cancelar" |
+| Mudar o dia do salário | "Mudar o dia do salário muda o começo e o fim do ciclo atual. Avisos de limite já enviados neste ciclo não se repetem." Botões "Mudar dia" (`--primary`) e "Manter dia atual" (secundário, descarta a mudança) |
 | Sair | Sem confirmação (reversível por login) |
 
 ### Casal (realocação)
@@ -806,7 +817,7 @@ Applicable state considerations resolved: 21 covered, 2 backstop, 2 unresolved
 | partial | Consentimento perto de vencer com dado fresco | ✅ covered | Aviso aparece, veredito continua |
 | partial | Perfil do parceiro em somente leitura | ✅ covered | Faixa fixa, ações desabilitadas com `aria-disabled` e toast explicando |
 | partial | Ciclo passado | ✅ covered | Rótulos "Sobrou/Passou no ciclo", sem pílula, chevron seguinte desabilitado no ciclo atual |
-| overflow | Valor muito grande no hero ou no sheet | ✅ covered | Ajuste do Display por contagem de caracteres: 56, 44 e 36px |
+| overflow | Valor muito grande no hero ou no sheet | ✅ covered | Ajuste do Display por contagem de caracteres: 56px até 11 caracteres, 28px (Heading) a partir de 12; sem outros degraus |
 | overflow | Muitos limites | ✅ covered | Home mostra 6 por urgência e "Ver os outros {n} limites"; a Central mostra todos |
 | overflow | Muitos lançamentos numa categoria | ✅ covered | Painel mostra 8 e "Ver todos em Transações" |
 | overflow | Nove destinos no dock | ✅ covered | Pílula rolável, fade só nos lados com conteúdo oculto, item ativo centralizado |
@@ -856,12 +867,12 @@ Itens com default; "confirmar" significa checar com o dono sem bloquear o plano.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
-- [ ] Dimension 7 Inventory Provenance: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
+- [x] Dimension 7 Inventory Provenance: PASS
 
-**Approval:** pending
+**Approval:** aprovado pelo checker em 2026-11-18 (2 passagens). Recomendações não bloqueantes restantes: (1) listar BankConnections embutido e a tela /casal reaproveitada como isentos do limite de 4 tamanhos até a Fase 5; (2) rótulos "Manter categoria", "Nova categoria", "Definir limite", "Salvar renda esperada"; (3) tratar 12px como token de ritmo de linha; (4) tamanhos de ícone (20/22/24/42) não são espaçamento. P-01 confirmada pelo dono em 2026-11-18: forçar tema claro até a Fase 5.

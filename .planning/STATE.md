@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 3
 current_phase_name: limites-pode-gastar-e-central
 status: executing
-stopped_at: Completed 03-16-PLAN.md
-last_updated: "2026-11-18T18:13:40.422Z"
+stopped_at: Completed 03-17-PLAN.md
+last_updated: "2026-11-18T18:19:21.648Z"
 last_activity: 2026-11-18
 last_activity_desc: Phase 3 execution started
-state_head: bea00a5f23e8c65c898448f80da5799accbc8688
+state_head: cf165fbc8fe9f0dac06da33109f599ac8dac7796
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 42
-  completed_plans: 35
+  completed_plans: 36
   percent: 13
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 3 (limites-pode-gastar-e-central) — EXECUTING
-Plan: 17 of 23
+Plan: 18 of 23
 Status: Ready to execute
 Last activity: 2026-11-18 — Phase 3 execution started
 
@@ -87,6 +87,7 @@ Progress: [█░░░░░░░░░] 13%
 | Phase 03 P14 | 25min | 3 tasks | 4 files |
 | Phase 03 P15 | 40min | 3 tasks | 5 files |
 | Phase 03 P16 | 20min | 2 tasks | 8 files |
+| Phase 03 P17 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,7 @@ Recent decisions affecting current work:
 - [Phase 3]: 03-10: personConfigFor devolve config normalizada com referencia estavel; useCycleBudget guarda o ciclo por chave e so mostra view quando pessoa:ciclo:dia das entradas bate
 - [Phase 3]: 03-14: lancamento sem rede falha antes de gravar (navigator.onLine), pois o Firestore sem cache persistente nao rejeita offline e o retry duplicaria
 - [Phase 3]: 03-14: com ciclo passado na tela o lancamento grava hoje se o campo Data nao foi alterado; data escolhida de proposito e respeitada
+- [Phase 3]: 03-17: bloqueio de edicao dos cartoes de Configuracoes vale tambem no Porquinho (user.person !== viewPerson)
 
 ### Pending Todos
 
@@ -146,6 +148,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-18T18:13:40.362Z
-Stopped at: Completed 03-16-PLAN.md
+Last session: 2026-11-18T18:19:21.583Z
+Stopped at: Completed 03-17-PLAN.md
 Resume file: None

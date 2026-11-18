@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 3
 current_phase_name: limites-pode-gastar-e-central
 status: executing
-stopped_at: Completed 03-13-PLAN.md
-last_updated: "2026-11-18T17:55:55.592Z"
+stopped_at: Completed 03-14-PLAN.md
+last_updated: "2026-11-18T18:02:11.019Z"
 last_activity: 2026-11-18
 last_activity_desc: Phase 3 execution started
-state_head: 41df9bf7c3cfcce223588bfa5cb63f5ae7974155
+state_head: 8dd285d34abf187873fc80fb9dfd8c17d482cff7
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 42
-  completed_plans: 32
+  completed_plans: 33
   percent: 13
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 3 (limites-pode-gastar-e-central) — EXECUTING
-Plan: 14 of 23
+Plan: 15 of 23
 Status: Ready to execute
 Last activity: 2026-11-18 — Phase 3 execution started
 
@@ -84,6 +84,7 @@ Progress: [█░░░░░░░░░] 13%
 | Phase 03 P10 | 20min | 2 tasks | 8 files |
 | Phase 03 P12 | 20min | 2 tasks | 6 files |
 | Phase 03 P13 | 5min | 2 tasks | 3 files |
+| Phase 03 P14 | 25min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,8 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-02: webhook desativado pela Pluggy conta em reactivated; erros do SDK mascaram segredo e client secret; validateWebhookUrl devolve motivo fixo sem trecho da URL
 - [Phase 3]: 03-08: raio do Button por tamanho (tailwind-merge nao trata rounded-btn como raio); Dialog guarda onOpenChange em ref para nao roubar foco
 - [Phase 3]: 03-10: personConfigFor devolve config normalizada com referencia estavel; useCycleBudget guarda o ciclo por chave e so mostra view quando pessoa:ciclo:dia das entradas bate
+- [Phase 3]: 03-14: lancamento sem rede falha antes de gravar (navigator.onLine), pois o Firestore sem cache persistente nao rejeita offline e o retry duplicaria
+- [Phase 3]: 03-14: com ciclo passado na tela o lancamento grava hoje se o campo Data nao foi alterado; data escolhida de proposito e respeitada
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-18T17:55:55.527Z
-Stopped at: Completed 03-13-PLAN.md
+Last session: 2026-11-18T18:02:04.582Z
+Stopped at: Completed 03-14-PLAN.md
 Resume file: None

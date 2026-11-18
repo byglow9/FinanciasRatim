@@ -130,7 +130,7 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: 0/20 plans executed
+**Plans**: 0/23 plans executed
 **UI hint**: yes
 
 Plans:
@@ -154,29 +154,35 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-10-PLAN.md — Estado e dados da interface: ciclo visto, useCycleBudget, somente leitura e avaliador de avisos (LIM-04, LIM-07, LIM-08, LIM-10)
+- [ ] 03-10-PLAN.md — Estado e dados da interface: perfil e ciclo vistos, useCycleBudget, frescor do banco e somente leitura (LIM-04, LIM-06, LIM-08, LIM-10)
 - [ ] 03-11-PLAN.md — Gate humano: publicar regras e índice de limitAlerts em produção, com rollback registrado (LIM-07)
+- [ ] 03-12-PLAN.md — Componentes da Home e da Central, parte 1: arco, ritmo, rolagem com destaque e limites com Gasto geral (LIM-02, LIM-03, LIM-04, LIM-08, CENT-02)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03-12-PLAN.md — Lançamento em bottom sheet: Gasto, Receita e Porquinho com preview do Pode gastar (LIM-09, LIM-04)
-- [ ] 03-13-PLAN.md — Barra superior: seletor de ciclo, sino com avisos de 80% e 100% e menu de perfil (LIM-07, LIM-10, IDEN-07)
-- [ ] 03-14-PLAN.md — Componentes da Home e da Central: arco, ritmo, limites com Gasto geral, mês em uma conta e avisos (LIM-02 a LIM-06, LIM-08, CENT-01, CENT-06)
-- [ ] 03-15-PLAN.md — Configurações: ciclo e renda, aparência, notificações e esqueleto de cartões (LIM-10, LIM-06, CENT-05)
+- [ ] 03-13-PLAN.md — Avisos de limite: avaliador de 80% e 100% no cliente, provider montado e regravação na troca do dia do salário (LIM-07, LIM-10)
+- [ ] 03-14-PLAN.md — Lançamento em bottom sheet: Gasto, Receita e Porquinho com preview do Pode gastar (LIM-09, LIM-04)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 03-16-PLAN.md — Casca: dock flutuante de 9 destinos, botão +, AppShell e rota /casal; navegação antiga removida (IDEN-07, CENT-01, CENT-06)
-- [ ] 03-17-PLAN.md — Configurações > Categorias com limite mensal, editor, e a página em seis cartões (LIM-01, CENT-05, CENT-02)
+- [ ] 03-15-PLAN.md — Barra superior: seletor de ciclo, sino com avisos de 80% e 100% e menu de perfil (LIM-07, LIM-10, IDEN-07)
+- [ ] 03-16-PLAN.md — Componentes da Home e da Central, parte 2: mês em uma conta, Central, contas fixas, atalhos, dado velho e aviso de limite (LIM-05, LIM-06, LIM-07, LIM-08, CENT-01, CENT-06)
+- [ ] 03-17-PLAN.md — Configurações: ciclo e renda, aparência, notificações e esqueleto de cartões (LIM-10, LIM-06, CENT-05)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 03-18-PLAN.md — Home: Pode gastar no arco, por dia, ritmo, atalhos e seções, com estados e dado velho (LIM-02 a LIM-06, LIM-08, LIM-09, CENT-01, CENT-06)
-- [ ] 03-19-PLAN.md — Central de Limites e Cartões em /limites: totais, limites do mês, esqueleto de cartões e os dois juntos (CENT-01, CENT-02, LIM-02, LIM-03)
+- [ ] 03-18-PLAN.md — Casca: dock flutuante de 9 destinos, botão +, AppShell e rota /casal; navegação antiga removida (IDEN-07, CENT-01, CENT-06)
+- [ ] 03-19-PLAN.md — Configurações > Categorias com limite mensal, editor, e a página em seis cartões (LIM-01, CENT-05, CENT-02)
+- [ ] 03-20-PLAN.md — Seções da Home: mês em uma conta, limites com Gasto geral, Central e contas fixas com Marcar pago (LIM-02, LIM-03, LIM-05, LIM-06, CENT-01, CENT-06)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 03-20-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+- [ ] 03-21-PLAN.md — Central de Limites e Cartões em /limites: totais, limites do mês, esqueleto de cartões e os dois juntos (CENT-01, CENT-02, LIM-02, LIM-03)
+- [ ] 03-22-PLAN.md — Home: Pode gastar no arco, por dia, ritmo e atalhos, com estados e dado velho, montando as seções (LIM-02 a LIM-06, LIM-08, LIM-09, CENT-01, CENT-06)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 03-23-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 ### Phase 4: Mascote Vintém
 
@@ -274,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 0/20 | Planned | - |
+| 3. Limites, "Pode gastar" e Central | 0/23 | Planned | - |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

@@ -523,23 +523,34 @@ Sem conexão bancária (só manual): lista vazia → `false` (veredito normal), 
 | A10 | Categoria arquivada vira Gasto geral no ciclo atual; em ciclo passado mantém o limite da época | Pitfall 10 | Linha de categoria arquivada some/aparece de forma surpreendente |
 | A11 | Remarcar o dia do salário grava marcadores `silent` para limiares já atingidos (Pitfall 7b) | Pitfall 7 | Sem isso, um aviso pode repetir uma vez |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Cada pergunta abaixo tem um marcador `RESOLVED` com o default adotado e a premissa PR-xx de `03-01-PREMISES.md` que o carrega até o código. A confirmação final do dono acontece uma única vez, no checkpoint `checkpoint:decision` do plano 03-01 (Task 3); o que ele ajustar por PR-NN vale para os planos seguintes (registrado em `03-01-SUMMARY.md`).
 
 1. **Renda efetiva e a frase "Receita aumenta o Pode gastar" (A1).**
    - Sabemos: D-05 usa renda esperada; UI-SPEC afirma que a Receita aumenta o Pode gastar.
    - Falta: o dono confirmar `max(esperada, recebida)`.
    - Recomendação: adotar `max`, ajustar a legenda condicional; é decisão de produto barata de mudar enquanto só existe a função `incomeForCycle`.
+   - RESOLVED: default adotado = renda efetiva do ciclo = `max(esperada, recebida no ciclo)`, legenda condicional da aba Receita ajustada (PR-01; núcleo no plano 03-06, sheet no plano 03-14); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 2. **Dupla contagem de fixas pagas pelo banco (A2).**
    - Sabemos: REV-04 descartado; `classify.js` inalterado; marcar paga não cria lançamento.
    - Falta: o dono perceber que a fórmula D-05 faz isso aparecer.
    - Recomendação: perguntar **antes de executar**; default = documentar e seguir. Mitigação futura: marcar lançamento como fixa.
+   - RESOLVED: default adotado = pagamento de fixa feito pelo banco entra como gasto comum e é descontado duas vezes, sem heurística de casamento e sem mexer em `classify.js`; limitação documentada no UAT (PR-02; plano 03-06 e guia do plano 03-23); a pergunta ao dono acontece antes de executar, no checkpoint do plano 03-01 (Task 3), e a correção futura (marcar lançamento como fixa) fica fora desta fase.
 3. **Definição da projeção "Sobra" (A8).** Default: média diária dos dias decorridos × dias restantes após hoje. Alternativa simples: "Sobra = Pode gastar" (redundante). O texto "projeção até {data}" do UI-SPEC pede a primeira.
+   - RESOLVED: default adotado = Sobra projetada = gasto até hoje mais média diária vezes dias restantes, com o chip "estimativa" no ciclo atual (PR-05; plano 03-06 e cartão do plano 03-16); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 4. **Mudança do dia do salário e marcadores (Pitfall 7).** Escolher (a) aceitar repetição ou (b) marcadores `silent` na troca. Default (b).
+   - RESOLVED: default adotado = (b), os marcadores já enviados são regravados na nova chave do ciclo como `silent` para o aviso não repetir (PR-08; `rekeyAlerts` no plano 03-04, regravação no plano 03-13 e chamada na tela do plano 03-17); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 5. **Transferência entre as duas pessoas (D-03/Pitfall 6).** Default: suporte no núcleo (`tx.transfer`), sem UI; registrar limitação no UAT.
+   - RESOLVED: default adotado = o núcleo aceita o campo opcional `transfer: true`, sem interface, porque a transferência não é detectável em lançamento importado; D-03 vale para aporte e saque do Porquinho; limitação registrada no UAT (PR-14; plano 03-06 e guia do plano 03-23); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 6. **Limite editado no meio do ciclo vale já neste ciclo (P-03).** Default do UI-SPEC; o histórico `from = cycleKey atual` implementa isso. Se o dono quiser "só no próximo", `from` vira a chave seguinte — uma linha.
+   - RESOLVED: default adotado = o limite editado vale já neste ciclo e nos próximos, ciclos passados mantêm o limite da época, e "zerar os limites" significa reiniciar a contagem de gasto no começo do ciclo sem apagar limites (PR-09, D-10; plano 03-03 e editor do plano 03-19); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 7. **"Os dois juntos" soma ciclos diferentes** quando os dias de salário diferem; rotular com o escopo (a Fase 8 refina). Aceitar.
+   - RESOLVED: default adotado = dia do salário por pessoa (PR-10) e o resumo "os dois juntos" da Central rotula o escopo de cada ciclo, sem tentar alinhar ciclos diferentes; refinamento é da Fase 8 (plano 03-21); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 8. **Instalar vitest?** Recomendo **não** (ver Validation Architecture). Se o dono quiser testes de hooks/componentes, é decisão de pacote com gate.
+   - RESOLVED: default adotado = não instalar vitest, jsdom nem testing-library; a interface é coberta por `tsc`, lint, guardas estáticas e UAT humano (PR-16; guarda final do plano 03-23); confirmação final do dono no checkpoint do plano 03-01 (Task 3).
 9. **Deploy de regras e índice** de `limitAlerts` é passo humano (precedente Plano 01-13); definir como `checkpoint:human-verify` ao fim da onda de dados e **antes** de qualquer tela que leia alertas em produção.
+   - RESOLVED: sem PR-xx, porque é passo de processo e não premissa de produto; decisão adotada = `checkpoint:human-verify` com gate bloqueante no plano 03-11 (Tasks 1 e 2), com evidência em `03-11-DEPLOY-EVIDENCE.md` e rollback registrado, anterior ao plano 03-15 (sino) e ao plano 03-23 (UAT).
 
 ## Environment Availability
 

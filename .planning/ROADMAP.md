@@ -130,7 +130,7 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: 22/23 plans executed
+**Plans**: 23/23 plans executed
 **UI hint**: yes
 
 Plans:
@@ -182,7 +182,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 03-23-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+- [x] 03-23-PLAN.md — Fechamento: guarda estática transversal, suíte completa verde, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 ### Phase 4: Mascote Vintém
 
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 22/23 | In Progress|  |
+| 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

@@ -38,7 +38,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **LIM-07**: Usuário recebe alertas dentro do app (no sino) ao chegar a 80% e ao passar de 100% de um limite, uma única vez por limiar e por ciclo
 - [x] **LIM-08**: Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 - [x] **LIM-09**: A Home mostra atalhos "Novo gasto", "Nova receita", "Contas fixas" e "Limites" (os dois últimos descem até a seção)
-- [ ] **LIM-10**: Usuário escolhe em Configurações o dia em que recebe o salário, e o ciclo de limites, "Pode gastar" e alertas começa e termina nesse dia (D-10, D-11)
+- [x] **LIM-10**: Usuário escolhe em Configurações o dia em que recebe o salário, e o ciclo de limites, "Pode gastar" e alertas começa e termina nesse dia (D-10, D-11)
 
 ### Central de Limites e Cartões e Configurações (CENT)
 
@@ -165,7 +165,7 @@ Preenchida na criação do roadmap.
 | LIM-07 | Phase 3 | Pending |
 | LIM-08 | Phase 3 | Complete |
 | LIM-09 | Phase 3 | Complete |
-| LIM-10 | Phase 3 | Pending |
+| LIM-10 | Phase 3 | Complete |
 | CENT-01 | Phase 3 | Complete |
 | CENT-02 | Phase 3 | Complete |
 | CENT-05 | Phase 3 | Complete |

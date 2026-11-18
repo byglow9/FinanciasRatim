@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 3
 current_phase_name: limites-pode-gastar-e-central
 status: executing
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-11-18T17:27:21.065Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-11-18T17:31:30.590Z"
 last_activity: 2026-11-18
 last_activity_desc: Phase 3 execution started
-state_head: bf25b884bdb1f2f4e1ed58a728944848b5b006e1
+state_head: c1bfcd687449b8e9007ac4fde2361abdc207569b
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 42
-  completed_plans: 26
+  completed_plans: 27
   percent: 13
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 3 (limites-pode-gastar-e-central) — EXECUTING
-Plan: 7 of 23
+Plan: 8 of 23
 Status: Ready to execute
 Last activity: 2026-11-18 — Phase 3 execution started
 
@@ -79,6 +79,7 @@ Progress: [█░░░░░░░░░] 13%
 | Phase 03 P05 | 10min | 2 tasks | 5 files |
 | Phase 03 P06 | 25min | 3 tasks | 2 files |
 | Phase 03 P07 | 12min | 3 tasks | 6 files |
+| Phase 03 P08 | 20min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,7 @@ Recent decisions affecting current work:
 - [Phase 02]: [Phase 02-01]: Webhook Pluggy: segredo so em cabecalho x-webhook-secret (sha256 + timingSafeEqual), dono sempre de bankConnections/{itemId}, sem segredo a rota nao existe (404)
 - [Phase 02]: [Phase 02-01]: syncItem na mesma fila do syncAll com coalescencia por item (itemRuns); idempotencia por eventId em memoria sem colecao webhookEvents
 - [Phase 02]: 02-02: webhook desativado pela Pluggy conta em reactivated; erros do SDK mascaram segredo e client secret; validateWebhookUrl devolve motivo fixo sem trecho da URL
+- [Phase 3]: 03-08: raio do Button por tamanho (tailwind-merge nao trata rounded-btn como raio); Dialog guarda onOpenChange em ref para nao roubar foco
 
 ### Pending Todos
 
@@ -134,6 +136,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-18T17:27:21.002Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-11-18T17:31:30.528Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None

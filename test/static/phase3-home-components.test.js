@@ -19,9 +19,10 @@ const ARC = 'src/components/dashboard/ArcGauge.tsx'
 const PILL = 'src/components/dashboard/RhythmPill.tsx'
 const RHYTHM = 'src/lib/rhythm.ts'
 const REVEAL = 'src/hooks/useSectionReveal.ts'
+const LIMIT = 'src/components/limits/LimitRow.tsx'
 
-// Arquivos de apresentacao deste plano (completada com LimitRow.tsx na Tarefa 2).
-const FILES = [ARC, PILL, RHYTHM, REVEAL]
+// Arquivos de apresentacao deste plano.
+const FILES = [ARC, PILL, RHYTHM, REVEAL, LIMIT]
 
 const has = (src, needle, label) => assert.ok(src.includes(needle), `${label} sem ${needle}`)
 
@@ -96,6 +97,57 @@ test('useSectionReveal: hash so por getElementById, com decodeURIComponent e mov
   assert.doesNotMatch(src, /querySelector(All)?\(.*\bhash\b/, 'querySelector com hash')
 })
 
+test('LimitRow e LimitsList: acessibilidade, copia exata e estados do limite', () => {
+  const src = code(LIMIT)
+  for (const needle of [
+    'export function LimitRow',
+    'export function LimitsList',
+    'aria-expanded',
+    'aria-controls',
+    'id={`cat-${row.categoryId}`}',
+    'expandId',
+    'Gasto geral',
+    'categorias sem limite, somadas. Já descontado do Pode gastar.',
+    'Nenhum limite definido',
+    'Escolha um limite por categoria para acompanhar o gasto. Passar do limite só avisa.',
+    'Definir limites',
+    'Ver os outros',
+    'Limites do mês',
+    'Editar em Configurações',
+    'Ver todos em Transações',
+    'Nenhum lançamento neste ciclo',
+    'Sem categoria',
+    'data-section-title',
+    'tabIndex={-1}',
+    'passou ',
+    ' do limite',
+    'restam ',
+    'text-danger-ink',
+    'text-warn-ink',
+    'CircleAlert',
+    'TriangleAlert',
+    'rotate-180',
+    'Collapsible',
+    'IconCircle',
+    'Progress',
+    'neutralOk',
+    '/configuracoes#categorias',
+    '/limites',
+    '/transacoes',
+    'import type { BudgetRow }',
+  ]) {
+    has(src, needle, LIMIT)
+  }
+  // O preenchimento da barra nunca passa de 100: BudgetRow.pct nao satura (aviso do 03-06).
+  has(src, 'Math.min(Math.max(row.spentCents, 0), row.limitCents)', LIMIT)
+  // Passar do limite so avisa (D-09): nenhuma trava na linha.
+  assert.doesNotMatch(src, /disabled\b/, 'LimitRow nao pode bloquear nada (D-09)')
+})
+
+test('LimitRow: nenhum seletor montado de texto externo (T-03-55)', () => {
+  assert.doesNotMatch(code(LIMIT), /querySelector/, 'LimitRow usa querySelector')
+})
+
 test('Componentes da Home: escala tipografica, pesos, sem HTML bruto, emoji nem console', () => {
   const rawHtml = 'dangerously' + 'SetInnerHTML'
   for (const f of FILES) {
@@ -111,10 +163,14 @@ test('Componentes da Home: escala tipografica, pesos, sem HTML bruto, emoji nem 
 })
 
 test('Componentes da Home: nenhuma formula de orcamento no componente', () => {
-  for (const f of [ARC, PILL]) {
+  for (const f of [ARC, PILL, LIMIT]) {
     const src = code(f)
-    for (const bad of ['incomeCents', 'fixedCents', 'spentCents', 'safeToSpend', 'perDayCents', 'RHYTHM_CUTS']) {
+    for (const bad of ['incomeCents', 'fixedCents', 'safeToSpend', 'perDayCents', 'RHYTHM_CUTS', 'limitState', 'spendByCategory']) {
       assert.ok(!src.includes(bad), `${f} calcula ${bad}`)
     }
   }
+  // Os componentes de apresentacao nao somam gasto: so exibem a linha pronta.
+  assert.doesNotMatch(code(ARC), /spentCents/)
+  assert.doesNotMatch(code(PILL), /spentCents/)
+  assert.doesNotMatch(code(LIMIT), /\.reduce\(|spentCents\s*[-+*\/]|[-+*\/]\s*row\.spentCents/, 'LimitRow faz conta de gasto')
 })

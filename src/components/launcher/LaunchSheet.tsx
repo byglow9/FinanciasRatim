@@ -10,6 +10,7 @@ import { Collapsible } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { CategoryPicker } from "@/components/launcher/CategoryPicker"
 import { useLaunch, type LaunchTab } from "@/contexts/LaunchContext"
 import { useArea } from "@/contexts/AreaContext"
@@ -222,7 +223,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
 
   return (
     <div ref={rootRef}>
-      <div className="mt-3">
+      <div className="mt-2 [@media(max-height:700px)]:mt-1">
         <SegmentedControl<LaunchTab>
           value={tab}
           onChange={changeTab}
@@ -231,14 +232,19 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
         />
       </div>
 
-      <div className="mb-1 mt-4 text-center">
-        <MoneyValue cents={cents} />
+      <div className="mt-2 [@media(max-height:700px)]:mt-1 text-center">
+        <MoneyValue cents={cents} fitShort />
       </div>
-      <p aria-live="polite" className="min-h-4 text-center text-xs font-bold text-danger-ink">
-        {zeroMessage ? "Digite um valor maior que zero" : ""}
-      </p>
-      <p className="text-center text-xs font-normal text-muted-foreground">
-        {tab === "gasto" && view ? (
+      {/* Uma linha so: o aviso de valor zero ocupa o lugar da legenda (poupa 16px de altura). */}
+      <p
+        aria-live="polite"
+        className={cn(
+          "min-h-4 text-center text-xs",
+          zeroMessage ? "font-bold text-danger-ink" : "font-normal text-muted-foreground"
+        )}
+      >
+        {zeroMessage ? "Digite um valor maior que zero" : null}
+        {!zeroMessage && tab === "gasto" && view ? (
           <>
             Pode gastar: {formatMoney(view.safeCents)}
             {cents > 0 && preview ? (
@@ -251,10 +257,10 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
             ) : null}
           </>
         ) : null}
-        {tab === "receita"
+        {!zeroMessage && tab === "receita"
           ? `Entra na renda do ciclo${preview?.raisesSafe ? " e aumenta o Pode gastar" : ""}`
           : null}
-        {tab === "porquinho"
+        {!zeroMessage && tab === "porquinho"
           ? piggyMode === "deposito"
             ? "Guardar não é gasto: o Pode gastar não muda"
             : "Retirar não é receita: o Pode gastar não muda"
@@ -262,13 +268,13 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       </p>
 
       {tab === "gasto" && preview?.overspends ? (
-        <Notice tone="warn" icon={TriangleAlert} className="mt-3">
+        <Notice tone="warn" icon={TriangleAlert} className="mt-2">
           Este gasto passa do que sobra no ciclo. Você pode lançar mesmo assim.
         </Notice>
       ) : null}
 
       {tab === "porquinho" ? (
-        <div className="mt-3 flex justify-center">
+        <div className="mt-2 flex justify-center">
           <SegmentedControl<PiggyMode>
             value={piggyMode}
             onChange={setPiggyMode}
@@ -279,25 +285,27 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
         </div>
       ) : null}
 
-      {tab !== "porquinho" && category ? (
-        <div className="mt-4">
-          <p className="mb-1 text-xs font-bold text-muted-foreground">Categoria</p>
-          <CategoryPicker categories={categories} value={category.id} onChange={setPickedId} />
-        </div>
-      ) : null}
-
       {tab !== "porquinho" ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Chip tone="selected" icon={Landmark} onClick={() => undefined}>
-            Conta
-          </Chip>
-          <Chip tone="muted" icon={CreditCard} disabled onClick={() => undefined}>
-            Cartão (em breve)
-          </Chip>
+        <div className="mt-2 [@media(max-height:700px)]:mt-1">
+          {/* O rotulo da categoria e os chips de forma de pagamento dividem a mesma linha. */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold text-muted-foreground">Categoria</p>
+            <div className="flex gap-2">
+              <Chip tone="selected" icon={Landmark} onClick={() => undefined}>
+                Conta
+              </Chip>
+              <Chip tone="muted" icon={CreditCard} disabled onClick={() => undefined}>
+                Cartão (em breve)
+              </Chip>
+            </div>
+          </div>
+          {category ? (
+            <CategoryPicker categories={categories} value={category.id} onChange={setPickedId} />
+          ) : null}
         </div>
       ) : null}
 
-      <div className="mt-3">
+      <div className="mt-1 [@media(max-height:700px)]:mt-0">
         <button
           type="button"
           aria-expanded={detailsOpen}
@@ -349,7 +357,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
         <Notice
           tone="danger"
           icon={CircleAlert}
-          className="mt-3"
+          className="mt-2"
           action={
             <Button type="button" variant="outline" size="sm" onClick={() => void submit()}>
               Tentar de novo
@@ -365,7 +373,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
         aria-disabled={cents <= 0 || saving ? true : undefined}
         aria-busy={saving || undefined}
         onClick={() => void submit()}
-        className="mt-3 h-14 w-full rounded-2xl bg-action text-base font-bold text-action-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:opacity-60"
+        className="mt-2 [@media(max-height:700px)]:mt-1 h-14 w-full rounded-2xl bg-action text-base font-bold text-action-text [@media(max-height:760px)]:h-12 [@media(max-height:700px)]:h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:opacity-60"
       >
         {ctaLabel}
       </button>

@@ -45,7 +45,7 @@ export function CategoryPicker({ categories, value, onChange }: CategoryPickerPr
       role="radiogroup"
       aria-label="Categoria"
       onKeyDown={onKeyDown}
-      className="no-scrollbar flex gap-3 overflow-x-auto py-1"
+      className="no-scrollbar flex gap-3 overflow-x-auto py-1 [@media(max-height:700px)]:py-0"
     >
       {categories.map((def, index) => {
         const selected = index === activeIndex && found >= 0
@@ -65,7 +65,7 @@ export function CategoryPicker({ categories, value, onChange }: CategoryPickerPr
           >
             <span
               className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-full",
+                "flex h-12 w-12 items-center justify-center rounded-full [@media(max-height:700px)]:h-11 [@media(max-height:700px)]:w-11",
                 selected ? "bg-action text-action-text" : "bg-card text-foreground"
               )}
             >

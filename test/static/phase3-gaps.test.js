@@ -85,3 +85,17 @@ test('iconSm tem rounded-md e Marcar pago movel nao combina size=icon com h-8/h-
   assert.doesNotMatch(list, /h-7 w-7/)
   assert.doesNotMatch(list, /'shrink-0 h-8 w-8/)
 })
+
+test('LaunchSheet compacto: chips na linha da categoria e teclado/CTA por altura de tela', () => {
+  const sheet = code('src/components/launcher/LaunchSheet.tsx')
+  const keypad = code('src/components/ui/money-keypad.tsx')
+  // Chips de forma de pagamento dividem a linha do rotulo Categoria (sem linha propria).
+  assert.match(sheet, /justify-between[^>]*>\s*<p[^>]*>Categoria<\/p>\s*<div[^>]*>\s*<Chip/)
+  // Teclas e CTA diminuem em tela baixa, nunca abaixo do alvo de 44px (h-11).
+  assert.match(keypad, /max-height:760px[^"]*h-12/)
+  assert.match(keypad, /max-height:700px\)\]:h-11/)
+  assert.match(sheet, /max-height:760px\)\]:h-12/)
+  assert.doesNotMatch(keypad, /\bh-(8|9|10)\b/)
+  // O Sheet compartilhado nao foi alterado para esconder a rolagem.
+  assert.match(code('src/components/ui/sheet.tsx'), /max-h-\[92dvh\] overflow-y-auto/)
+})

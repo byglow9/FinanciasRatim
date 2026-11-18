@@ -48,14 +48,14 @@ export function MoneyKeypad({ valueCents, onChange, enableHardwareKeys = false }
   }, [enableHardwareKeys])
 
   return (
-    <div className="mt-3 grid grid-cols-3 gap-2">
+    <div className="mt-2 grid grid-cols-3 gap-2 [@media(max-height:700px)]:mt-1 [@media(max-height:700px)]:gap-1">
       {KEYS.map((key) => (
         <button
           key={key}
           type="button"
           aria-label={key === "backspace" ? "Apagar" : undefined}
           onClick={() => onChange(applyKeypad(valueCents, key))}
-          className="flex h-14 items-center justify-center rounded-2xl bg-card font-display text-[28px] font-bold leading-none transition-colors duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-track [@media(max-height:639px)]:h-12"
+          className="flex h-14 items-center justify-center rounded-2xl bg-card font-display text-[28px] font-bold leading-none transition-colors duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-track [@media(max-height:760px)_and_(min-height:701px)]:h-12 [@media(max-height:700px)]:h-11"
         >
           {key === "backspace" ? <Delete className="h-6 w-6" aria-hidden="true" /> : key}
         </button>
@@ -67,13 +67,15 @@ export function MoneyKeypad({ valueCents, onChange, enableHardwareKeys = false }
 interface MoneyValueProps {
   cents: number
   tone?: "default" | "danger"
+  /** Em tela baixa (ate 700px de altura) usa o degrau de 28px: o sheet de lancamento cabe sem rolagem. */
+  fitShort?: boolean
 }
 
 /**
  * Valor em reais com ajuste automatico por contagem de caracteres (sem medir
  * DOM): ate 11 caracteres em 56px, depois 28px. Os centavos ficam em muted.
  */
-export function MoneyValue({ cents, tone = "default" }: MoneyValueProps) {
+export function MoneyValue({ cents, tone = "default", fitShort = false }: MoneyValueProps) {
   const parts = formatMoneyParts(cents)
   const body = `${parts.currency} ${parts.integer}${parts.decimals}`
   const tier = displayTier(body)
@@ -86,7 +88,9 @@ export function MoneyValue({ cents, tone = "default" }: MoneyValueProps) {
       <span
         aria-hidden="true"
         className={cn(
-          big ? "text-[56px] leading-[1.1]" : "text-[28px] leading-[1.2]",
+          big
+            ? cn("text-[56px] leading-[1.1]", fitShort && "[@media(max-height:700px)]:text-[28px] [@media(max-height:700px)]:leading-[1.2]")
+            : "text-[28px] leading-[1.2]",
           tone === "danger" ? "text-danger-ink" : "text-foreground"
         )}
       >

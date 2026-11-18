@@ -58,9 +58,9 @@ test('tokens de acao em hex literal e sem divergir de --primary', () => {
   }
 })
 
-test('tema claro unico: color-scheme light no CSS e no HTML', () => {
-  assert.match(code('src/index.css'), /color-scheme:\s*light/)
-  assert.match(read('index.html'), /<meta\s+name="color-scheme"\s+content="light"/)
+test('tema claro unico: color-scheme only light no CSS e no HTML', () => {
+  assert.match(code('src/index.css'), /color-scheme:\s*only light/)
+  assert.match(read('index.html'), /<meta\s+name="color-scheme"\s+content="only light"/)
 })
 
 test('nenhum arquivo de src usa bg-primary solido nem text-primary-foreground', () => {

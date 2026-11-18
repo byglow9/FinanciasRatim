@@ -63,9 +63,10 @@
 
 @layer base {
   :root {
-    /* Tema claro unico ate a Fase 5: impede o escurecimento automatico do navegador,
-       que pode inverter o fundo de acao e deixar o texto branco sobre fundo claro. */
-    color-scheme: light;
+    /* Tema claro unico ate a Fase 5: `only light` pede ao navegador que nao escureça a pagina
+       sozinho (escurecimento automatico pode inverter o fundo de acao e deixar o texto branco
+       sobre fundo claro). */
+    color-scheme: only light;
     --background: 40 52.9% 96.7%;
     --foreground: 60 5.9% 10%;
     --card: 42.9 33.3% 91.8%;

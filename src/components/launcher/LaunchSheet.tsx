@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react"
-import { Check } from "lucide-react"
+import { useEffect, useId, useRef, useState } from "react"
+import { Check, ChevronDown, CircleAlert, CreditCard, Landmark, TriangleAlert } from "lucide-react"
 import { Sheet } from "@/components/ui/sheet"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { MoneyKeypad, MoneyValue } from "@/components/ui/money-keypad"
 import { useToast } from "@/components/ui/toast"
+import { Notice } from "@/components/ui/notice"
+import { Chip } from "@/components/ui/chip"
+import { Collapsible } from "@/components/ui/collapsible"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import { CategoryPicker } from "@/components/launcher/CategoryPicker"
 import { useLaunch, type LaunchTab } from "@/contexts/LaunchContext"
 import { useArea } from "@/contexts/AreaContext"
@@ -11,10 +17,11 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useCycle } from "@/contexts/CycleContext"
 import { useCycleBudget } from "@/hooks/useCycleBudget"
 import { addTransaction } from "@/services/transactions.service"
+import { addSavingsTransaction } from "@/services/savings.service"
 import type { PersonType } from "@/types"
 import { categoryKind } from "@shared/core/categories.js"
 import { fromCents } from "@shared/core/ledger.js"
-import { formatMoney } from "@shared/core/format.js"
+import { formatMoney, shortDate } from "@shared/core/format.js"
 import { previewLaunch } from "@shared/core/budget.js"
 import { zonedParts, zonedTimeToInstant } from "@shared/core/time.js"
 
@@ -23,6 +30,19 @@ const TAB_OPTIONS: { value: LaunchTab; label: string }[] = [
   { value: "receita", label: "Receita" },
   { value: "porquinho", label: "Porquinho" },
 ]
+
+type PiggyMode = "deposito" | "saque"
+
+const PIGGY_OPTIONS: { value: PiggyMode; label: string }[] = [
+  { value: "deposito", label: "Guardar" },
+  { value: "saque", label: "Retirar" },
+]
+
+const CTA_LABEL: Record<LaunchTab, string> = {
+  gasto: "Lançar gasto",
+  receita: "Lançar receita",
+  porquinho: "Guardar no Porquinho",
+}
 
 type BudgetViewValue = ReturnType<typeof useCycleBudget>["view"]
 
@@ -41,20 +61,40 @@ function isTextTarget(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT"
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, "0")
+}
+
+/** Data de calendario de Sao Paulo no formato do campo de data (aaaa-mm-dd). */
+function dateInputOf(parts: { year: number; month: number; day: number }): string {
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`
+}
+
 /**
  * Conteudo do sheet. Mora dentro do Sheet, que desmonta ao fechar: a cada abertura o estado
  * (valor, categoria, abas) nasce limpo.
  */
 function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
   const { categoryDefs } = useArea()
-  const { bumpData } = useCycle()
+  const { bumpData, isCurrent } = useCycle()
   const toast = useToast()
   const rootRef = useRef<HTMLDivElement>(null)
+  const detailsId = useId()
+  const descriptionId = useId()
+  const dateId = useId()
+  const noteId = useId()
 
   const [tab, setTab] = useState<LaunchTab>(initialTab)
   const [cents, setCents] = useState(0)
   const [pickedId, setPickedId] = useState<string | null>(null)
+  const [piggyMode, setPiggyMode] = useState<PiggyMode>("deposito")
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [description, setDescription] = useState("")
+  const [dateInput, setDateInput] = useState(() => dateInputOf(zonedParts(new Date())))
+  const [note, setNote] = useState("")
+  const [attempted, setAttempted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const kind = tab === "receita" ? "receita" : "gasto"
   const categories = categoryDefs.filter((d) => !d.archived && categoryKind(d) === kind)
@@ -64,33 +104,86 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
     categories.find((c) => c.id === "outros") ??
     categories[0]
 
+  // Troca de aba: categoria e campos de detalhe recomecam; o valor digitado se mantem.
   const changeTab = (next: LaunchTab) => {
     setTab(next)
     setPickedId(null)
+    setDescription("")
+    setNote("")
+    setAttempted(false)
+    setFailed(false)
   }
 
-  const preview = view ? previewLaunch(view, kind, cents) : null
+  const preview = view ? previewLaunch(view, tab, cents) : null
+  const zeroMessage = attempted && cents <= 0
 
-  const submit = async () => {
-    if (cents <= 0 || saving || !category) return
+  // Retorna sem fazer nada quando vem do Enter com o CTA desabilitado.
+  const submit = async (fromKeyboard = false) => {
+    if (saving) return
+    if (cents <= 0) {
+      if (!fromKeyboard) setAttempted(true)
+      return
+    }
+    if (tab !== "porquinho" && !category) return
     setSaving(true)
+    setFailed(false)
     try {
-      const parts = zonedParts(new Date())
-      const date = zonedTimeToInstant(parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second)
-      await addTransaction({
-        person,
-        type: "saida",
-        amount: fromCents(cents),
-        description: category.name,
-        category: category.name,
-        categoryId: category.id,
-        date,
-      })
+      // Gravacao so online (PR-20): sem rede o envio falharia sem resposta e ficaria na fila.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        throw new Error("offline")
+      }
+      const now = new Date()
+      const nowParts = zonedParts(now)
+      const today = dateInputOf(nowParts)
+      const chosen = /^\d{4}-\d{2}-\d{2}$/.test(dateInput) ? dateInput : today
+      const [year, month, day] = chosen.split("-").map(Number)
+      const date = zonedTimeToInstant(year, month, day, nowParts.hour, nowParts.minute, nowParts.second)
+      const money = formatMoney(cents, { decimals: "always" })
+      const typed = description.trim()
+      let message: string
+
+      if (tab === "porquinho") {
+        await addSavingsTransaction({
+          type: piggyMode,
+          amount: fromCents(cents),
+          description: typed || (piggyMode === "deposito" ? "Guardado" : "Retirado"),
+          person,
+          date,
+        })
+        message =
+          piggyMode === "deposito"
+            ? `Guardado no Porquinho: ${money}. O Pode gastar não mudou.`
+            : `Retirado do Porquinho: ${money}. O Pode gastar não mudou.`
+      } else if (category) {
+        const typedNote = note.trim()
+        await addTransaction({
+          person,
+          type: tab === "gasto" ? "saida" : "entrada",
+          amount: fromCents(cents),
+          description: typed || category.name,
+          // category (texto) e categoryId seguem juntos durante a transicao (D-07 da Fase 1).
+          category: category.name,
+          categoryId: category.id,
+          date,
+          ...(typedNote ? { note: typedNote } : {}),
+        })
+        message = tab === "gasto" ? `Gasto lançado em ${category.name}: ${money}` : `Receita lançada: ${money}`
+      } else {
+        return
+      }
+
+      // Ciclo passado na tela: o lancamento entra com a data de hoje e o toast avisa (PR-12).
+      if (!isCurrent && chosen === today) {
+        const aviso = `Lançado em ${shortDate(nowParts)}, fora do ciclo que você está vendo`
+        message = `${message}${message.endsWith(".") ? " " : ". "}${aviso}`
+      }
+
       bumpData()
       onClose()
-      toast.show(`Gasto lançado em ${category.name}: ${formatMoney(cents, { decimals: "always" })}`, {
-        icon: Check,
-      })
+      toast.show(message, { icon: Check })
+    } catch {
+      // Nada de valor ou descricao em log: so o aviso na tela, com os digitos preservados.
+      setFailed(true)
     } finally {
       setSaving(false)
     }
@@ -114,28 +207,40 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       if (isTextTarget(e.target)) return
       if (e.target instanceof HTMLElement && e.target.closest('button:not([role="tab"]), a, summary')) return
       e.preventDefault()
-      void submitRef.current()
+      void submitRef.current(true)
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [])
 
-  const safeLine = view ? `Pode gastar: ${formatMoney(view.safeCents)}` : null
   const afterNegative = preview !== null && preview.safeAfterCents < 0
+  const ctaLabel = saving
+    ? "Lançando..."
+    : tab === "porquinho" && piggyMode === "saque"
+      ? "Retirar do Porquinho"
+      : CTA_LABEL[tab]
 
   return (
     <div ref={rootRef}>
       <div className="mt-3">
-        <SegmentedControl<LaunchTab> value={tab} onChange={changeTab} options={TAB_OPTIONS} ariaLabel="Tipo de lançamento" />
+        <SegmentedControl<LaunchTab>
+          value={tab}
+          onChange={changeTab}
+          options={TAB_OPTIONS}
+          ariaLabel="Tipo de lançamento"
+        />
       </div>
 
       <div className="mb-1 mt-4 text-center">
         <MoneyValue cents={cents} />
       </div>
+      <p aria-live="polite" className="min-h-4 text-center text-xs font-bold text-danger-ink">
+        {zeroMessage ? "Digite um valor maior que zero" : ""}
+      </p>
       <p className="text-center text-xs font-normal text-muted-foreground">
-        {tab === "gasto" && safeLine ? (
+        {tab === "gasto" && view ? (
           <>
-            {safeLine}
+            Pode gastar: {formatMoney(view.safeCents)}
             {cents > 0 && preview ? (
               <>
                 {" · "}
@@ -146,25 +251,123 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
             ) : null}
           </>
         ) : null}
+        {tab === "receita"
+          ? `Entra na renda do ciclo${preview?.raisesSafe ? " e aumenta o Pode gastar" : ""}`
+          : null}
+        {tab === "porquinho"
+          ? piggyMode === "deposito"
+            ? "Guardar não é gasto: o Pode gastar não muda"
+            : "Retirar não é receita: o Pode gastar não muda"
+          : null}
       </p>
 
-      {category ? (
+      {tab === "gasto" && preview?.overspends ? (
+        <Notice tone="warn" icon={TriangleAlert} className="mt-3">
+          Este gasto passa do que sobra no ciclo. Você pode lançar mesmo assim.
+        </Notice>
+      ) : null}
+
+      {tab === "porquinho" ? (
+        <div className="mt-3 flex justify-center">
+          <SegmentedControl<PiggyMode>
+            value={piggyMode}
+            onChange={setPiggyMode}
+            options={PIGGY_OPTIONS}
+            ariaLabel="Guardar ou retirar"
+            size="sm"
+          />
+        </div>
+      ) : null}
+
+      {tab !== "porquinho" && category ? (
         <div className="mt-4">
           <p className="mb-1 text-xs font-bold text-muted-foreground">Categoria</p>
           <CategoryPicker categories={categories} value={category.id} onChange={setPickedId} />
         </div>
       ) : null}
 
+      {tab !== "porquinho" ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Chip tone="selected" icon={Landmark} onClick={() => undefined}>
+            Conta
+          </Chip>
+          <Chip tone="muted" icon={CreditCard} disabled onClick={() => undefined}>
+            Cartão (em breve)
+          </Chip>
+        </div>
+      ) : null}
+
+      <div className="mt-3">
+        <button
+          type="button"
+          aria-expanded={detailsOpen}
+          aria-controls={detailsId}
+          onClick={() => setDetailsOpen((v) => !v)}
+          className="flex min-h-11 w-full items-center justify-between rounded-2xl px-1 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Descrição, data e mais
+          <ChevronDown
+            className={`h-5 w-5 transition-transform duration-200 ${detailsOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+        <Collapsible open={detailsOpen} id={detailsId}>
+          <div className="space-y-3 px-1 pb-1 pt-2">
+            <div className="space-y-1">
+              <Label htmlFor={descriptionId}>Descrição</Label>
+              <Input
+                id={descriptionId}
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={dateId}>Data</Label>
+              <Input id={dateId} type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)} />
+            </div>
+            {tab !== "porquinho" ? (
+              <div className="space-y-1">
+                <Label htmlFor={noteId}>Nota</Label>
+                <Input
+                  id={noteId}
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+          </div>
+        </Collapsible>
+      </div>
+
       <MoneyKeypad valueCents={cents} onChange={setCents} enableHardwareKeys />
+
+      {failed ? (
+        <Notice
+          tone="danger"
+          icon={CircleAlert}
+          className="mt-3"
+          action={
+            <Button type="button" variant="outline" size="sm" onClick={() => void submit()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Não foi possível lançar. Confira a conexão e tente de novo.
+        </Notice>
+      ) : null}
 
       <button
         type="button"
         aria-disabled={cents <= 0 || saving ? true : undefined}
         aria-busy={saving || undefined}
         onClick={() => void submit()}
-        className="mt-3 h-14 w-full rounded-2xl bg-primary text-base font-bold text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-3 h-14 w-full rounded-2xl bg-primary text-base font-bold text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:opacity-60"
       >
-        {saving ? "Lançando..." : "Lançar gasto"}
+        {ctaLabel}
       </button>
     </div>
   )
@@ -173,7 +376,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
 /**
  * Lancamento rapido em bottom sheet (UI-SPEC S3). Abre por useLaunch().open(aba); a montagem
  * no layout e do Plano 18. O preview do Pode gastar vem de previewLaunch sobre a BudgetView do
- * ciclo atual da pessoa logada.
+ * ciclo atual da pessoa logada (nunca de uma formula local).
  */
 export function LaunchSheet() {
   const { isOpen, tab, close } = useLaunch()

@@ -1,0 +1,53 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": null,
+  "phases": [
+    {
+      "number": "1",
+      "name": "Fundação de dados e acesso",
+      "status": "in_progress"
+    },
+    {
+      "number": "2",
+      "name": "Revisão de importações, contas fixas e webhook",
+      "status": "in_progress"
+    },
+    {
+      "number": "3",
+      "name": "Limites, \"Pode gastar\" e Central",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "Mascote Vintém",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "Identidade Coinki, PWA e onboarding",
+      "status": "pending"
+    },
+    {
+      "number": "6",
+      "name": "Cartão de crédito",
+      "status": "pending"
+    },
+    {
+      "number": "7",
+      "name": "Push e Vintém com IA",
+      "status": "pending"
+    },
+    {
+      "number": "8",
+      "name": "Visão do casal e multiusuário",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 2 of 8 · 0% · executing"
+  },
+  "updated_at": "2026-11-18T00:46:32.194Z"
+}

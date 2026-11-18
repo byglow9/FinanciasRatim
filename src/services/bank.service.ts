@@ -10,6 +10,12 @@ export interface BankConnection {
   connectorImageUrl: string | null
   status: string
   lastSyncAt?: Date | null
+  bankUpdatedAt?: Date | null
+  consentExpiresAt?: Date | null
+  executionStatus?: string | null
+  errorCode?: string | null
+  lastWebhookAt?: Date | null
+  lastWebhookEvent?: string | null
 }
 
 export interface SyncSummary {
@@ -53,6 +59,12 @@ export function subscribeBankConnections(cb: (list: BankConnection[]) => void): 
             connectorImageUrl: data.connectorImageUrl ?? null,
             status: data.status ?? '',
             lastSyncAt: data.lastSyncAt?.toDate?.() ?? null,
+            bankUpdatedAt: data.bankUpdatedAt?.toDate?.() ?? null,
+            consentExpiresAt: data.consentExpiresAt?.toDate?.() ?? null,
+            executionStatus: data.executionStatus ?? null,
+            errorCode: data.errorCode ?? null,
+            lastWebhookAt: data.lastWebhookAt?.toDate?.() ?? null,
+            lastWebhookEvent: data.lastWebhookEvent ?? null,
           } as BankConnection
         })
       )
@@ -64,10 +76,12 @@ export function subscribeBankConnections(cb: (list: BankConnection[]) => void): 
   )
 }
 
-export const createConnectToken = (person: PersonType) =>
+// Banco novo: passa a pessoa. Reconectar um banco existente: passa { itemId } (o servidor
+// confere o dono e usa a pessoa do documento).
+export const createConnectToken = (target: PersonType | { itemId: string }) =>
   api<{ accessToken: string }>('/api/connect-token', {
     method: 'POST',
-    body: JSON.stringify({ person }),
+    body: typeof target === 'string' ? JSON.stringify({ person: target }) : JSON.stringify({ itemId: target.itemId }),
   })
 
 export const registerConnection = (person: PersonType, itemId: string) =>

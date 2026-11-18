@@ -7,8 +7,8 @@ const read = (name) => readFileSync(fileURLToPath(new URL(`./${name}`, import.me
 // Remove comentarios para nao dar falso positivo em texto explicativo.
 const code = (name) => read(name).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
-const ALL = ['time.js', 'classify.js', 'categories.js', 'ledger.js']
-const CLOCK_FREE = ['time.js', 'categories.js', 'ledger.js']
+const ALL = ['time.js', 'classify.js', 'categories.js', 'ledger.js', 'bankStatus.js']
+const CLOCK_FREE = ['time.js', 'categories.js', 'ledger.js', 'bankStatus.js']
 
 for (const file of ALL) {
   test(`${file} nao importa pacote (so caminhos relativos)`, () => {

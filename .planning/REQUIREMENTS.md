@@ -21,7 +21,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 - [-] **REV-01**: ~~Usuário vê uma lista dos itens importados que estão em revisão (duplicado, transferência própria, pagamento de fatura, estorno) com o motivo de cada um~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [-] **REV-02**: ~~Usuário resolve cada item em revisão com um toque: importar, ignorar, vincular a um lançamento manual ou vincular a uma conta fixa~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
-- [ ] **REV-03**: Usuário marca uma conta fixa como paga manualmente, e isso nunca cria lançamento
+- [x] **REV-03**: Usuário marca uma conta fixa como paga manualmente, e isso nunca cria lançamento
 - [-] **REV-04**: ~~Quando o banco importa o pagamento de uma conta fixa, o sistema sugere vincular a ela (por valor, descrição e data); vinculado, o lançamento não conta no "Dia a dia" nem nos limites~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [-] **REV-05**: ~~Estornos entram como crédito na categoria e não como receita~~ — DESCARTADO pelo dono em 2026-11-17 (ver 02-CONTEXT.md)
 - [x] **REV-06**: O servidor recebe webhooks da Pluggy (`item/updated`, `transactions/created`, `transactions/updated`, `transactions/deleted`), autenticados por cabeçalho secreto, sincroniza na hora e mantém o polling como reserva
@@ -150,7 +150,7 @@ Preenchida na criação do roadmap.
 | FUND-07 | Phase 1 | Complete |
 | REV-01 | Phase 2 | Descartado (2026-11-17) |
 | REV-02 | Phase 2 | Descartado (2026-11-17) |
-| REV-03 | Phase 2 | Pending |
+| REV-03 | Phase 2 | Complete |
 | REV-04 | Phase 2 | Descartado (2026-11-17) |
 | REV-05 | Phase 2 | Descartado (2026-11-17) |
 | REV-06 | Phase 2 | Complete |

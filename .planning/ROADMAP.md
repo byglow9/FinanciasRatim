@@ -117,17 +117,17 @@ Plans:
 
 ### Phase 3: Limites, "Pode gastar" e Central
 
-**Goal:** Em segundos o usuário sabe quanto ainda pode gastar no mês, com base em limites por categoria, e acompanha cada limite em uma Central própria
+**Goal:** Em segundos o usuário sabe quanto ainda pode gastar no ciclo (dinheiro real: renda menos fixas menos gastos), acompanha o gasto por categoria contra limites que só avisam, e vê tudo em uma Central própria
 **Mode:** mvp
 **Depends on:** Phase 2
-**Requirements**: LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, LIM-08, LIM-09, CENT-01, CENT-02, CENT-05, CENT-06, IDEN-07
-**Gate no início da fase:** mockups (2 ou 3 propostas) de paleta de cores, navegação mobile (hipótese: 5 espaços com "Mais"), posição da Central de Limites e Cartões e formato da aba Casal, escolhidos pelo dono antes de construir a interface. Os tokens e a navegação decididos aqui são consumidos por todas as fases de interface seguintes. A seção de cartões da Central fica como esqueleto até a Fase 6.
+**Requirements**: LIM-01, LIM-02, LIM-03, LIM-04, LIM-05, LIM-06, LIM-07, LIM-08, LIM-09, LIM-10, CENT-01, CENT-02, CENT-05, CENT-06, IDEN-07
+**Gate no início da fase (cumprido em 2026-11-18, ver 03-CONTEXT D-17 a D-24 e `.planning/sketches/`):** mockups (2 ou 3 propostas) de paleta de cores, navegação mobile (hipótese: 5 espaços com "Mais"), posição da Central de Limites e Cartões e formato da aba Casal, escolhidos pelo dono antes de construir a interface. Os tokens e a navegação decididos aqui são consumidos por todas as fases de interface seguintes. A seção de cartões da Central fica como esqueleto até a Fase 6.
 **Success Criteria** (what must be TRUE):
 
-  1. Ao abrir a Home, o usuário vê o valor grande de "Pode gastar" (limite do mês menos o gasto), quanto pode por dia e o status de ritmo (por exemplo "No ritmo"), com atalhos para Gasto, Receita, Fixos e Limites, um resumo da Central e um resumo das Contas Fixas, e chega à Home, à Central e às Contas Fixas pela navegação escolhida nos mockups
-  2. O usuário define o limite mensal de cada categoria (nas Configurações, organizadas em cartões com ícone, ou na Central), vê gasto, limite, porcentagem e o que resta, expande a categoria para ver os lançamentos dela, e as contas fixas ficam fora do limite do dia a dia
+  1. Ao abrir a Home, o usuário vê o valor grande de "Pode gastar" (renda esperada menos contas fixas menos gasto), quanto pode por dia e o ritmo em 5 níveis, com atalhos para Novo gasto, Nova receita, Contas fixas e Limites, um resumo da Central e um resumo das Contas Fixas, e chega à Home, à Central e às Contas Fixas pela navegação escolhida nos mockups
+  2. O usuário define o limite mensal de cada categoria em Configurações > Categorias (organizadas em cartões com ícone), vê na Central e na Home gasto, limite, porcentagem e o que resta, expande a categoria para ver os lançamentos dela, vê o "Gasto geral" das categorias sem limite, e passar do limite só avisa e soma o excesso; as contas fixas ficam fora do dia a dia, e o ciclo começa no dia do salário que ele escolhe
   3. O usuário vê "O mês em uma conta" (Entra, Fixos, Dia a dia, Sobra) com a projeção marcada como estimativa, e informa a renda esperada para a Home separar o que já entrou do que é esperado
-  4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por mês
+  4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
 **Plans**: TBD

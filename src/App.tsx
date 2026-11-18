@@ -3,9 +3,10 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { AreaProvider } from '@/contexts/AreaContext'
 import { CycleProvider } from '@/contexts/CycleContext'
 import { LimitAlertsProvider } from '@/contexts/LimitAlertsContext'
+import { LaunchProvider } from '@/contexts/LaunchContext'
 import { ToastProvider } from '@/components/ui/toast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { MainLayout } from '@/components/layout/MainLayout'
+import { AppShell } from '@/components/layout/AppShell'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
 import { FixedExpensesPage } from '@/pages/FixedExpensesPage'
@@ -43,9 +44,11 @@ function App() {
             <ProtectedRoute>
               <CycleProvider>
                 <LimitAlertsProvider>
-                  <MainLayout>
-                    <AnimatedRoutes />
-                  </MainLayout>
+                  <LaunchProvider>
+                    <AppShell>
+                      <AnimatedRoutes />
+                    </AppShell>
+                  </LaunchProvider>
                 </LimitAlertsProvider>
               </CycleProvider>
             </ProtectedRoute>

@@ -3,6 +3,7 @@ import { useTransactions } from '@/hooks/useTransactions'
 import { useSavings } from '@/hooks/useSavings'
 import { useArea } from '@/contexts/AreaContext'
 import { MonthSelector } from '@/components/shared/MonthSelector'
+import { BankStatusNotice } from '@/components/dashboard/BankStatusNotice'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   BarChart,
@@ -58,6 +59,8 @@ export function DashboardPage() {
         </div>
         <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
       </div>
+
+      <BankStatusNotice />
 
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card>

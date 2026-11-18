@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycleMonth } from '@/hooks/useCycleMonth'
+import { useCycle } from '@/contexts/CycleContext'
 import { useTransactions } from '@/hooks/useTransactions'
 import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { TransactionList } from '@/components/transactions/TransactionList'
@@ -12,6 +13,8 @@ import type { Transaction, PersonType } from '@/types'
 
 export function TransactionsPage() {
   const { currentArea } = useArea()
+  // WR-03: lancar, editar ou apagar aqui muda os totais; o avaliador de avisos precisa rodar de novo.
+  const { bumpData } = useCycle()
   // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
   const selectedMonth = useCycleMonth()
   const [formOpen, setFormOpen] = useState(false)
@@ -29,7 +32,13 @@ export function TransactionsPage() {
     } else {
       await add(data)
     }
+    bumpData()
     setEditingTransaction(null)
+  }
+
+  const handleDelete = async (id: string) => {
+    await remove(id)
+    bumpData()
   }
 
   const handleEdit = (transaction: Transaction) => {
@@ -128,7 +137,7 @@ export function TransactionsPage() {
           <TransactionList
             transactions={transactions}
             onEdit={handleEdit}
-            onDelete={remove}
+            onDelete={handleDelete}
             loading={loading}
           />
         </CardContent>

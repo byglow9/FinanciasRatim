@@ -18,9 +18,14 @@ const code = (f) =>
 const MONTH = 'src/components/dashboard/MonthInOneCard.tsx'
 const CENTRAL = 'src/components/dashboard/CentralSummaryCard.tsx'
 const FIXED = 'src/components/dashboard/FixedMonthCard.tsx'
+const SHORTCUTS = 'src/components/dashboard/ShortcutRow.tsx'
+const READONLY = 'src/components/dashboard/ReadOnlyBanner.tsx'
+const STALE = 'src/components/dashboard/StaleNotice.tsx'
+const ALERT = 'src/components/dashboard/LimitAlertNotice.tsx'
+const OLD_NOTICE = 'src/components/dashboard/BankStatusNotice.tsx'
 
 // Componentes de apresentacao deste plano.
-const FILES = [MONTH, CENTRAL, FIXED]
+const FILES = [MONTH, CENTRAL, FIXED, SHORTCUTS, READONLY, STALE, ALERT]
 
 function assertIncludes(file, texts) {
   const src = code(file)
@@ -81,6 +86,73 @@ test('FixedMonthCard: ancora fx, titulo focavel, marcar pago e vazio', () => {
     'disabled={readOnly}',
     'onMarkPaid(item)',
   ])
+})
+
+test('ShortcutRow: quatro atalhos, somente leitura aria-disabled e alvo de 80', () => {
+  assertIncludes(SHORTCUTS, [
+    'Novo gasto',
+    'Nova receita',
+    'Contas fixas',
+    'Limites',
+    'aria-disabled',
+    'min-h-20',
+    'h-14 w-14',
+    'rounded-full',
+    'grid-cols-4',
+    'text-danger-ink',
+    'text-ok-ink',
+  ])
+  // Em somente leitura o clique continua chegando ao handler (o toast vem da guarda do lancamento).
+  assert.doesNotMatch(code(SHORTCUTS), /(?<!aria-)disabled=\{/, 'atalho usa disabled nativo e nao mostraria o toast')
+})
+
+test('ReadOnlyBanner: perfil visto em somente leitura pelo useReadOnly', () => {
+  assertIncludes(READONLY, [
+    'useReadOnly',
+    'somente leitura',
+    'Perfil de ',
+    'Você vê tudo, mas não lança nem edita.',
+  ])
+})
+
+test('StaleNotice: textos por gravidade, link para Bancos e regra de supressao do nucleo', () => {
+  assertIncludes(STALE, [
+    'useBankFreshness',
+    'placement',
+    'Consentimento do banco vencido',
+    'O banco precisa ser reconectado',
+    'Dados do banco desatualizados',
+    'Sem registro de atualização',
+    'O consentimento do banco vence em',
+    'Abrir Bancos conectados',
+    '/configuracoes#bancos',
+    'Banco atualizado',
+    'formatDistanceStrict',
+    'min-h-11',
+  ])
+  // Ordem de gravidade: vencido, reconexao, dados velhos, perto de vencer.
+  const src = code(STALE)
+  const order = ['Consentimento do banco vencido', 'O banco precisa ser reconectado', 'Dados do banco desatualizados', 'O consentimento do banco vence em']
+  const idx = order.map((t) => src.indexOf(t))
+  assert.deepEqual([...idx].sort((a, b) => a - b), idx, 'StaleNotice fora da ordem de gravidade')
+})
+
+test('LimitAlertNotice: so avisa, dispensa com 44px e abre o sino com varios avisos', () => {
+  assertIncludes(ALERT, [
+    'useLimitAlerts',
+    'topAlert',
+    'Dispensar aviso',
+    'Ver aviso',
+    '/limites#cat-',
+    'coinki:open-alerts',
+    'passou de 100% do limite',
+    'chegou a 80% do limite',
+    'markRead',
+  ])
+})
+
+test('BankStatusNotice segue existindo ate o Plano 22 trocar a Home', () => {
+  assert.ok(fs.existsSync(path.join(ROOT, OLD_NOTICE)), 'BankStatusNotice.tsx foi apagado antes do Plano 22')
 })
 
 test('Cartoes da Home: escala tipografica, pesos, sem HTML bruto, emoji nem console', () => {

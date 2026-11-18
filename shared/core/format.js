@@ -1,0 +1,172 @@
+// @ts-check
+// Formatacao pura de dinheiro, teclado numerico, tamanho do numero grande e
+// rotulos de data e de ciclo (LIM-04, LIM-02). Dinheiro entra sempre em
+// centavos inteiros, nunca em reais com virgula flutuante: Home, sheet, Central
+// e sino mostram exatamente o mesmo texto porque saem desta unica fonte. Sem
+// relogio, sem pacote, sem outro modulo (os tipos de ciclo entram por typedef).
+// Os nomes de mes e o sinal de menos sao texto de interface (dado), por isso
+// levam acento e U+2212 onde cabe; o codigo usa escapes.
+
+/**
+ * Data de calendario (sem hora), como em cycle.js.
+ * @typedef {{ year: number, month: number, day: number }} DateParts
+ */
+
+const NBSP = '\u00A0'
+const MINUS = '\u2212'
+
+/** Maior valor do teclado: 8 digitos em centavos (R$ 999.999,99). */
+const KEYPAD_MAX = 99_999_999
+
+/** Meses abreviados, minusculos e sem ponto (jan a dez). */
+export const MONTH_SHORT = Object.freeze([
+  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez',
+])
+
+/** Meses por extenso, com inicial maiuscula e acento onde o portugues exige. */
+export const MONTH_LONG = Object.freeze([
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+])
+
+const GROUP = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
+
+/**
+ * Quebra centavos em sinal, parte inteira agrupada e centavos de dois digitos.
+ * @param {number} cents
+ * @returns {{ negative: boolean, integer: string, cents2: string }}
+ */
+function split(cents) {
+  const n = Number.isFinite(cents) ? Math.round(cents) : 0
+  const abs = Math.abs(n)
+  const whole = Math.floor(abs / 100)
+  const rest = abs % 100
+  return {
+    negative: n < 0 && abs > 0,
+    integer: GROUP.format(whole),
+    cents2: String(rest).padStart(2, '0'),
+  }
+}
+
+/**
+ * Dinheiro em reais pt-BR a partir de centavos inteiros, sem arredondar para
+ * exibir. `auto` omite os centavos quando zerados; `always` mostra sempre.
+ * Negativo: U+2212 colado ao R$. Entre R$ e o numero vai U+00A0.
+ * @param {number} cents
+ * @param {{ decimals?: 'auto' | 'always' }} [opts]
+ * @returns {string}
+ */
+export function formatMoney(cents, opts = {}) {
+  const { decimals = 'auto' } = opts
+  const p = split(cents)
+  const showCents = decimals === 'always' || p.cents2 !== '00'
+  return `${p.negative ? MINUS : ''}R$${NBSP}${p.integer}${showCents ? `,${p.cents2}` : ''}`
+}
+
+/**
+ * Partes do valor para o numero grande do hero: o inteiro fica grande e os
+ * centavos pequenos. Os centavos vem sempre, com a virgula.
+ * @param {number} cents
+ * @returns {{ negative: boolean, currency: string, integer: string, decimals: string }}
+ */
+export function formatMoneyParts(cents) {
+  const p = split(cents)
+  return { negative: p.negative, currency: 'R$', integer: p.integer, decimals: `,${p.cents2}` }
+}
+
+/**
+ * Tamanho do numero grande por contagem de caracteres do texto ja formatado,
+ * sem contar o sinal (regra sem medir DOM): ate 11 e 'display', de 12 em diante
+ * cai para 'heading'.
+ * @param {string} text
+ * @returns {'display' | 'heading'}
+ */
+export function displayTier(text) {
+  const body = text.startsWith(MINUS) || text.startsWith('-') ? text.slice(1) : text
+  return body.length <= 11 ? 'display' : 'heading'
+}
+
+/**
+ * Teclado numerico em centavos: digito entra a direita, '00' acrescenta dois
+ * zeros, 'backspace' tira o ultimo digito. Resultado acima de 99.999.999 e
+ * ignorado, tecla invalida tambem (devolve o valor anterior).
+ * @param {number} cents
+ * @param {string} key '0'..'9', '00' ou 'backspace'
+ * @returns {number}
+ */
+export function applyKeypad(cents, key) {
+  const current = Number.isFinite(cents) && cents > 0 ? Math.floor(cents) : 0
+  /** @type {number} */
+  let next
+  if (key === 'backspace') {
+    next = Math.floor(current / 10)
+  } else if (key === '00') {
+    next = current * 100
+  } else if (typeof key === 'string' && /^[0-9]$/.test(key)) {
+    next = current * 10 + Number(key)
+  } else {
+    return cents
+  }
+  return next > KEYPAD_MAX ? cents : next
+}
+
+/**
+ * Reais inteiros por dia, arredondados para baixo: nunca promete mais do que
+ * existe.
+ * @param {number} cents centavos por dia
+ * @returns {number}
+ */
+export function perDayReais(cents) {
+  if (!Number.isFinite(cents) || cents <= 0) return 0
+  return Math.floor(cents / 100)
+}
+
+/**
+ * Dia e mes curto: '5 nov'.
+ * @param {DateParts} parts
+ * @returns {string}
+ */
+export function shortDate(parts) {
+  return `${parts.day} ${MONTH_SHORT[parts.month - 1]}`
+}
+
+/**
+ * Faixa de datas curta: '5 nov a 4 dez'.
+ * @param {DateParts} start
+ * @param {DateParts} end
+ * @returns {string}
+ */
+export function shortRange(start, end) {
+  return `${shortDate(start)} a ${shortDate(end)}`
+}
+
+/**
+ * Rotulo do ciclo: o nome do mes quando comeca no dia 1; senao a faixa.
+ * @param {{ startParts: DateParts, endParts: DateParts }} cycle
+ * @returns {string}
+ */
+export function cycleLabel(cycle) {
+  const { startParts, endParts } = cycle
+  if (startParts.day === 1) return MONTH_LONG[startParts.month - 1]
+  return shortRange(startParts, endParts)
+}
+
+/**
+ * Dia e mes com dois digitos: '05/11'.
+ * @param {DateParts} parts
+ * @returns {string}
+ */
+export function dayMonth(parts) {
+  return `${String(parts.day).padStart(2, '0')}/${String(parts.month).padStart(2, '0')}`
+}
+
+/**
+ * Quantidade com o substantivo no singular ou no plural: '1 dia', '17 dias'.
+ * @param {number} n
+ * @param {string} singular
+ * @param {string} pluralForm
+ * @returns {string}
+ */
+export function plural(n, singular, pluralForm) {
+  return `${n} ${n === 1 ? singular : pluralForm}`
+}

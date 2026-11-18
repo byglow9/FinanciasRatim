@@ -130,7 +130,7 @@ Plans:
   4. O usuário recebe um alerta dentro do app ao chegar a 80% e outro ao passar de 100% de um limite, uma única vez por limiar e por ciclo
   5. Quando os dados do banco estão velhos ou o consentimento venceu, a Home avisa e não mostra elogio nem bronca sobre números desatualizados
 
-**Plans**: 11/23 plans executed
+**Plans**: 13/23 plans executed
 **UI hint**: yes
 
 Plans:
@@ -155,12 +155,12 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 03-10-PLAN.md — Estado e dados da interface: perfil e ciclo vistos, useCycleBudget, frescor do banco e somente leitura (LIM-04, LIM-06, LIM-08, LIM-10)
-- [ ] 03-11-PLAN.md — Gate humano: publicar regras e índice de limitAlerts em produção, com rollback registrado (LIM-07)
+- [x] 03-11-PLAN.md — Gate humano: publicar regras e índice de limitAlerts em produção, com rollback registrado (LIM-07)
 - [x] 03-12-PLAN.md — Componentes da Home e da Central, parte 1: arco, ritmo, rolagem com destaque e limites com Gasto geral (LIM-02, LIM-03, LIM-04, LIM-08, CENT-02)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03-13-PLAN.md — Avisos de limite: avaliador de 80% e 100% no cliente, provider montado e regravação na troca do dia do salário (LIM-07, LIM-10)
+- [x] 03-13-PLAN.md — Avisos de limite: avaliador de 80% e 100% no cliente, provider montado e regravação na troca do dia do salário (LIM-07, LIM-10)
 - [ ] 03-14-PLAN.md — Lançamento em bottom sheet: Gasto, Receita e Porquinho com preview do Pode gastar (LIM-09, LIM-04)
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
-| 3. Limites, "Pode gastar" e Central | 11/23 | In Progress|  |
+| 3. Limites, "Pode gastar" e Central | 13/23 | In Progress|  |
 | 4. Mascote Vintém | 0/TBD | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |

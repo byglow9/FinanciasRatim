@@ -1,0 +1,9 @@
+/* Noite: escuro (continua o app atual), rosa do porquinho de destaque */
+:root{
+--color-bg:#0c0c10;--color-surface:#17171d;--color-surface-2:#1f1f27;--color-border:#2a2a34;
+--color-text:#f5f5f7;--color-text-muted:#9a9aa5;--color-action:#fff;--color-action-text:#111;
+--color-primary:#ff4d8d;--color-ok:#3ddc84;--color-warn:#ffb020;--color-danger:#ff5a6a;
+--color-track:#2b2b35;--shadow-nav:0 8px 30px rgba(0,0,0,.6);
+--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+--radius-card:20px;--radius-btn:14px;--radius-chip:10px;
+}

@@ -1,0 +1,9 @@
+/* Moeda: claro e quente, verde-moeda de destaque, preto suave */
+:root{
+--color-bg:#fbf8f2;--color-surface:#f1ede3;--color-surface-2:#fff;--color-border:#e7e1d3;
+--color-text:#1b1b18;--color-text-muted:#77746a;--color-action:#14532d;--color-action-text:#fff;
+--color-primary:#16a34a;--color-ok:#16a34a;--color-warn:#d97706;--color-danger:#dc2626;
+--color-track:#e6e0d1;--shadow-nav:0 8px 30px rgba(40,30,0,.16);
+--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+--radius-card:22px;--radius-btn:16px;--radius-chip:12px;
+}

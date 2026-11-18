@@ -1,0 +1,9 @@
+/* Brasa: claro, preto de ação, laranja de destaque (direção mais próxima da referência) */
+:root{
+--color-bg:#fff;--color-surface:#f4f4f5;--color-surface-2:#fff;--color-border:#e6e6e8;
+--color-text:#111;--color-text-muted:#6f6f76;--color-action:#111;--color-action-text:#fff;
+--color-primary:#ff5a1f;--color-ok:#1f9d55;--color-warn:#f5a524;--color-danger:#e5384a;
+--color-track:#e4e4e7;--shadow-nav:0 8px 30px rgba(0,0,0,.14);
+--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+--radius-card:24px;--radius-btn:999px;--radius-chip:999px;
+}

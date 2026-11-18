@@ -17,3 +17,4 @@ Referência máxima: prints do app Skunk em `references/skunk/` (não versionado
 | 005 | fonte-icones | Qual fonte e quais ícones? | 5 fontes (Bricolage Grotesque, Plus Jakarta Sans, Manrope, Sora, Figtree); ícones Lucide | pendente (fonte) · Lucide aprovado em princípio, sem emojis |
 | 006 | navegacao-v2 | Como a pílula atende todas as nossas abas? | A 5 + Planejar + Mais, B pílula rolável, C 4 + grade | pendente |
 | 007 | home-v2 | A Home A funcionando (teclado, limites, alertas, ritmo, dados velhos, perfil do parceiro) | única | para aprovar |
+| 008 | home-v3 | Home com pílula rolável só de ícones + botão ＋, engrenagem no topo, atalhos claros (Novo gasto, Nova receita, Contas fixas, Limites) e lançamento com aba Porquinho | única | para aprovar |

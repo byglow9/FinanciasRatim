@@ -45,10 +45,12 @@ Fora desta fase: cartão de crédito real (Fase 6), mascote (Fase 4), identidade
 - **D-17:** **Paleta Moeda** (claro quente + verde-moeda, preto suave de ação) aprovada. Tokens em `.planning/sketches/themes/moeda.css`.
 - **D-18:** **Sem emojis na interface.** Ícones SVG da Lucide (o app já usa `lucide-react`); nada de emoji em rótulos, listas ou botões.
 - **D-19:** **Home = variante A** (arco de progresso, atalhos redondos Gasto/Receita/Fixos/Limites, "O mês em uma conta", limites, resumo da Central e dos Fixos), implementada de forma funcional (lançamento com teclado, alertas, ritmo, dados velhos). A referência Skunk é a base de design, mas o Coinki tem **mais funções** (Calendário, Transações, Contas Fixas, Metas, Relatórios, Casal, Porquinho, Central) que precisam caber; modernizar as telas atuais nessa mesma linha.
-- **D-20:** **Navegação = pílula flutuante**, adaptada ao número real de destinos (opções A/B/C em `006-navegacao-v2`, a escolher). O destino ＋ abre o lançamento em bottom sheet.
+- **D-20:** **Navegação = pílula flutuante rolável, só com ícones** (Início, Transações, Calendário, Central de limites, Contas fixas, Metas, Relatórios, Casal, Porquinho) com um **botão ＋ redondo ao lado** que abre o lançamento em bottom sheet. **Configurações** sai da barra e vai para o **canto superior direito, ao lado do sino e do seletor de perfil**. Protótipo em `008-home-v3`.
 - **D-21:** **Limites só se editam em Configurações > Categorias** (variante 003-C). A **Central apenas exibe** (estado, expansão dos lançamentos). Isto reforça D-12 e retira o "ajustar ali" de CENT-02.
-- **D-22:** **Fonte nova** (a padrão foi reprovada). Candidatas em `005-fonte-icones`; auto-hospedar no app (PWA). Decisão pendente do dono.
+- **D-22:** **Fonte nova** (a padrão foi reprovada). Finalistas do dono: **Sora** e **Bricolage Grotesque** (em `008-home-v3` dá para ver Bricolage em tudo, Sora em tudo ou misto); escolha final pendente. Auto-hospedar no app (PWA).
 - **D-23:** **Casal:** aba própria de **relatório e comparação** entre os dois; no **canto superior direito** um menu expansível troca para o **perfil do parceiro em somente leitura**; as visões mútuas atuais (calendário/agenda) continuam. Isto ajusta o D-05 da Fase 1 (os dois já veem tudo) e define o formato que a Fase 8 constrói.
+
+- **D-24:** Atalhos da Home com nomes claros: **Novo gasto** e **Nova receita** (abrem o lançamento já na aba certa), **Contas fixas** e **Limites** (descem até a seção, com destaque). O lançamento tem abas **Gasto / Receita / Porquinho** (guardar não é gasto e não muda o Pode gastar, D-03). Seções renomeadas: "Contas fixas do mês" e "Limites do mês".
 
 ### Claude's Discretion
 - Cortes numéricos exatos dos 5 níveis de ritmo (D-07).

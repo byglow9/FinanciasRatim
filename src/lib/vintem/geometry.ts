@@ -68,6 +68,14 @@ export const ACCESSORY_ANCHORS = {
     excl: { x: 206, y: 48 },
     z: { x: 176, y: 62 },
   },
+  /** Reancorados ao perfil (D-05c, correcao 3): cabeca virada para a direita. */
+  profile: {
+    sweat: { x: 196, y: 70 },
+    anger: { x: 196, y: 46 },
+    spark: { x: 200, y: 52 },
+    excl: { x: 200, y: 46 },
+    z: { x: 190, y: 64 },
+  },
 } as const
 
 /** Lagrima da frente: nasce do olho esquerdo, 4 unidades para dentro, e pinga 40 unidades. */
@@ -83,4 +91,47 @@ export const COIN = {
   /** Moedinhas da festa: escala e limite. */
   smallScale: 0.55,
   maxSmall: 8,
+} as const
+
+/** Perfil (giro de lado, virado para a direita): corpo comprido, focinho a frente, uma orelha, um olho. */
+export const PROFILE = {
+  body: { cx: 110, cy: 110, rx: 78, ry: 50 },
+  head: { cx: 168, cy: 104, r: 42 },
+  snout: { cx: 205, cy: 114, rx: 17, ry: 14 },
+  nostril: { cx: 213, cy: 111, rx: 2.6, ry: 3.8 },
+  ear: 'M-14,8C-16,-12 -6,-30 6,-36C14,-26 20,-8 16,8Z',
+  earPivot: { x: 158, y: 70 },
+  slit: 'M94,64Q111,68 128,64',
+  /** Olho do perfil: escala horizontal 0,88. */
+  eye: { x: 180, y: 107, k: 0.88, drift: 2 },
+  /** Rabinho em espiral, preso ao corpo. */
+  tail: { x: 36, y: 110, path: 'M0,0C-10,-2 -17,-12 -11,-20C-6,-26 3,-22 -1,-15' },
+  /** Duas patas do lado de la (escuras) e duas do lado de ca. */
+  pawsFar: [
+    { x: 76, y: 146, width: 24, height: 32, rx: 11 },
+    { x: 150, y: 146, width: 24, height: 32, rx: 11 },
+  ],
+  pawsNear: [
+    { x: 46, y: 144, width: 28, height: 34, rx: 12 },
+    { x: 132, y: 144, width: 28, height: 34, rx: 12 },
+  ],
+  /** Todo o perfil a 95% em torno do chao (92% no sketch; maior para o giro nao perder area). */
+  scale: 0.95,
+  /** Ponto do perfil que cai em y = 176 (o corpo encosta no chao como na frente). */
+  anchorY: 162,
+  /** A lagrima do perfil cai menos que a da frente. */
+  tearFall: 24,
+} as const
+
+/** Giro de lado por fusao cruzada: a largura nunca colapsa (correcao 4). */
+export const FLIP = {
+  /** Escala horizontal da frente e do perfil no meio do giro (T = 0,5). */
+  mid: 0.5,
+  /** A fusao cruzada acontece entre estes dois T. */
+  crossFrom: 0.42,
+  crossTo: 0.58,
+  /** Achatamento vertical maximo: ty = 1 + squash * sin(PI * T). */
+  squash: 0.05,
+  /** Quanto o corpo comum estreita no meio do giro (fracao de rx). */
+  coreDip: 0.04,
 } as const

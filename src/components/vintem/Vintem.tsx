@@ -1,7 +1,7 @@
 import { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { createVintemView, type VintemViewHandle } from '@/lib/vintem/view'
-import { ACCESSORY_SHAPES, COIN, EYE, FRONT, VIEWBOX } from '@/lib/vintem/geometry'
+import { ACCESSORY_SHAPES, COIN, EYE, FRONT, GROUND, PROFILE, VIEWBOX } from '@/lib/vintem/geometry'
 
 /** Os sete estados do Vintem (D-05b). */
 export type VintemState = 'neutro' | 'feliz' | 'triste' | 'bravo' | 'sonolento' | 'surpreso' | 'atento'
@@ -48,10 +48,17 @@ const bodyFill = 'var(--vintem-body)'
 const EYE_IDS = {
   L: { eye: 'eL', lid: 'lidL', wet: 'wetL', cv: 'cvL', clip: 'clipL' },
   R: { eye: 'eR', lid: 'lidR', wet: 'wetR', cv: 'cvR', clip: 'clipR' },
+  P: { eye: 'eP', lid: 'lidP', wet: 'wetP', cv: 'cvP', clip: 'clipP' },
+} as const
+
+/** Ids das patas do perfil (a frente nao tem patas, P-04). */
+const PAW_IDS = {
+  far: ['pawFarA', 'pawFarB'],
+  near: ['pawNearA', 'pawNearB'],
 } as const
 
 /** Um olho em camadas: esclera, pelicula, pupila, brilho, palpebras, cobertura do piscar e arco. */
-function Eye({ uid, side }: { uid: string; side: 'L' | 'R' }) {
+function Eye({ uid, side }: { uid: string; side: 'L' | 'R' | 'P' }) {
   const ids = EYE_IDS[side]
   return (
     <g id={`${uid}-${ids.eye}`}>
@@ -177,6 +184,15 @@ export function Vintem({
         <clipPath id={`${uid}-${EYE_IDS.R.clip}`}>
           <ellipse rx={EYE.rx} ry={EYE.ry} />
         </clipPath>
+        <clipPath id={`${uid}-${EYE_IDS.P.clip}`}>
+          <ellipse rx={EYE.rx} ry={EYE.ry} />
+        </clipPath>
+        {/* silhueta do perfil: corpo, cabeca e focinho; tudo do rosto fica recortado por ela */}
+        <clipPath id={`${uid}-profC`}>
+          <ellipse cx={PROFILE.body.cx} cy={PROFILE.body.cy} rx={PROFILE.body.rx} ry={PROFILE.body.ry} />
+          <circle cx={PROFILE.head.cx} cy={PROFILE.head.cy} r={PROFILE.head.r} />
+          <ellipse cx={PROFILE.snout.cx} cy={PROFILE.snout.cy} rx={PROFILE.snout.rx} ry={PROFILE.snout.ry} />
+        </clipPath>
       </defs>
       <ellipse
         id={`${uid}-shadow`}
@@ -188,6 +204,14 @@ export function Vintem({
         opacity={0.12}
       />
       <g id={`${uid}-root`}>
+        <ellipse
+          id={`${uid}-core`}
+          cx={FRONT.core.cx}
+          cy={FRONT.core.cy}
+          rx={FRONT.core.rx}
+          ry={FRONT.core.ry}
+          fill={bodyFill}
+        />
         <g id={`${uid}-front`}>
           <g id={`${uid}-earLg`}>
             <g id={`${uid}-earL`}>
@@ -213,6 +237,36 @@ export function Vintem({
               <path id={`${uid}-bL`} fill="none" stroke="var(--vintem-brow)" strokeWidth={4.6} strokeLinecap="round" />
               <path id={`${uid}-bR`} fill="none" stroke="var(--vintem-brow)" strokeWidth={4.6} strokeLinecap="round" />
               <g id={`${uid}-tear`} display="none">
+                <path d={ACCESSORY_SHAPES.drop} fill="var(--vintem-tear)" stroke="var(--vintem-eye)" strokeWidth={1.2} />
+              </g>
+            </g>
+          </g>
+        </g>
+        <g id={`${uid}-side`} display="none">
+          <g transform={`translate(${GROUND.x},${GROUND.y}) scale(${PROFILE.scale}) translate(${-GROUND.x},${-PROFILE.anchorY})`}>
+            {PROFILE.pawsFar.map((r, i) => (
+              <rect key={i} id={`${uid}-${PAW_IDS.far[i]}`} {...r} fill="var(--vintem-far)" />
+            ))}
+            <g transform={`translate(${PROFILE.tail.x},${PROFILE.tail.y})`}>
+              <g id={`${uid}-tail`}>
+                <path d={PROFILE.tail.path} fill="none" stroke={bodyFill} strokeWidth={7} strokeLinecap="round" />
+              </g>
+            </g>
+            {PROFILE.pawsNear.map((r, i) => (
+              <rect key={i} id={`${uid}-${PAW_IDS.near[i]}`} {...r} fill={bodyFill} />
+            ))}
+            <ellipse cx={PROFILE.body.cx} cy={PROFILE.body.cy} rx={PROFILE.body.rx} ry={PROFILE.body.ry} fill={bodyFill} />
+            <circle cx={PROFILE.head.cx} cy={PROFILE.head.cy} r={PROFILE.head.r} fill={bodyFill} />
+            <ellipse cx={PROFILE.snout.cx} cy={PROFILE.snout.cy} rx={PROFILE.snout.rx} ry={PROFILE.snout.ry} fill="var(--vintem-snout)" />
+            <ellipse cx={PROFILE.nostril.cx} cy={PROFILE.nostril.cy} rx={PROFILE.nostril.rx} ry={PROFILE.nostril.ry} fill={ink} />
+            <g id={`${uid}-earP`}>
+              <path d={PROFILE.ear} fill={bodyFill} />
+            </g>
+            <g clipPath={`url(#${uid}-profC)`}>
+              <path d={PROFILE.slit} fill="none" stroke={ink} strokeWidth={3.2} strokeLinecap="round" />
+              <Eye uid={uid} side="P" />
+              <path id={`${uid}-bP`} fill="none" stroke="var(--vintem-brow)" strokeWidth={4.6} strokeLinecap="round" />
+              <g id={`${uid}-tearP`} display="none">
                 <path d={ACCESSORY_SHAPES.drop} fill="var(--vintem-tear)" stroke="var(--vintem-eye)" strokeWidth={1.2} />
               </g>
             </g>

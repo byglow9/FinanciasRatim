@@ -3,7 +3,7 @@
 // passa por arredondamento que nunca escreve NaN nem infinito. React nunca participa.
 import { VintemModel, type VintemPose } from '@shared/core/vintemModel.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
-import { ACCESSORY_ANCHORS, COIN, EYE, FRONT, GROUND, TEAR } from './geometry'
+import { ACCESSORY_ANCHORS, COIN, EYE, FLIP, FRONT, GROUND, PROFILE, TEAR } from './geometry'
 import { getPointer, registerInstance, setInstanceFollow, simWorld, wake } from './world'
 
 // ---- escrita de atributos com cache ----
@@ -56,7 +56,14 @@ interface EyeParts {
 interface Parts {
   root: Part
   shadow: Part
+  core: Part
   front: Part
+  side: Part
+  earP: Part
+  tailG: Part
+  eyeP: EyeParts
+  bP: Part
+  tearP: Part
   earLg: Part
   earRg: Part
   earL: Part
@@ -82,7 +89,7 @@ interface Parts {
 
 function findParts(svg: SVGSVGElement, uid: string): Parts {
   const byId = (name: string) => part(svg.getElementById(`${uid}-${name}`), name)
-  const eye = (side: 'L' | 'R'): EyeParts => {
+  const eye = (side: 'L' | 'R' | 'P'): EyeParts => {
     const g = svg.getElementById(`${uid}-e${side}`)
     const q = (name: string) => part(g?.querySelector(`[data-e="${name}"]`) ?? null, `e${side}.${name}`)
     const clipEl = svg.getElementById(`${uid}-clip${side}`)
@@ -106,7 +113,14 @@ function findParts(svg: SVGSVGElement, uid: string): Parts {
   return {
     root: byId('root'),
     shadow: byId('shadow'),
+    core: byId('core'),
     front: byId('front'),
+    side: byId('side'),
+    earP: byId('earP'),
+    tailG: byId('tail'),
+    eyeP: eye('P'),
+    bP: byId('bP'),
+    tearP: byId('tearP'),
     earLg: byId('earLg'),
     earRg: byId('earRg'),
     earL: byId('earL'),
@@ -205,30 +219,47 @@ function drawBrow(p: Part, x: number, y: number, dir: number, bt: number, bc: nu
 }
 
 /** Posiciona um acessorio: some abaixo de 0,02; a escala segue o pop da mola. */
-function place(p: Part, v: number, x: number, y: number, rot: number, opacity?: number) {
-  if (v < 0.02) {
+function place(p: Part, v: number, x: number, y: number, rot: number, am: number, opacity?: number) {
+  if (v < 0.02 || am < 0.02) {
     put(p, 'display', 'none')
     return
   }
   put(p, 'display', 'inline')
   put(p, 'transform', `translate(${f2(x)},${f2(y)}) rotate(${f2(rot)}) scale(${f3(v)})`)
-  put(p, 'opacity', f2(opacity ?? clamp(v * 1.5, 0, 1)))
+  put(p, 'opacity', f2((opacity ?? clamp(v * 1.5, 0, 1)) * am))
+}
+
+/** Interpolacao suave entre dois limites (0 antes de `a`, 1 depois de `b`). */
+function smooth(a: number, b: number, x: number): number {
+  const t = clamp((x - a) / (b - a), 0, 1)
+  return t * t * (3 - 2 * t)
+}
+
+/** Elipse do corpo do perfil em coordenadas da raiz (perfil a 92% em torno do chao). */
+const PROFILE_CORE = {
+  cx: GROUND.x + PROFILE.scale * (PROFILE.body.cx - GROUND.x),
+  cy: GROUND.y + PROFILE.scale * (PROFILE.body.cy - PROFILE.anchorY),
+  rx: PROFILE.scale * PROFILE.body.rx,
+  ry: PROFILE.scale * PROFILE.body.ry,
 }
 
 /** Acessorios (fora do corpo), lagrima, moeda do gasto e moedinhas da festa. */
-function drawAccessories(P: Parts, pose: VintemPose) {
+function drawAccessories(P: Parts, pose: VintemPose, T: number) {
   const a = pose.acc
   const ph = pose.accPhase
   const wave = Math.sin(ph * Math.PI * 2)
-  const A = ACCESSORY_ANCHORS.front
+  // Os acessorios somem na primeira metade do giro e reaparecem na segunda, reancorados ao perfil.
+  const onProfile = T >= 0.5
+  const A = onProfile ? ACCESSORY_ANCHORS.profile : ACCESSORY_ANCHORS.front
+  const am = onProfile ? clamp((T - 0.6) / 0.35, 0, 1) : clamp(1 - T / 0.35, 0, 1)
   put(P.accG, 'transform', `translate(${f2(pose.px)},${f2(pose.py)})`)
   put(P.coinsG, 'transform', `translate(${f2(pose.px)},${f2(pose.py)})`)
 
   // suor escorre; raiva pulsa; brilho gira e pulsa; exclamacao treme; Zzz sobem
-  place(P.sweat, a.sweat, A.sweat.x, A.sweat.y + ph * 26, 0, clamp(1 - ph * 0.8, 0, 1) * clamp(a.sweat * 1.5, 0, 1))
-  place(P.anger, a.anger * (1 + 0.08 * wave), A.anger.x, A.anger.y, 0)
-  place(P.spark, a.spark * (1 + 0.15 * wave), A.spark.x, A.spark.y, ph * 90)
-  place(P.excl, a.excl, A.excl.x, A.excl.y, wave * 3)
+  place(P.sweat, a.sweat, A.sweat.x, A.sweat.y + ph * 26, 0, am, clamp(1 - ph * 0.8, 0, 1) * clamp(a.sweat * 1.5, 0, 1))
+  place(P.anger, a.anger * (1 + 0.08 * wave), A.anger.x, A.anger.y, 0, am)
+  place(P.spark, a.spark * (1 + 0.15 * wave), A.spark.x, A.spark.y, ph * 90, am)
+  place(P.excl, a.excl, A.excl.x, A.excl.y, wave * 3, am)
   for (let i = 0; i < 3; i++) {
     const zp = (ph + i / 3) % 1
     place(
@@ -237,29 +268,41 @@ function drawAccessories(P: Parts, pose: VintemPose) {
       A.z.x + zp * 30 + Math.sin(ph * Math.PI * 2 + i) * 3,
       A.z.y - zp * 46,
       0,
+      am,
       clamp(Math.sin(zp * Math.PI) * 1.4, 0, 1) * clamp(a.z, 0, 1),
     )
   }
 
   // lagrima: pinga do olho esquerdo em ciclo de 2,8 s (cresce, cai, some)
   const tr = a.tear
-  if (tr < 0.02) put(P.tear, 'display', 'none')
-  else {
+  if (tr < 0.02) {
+    put(P.tear, 'display', 'none')
+    put(P.tearP, 'display', 'none')
+  } else {
     const grow = ph < 0.35 ? 0.35 + (ph / 0.35) * 0.65 : 1
-    const fall = ph < 0.35 ? 0 : Math.pow((ph - 0.35) / 0.65, 2) * TEAR.fall
-    const fade = ph < 0.75 ? 1 : clamp((1 - ph) / 0.25, 0, 1)
+    const drop = ph < 0.35 ? 0 : Math.pow((ph - 0.35) / 0.65, 2)
+    const fade = f2(clamp(tr * 1.5, 0, 1) * (ph < 0.75 ? 1 : clamp((1 - ph) / 0.25, 0, 1)))
+    const sc = f3(tr * grow * 0.8)
     put(P.tear, 'display', 'inline')
     put(
       P.tear,
       'transform',
-      `translate(${f2(GROUND.x - EYE.dx + TEAR.dx)},${f2(EYE.y + pose.e.eh + TEAR.dy + fall)}) scale(${f3(tr * grow * 0.8)})`,
+      `translate(${f2(GROUND.x - EYE.dx + TEAR.dx)},${f2(EYE.y + pose.e.eh + TEAR.dy + drop * TEAR.fall)}) scale(${sc})`,
     )
-    put(P.tear, 'opacity', f2(fade * clamp(tr * 1.5, 0, 1)))
+    put(P.tear, 'opacity', fade)
+    // no perfil a lagrima pinga do olho do perfil (180, 107 + eh)
+    put(P.tearP, 'display', 'inline')
+    put(
+      P.tearP,
+      'transform',
+      `translate(${f2(PROFILE.eye.x)},${f2(PROFILE.eye.y + pose.e.eh + TEAR.dy + drop * PROFILE.tearFall)}) scale(${sc})`,
+    )
+    put(P.tearP, 'opacity', fade)
   }
 
   // moeda do gasto (recortada acima de y = 55) e moedinhas da festa
   const c = pose.coin
-  if (c.on) {
+  if (c.on && T < 0.25) {
     put(P.coinR, 'display', 'inline')
     put(P.coinR, 'transform', `translate(${f2(c.x)},${f2(c.y)})`)
     put(P.coinS, 'transform', `scale(${f3(c.sx)},1)`)
@@ -286,37 +329,86 @@ export function createDrawer(svg: SVGSVGElement, uid: string): PoseDrawer {
 
   return (pose) => {
     const e = pose.e
+    const T = clamp(pose.turn, 0, 1)
+    // giro: frente 1 -> 0,5 em T 0..0,5; perfil 0,5 -> 1 em T 0,5..1; fusao cruzada entre 0,42 e 0,58
+    const u = clamp(T / 0.5, 0, 1)
+    const v = clamp((T - 0.5) / 0.5, 0, 1)
+    const frontScale = 1 - (1 - FLIP.mid) * Math.sin((u * Math.PI) / 2)
+    const sideScale = FLIP.mid + (1 - FLIP.mid) * Math.sin((v * Math.PI) / 2)
+    const w = smooth(FLIP.crossFrom, FLIP.crossTo, T)
+    const ty = 1 + FLIP.squash * Math.sin(Math.PI * T)
+
     // raiz: posicao, inclinacao (olhar, reacao, cabeca tombada) e escala do corpo em torno do chao
     const rot = pose.rot + pose.head + e.rt
     put(
       P.root,
       'transform',
-      `translate(${f2(pose.px)},${f2(pose.py)}) translate(${GROUND.x},${GROUND.y}) rotate(${f2(rot)}) scale(${f3(pose.sx)},${f3(pose.sy)}) translate(${-GROUND.x},${-GROUND.y})`,
+      `translate(${f2(pose.px)},${f2(pose.py)}) translate(${GROUND.x},${GROUND.y}) rotate(${f2(rot)}) scale(${f3(pose.sx)},${f3(pose.sy * ty)}) translate(${-GROUND.x},${-GROUND.y})`,
     )
-    put(P.shadow, 'rx', f2(FRONT.shadow.rx * pose.shadow.sx))
+    put(P.shadow, 'rx', f2((FRONT.shadow.rx + 8 * T) * pose.shadow.sx))
     put(P.shadow, 'opacity', f2(pose.shadow.a))
 
-    // orelhas: ancoradas na silhueta (atras do corpo), seguem o corpo com atraso
-    const es = e.es
-    const sxE = f3(Math.max(0.5, es < 1 ? es : 1))
-    const syE = f3(Math.max(0.6, es))
-    put(P.earLg, 'transform', `translate(${FRONT.earPivotL.x},${FRONT.earPivotL.y})`)
-    put(P.earRg, 'transform', `translate(${FRONT.earPivotR.x},${FRONT.earPivotR.y})`)
-    put(P.earL, 'transform', `rotate(${f2(-(e.ea + pose.earL))}) scale(${sxE},${syE})`)
-    put(P.earR, 'transform', `rotate(${f2(e.ea + pose.earR)}) scale(${sxE},${syE})`)
+    // corpo comum por baixo: leva a elipse da frente a do perfil, estreitando um pouco no meio
+    const dip = 1 - FLIP.coreDip * Math.sin(Math.PI * T)
+    put(P.core, 'cx', f2(FRONT.core.cx + (PROFILE_CORE.cx - FRONT.core.cx) * T))
+    put(P.core, 'cy', f2(FRONT.core.cy + (PROFILE_CORE.cy - FRONT.core.cy) * T))
+    put(P.core, 'rx', f2((FRONT.core.rx + (PROFILE_CORE.rx - FRONT.core.rx) * T) * dip))
+    put(P.core, 'ry', f2(FRONT.core.ry + (PROFILE_CORE.ry - FRONT.core.ry) * T * T * T))
 
-    // rosto: paralaxe do olhar
-    put(P.face, 'transform', `translate(${f2(pose.look.x * FRONT.parallax.x)},${f2(pose.look.y * FRONT.parallax.y)})`)
-    put(P.snoutG, 'transform', `translate(${FRONT.snout.cx},${FRONT.snout.cy})`)
+    if (w < 1) {
+      put(P.front, 'display', 'inline')
+      put(P.front, 'opacity', f2(1 - w))
+      put(P.front, 'transform', `translate(${GROUND.x},0) scale(${f3(frontScale)},1) translate(${-GROUND.x},0)`)
+      drawFront(P, pose)
+    } else put(P.front, 'display', 'none')
 
-    const ex = EYE.dx
-    const h = drawEye(P.eyeL, pose, e.cvL, GROUND.x - ex, EYE.y, 1, 1)
-    drawEye(P.eyeR, pose, e.cvR, GROUND.x + ex, EYE.y, -1, 1)
-    drawBrow(P.bL, GROUND.x - ex, EYE.y - h - EYE.browGap + e.by, 1, e.bt, e.bc)
-    drawBrow(P.bR, GROUND.x + ex, EYE.y - h - EYE.browGap + e.by + e.ba, -1, e.bt, e.bc)
+    if (w > 0) {
+      put(P.side, 'display', 'inline')
+      put(P.side, 'opacity', f2(w))
+      put(P.side, 'transform', `translate(${GROUND.x},0) scale(${f3(sideScale)},1) translate(${-GROUND.x},0)`)
+      drawSide(P, pose)
+    } else put(P.side, 'display', 'none')
 
-    drawAccessories(P, pose)
+    drawAccessories(P, pose, T)
   }
+}
+
+/** Frente: orelhas, rosto (paralaxe do olhar), olhos e sobrancelhas. */
+function drawFront(P: Parts, pose: VintemPose) {
+  const e = pose.e
+  // orelhas: ancoradas na silhueta (atras do corpo), seguem o corpo com atraso
+  const sxE = f3(Math.max(0.5, e.es < 1 ? e.es : 1))
+  const syE = f3(Math.max(0.6, e.es))
+  put(P.earLg, 'transform', `translate(${FRONT.earPivotL.x},${FRONT.earPivotL.y})`)
+  put(P.earRg, 'transform', `translate(${FRONT.earPivotR.x},${FRONT.earPivotR.y})`)
+  put(P.earL, 'transform', `rotate(${f2(-(e.ea + pose.earL))}) scale(${sxE},${syE})`)
+  put(P.earR, 'transform', `rotate(${f2(e.ea + pose.earR)}) scale(${sxE},${syE})`)
+
+  // rosto: paralaxe do olhar
+  put(P.face, 'transform', `translate(${f2(pose.look.x * FRONT.parallax.x)},${f2(pose.look.y * FRONT.parallax.y)})`)
+  put(P.snoutG, 'transform', `translate(${FRONT.snout.cx},${FRONT.snout.cy})`)
+
+  const ex = EYE.dx
+  const h = drawEye(P.eyeL, pose, e.cvL, GROUND.x - ex, EYE.y, 1, 1)
+  drawEye(P.eyeR, pose, e.cvR, GROUND.x + ex, EYE.y, -1, 1)
+  drawBrow(P.bL, GROUND.x - ex, EYE.y - h - EYE.browGap + e.by, 1, e.bt, e.bc)
+  drawBrow(P.bR, GROUND.x + ex, EYE.y - h - EYE.browGap + e.by + e.ba, -1, e.bt, e.bc)
+}
+
+/** Perfil: uma orelha, um olho, uma sobrancelha e o rabinho preso ao corpo. */
+function drawSide(P: Parts, pose: VintemPose) {
+  const e = pose.e
+  const ear = clamp(-(e.ea * 0.85 + pose.earL * 0.5), -150, 40)
+  put(
+    P.earP,
+    'transform',
+    `translate(${PROFILE.earPivot.x},${PROFILE.earPivot.y}) rotate(${f2(ear)}) scale(1,${f3(Math.max(0.6, e.es))})`,
+  )
+  put(P.tailG, 'transform', `rotate(${f2(-pose.tail)})`)
+  const ex = PROFILE.eye.x + pose.look.x * PROFILE.eye.drift
+  const ey = PROFILE.eye.y + pose.look.y * PROFILE.eye.drift
+  const h = drawEye(P.eyeP, pose, e.cvL, ex, ey, 1, PROFILE.eye.k)
+  drawBrow(P.bP, ex, ey - h * PROFILE.eye.k - 8 + e.by * 0.6, 1, e.bt, e.bc)
 }
 
 // ---- cache de desenhistas por SVG (testes e capturas) ----

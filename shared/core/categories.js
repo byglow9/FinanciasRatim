@@ -41,7 +41,7 @@ export const CATEGORY_ICON_GROUPS = [
   {
     id: 'lazer',
     label: 'Lazer',
-    icons: ['party-popper', 'clapperboard', 'music', 'gamepad-2', 'ticket', 'tv', 'tree-palm'],
+    icons: ['party-popper', 'clapperboard', 'music', 'gamepad-2', 'ticket', 'tv', 'tree-palm', 'cigarette', 'cannabis'],
   },
   {
     id: 'compras',
@@ -246,7 +246,7 @@ export function setCategoryMeta(defs, id, patch) {
 
 /**
  * Icone sugerido pelo nome para categorias sem icone salvo e fora dos padroes (dados antigos ou criadas
- * sem escolher).
+ * sem escolher). cigarette e cannabis ficam so para o dono escolher, nunca sao sugeridos.
  * Cada regra casa no comeco de uma palavra do nome (sem acento e em minusculas).
  * @type {[string, RegExp][]}
  */

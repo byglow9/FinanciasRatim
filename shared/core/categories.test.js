@@ -208,12 +208,19 @@ test('setCategoryMeta: id inexistente, icone e tipo invalidos lancam', () => {
 test('categoryIcon: sem icone salvo, o nome sugere um icone proprio; nome desconhecido cai em tag', () => {
   const cases = { Assinaturas: 'tv', Casa: 'house', Pets: 'paw-print', 'Plano de saude': 'heart-pulse', Mercado: 'shopping-cart', Internet: 'wifi', Poupanca: 'piggy-bank' }
   for (const [name, icon] of Object.entries(cases)) assert.equal(categoryIcon({ id: name.toLowerCase(), name }), icon, name)
-  // icone salvo vence a sugestao
+  // icone salvo vence a sugestao; cigarette e cannabis nunca sao sugeridos
   assert.equal(categoryIcon({ id: 'casa', name: 'Casa', icon: 'star' }), 'star')
+  for (const d of [{ id: 'x', name: 'Cigarro' }, { id: 'y', name: 'Maconha' }]) assert.ok(!['cigarette', 'cannabis'].includes(categoryIcon(d)))
   // todo icone sugerido existe no catalogo
   for (const n of ['Assinaturas', 'Casa', 'Pets', 'Gasolina', 'Uber', 'Farmacia', 'Academia', 'Viagem', 'Roupa', 'Beleza', 'Presente', 'Filhos', 'Luz', 'Agua', 'Gas', 'Cartao', 'Imposto', 'Seguro', 'Salario', 'Investimentos', 'Reserva', 'Trabalho', 'Compras', 'Outros']) {
     assert.ok(CATEGORY_ICONS.includes(categoryIcon({ id: n, name: n })), n)
   }
+})
+
+test('catalogo ganhou cigarette e cannabis (79 icones) e nenhum padrao os usa', () => {
+  assert.equal(CATEGORY_ICONS.length, 79)
+  assert.ok(CATEGORY_ICONS.includes('cigarette') && CATEGORY_ICONS.includes('cannabis'))
+  for (const d of DEFAULT_CATEGORY_DEFS) assert.ok(!['cigarette', 'cannabis'].includes(d.icon))
 })
 
 test('categoryIcon: usa o gravado, cai no padrao do id e por fim em tag', () => {

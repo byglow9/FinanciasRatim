@@ -42,6 +42,8 @@ const ICON_LABELS: Record<string, string> = {
   'ticket': 'Ingresso',
   'tv': 'Streaming',
   'tree-palm': 'Viagem',
+  'cigarette': 'Cigarro',
+  'cannabis': 'Folha',
   'shopping-bag': 'Sacola',
   'shirt': 'Roupa',
   'gem': 'Joia',
@@ -88,6 +90,12 @@ const ICON_LABELS: Record<string, string> = {
   'map-pin': 'Local',
 }
 
+// Termos extras de busca (sem acento) além do nome: achar "tabaco" ou "maconha" sem rotular o ícone assim.
+const ICON_KEYWORDS: Record<string, string> = {
+  cigarette: 'tabaco fumo cigarro vicio',
+  cannabis: 'maconha erva planta folha cannabis vicio',
+}
+
 /** Minúsculas e sem acento, para a busca achar "cafe" em "Café". */
 const fold = (text: string) =>
   text
@@ -120,7 +128,11 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
     return CATEGORY_ICON_GROUPS.map((group) => ({
       ...group,
       icons: group.icons.filter(
-        (name) => q === '' || fold(ICON_LABELS[name] ?? name).includes(q) || fold(group.label).includes(q)
+        (name) =>
+          q === '' ||
+          fold(ICON_LABELS[name] ?? name).includes(q) ||
+          fold(ICON_KEYWORDS[name] ?? '').includes(q) ||
+          fold(group.label).includes(q)
       ),
     })).filter((group) => group.icons.length > 0)
   }, [query])

@@ -29,3 +29,32 @@ test('useCalendarActions grava depois de guard("editar"), avisa e nao usa consol
   // A gravacao so acontece depois da guarda.
   assert.ok(src.indexOf("guard('editar')") < src.indexOf('await addNote('), 'addNote antes da guarda')
 })
+
+test('NoteSheet: cinco cores em radiogroup com tokens bg-pit-* e nome acessivel por cor', () => {
+  assertIncludes(NOTE, [
+    'radiogroup',
+    'role="radio"',
+    'aria-checked',
+    'Amarelo',
+    'Azul',
+    'Verde',
+    'Rosa',
+    'Roxo',
+    'bg-pit-yellow',
+    'bg-pit-blue',
+    'bg-pit-green',
+    'bg-pit-pink',
+    'bg-pit-purple',
+    'h-11 w-11',
+    'size-8',
+  ])
+})
+
+test('NoteSheet: edicao preserva o conteudo antigo e apagar tem duas etapas sem confirmacao nativa', () => {
+  const src = code(NOTE)
+  assertIncludes(NOTE, ['Apagar post-it', 'Apagar este post-it?', 'Manter', 'note.content', 'aria-disabled', 'onBlocked'])
+  assert.doesNotMatch(src, /window\.confirm/, 'NoteSheet usa a confirmacao nativa do navegador')
+  assert.doesNotMatch(src, /\bconfirm\(/, 'NoteSheet usa confirm()')
+  // O conteudo antigo nunca entra no rascunho gravado.
+  assert.doesNotMatch(src, /content\s*:/, 'NoteSheet grava content')
+})

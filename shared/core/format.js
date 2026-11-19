@@ -111,6 +111,55 @@ export function applyKeypad(cents, key) {
 }
 
 /**
+ * Le um valor digitado em reais pt-BR e devolve centavos inteiros, ou `null`
+ * se o texto for invalido (T-3.1-02-01). Virgula e o decimal (no maximo duas
+ * casas); ponto e sempre milhar e so vale em grupos de tres digitos. Sem sinal,
+ * sem moeda, sem notacao cientifica. Acima do maximo do teclado devolve `null`.
+ * @param {unknown} text
+ * @returns {number | null}
+ */
+export function parseBRL(text) {
+  if (typeof text !== 'string') return null
+  const t = text.trim()
+  const m = /^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/.exec(t)
+  if (!m) return null
+  const whole = m[1].replaceAll('.', '')
+  const frac = (m[2] ?? '').padEnd(2, '0')
+  // Digitos demais perdem precisao como Number; o teto do teclado barra antes.
+  if (whole.length > 8) return null
+  const cents = Number(whole) * 100 + Number(frac || '0')
+  return cents > KEYPAD_MAX ? null : cents
+}
+
+/**
+ * Valor curto com sinal para a grade do ciclo: reais arredondados abaixo de mil
+ * ('-396', '+396'); de mil em diante, milhares com uma casa e virgula, sem ',0'
+ * sobrando ('+1,2k', '+1k'). Zero (inclusive o que arredonda para zero) e '0'.
+ * @param {number} cents
+ * @returns {string}
+ */
+export function shortSigned(cents) {
+  const n = Number.isFinite(cents) ? Math.round(cents) : 0
+  const reais = Math.round(Math.abs(n) / 100)
+  if (reais === 0) return '0'
+  const sign = n < 0 ? MINUS : '+'
+  if (reais < 1000) return `${sign}${reais}`
+  const thousands = Math.round(reais / 100) / 10
+  return `${sign}${String(thousands).replace('.', ',')}k`
+}
+
+/**
+ * Reais inteiros truncados para zero, com R$ e espaco inseparavel, para o
+ * resumo de tres colunas (P-04): 'R$ 3.915', '-R$ 396', 'R$ 0'.
+ * @param {number} cents
+ * @returns {string}
+ */
+export function compactMoney(cents) {
+  const n = Number.isFinite(cents) ? Math.trunc(cents / 100) : 0
+  return `${n < 0 ? MINUS : ''}R$${NBSP}${GROUP.format(Math.abs(n))}`
+}
+
+/**
  * Reais inteiros por dia, arredondados para baixo: nunca promete mais do que
  * existe.
  * @param {number} cents centavos por dia

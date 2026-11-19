@@ -11,6 +11,9 @@ import {
   cycleLabel,
   dayMonth,
   plural,
+  parseBRL,
+  shortSigned,
+  compactMoney,
   MONTH_SHORT,
   MONTH_LONG,
 } from './format.js'
@@ -172,4 +175,61 @@ test('plural: singular e plural', () => {
   assert.equal(plural(1, 'dia', 'dias'), '1 dia')
   assert.equal(plural(0, 'dia', 'dias'), '0 dias')
   assert.equal(plural(17, 'dia', 'dias'), '17 dias')
+})
+
+// ---- parseBRL, shortSigned, compactMoney (D-15, P-04) ----
+
+test('parseBRL: virgula decimal, ponto sempre milhar, centavos inteiros', () => {
+  assert.equal(parseBRL('99,9'), 9990)
+  assert.equal(parseBRL('99,90'), 9990)
+  assert.equal(parseBRL('1.234,56'), 123456)
+  assert.equal(parseBRL('1.200'), 120000)
+  assert.equal(parseBRL('123.456'), 12345600)
+  assert.equal(parseBRL('15'), 1500)
+  assert.equal(parseBRL('0'), 0)
+  assert.equal(parseBRL('0,07'), 7)
+  assert.equal(parseBRL('  42,5  '), 4250)
+})
+
+test('parseBRL: texto invalido, sinal, tres casas e ponto mal posto devolvem null', () => {
+  for (const bad of ['', '   ', 'abc', '12,345', '-5', '+5', '1,2,3', '1.20', '12.34', ',5', '5,', 'R$ 5', '1e3', 'NaN']) {
+    assert.equal(parseBRL(bad), null, `esperava null para ${JSON.stringify(bad)}`)
+  }
+  assert.equal(parseBRL(undefined), null)
+  assert.equal(parseBRL(null), null)
+  assert.equal(parseBRL(12), null)
+})
+
+test('parseBRL: acima do maximo do teclado devolve null e nunca um float', () => {
+  assert.equal(parseBRL('999.999,99'), 99_999_999)
+  assert.equal(parseBRL('1.000.000'), null)
+  assert.equal(parseBRL('99999999999999999999'), null)
+  assert.ok(Number.isInteger(parseBRL('1.234,56')))
+})
+
+test('shortSigned: reais abaixo de mil, milhares com uma casa a partir de mil', () => {
+  assert.equal(shortSigned(-39600), `${MINUS}396`)
+  assert.equal(shortSigned(39600), '+396')
+  assert.equal(shortSigned(120000), '+1,2k')
+  assert.equal(shortSigned(100000), '+1k')
+  assert.equal(shortSigned(0), '0')
+  assert.equal(shortSigned(-120000), `${MINUS}1,2k`)
+  assert.equal(shortSigned(1050000), '+10,5k')
+  assert.equal(shortSigned(1000000), '+10k')
+})
+
+test('shortSigned: arredonda para reais e nao mostra sinal quando vira zero', () => {
+  assert.equal(shortSigned(40), '0')
+  assert.equal(shortSigned(-40), '0')
+  assert.equal(shortSigned(99950), '+1k')
+  assert.equal(shortSigned(Number.NaN), '0')
+})
+
+test('compactMoney: reais inteiros truncados, NBSP depois do R$', () => {
+  assert.equal(compactMoney(391550), `R$${NBSP}3.915`)
+  assert.equal(compactMoney(-39650), `${MINUS}R$${NBSP}396`)
+  assert.equal(compactMoney(0), `R$${NBSP}0`)
+  assert.equal(compactMoney(99), `R$${NBSP}0`)
+  assert.equal(compactMoney(-50), `R$${NBSP}0`)
+  assert.equal(compactMoney(Number.NaN), `R$${NBSP}0`)
 })

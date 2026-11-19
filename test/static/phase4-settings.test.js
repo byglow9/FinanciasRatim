@@ -90,3 +90,21 @@ test('nenhuma gravacao de tom por caminho de pessoa e o cartao respeita escala e
   assert.deepEqual(scaleProblems([CARD]), [])
   assert.deepEqual(touchProblems([CARD]), [])
 })
+
+test('o radiogroup trata teclado, so a opcao ativa e tabulavel, perfil do parceiro e falha com reversao', () => {
+  const src = code(CARD)
+  for (const key of ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End']) {
+    assert.ok(src.includes(`'${key}'`), `${CARD} sem a tecla ${key}`)
+  }
+  assert.match(src, /preventDefault\(\)/)
+  assert.match(src, /tabIndex=\{checked \? 0 : -1\}/, 'so a opcao ativa pode ser tabulavel')
+  assert.match(src, /aria-disabled=\{readOnly \?/, 'linhas sem aria-disabled no perfil do parceiro')
+  assert.ok(src.includes('Volte ao seu perfil para editar'))
+  assert.ok(src.includes('Não foi possível salvar o tom. Confira a conexão e tente de novo.'))
+  assert.match(src, /<Notice tone="danger">/)
+  assert.match(src, /setSelected\(previous\)/, 'falha sem reverter a selecao')
+  assert.match(src, /readOnly \|\| saving/, 'toques durante o salvamento ou no perfil do parceiro nao sao ignorados')
+  // Ressincroniza na renderizacao, sem efeito que chame setState.
+  assert.doesNotMatch(src, /useEffect/, 'ressincronizacao deve ser na renderizacao, sem useEffect')
+  assert.match(src, /if \(source !== stored\)/)
+})

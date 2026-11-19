@@ -41,7 +41,7 @@ test('1: uma secao ## por situacao e uma tabela por tom com as quatro colunas', 
 test('2: o exemplo vem preenchido por formatMoney e nunca tem chaves', () => {
   assert.match(sheet, /Está perto do limite de Lazer, vale segurar\./)
   assert.match(sheet, /Lazer chegou a 82% do limite\. Restam R\$ 90\./)
-  assert.match(sheet, /iFood de novo, quarto lançamento com 3 vezes e R\$ 90 gastos/)
+  assert.match(sheet, /IFood de novo, quarto lançamento com 3 vezes e R\$ 90 gastos/)
   const body = sheet.split('\n').filter((l) => l.startsWith('| lp-') || l.startsWith('| lr-')).join('\n')
   assert.doesNotMatch(body, /[{}]/)
 })

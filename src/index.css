@@ -54,6 +54,37 @@
   --color-rhythm-4-bg: #fee2e2;
   --color-rhythm-4-fg: #991b1b;
 
+  /* Tokens da Fase 3.1 em hex literal, sem variante escura (tema escuro e Fase 5). */
+  /* Mapa de calor do gasto do dia no Calendario */
+  --color-heat-1: #fef2f2;
+  --color-heat-2: #fee2e2;
+  --color-heat-3: #fecaca;
+  --color-heat-4: #fca5a5;
+  --color-heat-pos: #dcfce7;
+
+  /* Post-its (texto sempre foreground) */
+  --color-pit-yellow: #fde047;
+  --color-pit-blue: #67e8f9;
+  --color-pit-green: #bef264;
+  --color-pit-pink: #e879f9;
+  --color-pit-purple: #c4b5fd;
+
+  /* Pontinhos do Calendario */
+  --color-dot-in: #16a34a;
+  --color-dot-out: #ef4444;
+  --color-dot-bill-pending: #ea580c;
+  --color-dot-bill-paid: #65a30d;
+  --color-dot-pig: #ec4899;
+  --color-dot-goal: #8b5cf6;
+
+  /* Ele e Ela no Casal */
+  --color-ele: #14532d;
+  --color-ela: #c2410c;
+
+  /* Linha de conta vencida e em breve */
+  --color-bill-od-bg: #fef2f2;
+  --color-bill-soon-bg: #fff7ed;
+
   --shadow-float: 0 8px 30px rgba(40, 30, 0, 0.16);
 
   --radius-card: 22px;

@@ -32,7 +32,7 @@ const srcFiles = (exts) =>
 
 const PHASE_DIR = '.planning/phases/03-limites-pode-gastar-e-central'
 
-test('App.tsx registra as 9 rotas do app, sem a Central de Limites (a)', () => {
+test('App.tsx registra as 10 rotas do app (a de teste do Vintem inclusa), sem a Central de Limites (a)', () => {
   const src = code('src/App.tsx')
   const paths = [...src.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]).sort()
   const expected = [
@@ -45,6 +45,7 @@ test('App.tsx registra as 9 rotas do app, sem a Central de Limites (a)', () => {
     '/configuracoes',
     '/calendario',
     '/casal',
+    '/vintem-teste',
   ].sort()
   assert.deepEqual(paths, expected)
 })

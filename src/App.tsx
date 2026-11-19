@@ -16,6 +16,7 @@ import { ReportsPage } from '@/pages/ReportsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { CalendarPage } from '@/pages/CalendarPage'
 import { CouplePage } from '@/pages/CouplePage'
+import { VintemTestPage } from '@/pages/VintemTestPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -32,6 +33,7 @@ function AnimatedRoutes() {
         <Route path="/configuracoes" element={<SettingsPage />} />
         <Route path="/calendario" element={<CalendarPage />} />
         <Route path="/casal" element={<CouplePage />} />
+        <Route path="/vintem-teste" element={<VintemTestPage />} />
       </Routes>
     </div>
   )

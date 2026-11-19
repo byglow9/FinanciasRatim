@@ -150,12 +150,15 @@ test('as pastas das telas redesenhadas nao usam text-[8px], text-[10px] nem text
   assert.deepEqual(offenders, [])
 })
 
-test('as nove rotas de App.tsx continuam', () => {
+test('as nove rotas de App.tsx continuam, mais a rota oculta de teste do Vintem', () => {
   const routes = [...code('src/App.tsx').matchAll(/<Route path="([^"]+)"/g)].map((m) => m[1])
-  assert.equal(routes.length, 9, `rotas encontradas: ${routes.join(', ')}`)
+  assert.equal(routes.length, 10, `rotas encontradas: ${routes.join(', ')}`)
   assert.deepEqual(
     [...routes].sort(),
-    ['/', '/calendario', '/casal', '/configuracoes', '/contas-fixas', '/metas', '/porquinho', '/relatorios', '/transacoes'],
+    [
+      '/', '/calendario', '/casal', '/configuracoes', '/contas-fixas', '/metas', '/porquinho', '/relatorios',
+      '/transacoes', '/vintem-teste',
+    ],
   )
 })
 

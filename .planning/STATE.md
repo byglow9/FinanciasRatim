@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: "03.1"
-current_phase_name: redesign-das-abas
+current_phase: 4
+current_phase_name: Mascote Vintem
 status: executing
-stopped_at: Completed 03.1-24-PLAN.md
-last_updated: "2026-11-19T17:38:22.895Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-11-19T20:03:13.214Z"
 last_activity: 2026-11-19
-last_activity_desc: Phase 03.1 execution started
-state_head: 0abf916a8d7a397725412454f91c5836ed046bc0
+last_activity_desc: Phase 4 execution started
+state_head: 2ae4857d26867c48c8212e5cb1947720b05d3d4d
 progress:
   total_phases: 9
   completed_phases: 1
-  total_plans: 66
-  completed_plans: 66
+  total_plans: 86
+  completed_plans: 67
   percent: 11
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 03.1 — redesign-das-abas
+**Current focus:** Phase 4 — Mascote Vintem
 
 ## Current Position
 
-Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 24 of 24
+Phase: 4 (Mascote Vintem) — EXECUTING
+Plan: 2 of 20
 Status: Ready to execute
-Last activity: 2026-11-19 — Phase 03.1 execution started
+Last activity: 2026-11-19 — Phase 4 execution started
 
 Progress: [█░░░░░░░░░] 11%
 
@@ -117,6 +117,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P22 | 70 min | 3 tasks | 6 files |
 | Phase 03.1 P23 | 25 min | 2 tasks | 12 files |
 | Phase 03.1 P24 | 40 min | 3 tasks | 3 files |
+| Phase 04 P01 | 15min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -168,6 +169,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: 03.1-21: Relatórios na variante A (abas segmentadas); abas de 12/700 flex-auto para caber a 360px; seletor de ciclos 3/6/12 com rótulos curtos
 - [Phase 03.1]: [03.1-22] Calendario: agenda unico conteiner rolavel aprovado em 360x640 e 390x844; tela baixa abre com o mes recolhido (agenda < 96px)
 - [Phase 03.1]: [03.1-24] Guarda de confirmacao nativa varre todo src e fica vermelha por G-01 (BankConnections.tsx) em vez de ganhar excecao; nyquist_compliant falso ate decisao do dono
+- [Phase 4]: 04-01: STATE_PARAMS guarda so diferencas sobre STATE_DEFAULTS; consumidores mesclam
 
 ### Pending Todos
 
@@ -199,6 +201,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T17:38:22.809Z
-Stopped at: Completed 03.1-24-PLAN.md
+Last session: 2026-11-19T20:03:13.113Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None

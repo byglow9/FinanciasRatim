@@ -257,13 +257,13 @@ Plans:
   4. O usuário escolhe o tom do Vintém nas Configurações (suave, direto, sem filtro; padrão sem filtro, com bronca e xingamento permitidos) e o balão usa um banco de frases próprias com variantes para cada tom
   5. O desenho, o nome e todas as falas são originais: uma conferência dos textos contra os prints de referência não encontra personagem, nome, slogan nem frases copiados
 
-**Plans**: 0/20 plans executed
+**Plans**: 1/20 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Núcleo: molas, curva do piscar, acaso semeado e os sete estados com neutro assimétrico e triste corrigido (MASC-02, MASC-03)
+- [x] 04-01-PLAN.md — Núcleo: molas, curva do piscar, acaso semeado e os sete estados com neutro assimétrico e triste corrigido (MASC-02, MASC-03)
 - [ ] 04-02-PLAN.md — Núcleo: humor e reação por função pura, com a precedência e as faixas de 75, 80 e 100% (MASC-02)
 - [ ] 04-03-PLAN.md — Núcleo: detector local de insights e contrato Insight v1, sem dado pessoal (MASC-04)
 - [ ] 04-04-PLAN.md — Núcleo: seletor de frases sem repetição, régua de conteúdo, agregador do banco e folha de revisão (MASC-04, MASC-07)
@@ -385,7 +385,7 @@ Plans:
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
-| 4. Mascote Vintém | 0/20 | Not started | - |
+| 4. Mascote Vintém | 1/20 | In Progress|  |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |

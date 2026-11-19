@@ -120,16 +120,22 @@ export function useCycleBills(person: PersonType) {
       (p) => p.fixedExpenseId === item.billId && p.month === month && p.year === year
     )
 
+    // Invalida consultas em andamento: uma resposta disparada antes desta escrita traria o estado
+    // antigo e desfaria a atualizacao otimista (WR-01).
+    latest.current += 1
+
     if (existing.length > 0) {
       const removed = new Set(existing.map((p) => p.id))
       patchPayments((prev) => prev.filter((p) => !removed.has(p.id)))
       try {
         await Promise.all(existing.map((p) => unmarkAsPaid(p.id)))
-        return true
       } catch {
         patchPayments((prev) => [...prev, ...existing])
         return false
       }
+      // Reconcilia com o servidor, como no ramo de marcar; falha aqui nao desfaz o que ja foi apagado.
+      await fetchData()
+      return true
     }
 
     const optimistic: FixedExpensePayment = {

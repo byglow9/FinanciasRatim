@@ -12,3 +12,16 @@ test('CR-01: editar meta nao envia currentAmount; so o aporte altera o valor gua
   assert.match(page, /add\(\{ \.\.\.data, currentAmount: 0 \}\)/, 'criar deve comecar em zero')
   assert.match(page, /update\(id, data\)/)
 })
+
+test('WR-01: desmarcar conta invalida consultas em andamento e reconcilia com o servidor', () => {
+  const src = code('src/hooks/useCycleBills.ts')
+  const start = src.indexOf('const runToggle')
+  const end = src.indexOf('const togglePaid')
+  const body = src.slice(start, end)
+  const invalidate = body.indexOf('latest.current += 1')
+  const firstPatch = body.indexOf('patchPayments(')
+  assert.ok(invalidate >= 0, 'runToggle nao invalida consultas em andamento')
+  assert.ok(invalidate < firstPatch, 'a invalidacao deve vir antes do patch otimista, nos dois ramos')
+  const unmark = body.slice(body.indexOf('if (existing.length > 0)'), body.indexOf('const optimistic'))
+  assert.match(unmark, /unmarkAsPaid[\s\S]*await fetchData\(\)/, 'o ramo de desmarcar nao refaz a consulta')
+})

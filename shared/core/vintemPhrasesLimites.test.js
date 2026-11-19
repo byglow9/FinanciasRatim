@@ -6,7 +6,10 @@ import { PHRASES, REVIEW, SITUATION_META, TONES } from './vintemPhrases.js'
 import { PHRASES_LIMITES } from './vintemPhrasesLimites.js'
 
 // Situacoes do grupo cobertas por este teste (cada tarefa do plano acrescenta as suas).
-const GROUP = ['limite-perto', 'limite-estourou', 'limite-atento', 'central']
+const GROUP = [
+  'limite-atento', 'limite-perto', 'limite-estourou', 'central',
+  'delivery-semana', 'loja-repete', 'categoria-acima-media',
+]
 
 // Acaso deterministico (LCG) para os sorteios do teste.
 function seeded(seed) {
@@ -54,8 +57,9 @@ test('cada situacao do grupo tem 8 variantes por tom e ids no padrao', () => {
   }
 })
 
-test('pelo menos 3 variantes por tom usam so o encaixe {categoria} nas situacoes de limite', () => {
-  for (const situation of ['limite-estourou', 'limite-atento', 'central']) {
+test('pelo menos 3 variantes por tom usam um encaixe so (menos dado, mais candidatas)', () => {
+  // limite-perto veio pronta do plano 04-04 e fica como esta
+  for (const situation of GROUP.filter((x) => x !== 'limite-perto')) {
     for (const tone of TONES) {
       const few = PHRASES[situation][tone].filter((p) => needsOf(p.t).length === 1)
       assert.ok(few.length >= 3, `${situation}/${tone}: ${few.length} variantes de um encaixe`)
@@ -99,10 +103,16 @@ test('pick devolve nulo quando todos os encaixes faltam', () => {
   }
 })
 
-test('pick ainda acha candidata quando so a categoria esta presente', () => {
-  for (const situation of GROUP) {
+const ONLY_SLOT = {
+  'delivery-semana': { ordinal: 'quarto' },
+  'loja-repete': { loja: 'iFood' },
+}
+
+test('pick ainda acha candidata quando so o encaixe principal esta presente', () => {
+  for (const situation of GROUP.filter((x) => x !== 'limite-perto')) {
     for (const tone of TONES) {
-      const got = pick({ situation, tone, slots: { categoria: 'Lazer' }, rand: seeded(3), bank: PHRASES })
+      const slots = ONLY_SLOT[situation] || { categoria: 'Lazer' }
+      const got = pick({ situation, tone, slots, rand: seeded(3), bank: PHRASES })
       assert.ok(got, `${situation}/${tone}`)
       assert.ok(!/[{}]/.test(got.text))
     }
@@ -148,7 +158,50 @@ test('limite-atento e central: suave e direto sem palavrao e sem-filtro com ao m
   }
 })
 
-test('nenhuma variante de atento, perto, estourou ou central repete texto de outra situacao', () => {
+test('delivery-semana: exemplo aprovado com ordinal e pick sem chave sobrando', () => {
+  const sf = PHRASES['delivery-semana']['sem-filtro']
+  const ex = sf.find((p) => p.id === 'ds-sf-01')
+  assert.equal(ex.t, '{ordinal} delivery da semana, caralho. Seu fogão é enfeite?')
+  const slots = buildSlots({ ordinal: 4, vezes: 4, valorCents: 12000 })
+  assert.equal(slots.ordinal, 'quarto')
+  assert.equal(fill(ex.t, slots), 'Quarto delivery da semana, caralho. Seu fogão é enfeite?')
+  for (const tone of TONES) {
+    const rand = seeded(11)
+    for (let i = 0; i < 40; i += 1) {
+      const got = pick({ situation: 'delivery-semana', tone, slots, rand, bank: PHRASES })
+      assert.ok(got, tone)
+      assert.ok(!/[{}]/.test(got.text), got.text)
+    }
+  }
+})
+
+test('loja-repete: nenhuma frase abre com {loja} e o nome entra como veio', () => {
+  for (const tone of TONES) {
+    for (const p of PHRASES['loja-repete'][tone]) {
+      assert.ok(!/(^|[.!?]\s+)\{loja\}/.test(p.t), `${p.id} abre com {loja}`)
+    }
+  }
+  const slots = buildSlots({ loja: 'iFood', vezes: 3, ordinal: 3, valorCents: 9000 })
+  for (const tone of TONES) {
+    for (const p of PHRASES['loja-repete'][tone]) {
+      const text = fill(p.t, slots)
+      assert.ok(text && !text.includes('IFood'), p.id)
+    }
+  }
+})
+
+test('as situacoes de leitura: palavrao so no sem-filtro, ao menos 3 por situacao', () => {
+  const swear = /caralh|porr[ao]|merd|bost|cacete|\bput[ao]|fod/i
+  for (const situation of ['delivery-semana', 'loja-repete', 'categoria-acima-media']) {
+    for (const tone of ['suave', 'direto']) {
+      for (const p of PHRASES[situation][tone]) assert.ok(!swear.test(p.t), p.id)
+    }
+    const have = PHRASES[situation]['sem-filtro'].filter((p) => swear.test(p.t))
+    assert.ok(have.length >= 3, `${situation}: ${have.length} frases com palavrao`)
+  }
+})
+
+test('nenhuma variante do grupo repete texto de outra', () => {
   const seen = new Map()
   for (const situation of GROUP) {
     for (const tone of TONES) {

@@ -1,8 +1,9 @@
 // @ts-check
 // Banco de frases do grupo LIMITES do Vintem (D-10 a D-13). Dado puro, sem import.
 // Situacoes deste grupo: limite-atento, limite-perto, limite-estourou, central,
-// delivery-semana, loja-repete, categoria-acima-media. Hoje so `limite-perto` esta
-// escrita (prova do trilho); o plano de conteudo dos limites preenche o resto.
+// delivery-semana, loja-repete, categoria-acima-media (8 variantes por tom, ids
+// prefixo-su|di|sf-NN, limite-perto veio pronta do plano 04-04).
+// Escritas a mao; o dono revisa e corta no checkpoint de conteudo (plano 04-19).
 // Formato: { id, t } com encaixes {categoria} {pct} {restante} etc. (ver
 // SITUATION_META em vintemPhrases.js para os encaixes permitidos por situacao).
 // As frases levam acento: sao texto de interface.
@@ -19,7 +20,6 @@ export const PHRASES_LIMITES = Object.freeze({
       { id: 'lp-su-06', t: '{categoria} está quase no limite. Com {restante} ainda dá, só que devagar.' },
       { id: 'lp-su-07', t: 'Cuidado com {categoria}: {pct} do limite já foi. Sem pressa, você dá conta.' },
       { id: 'lp-su-08', t: 'O limite de {categoria} está logo ali, com {restante} de sobra. Vale pensar duas vezes.' },
-      { id: 'lp-su-09', t: '{categoria} está chegando perto do teto. Vamos com jeitinho até o fim do mês.' },
     ]),
     direto: Object.freeze([
       { id: 'lp-di-01', t: '{categoria} chegou a {pct} do limite. Restam {restante}.' },
@@ -30,7 +30,6 @@ export const PHRASES_LIMITES = Object.freeze({
       { id: 'lp-di-06', t: 'Restam {restante} em {categoria}. O limite está próximo.' },
       { id: 'lp-di-07', t: 'Você já usou {pct} do limite de {categoria}.' },
       { id: 'lp-di-08', t: '{categoria} perto do limite, com {restante} de margem.' },
-      { id: 'lp-di-09', t: '{categoria} está próxima do limite do mês.' },
     ]),
     'sem-filtro': Object.freeze([
       { id: 'lp-sf-01', t: '{pct} do limite de {categoria}, caralho. Resta {restante}, então vai com calma.' },
@@ -41,7 +40,6 @@ export const PHRASES_LIMITES = Object.freeze({
       { id: 'lp-sf-06', t: '{categoria} em {pct}. Que merda de ritmo, hein? Puxa o freio de mão.' },
       { id: 'lp-sf-07', t: 'Só {restante} separam {categoria} do estouro. Pensa antes de encostar nesse cartão.' },
       { id: 'lp-sf-08', t: 'Fodeu: {categoria} já está em {pct}. Sobraram {restante}, aproveita bem.' },
-      { id: 'lp-sf-09', t: '{categoria} já está na beirada do limite. Mais um gasto e a coisa desanda.' },
     ]),
   }),
   'limite-estourou': Object.freeze({
@@ -138,6 +136,102 @@ export const PHRASES_LIMITES = Object.freeze({
       { id: 'ce-sf-06', t: 'Só {restante} em {categoria}. Segura, porra.' },
       { id: 'ce-sf-07', t: 'Tá feia a coisa em {categoria}. Já foi {pct}.' },
       { id: 'ce-sf-08', t: 'Segura a onda em {categoria}, que o limite não perdoa.' },
+    ]),
+  }),
+  'delivery-semana': Object.freeze({
+    suave: Object.freeze([
+      { id: 'ds-su-01', t: '{ordinal} delivery da semana. Tudo bem, só vale cozinhar o próximo.' },
+      { id: 'ds-su-02', t: 'Delivery {vezes} na semana. Uma refeição em casa hoje já faz diferença.' },
+      { id: 'ds-su-03', t: 'Foram {valor} em delivery esta semana. Dá pra equilibrar com comida de casa.' },
+      { id: 'ds-su-04', t: 'Já é o {ordinal} pedido da semana. Sem culpa, só vamos dosar.' },
+      { id: 'ds-su-05', t: 'Comida pedida {vezes} nesta semana. Uma panela em casa dá um respiro.' },
+      { id: 'ds-su-06', t: 'O delivery está pesando: {valor} esta semana. Um jantar caseiro ajuda.' },
+      { id: 'ds-su-07', t: '{ordinal} pedido de comida da semana, {valor} no total. Está tudo bem, mas dá pra espaçar.' },
+      { id: 'ds-su-08', t: 'Pediu comida {vezes} esta semana. Cozinhar um dia só já alivia.' },
+    ]),
+    direto: Object.freeze([
+      { id: 'ds-di-01', t: '{ordinal} delivery da semana.' },
+      { id: 'ds-di-02', t: 'Delivery {vezes} na semana, somando {valor}.' },
+      { id: 'ds-di-03', t: 'Gasto com delivery na semana: {valor}.' },
+      { id: 'ds-di-04', t: 'Delivery: {vezes} em sete dias.' },
+      { id: 'ds-di-05', t: 'Pedidos de comida na semana: {vezes}, total de {valor}.' },
+      { id: 'ds-di-06', t: 'Este é o {ordinal} pedido de delivery da semana.' },
+      { id: 'ds-di-07', t: 'Delivery acumula {valor} nesta semana.' },
+      { id: 'ds-di-08', t: 'Semana com delivery {vezes}.' },
+    ]),
+    'sem-filtro': Object.freeze([
+      { id: 'ds-sf-01', t: '{ordinal} delivery da semana, caralho. Seu fogão é enfeite?' },
+      { id: 'ds-sf-02', t: 'Delivery {vezes} na semana. A cozinha lá de casa está de luto.' },
+      { id: 'ds-sf-03', t: '{valor} de delivery e a semana nem acabou. Que porra é essa, cozinha um ovo.' },
+      { id: 'ds-sf-04', t: 'Já é o {ordinal} pedido da semana. O entregador já sabe seu endereço de cor.' },
+      { id: 'ds-sf-05', t: 'Delivery {vezes} em sete dias, {valor} pro ralo. Bora acender o fogo, caralho.' },
+      { id: 'ds-sf-06', t: '{vezes} de delivery na semana. Panela parada vira museu.' },
+      { id: 'ds-sf-07', t: '{ordinal} pedido de comida na semana e {valor} já foram. Não é Natal, mano.' },
+      { id: 'ds-sf-08', t: 'Geladeira cheia e delivery {vezes} na semana. Que bosta de combinação.' },
+    ]),
+  }),
+  'loja-repete': Object.freeze({
+    suave: Object.freeze([
+      { id: 'lr-su-01', t: 'É o {ordinal} gasto em {loja} por aqui. Sem culpa, só fica de olho.' },
+      { id: 'lr-su-02', t: 'Apareceu {loja} {vezes} ultimamente. Dá pra espaçar um pouquinho.' },
+      { id: 'lr-su-03', t: 'Os gastos em {loja} somam {valor} por enquanto. Tudo bem, só fique de olho.' },
+      { id: 'lr-su-04', t: 'Voltou em {loja} mais uma vez. Sem julgamento, só um toque pro bolso.' },
+      { id: 'lr-su-05', t: 'Mais um em {loja}, e já são {vezes}. Quem sabe uma pausa curta?' },
+      { id: 'lr-su-06', t: 'De novo em {loja}, né? Tudo bem, só vale lembrar do limite.' },
+      { id: 'lr-su-07', t: 'Esse é o {ordinal} gasto em {loja}, somando {valor}. Dá pra dar um tempo.' },
+      { id: 'lr-su-08', t: 'Dá pra ver que você gosta de {loja}. Só vamos dosar pra não pesar.' },
+    ]),
+    direto: Object.freeze([
+      { id: 'lr-di-01', t: 'Compras em {loja}: {vezes}.' },
+      { id: 'lr-di-02', t: 'Este é o {ordinal} gasto em {loja}.' },
+      { id: 'lr-di-03', t: 'Total em {loja}: {valor}.' },
+      { id: 'lr-di-04', t: 'Novo gasto registrado em {loja}.' },
+      { id: 'lr-di-05', t: 'Você voltou a {loja}.' },
+      { id: 'lr-di-06', t: 'Compra repetida em {loja}: {vezes}, {valor} no total.' },
+      { id: 'lr-di-07', t: 'Mais um lançamento em {loja}.' },
+      { id: 'lr-di-08', t: '{ordinal} gasto em {loja}, somando {valor}.' },
+    ]),
+    'sem-filtro': Object.freeze([
+      { id: 'lr-sf-01', t: 'De novo em {loja}, caralho? Já é o {ordinal} gasto. Isso é assinatura?' },
+      { id: 'lr-sf-02', t: 'Você mora em {loja} ou só visita? {vezes} já.' },
+      { id: 'lr-sf-03', t: '{valor} gastos em {loja}. Que porra de relacionamento é esse?' },
+      { id: 'lr-sf-04', t: 'Mais um em {loja}. Esse tanto de fidelidade já merecia desconto, caralho.' },
+      { id: 'lr-sf-05', t: 'O {ordinal} pedido em {loja} e nenhum remorso. Respeito a coragem.' },
+      { id: 'lr-sf-06', t: 'Quem lucra é {loja}: {vezes} e {valor} do seu bolso. Que merda de negócio.' },
+      { id: 'lr-sf-07', t: 'Voltou em {loja} outra vez. O app já sabe seu pedido de cor.' },
+      { id: 'lr-sf-08', t: 'Ô, {loja} de novo! Pelo menos pede com cupom, porra.' },
+    ]),
+  }),
+  'categoria-acima-media': Object.freeze({
+    suave: Object.freeze([
+      { id: 'ca-su-01', t: '{categoria} está um pouco acima do normal para esta altura do mês. Vale ficar de olho.' },
+      { id: 'ca-su-02', t: 'Gastou {valor} em {categoria}, {pct} acima do seu ritmo normal. Dá pra ajustar com calma.' },
+      { id: 'ca-su-03', t: '{categoria} anda mais alta que de costume. Sem drama, só atenção.' },
+      { id: 'ca-su-04', t: 'Em {categoria}, o gasto subiu {pct} em relação ao normal. Um respiro ajuda.' },
+      { id: 'ca-su-05', t: 'Você gastou {valor} em {categoria}, mais do que costuma. Dá pra equilibrar.' },
+      { id: 'ca-su-06', t: '{categoria} deu uma subida este mês. Nada grave, mas fica o aviso.' },
+      { id: 'ca-su-07', t: '{pct} acima do normal em {categoria}. Vamos devagar daqui pra frente.' },
+      { id: 'ca-su-08', t: 'O ritmo de {categoria} está mais animado que o normal, {valor} até agora. Segura leve.' },
+    ]),
+    direto: Object.freeze([
+      { id: 'ca-di-01', t: '{categoria} está {pct} acima do normal para este ponto do mês.' },
+      { id: 'ca-di-02', t: 'Gasto em {categoria}: {valor}, acima da sua média.' },
+      { id: 'ca-di-03', t: '{categoria} acima da média do período.' },
+      { id: 'ca-di-04', t: '{categoria} subiu {pct} sobre o normal.' },
+      { id: 'ca-di-05', t: 'Você gastou {valor} em {categoria}, {pct} acima do usual.' },
+      { id: 'ca-di-06', t: 'Acima do normal: {categoria}.' },
+      { id: 'ca-di-07', t: 'Ritmo de {categoria} fora da média.' },
+      { id: 'ca-di-08', t: '{categoria} acumula {valor} neste mês.' },
+    ]),
+    'sem-filtro': Object.freeze([
+      { id: 'ca-sf-01', t: '{categoria} {pct} acima do normal. Que porra aconteceu aqui?' },
+      { id: 'ca-sf-02', t: '{valor} em {categoria} e bem acima da sua média. Caralho, desacelera.' },
+      { id: 'ca-sf-03', t: '{categoria} fugiu do controle, mano. Está bem acima do normal.' },
+      { id: 'ca-sf-04', t: 'Sua média de {categoria} foi pro espaço, já são {valor}.' },
+      { id: 'ca-sf-05', t: 'Cadê o freio em {categoria}? Subiu {pct} sobre o normal.' },
+      { id: 'ca-sf-06', t: '{categoria} está fora da curva e o dinheiro nem avisou que ia embora.' },
+      { id: 'ca-sf-07', t: 'Gastou {valor} em {categoria}, e normalmente não é assim. Que merda, hein.' },
+      { id: 'ca-sf-08', t: '{categoria} acima da média de novo. O famoso "só dessa vez" fodeu o mês.' },
     ]),
   }),
 })

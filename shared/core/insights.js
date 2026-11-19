@@ -14,11 +14,14 @@ import { toCents } from './ledger.js'
 import { normalize } from './classify.js'
 import { DEFAULT_TZ, zonedParts } from './time.js'
 import { dayKeyOf } from './dayKey.js'
-import { daysBetweenParts } from './cycle.js'
+import { cycleDay, daysBetweenParts, isInCycle } from './cycle.js'
+import { resolveCategoryId } from './categories.js'
+import { isDayToDay } from './budget.js'
 
 /** @typedef {import('./cycle.js').Cycle} Cycle */
 /** @typedef {import('./categories.js').CategoryDef} CategoryDef */
 /** @typedef {import('./budget.js').Tx} Tx */
+/** @typedef {import('./budget.js').BudgetRow} BudgetRow */
 
 /** Versao do contrato Insight. */
 export const INSIGHT_VERSION = 1
@@ -119,6 +122,14 @@ const LABEL_MAX = 24
 /**
  * Resultado do filtro de loja. `label` nulo significa "nao e loja que se possa nomear".
  * @typedef {{ key: string, label: string | null, group: string | null }} Merchant
+ */
+
+/**
+ * Linha de base por categoria: so ids e numeros, nenhum texto de loja ou descricao. `cumulative`
+ * tem uma lista por ciclo passado com gasto na categoria; cada lista traz a soma acumulada em
+ * centavos por dia do ciclo (posicao 0 = dia 1). `cycles` conta os ciclos com gasto na categoria.
+ * @typedef {{ cycles: number, samples: number, ticketAvgCents: number, cumulative: number[][] }} BaselineEntry
+ * @typedef {{ v: 1, byCategory: Record<string, BaselineEntry> }} Baseline
  */
 
 /**
@@ -293,6 +304,147 @@ function recentOutflows(transactions, now, categoryDefs, tz) {
 }
 
 /**
+ * Entrada da linha de base de uma categoria (propriedade propria, nunca herdada).
+ * @param {Baseline | null | undefined} baseline
+ * @param {string} categoryId
+ * @returns {BaselineEntry | undefined}
+ */
+function entryOf(baseline, categoryId) {
+  const map = baseline?.byCategory
+  if (!map || !Object.prototype.hasOwnProperty.call(map, categoryId)) return undefined
+  return map[categoryId]
+}
+
+/**
+ * Id da categoria de um lancamento: o gravado ou o resolvido pelo nome (como spendByCategory).
+ * @param {Pick<Tx, 'categoryId' | 'category'>} t
+ * @param {CategoryDef[]} defs
+ * @returns {string | null}
+ */
+function categoryIdOf(t, defs) {
+  return t.categoryId ?? resolveCategoryId(t.category ?? '', defs)
+}
+
+/**
+ * Nome da categoria para o rotulo do sujeito (o nome e do usuario, nao descricao de lancamento).
+ * @param {string} categoryId
+ * @param {CategoryDef[]} defs
+ * @returns {string | null}
+ */
+function categoryLabel(categoryId, defs) {
+  return defs.find((d) => d.id === categoryId)?.name ?? null
+}
+
+/**
+ * Linha de base dos ciclos passados (so os BASELINE_CYCLES mais recentes). `pastCycles` e uma
+ * lista de `{ cycle, transactions }`. Guarda so ids de categoria e numeros.
+ * @param {{
+ *   pastCycles: Array<{ cycle: Cycle, transactions: Tx[] }>,
+ *   categoryDefs?: CategoryDef[],
+ *   tz?: string,
+ * }} input
+ * @returns {Baseline}
+ */
+export function buildBaseline({ pastCycles, categoryDefs = [], tz = DEFAULT_TZ }) {
+  const used = [...pastCycles]
+    .sort((a, b) => b.cycle.start.getTime() - a.cycle.start.getTime())
+    .slice(0, INSIGHT_RULES.BASELINE_CYCLES)
+  /** @type {Record<string, { totalCents: number, samples: number, cycles: number[][] }>} */
+  const acc = {}
+  for (const { cycle, transactions } of used) {
+    /** @type {Map<string, number[]>} */
+    const daily = new Map()
+    for (const t of transactions) {
+      if (!isDayToDay(t) || !isInCycle(t.date, cycle)) continue
+      const cents = toCents(t.amount)
+      if (!Number.isFinite(cents) || cents <= 0) continue
+      const id = categoryIdOf(t, categoryDefs)
+      if (id === null) continue
+      const n = daysBetweenParts(cycle.startParts, zonedParts(t.date, tz)) + 1
+      const dayIndex = Math.min(Math.max(n, 1), cycle.days) - 1
+      let list = daily.get(id)
+      if (!list) {
+        list = new Array(cycle.days).fill(0)
+        daily.set(id, list)
+      }
+      list[dayIndex] += cents
+      if (!Object.prototype.hasOwnProperty.call(acc, id)) acc[id] = { totalCents: 0, samples: 0, cycles: [] }
+      acc[id].totalCents += cents
+      acc[id].samples += 1
+    }
+    for (const [id, list] of daily) {
+      let run = 0
+      acc[id].cycles.push(list.map((c) => (run += c)))
+    }
+  }
+  /** @type {Record<string, BaselineEntry>} */
+  const byCategory = {}
+  for (const id of Object.keys(acc).sort()) {
+    const a = acc[id]
+    byCategory[id] = {
+      cycles: a.cycles.length,
+      samples: a.samples,
+      ticketAvgCents: a.samples > 0 ? Math.floor(a.totalCents / a.samples) : 0,
+      cumulative: a.cycles,
+    }
+  }
+  return { v: 1, byCategory }
+}
+
+/**
+ * Media acumulada, em centavos, dos ciclos da linha de base ate o dia do ciclo (1 = primeiro dia).
+ * Ciclo mais curto que o dia pedido contribui com o total dele. Sem dados devolve null.
+ * @param {BaselineEntry | null | undefined} entry
+ * @param {number} day
+ * @returns {number | null}
+ */
+export function baselineAvgToDay(entry, day) {
+  const lists = entry?.cumulative
+  if (!Array.isArray(lists)) return null
+  const usable = lists.filter((c) => Array.isArray(c) && c.length > 0)
+  if (usable.length === 0) return null
+  const d = Math.max(1, Math.trunc(day))
+  let sum = 0
+  for (const c of usable) sum += c[Math.min(d, c.length) - 1]
+  return Math.floor(sum / usable.length)
+}
+
+/**
+ * Avalia uma saida contra o ticket medio da categoria (>= SPIKE_MIN_SAMPLES amostras) ou, sem
+ * historico, contra a fracao do limite do mes. Sem os dois, nao dispara (resolucao 2).
+ * @param {{ cents: number, categoryId: string | null, baseline?: Baseline | null, limitCents?: number | null }} input
+ * @returns {{ mode: 'ticket' | 'limit', severity: 2 | 3, ratioPct: number, avgCents?: number, limitCents?: number } | null}
+ */
+function spikeOf({ cents, categoryId, baseline, limitCents }) {
+  if (!Number.isInteger(cents) || cents <= 0) return null
+  const entry = categoryId === null ? undefined : entryOf(baseline, categoryId)
+  if (entry && entry.samples >= INSIGHT_RULES.SPIKE_MIN_SAMPLES && entry.ticketAvgCents > 0) {
+    const avg = entry.ticketAvgCents
+    if (cents < avg * INSIGHT_RULES.SPIKE_TICKET_MULT) return null
+    return {
+      mode: 'ticket',
+      severity: cents >= avg * INSIGHT_RULES.SPIKE_TICKET_MULT_SEV3 ? 3 : 2,
+      ratioPct: Math.floor((cents * 100) / avg),
+      avgCents: avg,
+    }
+  }
+  if (typeof limitCents === 'number' && Number.isInteger(limitCents) && limitCents > 0) {
+    if (cents * 100 < limitCents * INSIGHT_RULES.SPIKE_LIMIT_FRACTION_PCT) return null
+    return { mode: 'limit', severity: 2, ratioPct: Math.floor((cents * 100) / limitCents), limitCents }
+  }
+  return null
+}
+
+/**
+ * Uma saida e gasto grande? Para a reacao de lancamento (plano 04-15).
+ * @param {{ cents: number, categoryId: string | null, baseline?: Baseline | null, limitCents?: number | null }} input
+ * @returns {boolean}
+ */
+export function isSpendSpike(input) {
+  return spikeOf(input) !== null
+}
+
+/**
  * Insights do momento. Puro: nao muta as entradas e nao le relogio.
  * @param {{
  *   now: Date,
@@ -300,6 +452,11 @@ function recentOutflows(transactions, now, categoryDefs, tz) {
  *   cycle: Cycle,
  *   transactions: Tx[],
  *   categoryDefs?: CategoryDef[],
+ *   rows?: BudgetRow[],
+ *   baseline?: Baseline | null,
+ *   lastLaunchAt?: Date | null,
+ *   suppressed?: boolean,
+ *   rhythmLevel?: number | null,
  *   tz?: string,
  * }} input
  * @returns {Insight[]}
@@ -307,9 +464,12 @@ function recentOutflows(transactions, now, categoryDefs, tz) {
 export function buildInsights(input) {
   const { now, person, cycle, transactions } = input
   const categoryDefs = input.categoryDefs ?? []
+  const rows = input.rows ?? []
+  const baseline = input.baseline ?? null
   const tz = input.tz ?? DEFAULT_TZ
   const day = dayKeyOf(now, tz)
   const ctx = { person, cycleKey: cycle.key, day }
+  const W = INSIGHT_RULES.WINDOW_DAYS
   /** @type {Insight[]} */
   const out = []
 
@@ -324,11 +484,143 @@ export function buildInsights(input) {
         metrics: {
           count,
           totalCents: delivery.reduce((s, r) => s + r.cents, 0),
-          windowDays: INSIGHT_RULES.WINDOW_DAYS,
+          windowDays: W,
           ordinal: count,
         },
         severity: severityByCount(count, INSIGHT_RULES.DELIVERY_WEEK_MIN),
         evidence: evidenceOf(delivery),
+      })
+    )
+  }
+
+  // merchant-repeat: mesma loja rotulada, fora do delivery (que ja tem regra propria).
+  /** @type {Map<string, typeof recent>} */
+  const byMerchant = new Map()
+  for (const r of recent) {
+    if (r.merchant.label === null || r.merchant.group === 'delivery') continue
+    const list = byMerchant.get(r.merchant.key)
+    if (list) list.push(r)
+    else byMerchant.set(r.merchant.key, [r])
+  }
+  for (const [key, list] of byMerchant) {
+    if (list.length < INSIGHT_RULES.MERCHANT_REPEAT_MIN) continue
+    const count = list.length
+    out.push(
+      makeInsight('merchant-repeat', { kind: 'merchant', key, label: list[0].merchant.label }, day, ctx, {
+        metrics: { count, totalCents: list.reduce((s, r) => s + r.cents, 0), windowDays: W, ordinal: count },
+        severity: severityByCount(count, INSIGHT_RULES.MERCHANT_REPEAT_MIN),
+        evidence: evidenceOf(list),
+      })
+    )
+  }
+
+  // category-over-average: gasto da categoria ate o dia corrido contra a media dos ciclos passados.
+  const cDay = cycleDay(cycle, now, tz)
+  for (const row of rows) {
+    const entry = entryOf(baseline, row.categoryId)
+    if (!entry || entry.cycles < INSIGHT_RULES.CATEGORY_MIN_CYCLES) continue
+    const avg = baselineAvgToDay(entry, cDay)
+    if (avg === null || avg <= 0) continue
+    const spent = row.spentCents
+    const ratioPct = Math.floor((spent * 100) / avg)
+    if (ratioPct < INSIGHT_RULES.CATEGORY_RATIO_PCT) continue
+    if (spent - avg < INSIGHT_RULES.CATEGORY_MIN_DIFF_CENTS) continue
+    const severity = ratioPct >= INSIGHT_RULES.CATEGORY_RATIO_SEV3_PCT ? 3 : ratioPct >= INSIGHT_RULES.CATEGORY_RATIO_SEV2_PCT ? 2 : 1
+    const txs = (row.txs ?? []).slice(0, 10).map((t) => ({ id: t.id, dayKey: dayKeyOf(t.date, tz) }))
+    out.push(
+      makeInsight(
+        'category-over-average',
+        { kind: 'category', key: row.categoryId, label: categoryLabel(row.categoryId, categoryDefs) },
+        day,
+        ctx,
+        { metrics: { spentCents: spent, avgCents: avg, ratioPct }, severity, evidence: evidenceOf(txs) }
+      )
+    )
+  }
+
+  // spend-spike: uma saida muito acima do normal; um insight por categoria e dia, o maior vence.
+  /** @type {Map<string, { r: (typeof recent)[number], categoryId: string, spike: NonNullable<ReturnType<typeof spikeOf>> }>} */
+  const spikes = new Map()
+  for (const r of recent) {
+    const categoryId = categoryIdOf(r.tx, categoryDefs)
+    if (categoryId === null) continue
+    const limitCents = rows.find((row) => row.categoryId === categoryId)?.limitCents ?? null
+    const spike = spikeOf({ cents: r.cents, categoryId, baseline, limitCents })
+    if (!spike) continue
+    const slot = `${categoryId}|${r.dayKey}`
+    const kept = spikes.get(slot)
+    if (!kept || r.cents > kept.r.cents) spikes.set(slot, { r, categoryId, spike })
+  }
+  for (const { r, categoryId, spike } of spikes.values()) {
+    out.push(
+      makeInsight(
+        'spend-spike',
+        { kind: 'category', key: categoryId, label: categoryLabel(categoryId, categoryDefs) },
+        r.dayKey,
+        ctx,
+        {
+          metrics:
+            spike.mode === 'ticket'
+              ? { totalCents: r.cents, avgCents: spike.avgCents, ratioPct: spike.ratioPct }
+              : { totalCents: r.cents, limitCents: spike.limitCents, pct: spike.ratioPct },
+          severity: spike.severity,
+          evidence: evidenceOf([r]),
+        }
+      )
+    )
+  }
+
+  // days-without-launch: dias de calendario desde o ultimo lancamento (pulado se suprimido).
+  if (input.suppressed !== true) {
+    let last = input.lastLaunchAt ?? null
+    if (!last) {
+      for (const t of transactions) if (!last || t.date.getTime() > last.getTime()) last = t.date
+    }
+    if (last) {
+      const days = daysBetweenParts(zonedParts(last, tz), zonedParts(now, tz))
+      if (days >= INSIGHT_RULES.NO_LAUNCH_DAYS) {
+        const severity =
+          days >= INSIGHT_RULES.NO_LAUNCH_DAYS_SEV3 ? 3 : days >= INSIGHT_RULES.NO_LAUNCH_DAYS_SEV2 ? 2 : 1
+        out.push(
+          makeInsight('days-without-launch', { kind: 'cycle', key: cycle.key, label: null }, day, ctx, {
+            metrics: { days },
+            severity,
+            evidence: { txIds: [], dayKeys: [] },
+          })
+        )
+      }
+    }
+  }
+
+  // limit-near e limit-over: a partir das linhas do orcamento (reuso do nucleo).
+  for (const row of rows) {
+    const limit = row.limitCents
+    if (typeof limit !== 'number' || !Number.isInteger(limit) || limit <= 0) continue
+    const spent = row.spentCents
+    const over = row.state === 'over' || spent > limit
+    if (!over && spent * 100 < limit * INSIGHT_RULES.LIMIT_NEAR_PCT) continue
+    const subject = { kind: /** @type {const} */ ('category'), key: row.categoryId, label: categoryLabel(row.categoryId, categoryDefs) }
+    out.push(
+      makeInsight(over ? 'limit-over' : 'limit-near', subject, 'ciclo', ctx, {
+        metrics: {
+          pct: typeof row.pct === 'number' ? row.pct : Math.floor((Math.max(spent, 0) * 100) / limit),
+          spentCents: spent,
+          limitCents: limit,
+        },
+        severity: over ? 3 : 2,
+        evidence: { txIds: [], dayKeys: [] },
+      })
+    )
+  }
+
+  // rhythm: so quando o nivel do ritmo e informado (0 a 4).
+  const level = input.rhythmLevel
+  if (typeof level === 'number' && Number.isInteger(level) && level >= 0 && level <= 4) {
+    out.push(
+      makeInsight('rhythm', { kind: 'cycle', key: cycle.key, label: null }, day, ctx, {
+        metrics: { level },
+        severity: /** @type {0 | 1 | 2 | 3} */ ([0, 0, 1, 2, 3][level]),
+        evidence: { txIds: [], dayKeys: [] },
       })
     )
   }

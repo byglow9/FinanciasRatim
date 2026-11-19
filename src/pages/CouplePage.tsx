@@ -1,183 +1,85 @@
-import { useState } from 'react'
-import { useTransactions } from '@/hooks/useTransactions'
-import { useSavings } from '@/hooks/useSavings'
+import { useMemo, useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
-import { MonthSelector } from '@/components/shared/MonthSelector'
+import { useCycle } from '@/contexts/CycleContext'
+import { useCoupleData, type CoupleMode } from '@/hooks/useCoupleData'
+import { CoupleHeadline } from '@/components/couple/CoupleHeadline'
+import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  PiggyBank,
-  Landmark,
-} from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { coupleSummary } from '@shared/core/couple.js'
 
-// Casal (S9, D-23, PR-15): o conteudo antigo do Dashboard realocado sem reescrever (totais por pessoa,
-// saldo do Porquinho e comparativo), ainda por mes-calendario (PR-11). A aba funcional do casal e da Fase 8.
+/**
+ * Casal (UX-06, D-17, sketch 010 Mistura A+B): leitura dos dois no mesmo periodo. A janela e unica
+ * para os dois (premissa P-02): no modo Ciclo, o ciclo do perfil visto; no modo Mes, o mes-calendario,
+ * ambos com o mesmo deslocamento do topo. A aba nao edita nada. Nomes vem de settings.tabNames.
+ */
 export function CouplePage() {
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
-  const { settings } = useArea()
+  const [mode, setMode] = useState<CoupleMode>('ciclo')
+  const { settings, categoryDefs } = useArea()
+  const { viewPerson } = useCycle()
+  const { first, second, loading, error, refetch, periodLabel, sameSalaryDay } = useCoupleData(mode)
 
-  const ele = useTransactions('ele', selectedMonth)
-  const ela = useTransactions('ela', selectedMonth)
-  const savings = useSavings()
+  const viewName = viewPerson === 'ele' ? settings.tabNames.area1 : settings.tabNames.area2
 
-  const chartData = [
-    {
-      name: 'Entradas',
-      [settings.tabNames.area1]: ele.totals.entradas,
-      [settings.tabNames.area2]: ela.totals.entradas,
-    },
-    {
-      name: 'Saidas',
-      [settings.tabNames.area1]: ele.totals.saidas,
-      [settings.tabNames.area2]: ela.totals.saidas,
-    },
-    {
-      name: 'Saldo',
-      [settings.tabNames.area1]: Math.max(0, ele.totals.saldo),
-      [settings.tabNames.area2]: Math.max(0, ela.totals.saldo),
-    },
-  ]
+  const summary = useMemo(
+    () => (first && second ? coupleSummary({ first, second, defs: categoryDefs }) : null),
+    [first, second, categoryDefs]
+  )
+  const isEmpty = first !== null && second !== null && first.length === 0 && second.length === 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Casal</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Totais e comparativo por mês</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[28px] font-bold leading-tight">Casal</h1>
+        <div className="w-40 shrink-0">
+          <SegmentedControl<CoupleMode>
+            ariaLabel="Período do casal"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'ciclo', label: 'Ciclo' },
+              { value: 'mes', label: 'Mês' },
+            ]}
+          />
         </div>
-        <MonthSelector selectedDate={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
-      <Notice>O relatório do casal completo chega em breve.</Notice>
-
-      <div className="grid grid-cols-2 gap-2 sm:gap-4">
-        <Card>
-          <CardHeader className="px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-0">
-            <CardTitle className="text-base">{settings.tabNames.area1}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-              <div className="text-center">
-                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">
-                  {formatCurrency(ele.totals.entradas)}
-                </p>
-              </div>
-              <div className="text-center">
-                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 dark:text-red-400 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Saidas</p>
-                <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">
-                  {formatCurrency(ele.totals.saidas)}
-                </p>
-              </div>
-              <div className="text-center">
-                <Wallet className="hidden sm:block h-4 w-4 text-blue-600 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal</p>
-                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(ele.totals.saldo)}
-                </p>
-              </div>
-              <div className="text-center">
-                <Landmark className="hidden sm:block h-4 w-4 text-purple-600 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
-                <p className={`text-xs sm:text-sm font-bold ${ele.totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(ele.totals.saldoAcumulado)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="px-3 pt-3 pb-1 sm:px-6 sm:pt-6 sm:pb-0">
-            <CardTitle className="text-base">{settings.tabNames.area2}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-              <div className="text-center">
-                <TrendingUp className="hidden sm:block h-4 w-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">
-                  {formatCurrency(ela.totals.entradas)}
-                </p>
-              </div>
-              <div className="text-center">
-                <TrendingDown className="hidden sm:block h-4 w-4 text-red-600 dark:text-red-400 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Saidas</p>
-                <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">
-                  {formatCurrency(ela.totals.saidas)}
-                </p>
-              </div>
-              <div className="text-center">
-                <Wallet className="hidden sm:block h-4 w-4 text-blue-600 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Mensal</p>
-                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(ela.totals.saldo)}
-                </p>
-              </div>
-              <div className="text-center">
-                <Landmark className="hidden sm:block h-4 w-4 text-purple-600 mx-auto mb-1" />
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
-                <p className={`text-xs sm:text-sm font-bold ${ela.totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(ela.totals.saldoAcumulado)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="text-xs font-normal text-muted-foreground">
+        <p>{periodLabel}</p>
+        {mode === 'ciclo' && !sameSalaryDay ? (
+          <p className="truncate" title={viewName}>{`Recorte do ciclo de ${viewName}`}</p>
+        ) : null}
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-          <PiggyBank className="h-5 w-5 text-pink-500" />
-          <CardTitle className="text-base">{settings.tabNames.piggy}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-bold text-pink-600">
-            {formatCurrency(savings.balance)}
+      {error ? (
+        <Notice
+          tone="danger"
+          title="Não foi possível carregar os números do casal."
+          action={
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : loading || !summary ? (
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Carregando o casal</span>
+          {[176, 288, 144].map((h) => (
+            <div key={h} aria-hidden="true" className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
+          ))}
+        </div>
+      ) : isEmpty ? (
+        <div className="space-y-2">
+          <p className="text-base font-bold">Sem lançamentos neste período</p>
+          <p className="text-xs font-normal text-muted-foreground">
+            Quando vocês lançarem gastos ou receitas, a comparação aparece aqui.
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Saldo atual da poupanca</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Comparativo: {settings.tabNames.area1} vs {settings.tabNames.area2}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value) : ''}
-                labelStyle={{ fontWeight: 600 }}
-              />
-              <Legend />
-              <Bar dataKey={settings.tabNames.area1} fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              <Bar dataKey={settings.tabNames.area2} fill="#ec4899" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <CoupleHeadline together={summary.together} mode={mode} />
+      )}
     </div>
   )
 }

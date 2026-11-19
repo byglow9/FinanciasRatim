@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
-import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCycleTransactions } from '@/hooks/useCycleTransactions'
@@ -32,9 +32,6 @@ const TABS: { value: ReportTab; label: string }[] = [
   { value: 'evolucao', label: 'Evolução' },
   { value: 'comparacao', label: 'Comparação' },
 ]
-
-const ROUND =
-  'inline-flex h-11 w-11 items-center justify-center rounded-full bg-card text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 // Abas em pílula (variante A do sketch 016): quatro rótulos de 12/700 que cabem a 360px sem
 // quebrar linha. Setas, Home e End movem o foco e ativam a aba.
@@ -133,7 +130,7 @@ function OverviewTab({ person, personName, transactions, cycle, label, entradasC
 export function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportTab>('visao-geral')
   const { currentArea, settings } = useArea()
-  const { shift, isCurrent } = useCycle()
+  const { isCurrent } = useCycle()
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
   const personName = settings.tabNames[person === 'ele' ? 'area1' : 'area2']
@@ -161,26 +158,10 @@ export function ReportsPage() {
         <Chip>{personName}</Chip>
       </div>
 
-      <div role="group" aria-label="Ciclo" className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
-        <button type="button" aria-label="Ciclo anterior" onClick={() => shift(-1)} className={ROUND}>
-          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-        </button>
-        <div aria-live="polite" className="grid min-w-0 text-center">
-          <b className="truncate font-display text-base font-bold">{label}</b>
-          <span className="truncate text-xs font-normal text-muted-foreground">
-            {isCurrent ? `Ciclo atual · ${range}` : range}
-          </span>
-        </div>
-        <button
-          type="button"
-          aria-label="Próximo ciclo"
-          disabled={isCurrent}
-          onClick={() => shift(1)}
-          className={cn(ROUND, 'disabled:opacity-40')}
-        >
-          <ChevronRight className="h-5 w-5" aria-hidden="true" />
-        </button>
-      </div>
+      {/* O ciclo vem só do seletor do topo; aqui fica apenas a legenda do período mostrado. */}
+      <p aria-live="polite" className="text-xs font-normal text-muted-foreground">
+        {label} · {isCurrent ? `ciclo atual, ${range}` : range}
+      </p>
 
       <ReportTabs value={activeTab} onChange={setActiveTab} />
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Wallet } from 'lucide-react'
+import { CalendarDays, ChevronDown, ChevronUp, Plus, Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCalendarActions } from '@/hooks/useCalendarActions'
@@ -18,7 +18,7 @@ import type { AgendaEvent, Note, PersonType } from '@/types'
 import { agendaScrollTarget } from '@shared/core/calendarModel.js'
 import type { CalendarMode } from '@shared/core/calendarModel.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
-import { compactMoney, cycleLabel } from '@shared/core/format.js'
+import { compactMoney } from '@shared/core/format.js'
 
 const MODE_STORAGE_KEY = 'calendarMode'
 
@@ -32,9 +32,6 @@ function dateOfKey(key: string): Date {
 // aberto, uma tela baixa (360x640) deixa a agenda sem altura para rolar, então a tela abre com o mês recolhido.
 const WEEK_ROW_PX = 52
 const MIN_AGENDA_PX = 96
-
-const NAV_BUTTON =
-  'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40'
 
 export function CalendarPage() {
   const { currentArea } = useArea()
@@ -167,7 +164,7 @@ export function CalendarPage() {
     }
   }
 
-  // Deslizar a grade troca o ciclo como as setas do período: esquerda avança, direita volta (nunca além do atual).
+  // Deslizar a grade troca o ciclo do seletor do topo (o único seletor de ciclo do app): esquerda avança, direita volta (nunca além do atual).
   const handleSwipe = (direction: -1 | 1) => {
     if (direction === -1) shift(-1)
     else if (!isCurrent) shift(1)
@@ -183,10 +180,6 @@ export function CalendarPage() {
       setOffset(0)
     }
   }
-
-  // Com salário no dia 1 o ciclo é um mês: "Novembro de 2026"; senão a faixa: "20 nov a 19 dez".
-  const label =
-    cycle.startParts.day === 1 ? `${cycleLabel(cycle)} de ${cycle.startParts.year}` : (cycleLabel(cycle) as string)
 
   const todayActive = isCurrent && selectedKey === todayKey
 
@@ -206,24 +199,6 @@ export function CalendarPage() {
             className="inline-flex h-11 shrink-0 items-center rounded-full bg-card px-4 text-base font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Hoje
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          <button type="button" aria-label="Ciclo anterior" onClick={() => shift(-1)} className={NAV_BUTTON}>
-            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <p className="min-w-0 truncate text-center text-base font-bold" aria-live="polite">
-            {label}
-          </p>
-          <button
-            type="button"
-            aria-label="Próximo ciclo"
-            disabled={isCurrent}
-            onClick={() => shift(1)}
-            className={NAV_BUTTON}
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 

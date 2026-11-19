@@ -16,8 +16,10 @@ const CALENDAR_FILES = [
 
 test('Calendario v3: a pagina segue o ciclo do topo pelo modelo, sem seletor de mes proprio nem consulta direta', () => {
   const file = 'src/pages/CalendarPage.tsx'
-  assertIncludes(file, ['useCalendarData', 'MonthGrid', 'AgendaList', 'shift(', 'cycleLabel'])
+  assertIncludes(file, ['useCalendarData', 'MonthGrid', 'AgendaList', 'shift('])
   const src = code(file)
+  // o ciclo vem so do seletor global; o gesto de deslizar e o teclado mexem nesse mesmo ciclo
+  assert.doesNotMatch(src, /Ciclo anterior|Próximo ciclo|ChevronLeft|ChevronRight|cycleLabel/, 'seletor de ciclo proprio')
   assert.doesNotMatch(src, /MonthSelector|setSelectedMonth/, 'seletor de mes proprio')
   assert.doesNotMatch(src, /useCycleMonth|isSameMonth|getTransactions\(/, 'logica do calendario legado')
 })

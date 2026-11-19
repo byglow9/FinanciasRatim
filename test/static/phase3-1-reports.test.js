@@ -26,7 +26,9 @@ test('21: a pagina segue o ciclo do topo e nao usa seletor de mes nem consulta p
   const src = code('src/pages/ReportsPage.tsx')
   assert.match(src, /\buseCycleTransactions\(/)
   assert.match(src, /\buseCycleSeries\(/)
-  assert.match(src, /\bshift\(/)
+  // o ciclo vem so do seletor global do topo: nada de setas proprias na pagina
+  assert.doesNotMatch(src, /\bshift\(/)
+  assert.doesNotMatch(src, /Ciclo anterior|Próximo ciclo|ChevronLeft|ChevronRight/)
   assert.match(src, /\bisCurrent\b/)
   assert.match(src, /\bcycleLabel\(/)
   assert.match(src, /\bbillsSummary\(/)

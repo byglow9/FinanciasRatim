@@ -391,7 +391,8 @@ async function runViewport(page, collected, viewport) {
   check('teclado-nao-recolhe-o-mes', afterKeysRows.visible === afterKeysRows.total, afterKeysRows)
 
   // Gesto: deslizar a grade para a direita volta ao ciclo anterior; para a esquerda avanca (so se nao for o atual).
-  const labelOf = `document.querySelector('p[aria-live="polite"]')?.textContent?.trim() ?? null`
+  // O ciclo mostrado vem do seletor global da barra superior (a pagina nao tem seletor proprio).
+  const labelOf = `document.querySelector('button[aria-haspopup="listbox"]')?.textContent?.trim() ?? null`
   const gridBox = await page.evaluate(`(() => {
     const r = document.querySelector('[data-week-row]').getBoundingClientRect()
     return { y: Math.round(r.top + r.height / 2) }

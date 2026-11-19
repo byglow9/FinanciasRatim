@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Auditoria de layout em modo MOCK (Chrome sem janela + protocolo CDP). Sem dependencias novas.
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/audit.mjs --route / --viewport 360x640 --report-only
-// Flags: --route <caminho> (repetivel) --viewport LxA (repetivel) --smoke --expect-h1 <texto>
+// Flags: --route <caminho> (repetivel) | --routes all  --viewport LxA (repetivel) --smoke --expect-h1 <texto>
 //        --report-only --assert dock-peek --seed full|empty
 // Saida: uma linha JSON por rota e viewport. Codigos: 0 ok, 1 violacoes, 2 falha do proprio script.
 import { spawn } from 'node:child_process'
@@ -11,6 +11,11 @@ import { buildSeed } from './seed.mjs'
 const PORT = 5199
 const ORIGIN = `http://127.0.0.1:${PORT}`
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Rotas autenticadas do app (src/App.tsx, dentro de ProtectedRoute).
+const ALL_ROUTES = ['/', '/transacoes', '/contas-fixas', '/porquinho', '/metas', '/relatorios', '/configuracoes', '/calendario', '/casal']
+// Prazo de cada combinacao rota x viewport (navegar, medir e coletar).
+const COMBO_TIMEOUT_MS = 60000
 
 function parseArgs(argv) {
   const opts = { routes: [], viewports: [], reportOnly: false, smoke: false, expectH1: null, asserts: [], seed: 'full' }
@@ -22,6 +27,11 @@ function parseArgs(argv) {
       return value
     }
     if (arg === '--route') opts.routes.push(next())
+    else if (arg === '--routes') {
+      const value = next()
+      if (value !== 'all') throw new Error(`--routes so aceita all (recebido: ${value})`)
+      opts.routes.push(...ALL_ROUTES)
+    }
     else if (arg === '--viewport') {
       const raw = next()
       const m = /^(\d+)x(\d+)$/.exec(raw)
@@ -41,7 +51,8 @@ function parseArgs(argv) {
     }
     else throw new Error(`flag desconhecida: ${arg}`)
   }
-  if (opts.routes.length === 0) throw new Error('informe --route <caminho>')
+  if (opts.routes.length === 0) throw new Error('informe --route <caminho> ou --routes all')
+  opts.routes = [...new Set(opts.routes)]
   if (opts.viewports.length === 0) {
     opts.viewports = [
       { width: 360, height: 640 },
@@ -260,15 +271,37 @@ function seedSource(kind) {
   } catch {} })()`
 }
 
+// Encerramento forcado (Ctrl+C, kill): derruba Chrome e Vite antes de sair, sem processo orfao.
+const cleanups = []
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, async () => {
+    console.error(`ux-audit: ${signal} recebido, encerrando Chrome e Vite`)
+    await Promise.allSettled(cleanups.map((fn) => fn()))
+    process.exit(2)
+  })
+}
+
+function withTimeout(promise, ms, label) {
+  let timer
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`prazo de ${ms / 1000}s estourado em ${label}`)), ms)
+  })
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer))
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
   let vite = null
   let chrome = null
   let page = null
   let violations = 0
+  let total = 0
+  const failedRoutes = []
   try {
     vite = await startVite()
+    cleanups.push(() => vite.stop())
     chrome = await launchChrome()
+    cleanups.push(() => chrome.close())
     page = await connect(chrome.wsUrl)
     await page.send('Page.enable')
     await page.send('Runtime.enable')
@@ -286,40 +319,50 @@ async function main() {
       collected.consoleErrors.push(String(text).split('\n')[0].slice(0, 200))
     })
 
+    const auditCombo = async (route, viewport) => {
+      await page.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 2,
+        mobile: true,
+      })
+      collected.exceptions.length = 0
+      collected.consoleErrors.length = 0
+      await navigate(page, `${ORIGIN}${route}`)
+
+      const line = { route, viewport: `${viewport.width}x${viewport.height}` }
+      let found = 0
+      if (opts.smoke) {
+        line.smoke = await checkSmoke(page, opts, collected)
+        if (!line.smoke.ok) found++
+      } else {
+        const rules = await applyRules(page, opts, viewport)
+        Object.assign(line, rules)
+        found += rules.violations
+      }
+      if (opts.asserts.includes('dock-peek')) {
+        if (viewport.width === 360 && viewport.height === 640) {
+          line.dockPeek = await checkDockPeek(page)
+          if (!line.dockPeek.ok) found++
+        } else {
+          line.dockPeek = { skipped: 'so vale em 360x640' }
+        }
+      }
+      return { line, found }
+    }
+
+    // Uma instancia de Chrome e de Vite para todas as combinacoes, em sequencia.
     for (const route of opts.routes) {
       for (const viewport of opts.viewports) {
-        await page.send('Emulation.setDeviceMetricsOverride', {
-          width: viewport.width,
-          height: viewport.height,
-          deviceScaleFactor: 2,
-          mobile: true,
-        })
-        collected.exceptions.length = 0
-        collected.consoleErrors.length = 0
-        await navigate(page, `${ORIGIN}${route}`)
-
-        const line = { route, viewport: `${viewport.width}x${viewport.height}` }
-        let found = 0
-        if (opts.smoke) {
-          line.smoke = await checkSmoke(page, opts, collected)
-          if (!line.smoke.ok) found++
-        } else {
-          const rules = await applyRules(page, opts, viewport)
-          Object.assign(line, rules)
-          found += rules.violations
-        }
-        if (opts.asserts.includes('dock-peek')) {
-          if (viewport.width === 360 && viewport.height === 640) {
-            line.dockPeek = await checkDockPeek(page)
-            if (!line.dockPeek.ok) found++
-          } else {
-            line.dockPeek = { skipped: 'so vale em 360x640' }
-          }
-        }
+        const label = `${route} ${viewport.width}x${viewport.height}`
+        const { line, found } = await withTimeout(auditCombo(route, viewport), COMBO_TIMEOUT_MS, label)
+        total++
         violations += found
+        if (found > 0) failedRoutes.push(label)
         console.log(JSON.stringify(line))
       }
     }
+    console.log(JSON.stringify({ summary: true, total, violations, failedRoutes }))
   } finally {
     page?.close()
     if (chrome) await chrome.close()

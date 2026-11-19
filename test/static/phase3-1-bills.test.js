@@ -2,7 +2,7 @@
 // Rodar: node --test test/static/phase3-1-bills.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+import { code, exists, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const PAGE = 'src/pages/FixedExpensesPage.tsx'
 const GROUP = 'src/components/fixed-expenses/BillGroupCard.tsx'
@@ -105,4 +105,46 @@ test('BillRow calcula o estado por datas e tinge a linha, sem opacity', () => {
   for (const word of ['vencida', 'hoje', 'em breve', 'pago']) assert.ok(src.includes(word), `chip sem ${word}`)
   assert.match(src, /line-through/)
   assert.doesNotMatch(src, /opacity/, 'BillRow usa opacity')
+})
+
+const FORM = 'src/components/fixed-expenses/BillFormSheet.tsx'
+
+test('BillFormSheet valida por campo, grava categoryId resolvido e mantem a categoria atual', () => {
+  const src = code(FORM)
+  assert.match(src, /validateBillDraft/, 'sem validateBillDraft')
+  assert.match(src, /aria-invalid/, 'sem aria-invalid')
+  assert.match(src, /role="alert"/, 'mensagem sem role=alert')
+  assert.match(src, /firstInvalid/, 'sem foco no primeiro erro')
+  assert.match(src, /\bresolveCategoryId\(/, 'resolveCategoryId nao usado')
+  assert.match(src, /\bactiveCategoryNames\(/, 'opcoes devem vir das categorias ativas')
+  assert.match(src, /categoryDefs/)
+  assert.match(src, /inputMode="decimal"/)
+  assert.match(src, /data-autofocus/)
+  assert.match(src, /<Notice tone="danger">/, 'falha de gravacao sem Notice')
+  assert.doesNotMatch(src, /settings\.categories/)
+  for (const text of ['Nova conta fixa', 'Editar conta fixa', 'Cadastrar conta', 'Salvar conta', 'Dia do vencimento']) {
+    assert.ok(src.includes(text), `BillFormSheet sem "${text}"`)
+  }
+})
+
+test('a pagina abre o formulario, mostra o vazio e grava com aviso simples', () => {
+  const src = code(PAGE)
+  assert.match(src, /<BillFormSheet/)
+  assert.ok(src.includes('Nova conta fixa'))
+  assert.match(src, />\s*Nova\s*</, 'sem o botao Nova')
+  for (const text of ['Nenhuma conta fixa neste ciclo', 'Cadastrar a primeira', 'Conta cadastrada', 'Conta atualizada', 'Ver todas', 'Editar']) {
+    assert.ok(src.includes(text), `pagina sem "${text}"`)
+  }
+  assert.match(src, /guard\('editar'\)/)
+})
+
+test('os componentes legados de Contas Fixas foram removidos', () => {
+  assert.equal(exists('src/components/fixed-expenses/FixedExpenseList.tsx'), false)
+  assert.equal(exists('src/components/fixed-expenses/FixedExpenseForm.tsx'), false)
+})
+
+test('todos os arquivos da tela passam em escala e alvo de toque, sem HTML bruto', () => {
+  const files = [PAGE, GROUP, ROW, FORM]
+  assert.deepEqual(scaleProblems(files), [])
+  assert.deepEqual(touchProblems(files), [])
 })

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Pencil, Plus } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCycleBills } from '@/hooks/useCycleBills'
 import { useReadOnly } from '@/hooks/useReadOnly'
+import { BillFormSheet, type BillFormData } from '@/components/fixed-expenses/BillFormSheet'
 import { BillGroupCard } from '@/components/fixed-expenses/BillGroupCard'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
@@ -11,7 +12,7 @@ import { KpiTrio } from '@/components/ui/kpi-trio'
 import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useToast } from '@/components/ui/toast'
-import type { PersonType } from '@/types'
+import type { FixedExpense, PersonType } from '@/types'
 import { billsSummary, groupBillsByCategory } from '@shared/core/billGroups.js'
 import type { BillFilter, CategorizedBillItem } from '@shared/core/billGroups.js'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -27,13 +28,15 @@ export function FixedExpensesPage() {
   const { show } = useToast()
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-  const { items, expenses, loading, error, refetch, remove, togglePaid, pendingKeys } = useCycleBills(person)
+  const { items, expenses, loading, error, refetch, add, update, remove, togglePaid, pendingKeys } = useCycleBills(person)
 
   // O Sheet de ações fica montado enquanto a animação de saída roda, então a linha escolhida
   // continua guardada depois de fechar.
   const [selected, setSelected] = useState<CategorizedBillItem | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [filter, setFilter] = useState<BillFilter>('all')
+  const [editing, setEditing] = useState<FixedExpense | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   // Hoje em São Paulo: o estado de cada conta vem da comparação de datas de calendário.
   const todayParts = useMemo(() => zonedParts(now), [now])
@@ -70,6 +73,27 @@ export function FixedExpensesPage() {
     if (await togglePaid(item)) bumpData()
   }
 
+  const openNew = () => {
+    if (guard('editar')) return
+    setEditing(null)
+    setFormOpen(true)
+  }
+
+  const handleEdit = (item: CategorizedBillItem) => {
+    if (guard('editar')) return
+    setSheetOpen(false)
+    setEditing(expenses.find((e) => e.id === item.billId) ?? null)
+    setFormOpen(true)
+  }
+
+  const handleSave = async (data: BillFormData, id: string | null) => {
+    if (id) await update(id, data)
+    else await add(data)
+    // WR-03: o gatilho mora na página, nunca no hook, para os avisos de limite rodarem de novo.
+    bumpData()
+    show(id ? 'Conta atualizada' : 'Conta cadastrada')
+  }
+
   const handleDelete = async (item: CategorizedBillItem) => {
     if (guard('editar')) return
     await remove(item.billId)
@@ -82,7 +106,19 @@ export function FixedExpensesPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-[28px] font-bold leading-tight">Contas fixas</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[28px] font-bold leading-tight">Contas fixas</h1>
+        <button
+          type="button"
+          aria-label="Nova conta fixa"
+          aria-disabled={readOnly ? true : undefined}
+          onClick={openNew}
+          className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-action px-4 text-base font-bold text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          Nova
+        </button>
+      </div>
 
       {!error && !loading ? (
         <KpiTrio
@@ -146,7 +182,17 @@ export function FixedExpensesPage() {
             <div key={i} aria-hidden="true" className="anim-pulse h-[120px] rounded-[22px] bg-card" />
           ))}
         </div>
-      ) : summary.count > 0 && groups.length === 0 ? (
+      ) : summary.count === 0 ? (
+        <div className="space-y-2">
+          <p className="text-base font-bold">Nenhuma conta fixa neste ciclo</p>
+          <p className="text-xs font-normal text-muted-foreground">
+            Cadastre aluguel, internet e outras contas que se repetem todo mês.
+          </p>
+          <Button type="button" variant="outline" onClick={openNew}>
+            Cadastrar a primeira
+          </Button>
+        </div>
+      ) : groups.length === 0 ? (
         <div className="space-y-2">
           <p className="text-base font-bold">
             {filter === 'pending' ? 'Nenhuma conta pendente' : 'Nenhuma conta paga ainda'}
@@ -170,6 +216,14 @@ export function FixedExpensesPage() {
         </div>
       )}
 
+      <BillFormSheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        person={person}
+        bill={editing}
+        onSave={handleSave}
+      />
+
       <RowActionsSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -189,6 +243,7 @@ export function FixedExpensesPage() {
             icon: Check,
             onSelect: () => (current ? toggleFromSheet(current) : undefined),
           },
+          { id: 'edit', label: 'Editar', icon: Pencil, onSelect: () => (current ? handleEdit(current) : undefined) },
         ]}
         deletion={
           current

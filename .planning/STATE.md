@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "03.1"
 current_phase_name: redesign-das-abas
 status: executing
-stopped_at: Completed 03.1-21-PLAN.md
-last_updated: "2026-11-19T15:45:20.300Z"
+stopped_at: Completed 03.1-22-PLAN.md
+last_updated: "2026-11-19T16:01:43.733Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 03.1 execution started
-state_head: d0aa65c0497d7a851ed0b49e0245c6cdcaf453b4
+state_head: 323ed0560d9e6cbbd967b0667e9c2ca85be2d7a9
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 66
-  completed_plans: 63
+  completed_plans: 64
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 21 of 24
+Plan: 22 of 24
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 03.1 execution started
 
@@ -114,6 +114,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P19 | 15 min | 2 tasks | 2 files |
 | Phase 03.1 P20 | 50 min | 3 tasks | 13 files |
 | Phase 03.1 P21 | 60 min | 3 tasks | 9 files |
+| Phase 03.1 P22 | 70 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: 03.1-15: swatch de post-it em size-8 dentro de alvo h-11 w-11; evento novo e person conjunto; campo de evento esvaziado grava texto vazio
 - [Phase 03.1]: [03.1-18] cycleSeries ignora transfer nas duas pontas; weeklySpendForCycle mantem a semantica de weeklySpend (equivalentes com dia de salario 1)
 - [Phase 03.1]: 03.1-21: Relatórios na variante A (abas segmentadas); abas de 12/700 flex-auto para caber a 360px; seletor de ciclos 3/6/12 com rótulos curtos
+- [Phase 03.1]: [03.1-22] Calendario: agenda unico conteiner rolavel aprovado em 360x640 e 390x844; tela baixa abre com o mes recolhido (agenda < 96px)
 
 ### Pending Todos
 
@@ -193,6 +195,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T15:45:20.217Z
-Stopped at: Completed 03.1-21-PLAN.md
+Last session: 2026-11-19T16:01:43.652Z
+Stopped at: Completed 03.1-22-PLAN.md
 Resume file: None

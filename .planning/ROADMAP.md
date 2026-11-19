@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 21/24 plans executed
+**Plans:** 22/24 plans executed
 
 Plans:
 **Wave 1**
@@ -236,7 +236,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03.1-22-PLAN.md — Calendário: mês que recolhe, abertura em hoje, teclado e gesto, com cenário real em Chrome (UX-03, UX-08)
+- [x] 03.1-22-PLAN.md — Calendário: mês que recolhe, abertura em hoje, teclado e gesto, com cenário real em Chrome (UX-03, UX-08)
 - [ ] 03.1-23-PLAN.md — Remoção do legado de mês-calendário e guarda final do ciclo (UX-09, UX-08)
 
 **Wave 6** *(blocked on Wave 5 completion)*

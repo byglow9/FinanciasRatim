@@ -11,6 +11,9 @@ import {
   billOccurrences,
   nextOccurrence,
   daysBetweenParts,
+  isInCycle,
+  addDaysToParts,
+  cycleGrid,
 } from './cycle.js'
 
 const at = (iso) => new Date(iso)
@@ -246,4 +249,74 @@ test('daysBetweenParts cruza mes e ano sem erro de horario de verao', () => {
   assert.equal(daysBetweenParts(d(2026, 12, 20), d(2027, 1, 5)), 16)
   assert.equal(daysBetweenParts(d(2018, 10, 31), d(2018, 11, 10)), 10)
   assert.equal(daysBetweenParts(d(2026, 11, 20), d(2026, 11, 17)), -3)
+})
+
+// ---- isInCycle, addDaysToParts, cycleGrid (UX-03, UX-09) ----
+
+test('isInCycle: inclusivo nas duas pontas, falso 1 ms fora', () => {
+  const c = cycleOf(at('2026-11-17T15:00:00Z'), 1)
+  assert.equal(isInCycle(c.start, c), true)
+  assert.equal(isInCycle(c.end, c), true)
+  assert.equal(isInCycle(new Date(c.end.getTime() + 1), c), false)
+  assert.equal(isInCycle(new Date(c.start.getTime() - 1), c), false)
+  assert.equal(isInCycle(at('2026-11-18T02:30:00Z'), c), true)
+})
+
+test('addDaysToParts: vira mes e ano, fevereiro e passo de 7 dias', () => {
+  assert.deepEqual(addDaysToParts({ year: 2026, month: 12, day: 31 }, 1), { year: 2027, month: 1, day: 1 })
+  assert.deepEqual(addDaysToParts({ year: 2026, month: 3, day: 1 }, -1), { year: 2026, month: 2, day: 28 })
+  assert.deepEqual(addDaysToParts({ year: 2028, month: 3, day: 1 }, -1), { year: 2028, month: 2, day: 29 })
+  assert.deepEqual(addDaysToParts({ year: 2026, month: 12, day: 28 }, 7), { year: 2027, month: 1, day: 4 })
+  assert.deepEqual(addDaysToParts({ year: 2026, month: 5, day: 10 }, 0), { year: 2026, month: 5, day: 10 })
+})
+
+test('cycleGrid de 2026-11 (dia 1): 5 semanas de domingo a sabado, folga so em dezembro', () => {
+  const grid = cycleGrid(cycleOf(at('2026-11-17T15:00:00Z'), 1))
+  assert.equal(grid.length, 5)
+  for (const week of grid) assert.equal(week.length, 7)
+  assert.deepEqual(grid[0][0].parts, { year: 2026, month: 11, day: 1 })
+  assert.equal(grid[0][0].inCycle, true)
+  const flat = grid.flat()
+  const find = (m, d) => flat.find((c) => c.parts.month === m && c.parts.day === d)
+  assert.equal(find(11, 29).inCycle, true)
+  assert.equal(find(11, 30).inCycle, true)
+  for (let d = 1; d <= 5; d += 1) assert.equal(find(12, d).inCycle, false)
+  assert.equal(flat.filter((c) => c.inCycle).length, 30)
+})
+
+test('cycleGrid de ciclo dia 15 que cruza dezembro e janeiro cobre 15 dez a 14 jan', () => {
+  const c = cycleOf(at('2026-12-20T15:00:00Z'), 15)
+  assert.deepEqual(c.startParts, { year: 2026, month: 12, day: 15 })
+  assert.deepEqual(c.endParts, { year: 2027, month: 1, day: 14 })
+  const grid = cycleGrid(c)
+  const flat = grid.flat()
+  assert.equal(grid.length, 5)
+  assert.deepEqual(flat[0].parts, { year: 2026, month: 12, day: 13 })
+  assert.equal(flat[0].inCycle, false)
+  assert.equal(flat[1].inCycle, false)
+  assert.equal(flat[2].inCycle, true)
+  assert.deepEqual(flat[2].parts, { year: 2026, month: 12, day: 15 })
+  assert.deepEqual(flat.at(-1).parts, { year: 2027, month: 1, day: 16 })
+  assert.equal(flat.at(-1).inCycle, false)
+  assert.equal(flat.at(-2).inCycle, false)
+  assert.deepEqual(flat.at(-3).parts, { year: 2027, month: 1, day: 14 })
+  assert.equal(flat.at(-3).inCycle, true)
+  assert.equal(flat.filter((x) => x.inCycle).length, c.days)
+})
+
+test('cycleGrid de fevereiro (ciclo curto) e ciclo que termina em dia 31', () => {
+  const feb = cycleOf(at('2026-02-10T15:00:00Z'), 1)
+  const gridFeb = cycleGrid(feb)
+  assert.equal(gridFeb.flat().filter((c) => c.inCycle).length, 28)
+  assert.equal(gridFeb.flat().length % 7, 0)
+  const jan = cycleOf(at('2026-01-31T15:00:00Z'), 1)
+  const gridJan = cycleGrid(jan)
+  assert.equal(gridJan.flat().filter((c) => c.inCycle).length, 31)
+  assert.equal(gridJan.flat().at(-1).parts.day >= 1, true)
+})
+
+test('cycleGrid pode ter 6 semanas', () => {
+  // ago/2026 comeca num sabado e tem 31 dias: 6 semanas dom-sab
+  const grid = cycleGrid(cycleOf(at('2026-08-15T15:00:00Z'), 1))
+  assert.equal(grid.length, 6)
 })

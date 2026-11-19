@@ -233,3 +233,57 @@ export function nextOccurrence(dueDay, now, tz = DEFAULT_TZ) {
   ]
   return candidates.find((c) => daysBetweenParts(today, c) >= 0) ?? candidates[1]
 }
+
+/**
+ * O instante esta dentro do ciclo (inclusivo nas duas pontas).
+ * @param {Date} instant
+ * @param {Cycle} cycle
+ * @returns {boolean}
+ */
+export function isInCycle(instant, cycle) {
+  const t = instant.getTime()
+  return t >= cycle.start.getTime() && t <= cycle.end.getTime()
+}
+
+/**
+ * Soma dias a uma data de calendario (negativo volta). Via Date.UTC, imune ao
+ * fuso e ao horario de verao.
+ * @param {DateParts} parts
+ * @param {number} delta
+ * @returns {DateParts}
+ */
+export function addDaysToParts(parts, delta) {
+  const d = new Date(Date.UTC(parts.year, parts.month - 1, parts.day) + delta * DAY_MS)
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}
+
+/**
+ * Grade do ciclo em semanas de domingo a sabado, cobrindo startParts a endParts.
+ * Os dias de folga (fora do ciclo) existem so para completar as linhas e vem com
+ * `inCycle` falso.
+ * @param {Cycle} cycle
+ * @returns {{ parts: DateParts, inCycle: boolean }[][]}
+ */
+export function cycleGrid(cycle) {
+  const { startParts, endParts } = cycle
+  const startWeekday = new Date(Date.UTC(startParts.year, startParts.month - 1, startParts.day)).getUTCDay()
+  const endWeekday = new Date(Date.UTC(endParts.year, endParts.month - 1, endParts.day)).getUTCDay()
+  const first = addDaysToParts(startParts, -startWeekday)
+  const last = addDaysToParts(endParts, 6 - endWeekday)
+  const total = daysBetweenParts(first, last) + 1
+  /** @type {{ parts: DateParts, inCycle: boolean }[][]} */
+  const weeks = []
+  for (let i = 0; i < total; i += 7) {
+    /** @type {{ parts: DateParts, inCycle: boolean }[]} */
+    const week = []
+    for (let j = 0; j < 7; j += 1) {
+      const parts = addDaysToParts(first, i + j)
+      week.push({
+        parts,
+        inCycle: daysBetweenParts(startParts, parts) >= 0 && daysBetweenParts(parts, endParts) >= 0,
+      })
+    }
+    weeks.push(week)
+  }
+  return weeks
+}

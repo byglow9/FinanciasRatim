@@ -245,3 +245,37 @@ test('Calendario: o gesto e as setas do teclado nunca passam do ciclo atual e Ho
   assert.match(page, /onSwipe=\{handleSwipe\}/)
   assert.match(page, /aria-disabled=\{todayActive \? true : undefined\}/, 'Hoje aria-disabled no ciclo e dia atuais')
 })
+
+test('Calendario: tela baixa abre com o mes recolhido e a agenda sempre tem folga de rolagem acima do limiar', () => {
+  const page = code('src/pages/CalendarPage.tsx')
+  assert.match(page, /MIN_AGENDA_PX/, 'altura minima util da agenda')
+  assert.match(page, /WEEK_ROW_PX/, 'altura de uma semana da grade')
+  assert.match(page, /toggle\(\)/, 'recolhe pelo mesmo hook quando a agenda nao tem altura')
+  assertIncludes('src/components/calendar/AgendaList.tsx', ['min-h-[calc(100%+64px)]'])
+})
+
+test('cenario calendar-collapse.mjs: usa cdp.mjs, mede os dois viewports e a ausencia de laco em repouso', () => {
+  const file = 'scripts/ux-audit/calendar-collapse.mjs'
+  assert.equal(exists(file), true, `${file} ausente`)
+  assertIncludes(file, [
+    "from './cdp.mjs'",
+    '360',
+    '390',
+    'MutationObserver',
+    'IDLE_MS = 3000',
+    'rolar-recolhe-para-uma-linha',
+    'setinha-reabre-o-mes',
+    'trava-impede-recolher-ate-voltar-ao-topo',
+    'tocar-num-dia-nao-recolhe',
+    'hoje-nao-recolhe',
+    'repouso-mes-aberto-sem-mutacoes',
+    'repouso-mes-recolhido-sem-mutacoes',
+    'sem-rolagem-horizontal',
+    'process.exit(2)',
+    '127.0.0.1',
+    'chrome.close()',
+    'vite.stop()',
+  ])
+  const src = code(file)
+  assert.doesNotMatch(src, /['"`/]\.env|process\.env\.[A-Z_]*(KEY|SECRET|TOKEN)/, 'o cenario nao le .env nem segredos')
+})

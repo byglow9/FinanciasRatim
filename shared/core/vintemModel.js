@@ -5,7 +5,7 @@
 // O desenho (plano 04-09) so le `model.pose`.
 
 import { Spring, SPRING_PARAMS, BLINK, blinkEnv } from './vintemSpring.js'
-import { STATE_KEYS, STATE_DEFAULTS, STATE_PARAMS } from './vintemStates.js'
+import { STATE_KEYS, STATE_DEFAULTS, STATE_PARAMS, ACCESSORY_BY_STATE } from './vintemStates.js'
 
 /** Quadro maximo do relogio simulado: aba voltando do fundo nunca explode. */
 const MAX_DT = 1 / 30
@@ -20,6 +20,23 @@ const DOUBLE_BLINK_P = 1 / 8
 
 /** Acessorios da pose, cada um com uma mola de entrada e saida. */
 export const ACCESSORY_KEYS = Object.freeze(['tear', 'sweat', 'anger', 'spark', 'excl', 'z'])
+
+/** Reacoes curtas que voltam ao humor de fundo. */
+export const REACTION_KINDS = Object.freeze(['spend', 'susto', 'bronca', 'festa', 'wake'])
+
+/** Estado estatico de cada reacao com movimento reduzido (dura 1,3 s). */
+const REDUCED_STATE = Object.freeze({
+  spend: 'feliz', susto: 'surpreso', bronca: 'bravo', festa: 'feliz', wake: 'surpreso',
+})
+const REDUCED_REACTION_MS = 1300
+/** Maximo de moedinhas da festa ao mesmo tempo. */
+const MAX_COINS = 8
+
+/** Nome do acessorio do estado (`zzz` na tabela de estados) para a chave da pose. */
+const ACC_KEY = Object.freeze({ tear: 'tear', sweat: 'sweat', anger: 'anger', spark: 'spark', excl: 'excl', zzz: 'z' })
+
+/** Fases por segundo de cada acessorio animado (a fase vai de 0 a 1). */
+const ACC_SPEED = Object.freeze({ tear: 1 / 2.8, sweat: 0.45, z: 0.42, spark: 0.54, anger: 2.23, excl: 1.43 })
 
 /** Chaves da pose que o desenhista le. */
 export const POSE_KEYS = Object.freeze([
@@ -227,6 +244,13 @@ export class VintemModel {
     this._bph = this.rand() * TAU
     this._turn = false
     this._pose = newPose()
+    // reacoes: token cancela a anterior; moeda do gasto e moedinhas da festa
+    this._react = 0
+    this._reacting = false
+    this._coin = { on: false, hit: false, y: -80, vy: 0, a: 0 }
+    /** @type {Array<{ x: number, y: number, vx: number, vy: number, a: number, life: number }>} */
+    this._parts = []
+    this._accPh = 0.3
     // olhar: sacadas curtas na deriva, centro que muda a cada 1,1 a 3,3 s
     this._gT = 0
     this._gcT = 0
@@ -264,6 +288,9 @@ export class VintemModel {
       earR: mk(0, SPRING_PARAMS.ear),
       tail: mk(0, SPRING_PARAMS.tail),
     }
+    /** @type {Record<string, Spring>} */
+    this._acc = {}
+    for (const k of ACCESSORY_KEYS) this._acc[k] = mk(0, SPRING_PARAMS.popOut)
     this.world.add(this)
     this.snapPose()
   }
@@ -399,17 +426,174 @@ export class VintemModel {
   }
 
   /**
-   * Reacao curta. Aqui so o despertar do sonolento (a piscada e a queda zerada);
-   * o roteiro completo das reacoes vem depois.
+   * Liga ou desliga o giro de lado (frente 0, perfil 1).
+   * @param {boolean} on
+   */
+  setTurn(on) {
+    if (this.dead) return
+    this._turn = !!on
+  }
+
+  /**
+   * Agenda um passo do roteiro de uma reacao; se outra reacao entrou depois (o
+   * token mudou) ou o modelo morreu, o passo vira nada.
+   * @param {number} tk
+   * @param {number} ms
+   * @param {() => void} fn
+   */
+  _at(tk, ms, fn) {
+    this.world.later(ms, () => {
+      if (!this.dead && this._react === tk) fn()
+    }, this)
+  }
+
+  /** Zera overrides, moeda e moedinhas. */
+  _clearOv() {
+    this.ov = {}
+    this._coin.on = false
+    this._coin.hit = false
+    this._parts.length = 0
+  }
+
+  /**
+   * Comeca uma reacao nova: cancela a anterior por token e limpa tudo.
+   * @returns {number} token da reacao
+   */
+  _begin() {
+    const tk = ++this._react
+    this._clearOv()
+    this._flash = null
+    this._flashUntil = 0
+    this._reacting = true
+    return tk
+  }
+
+  /**
+   * Estado forcado durante a janela da reacao.
+   * @param {string} state
+   * @param {number} ms
+   */
+  _force(state, ms) {
+    this._flash = state
+    this._flashUntil = this.world.t + ms / 1000
+    this._retargetExpression()
+  }
+
+  /**
+   * Fim da reacao: overrides limpos e estado de fundo de volta.
+   * @param {number} tk
+   * @param {number} ms
+   */
+  _finish(tk, ms) {
+    this._at(tk, ms, () => {
+      this._clearOv()
+      this._flash = null
+      this._flashUntil = 0
+      this._reacting = false
+      this._retargetExpression()
+    })
+  }
+
+  /**
+   * Reacao curta: 'spend', 'susto', 'bronca', 'festa' ou 'wake'. Reacao nova
+   * cancela a anterior. Com movimento reduzido vira pose estatica de 1,3 s.
    * @param {string} kind
    */
   react(kind) {
-    if (this.dead) return
-    if (kind === 'wake') {
+    if (this.dead || !REACTION_KINDS.includes(kind)) return
+    const rm = this._rm()
+    const tk = this._begin()
+    if (rm) {
+      this._force(REDUCED_STATE[/** @type {keyof typeof REDUCED_STATE} */ (kind)], REDUCED_REACTION_MS)
+      this._finish(tk, REDUCED_REACTION_MS)
+      return
+    }
+    const ov = () => this.ov
+    const sq = (/** @type {number} */ v) => { ov().sy = v }
+    const at = (/** @type {number} */ ms, /** @type {() => void} */ fn) => this._at(tk, ms, fn)
+    const s = this._s
+    if (kind === 'spend') {
+      // antecipacao: agacha; salta; moeda aparece no alto e cai na fenda; pousa achatando; engole
+      sq(0.82)
+      ov().ly = -0.8
+      ov().lx = 0
+      ov().py = 5
+      at(190, () => { sq(1.15); ov().py = -32; ov().ly = -1 })
+      at(300, () => { Object.assign(this._coin, { on: true, hit: false, y: -34, vy: 0, a: 0 }) })
+      at(420, () => { sq(1.04); ov().py = 0; ov().ly = -0.3 })
+      at(520, () => { sq(0.88); ov().py = 3; ov().ly = 0.2 })
+      at(640, () => { sq(1.02); ov().ly = 0.6 })
+      at(740, () => { sq(0.94); ov().ly = 0.9 })
+      at(840, () => { sq(1.03) })
+      at(960, () => { sq(1); ov().py = 0; delete ov().ly; delete ov().lx })
+      this._finish(tk, 1400)
+    } else if (kind === 'susto') {
+      this._force('surpreso', 1300)
+      ov().acc = { sweat: 1 }
+      sq(1.2)
+      ov().py = -22
+      ov().lx = 0
+      ov().ly = 0
+      at(130, () => { sq(0.93); ov().py = 0; ov().px = -5 })
+      at(200, () => { ov().px = 5 })
+      at(270, () => { ov().px = -4 })
+      at(340, () => { ov().px = 3 })
+      at(410, () => { ov().px = 0; sq(1.03) })
+      this._finish(tk, 1300)
+    } else if (kind === 'bronca') {
+      this._force('bravo', 1700)
+      sq(0.93)
+      ov().lx = 0
+      ov().ly = 0
+      for (let i = 0; i < 9; i++) {
+        at(80 * i, () => {
+          ov().px = (i % 2 ? 1 : -1) * (8 - i * 0.675)
+          ov().rot = (i % 2 ? 1 : -1) * 2.5
+        })
+      }
+      at(760, () => { ov().px = 0; ov().rot = 0; sq(1) })
+      this._finish(tk, 1700)
+    } else if (kind === 'festa') {
+      this._force('feliz', 2300)
+      ov().acc = { spark: 1 }
+      ov().ly = -0.2
+      for (let h = 0; h < 3; h++) {
+        const t0 = h * 620
+        at(t0, () => { sq(0.8); ov().py = 4 })
+        at(t0 + 130, () => {
+          sq(1.2)
+          ov().py = -44
+          ov().rot = h % 2 ? 5 : -5
+          ov().tail = 18
+          for (let k = 0; k < 2; k++) {
+            if (this._parts.length >= MAX_COINS) break
+            this._parts.push({
+              x: 120 + (k ? 1 : -1) * (6 + this.rand() * 10),
+              y: 50 + s.py.x,
+              vx: (k ? 1 : -1) * (40 + this.rand() * 60),
+              vy: -380 - this.rand() * 120,
+              a: this.rand() * 6,
+              life: 1.1,
+            })
+          }
+        })
+        at(t0 + 340, () => { sq(1.03); ov().py = 0; ov().rot = 0; ov().tail = 0 })
+        at(t0 + 470, () => { sq(0.84) })
+        at(t0 + 560, () => { sq(1) })
+      }
+      this._finish(tk, 2300)
+    } else {
+      // wake: tocar no sonolento desperta com susto curto
+      this._force('surpreso', 650)
+      sq(1.14)
+      ov().py = -16
       this._sleepT = 0
-      this._s.droop.x = 0
-      this._s.droop.v = 0
+      s.droop.x = 0
+      s.droop.v = 0
       this._blinkNow()
+      at(130, () => { sq(0.95); ov().py = 0 })
+      at(260, () => { sq(1.02) })
+      this._finish(tk, 650)
     }
   }
 
@@ -514,7 +698,9 @@ export class VintemModel {
     s.rot.t = gcx * 3.2 + (ov.rot || 0)
     s.head.t = sleepy ? s.droop.x * 10 : 0
     s.px.t = gcx * 3 + (ov.px || 0)
-    s.py.t = Z.py + (ov.py || 0) + (sleepy ? s.droop.x * 5 : 0)
+    // a postura vertical vem do estado de fundo: o estado forcado de uma reacao
+    // (surpreso, py -3) nao desloca o corpo, so a expressao muda
+    s.py.t = paramsFor(this.state).py + (ov.py || 0) + (sleepy ? s.droop.x * 5 : 0)
 
     // piscar: espera de 2 a 6 s (so conta depois de a piscada anterior acabar), dupla em 1 de 8
     if (!rm && dt > 0 && this._bNext > 0 && this.world.t - this._bStart > BLINK.total) {
@@ -555,12 +741,67 @@ export class VintemModel {
     // rabo: balanca mais no feliz (so o perfil usa)
     const wag = eff === 'feliz' ? 3.4 : 1.6
     s.tail.t = rm ? 0 : Math.sin(this.world.t * wag * 2.2) * (eff === 'feliz' ? 14 : 6) + (ov.tail || 0) + clamp(-s.py.v * 0.05, -16, 16)
+
+    // giro de lado: com movimento reduzido vira troca instantanea de pose
+    if (rm) s.turn.snap(this._turn ? 1 : 0)
+    else s.turn.t = this._turn ? 1 : 0
+
+    // acessorios: entram com pop elastico (popIn) e saem sem excesso (popOut)
+    const stateAcc = ACCESSORY_BY_STATE[/** @type {keyof typeof ACCESSORY_BY_STATE} */ (eff)]
+    const main = stateAcc ? ACC_KEY[/** @type {keyof typeof ACC_KEY} */ (stateAcc)] : null
+    const forced = ov.acc ? Object.keys(ov.acc)[0] : null
+    for (const k of ACCESSORY_KEYS) {
+      const on = k === main || (ov.acc && ov.acc[k])
+      const sp = this._acc[k]
+      const pr = on ? SPRING_PARAMS.popIn : SPRING_PARAMS.popOut
+      sp.k = pr[0]
+      sp.c = pr[1]
+      sp.t = on ? 1 : 0
+    }
+    // fase dos acessorios animados: avanca na velocidade do acessorio, fixa com movimento reduzido
+    if (rm) this._accPh = 0.3
+    else if (dt > 0) {
+      const speed = ACC_SPEED[/** @type {keyof typeof ACC_SPEED} */ (forced || main || 'sweat')]
+      this._accPh = (this._accPh + dt * speed) % 1
+    }
+  }
+
+  /**
+   * Fisica simples da moeda do gasto (gravidade 900) e das moedinhas da festa
+   * (gravidade 1500). Com movimento reduzido nao existe moeda.
+   * @param {number} h
+   * @param {boolean} rm
+   */
+  _physics(h, rm) {
+    const c = this._coin
+    if (rm) {
+      c.on = false
+      this._parts.length = 0
+      return
+    }
+    if (c.on) {
+      c.vy += 900 * h
+      c.y += c.vy * h
+      c.a += h * 5
+      if (c.y >= 60 && !c.hit) c.hit = true
+      if (c.y > 105) c.on = false
+    }
+    for (let i = this._parts.length - 1; i >= 0; i--) {
+      const p = this._parts[i]
+      p.vy += 1500 * h
+      p.x += p.vx * h
+      p.y += p.vy * h
+      p.a += h * 12
+      p.life -= h
+      if (p.life <= 0) this._parts.splice(i, 1)
+    }
   }
 
   /** @param {(sp: Spring) => void} fn */
   _eachSpring(fn) {
     for (const k of STATE_KEYS) fn(this._p[k])
     for (const sp of Object.values(this._s)) fn(sp)
+    for (const sp of Object.values(this._acc)) fn(sp)
   }
 
   /**
@@ -597,6 +838,18 @@ export class VintemModel {
     pose.look.y = num(ly)
     pose.gaze.x = num(this._gcx)
     pose.gaze.y = num(this._gcy)
+    for (const k of ACCESSORY_KEYS) pose.acc[k] = num(this._acc[k].x)
+    pose.accPhase = num(this._accPh)
+    const c = this._coin
+    pose.coin.on = c.on
+    pose.coin.x = 120
+    pose.coin.y = num(c.y)
+    pose.coin.sx = num(Math.max(0.35, Math.abs(Math.cos(c.a))))
+    pose.coin.rot = num(c.a)
+    pose.coins.length = 0
+    for (const q of this._parts) {
+      pose.coins.push({ x: num(q.x), y: num(q.y), a: num(q.a), o: clamp(q.life * 3, 0, 1) })
+    }
     const lift = clamp(-pose.py / 50, 0, 1.2)
     pose.shadow.sx = 1 - 0.22 * lift
     pose.shadow.a = 0.12 * (1 - 0.45 * lift)
@@ -612,6 +865,7 @@ export class VintemModel {
     const rm = this._rm()
     this._targets(h, rm)
     this._eachSpring((sp) => sp.step(h, rm))
+    this._physics(h, rm)
     this._writePose(rm)
   }
 
@@ -635,6 +889,8 @@ export class VintemModel {
     for (const k of STATE_KEYS) if (!near(this._p[k])) return false
     const s = this._s
     if (!near(s.turn) || !near(s.wake) || !near(s.droop)) return false
+    for (const sp of Object.values(this._acc)) if (!near(sp)) return false
+    if (this._reacting || this._coin.on || this._parts.length) return false
     if (this._rm()) {
       for (const sp of Object.values(s)) if (!near(sp)) return false
     }
@@ -644,6 +900,9 @@ export class VintemModel {
   /** Marca o modelo como morto: nao avanca e as entradas pendentes viram nada. */
   destroy() {
     this.dead = true
+    this._react++
+    this._reacting = false
+    this._clearOv()
     this.world.remove(this)
   }
 }

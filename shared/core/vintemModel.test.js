@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mulberry32, BLINK } from './vintemSpring.js'
 import { STATE_KEYS } from './vintemStates.js'
-import { World, VintemModel, POSE_KEYS, ACCESSORY_KEYS } from './vintemModel.js'
+import { World, VintemModel, POSE_KEYS, ACCESSORY_KEYS, REACTION_KINDS } from './vintemModel.js'
 
 const DT60 = 1 / 60
 
@@ -484,4 +484,347 @@ test('movimento reduzido: as expressoes ainda mudam e as molas chegam sem oversh
       assert.ok(Math.abs(model.pose.e[k] - model._p[k].t) < 0.01, `${st}.${k} nao chegou`)
     }
   }
+})
+
+// ---------------------------------------------------------------------------
+// Reacoes, giro de lado, acessorios, moedas e ciclo de vida
+// ---------------------------------------------------------------------------
+
+const DURATION = { spend: 1.4, susto: 1.3, bronca: 1.7, festa: 2.3, wake: 0.65 }
+const FORCED = { susto: 'surpreso', bronca: 'bravo', festa: 'feliz', wake: 'surpreso' }
+
+/** Modelo parado no estado de fundo, pronto para reagir. */
+function ready(seed, state = 'neutro', opts = {}) {
+  const r = makeEv(seed, { state, ...opts })
+  run(r.world, 2, DT120)
+  return r
+}
+
+/** Roda a reacao e devolve o traco quadro a quadro. */
+function trace(kind, { seed = 50, state = 'neutro', extra = 2, dt = DT120 } = {}) {
+  const r = ready(seed, state)
+  const t0 = r.world.t
+  r.model.react(kind)
+  const rows = []
+  run(r.world, DURATION[kind] + extra, dt, () => {
+    assertFinitePose(r.model.pose, kind)
+    rows.push({
+      t: r.world.t - t0,
+      py: r.model.pose.py,
+      px: r.model.pose.px,
+      sy: r.model.pose.sy,
+      sx: r.model.pose.sx,
+      rot: r.model.pose.rot,
+      coin: r.model.pose.coin.on,
+      coins: r.model.pose.coins.length,
+      eff: r.model.effState(),
+      ov: { ...r.model.ov },
+    })
+  })
+  return { ...r, rows }
+}
+
+test('REACTION_KINDS lista as cinco reacoes', () => {
+  assert.deepEqual([...REACTION_KINDS], ['spend', 'susto', 'bronca', 'festa', 'wake'])
+})
+
+test('spend: agacha, salta, a moeda aparece em 300 ms e some na fenda, e tudo acaba em 1,4 s', () => {
+  const { rows } = trace('spend')
+  const at = (t) => rows.find((r) => r.t >= t)
+  assert.equal(at(0.05).ov.sy, 0.82)
+  assert.equal(at(0.05).ov.py, 5)
+  assert.equal(at(0.2).ov.sy, 1.15)
+  assert.equal(at(0.2).ov.py, -32)
+  assert.equal(at(0.55).ov.sy, 0.88)
+  assert.equal(at(0.75).ov.sy, 0.94)
+  assert.ok(Math.min(...rows.map((r) => r.py)) < -20, 'salto')
+  assert.ok(Math.min(...rows.map((r) => r.sy)) < 0.9, 'agachou')
+  const on = rows.filter((r) => r.coin)
+  assert.ok(on.length > 0)
+  assert.ok(on[0].t >= 0.29 && on[0].t <= 0.32, `moeda aparece em ${on[0].t}`)
+  assert.ok(on.at(-1).t < 1.0, `moeda sumiu em ${on.at(-1).t}`)
+  assert.equal(rows.filter((r) => r.t > 1.0 && r.coin).length, 0)
+  assert.deepEqual(at(1.405).ov, {})
+  assert.ok(rows.every((r) => r.coins === 0))
+})
+
+test('susto, bronca, festa e wake seguem o roteiro e o estado a forca', () => {
+  // susto
+  {
+    const { rows } = trace('susto')
+    const at = (t) => rows.find((r) => r.t >= t)
+    assert.equal(at(0.05).ov.sy, 1.2)
+    assert.equal(at(0.05).ov.py, -22)
+    assert.equal(at(0.05).eff, 'surpreso')
+    assert.deepEqual(at(0.05).ov.acc, { sweat: 1 })
+    assert.deepEqual([0.14, 0.21, 0.28, 0.35].map((t) => at(t).ov.px), [-5, 5, -4, 3])
+    assert.equal(at(1.25).eff, 'surpreso')
+    assert.equal(at(1.35).eff, 'neutro')
+    assert.deepEqual(at(1.35).ov, {})
+  }
+  // bronca
+  {
+    const { rows } = trace('bronca')
+    const pxs = []
+    for (const r of rows) {
+      if (r.ov.px !== undefined && r.ov.px !== pxs.at(-1) && r.t < 0.75) pxs.push(r.ov.px)
+    }
+    assert.equal(pxs.length, 9, `tremidas ${pxs}`)
+    assert.ok(Math.abs(Math.abs(pxs[0]) - 8) < 1e-9 && Math.abs(Math.abs(pxs[8]) - 2.6) < 1e-9, `${pxs}`)
+    assert.ok(pxs.every((v) => Math.abs(v) <= 8))
+    assert.ok(rows.every((r) => Math.abs(r.ov.rot || 0) <= 2.5))
+    assert.ok(Math.max(...rows.map((r) => Math.abs(r.px))) <= 9, 'a tremida nao passa de 8 mais o overshoot da mola')
+    assert.equal(rows.find((r) => r.t >= 1.65).eff, 'bravo')
+    assert.equal(rows.find((r) => r.t >= 1.75).eff, 'neutro')
+  }
+  // festa
+  {
+    const { rows } = trace('festa')
+    const jumps = rows.filter((r, i) => r.ov.py === -44 && (i === 0 || rows[i - 1].ov.py !== -44))
+    assert.equal(jumps.length, 3)
+    assert.ok(Math.abs(jumps[1].t - jumps[0].t - 0.62) < 0.02)
+    assert.ok(Math.max(...rows.map((r) => r.coins)) <= 8)
+    assert.ok(Math.max(...rows.map((r) => r.coins)) >= 2)
+    assert.equal(rows.find((r) => r.t >= 2.25).eff, 'feliz')
+    assert.equal(rows.find((r) => r.t >= 2.35).eff, 'neutro')
+    assert.ok(rows.every((r) => !r.coin), 'festa solta so moedinhas')
+  }
+  // wake
+  {
+    const { rows } = trace('wake', { state: 'sonolento' })
+    const at = (t) => rows.find((r) => r.t >= t)
+    assert.equal(at(0.05).ov.sy, 1.14)
+    assert.equal(at(0.05).ov.py, -16)
+    assert.equal(at(0.05).eff, 'surpreso')
+    assert.equal(at(0.6).eff, 'surpreso')
+    assert.equal(at(0.7).eff, 'sonolento')
+    assert.deepEqual(at(0.7).ov, {})
+  }
+})
+
+test('depois de cada reacao: |py| < 2, overrides vazios, molas assentadas e estado de fundo de volta', () => {
+  for (const state of ['neutro', 'feliz', 'atento']) {
+    for (const kind of REACTION_KINDS) {
+      const r = ready(60, state)
+      r.model.react(kind)
+      run(r.world, DURATION[kind] + 0.02, DT120)
+      const p = r.model.pose
+      assert.deepEqual(r.model.ov, {}, `${kind}/${state}: overrides`)
+      assert.equal(p.coin.on, false)
+      assert.equal(p.coins.length, 0)
+      assert.equal(r.model.effState(), state)
+      assert.ok(Math.abs(p.py) < 2, `${kind}/${state}: py ${p.py}`)
+      run(r.world, 2, DT120)
+      assert.equal(r.model.isSettled(), true, `${kind}/${state}: molas`)
+      assert.ok(Math.abs(r.model.pose.py) < 0.5)
+    }
+  }
+})
+
+test('reacao nova cancela a anterior por token e a moeda so aparece em spend e festa', () => {
+  // spend cancelado por susto antes da moeda
+  {
+    const r = ready(70)
+    r.model.react('spend')
+    run(r.world, 0.25, DT120)
+    r.model.react('susto')
+    let coin = false
+    run(r.world, 1.6, DT120, () => {
+      coin = coin || r.model.pose.coin.on
+      if (r.world.t - 2.25 < 1.3) assert.equal(r.model.ov.ly === undefined || r.model.ov.ly === 0, true, 'resto do spend vazou')
+    })
+    assert.equal(coin, false, 'moeda do spend cancelado apareceu')
+    assert.deepEqual(r.model.ov, {})
+  }
+  // festa cancelada por bronca: nada de moedinha depois
+  {
+    const r = ready(71)
+    r.model.react('festa')
+    run(r.world, 0.2, DT120)
+    r.model.react('bronca')
+    let coins = 0
+    run(r.world, 2.5, DT120, () => {
+      coins = Math.max(coins, r.model.pose.coins.length)
+    })
+    assert.equal(coins, 0, 'moedinhas da festa cancelada sobraram')
+  }
+  // so spend (moeda) e festa (moedinhas) soltam moeda
+  for (const kind of ['susto', 'bronca', 'wake']) {
+    const { rows } = trace(kind)
+    assert.ok(rows.every((r) => !r.coin && r.coins === 0), `${kind} nao solta moeda`)
+  }
+  // nunca em repouso
+  const r = makeEv(72)
+  run(r.world, 60, DT60, () => {
+    assert.equal(r.model.pose.coin.on, false)
+    assert.equal(r.model.pose.coins.length, 0)
+  })
+})
+
+test('movimento reduzido: cada reacao vira pose estatica de 1,3 s sem salto, tremida nem moeda', () => {
+  const alvo = { spend: 'feliz', susto: 'surpreso', bronca: 'bravo', festa: 'feliz', wake: 'surpreso' }
+  for (const kind of REACTION_KINDS) {
+    const r = makeEv(80, { state: kind === 'wake' ? 'sonolento' : 'neutro', reduced: () => true })
+    run(r.world, 1, DT60)
+    const t0 = r.world.t
+    r.model.react(kind)
+    const goal = alvo[kind]
+    assert.equal(r.model.effState(), goal)
+    let last = r.model.pose.py
+    run(r.world, 1.7, DT60, () => {
+      const p = r.model.pose
+      const dt = r.world.t - t0
+      assertFinitePose(p, kind)
+      assert.equal(p.px, 0, `${kind}: tremida em px`)
+      assert.equal(p.rot, 0)
+      assert.equal(p.coin.on, false)
+      assert.equal(p.coins.length, 0)
+      assert.deepEqual(r.model.ov, {})
+      assert.equal(p.accPhase, 0.3)
+      // sem salto: o corpo nao sai do lugar, so a expressao troca
+      assert.equal(p.py, 0, `${kind}: py ${p.py}`)
+      if (dt <= 1.29) assert.equal(r.model.effState(), goal)
+      last = p.py
+    })
+    void last
+    assert.equal(r.model.effState(), kind === 'wake' ? 'sonolento' : 'neutro')
+  }
+})
+
+test('giro de lado: turn chega a 1 em cerca de 0,7 s sem passar de 1,05 e volta a 0', () => {
+  const { world, model } = makeEv(90)
+  run(world, 1, DT120)
+  model.setTurn(true)
+  let max = 0
+  let t90 = null
+  const t0 = world.t
+  run(world, 2.5, DT120, () => {
+    const T = model.pose.turn
+    max = Math.max(max, T)
+    if (t90 === null && T >= 0.9) t90 = world.t - t0
+  })
+  assert.ok(max <= 1.05, `turn passou de 1,05: ${max}`)
+  assert.ok(t90 >= 0.2 && t90 <= 0.9, `t90 ${t90}`)
+  assert.ok(Math.abs(model.pose.turn - 1) < 0.01)
+  model.setTurn(false)
+  let min = 1
+  run(world, 2.5, DT120, () => {
+    min = Math.min(min, model.pose.turn)
+  })
+  assert.ok(min >= -0.05, `turn abaixo de 0: ${min}`)
+  assert.ok(Math.abs(model.pose.turn) < 0.01)
+  // reduzido: troca instantanea
+  const r = makeEv(91, { reduced: () => true })
+  r.model.setTurn(true)
+  r.world.step(DT60)
+  assert.equal(r.model.pose.turn, 1)
+  r.model.setTurn(false)
+  r.world.step(DT60)
+  assert.equal(r.model.pose.turn, 0)
+})
+
+test('acessorios: um por estado, entram com pop elastico e saem sem excesso', () => {
+  const porEstado = { neutro: null, feliz: 'spark', triste: 'tear', bravo: 'anger', sonolento: 'z', surpreso: 'excl', atento: 'sweat' }
+  for (const [state, key] of Object.entries(porEstado)) {
+    const { world, model } = makeEv(95, { state })
+    run(world, 3, DT120)
+    for (const k of ACCESSORY_KEYS) {
+      const want = k === key ? 1 : 0
+      assert.ok(Math.abs(model.pose.acc[k] - want) < 0.01, `${state}.${k} = ${model.pose.acc[k]}`)
+    }
+  }
+  const { world, model } = makeEv(96)
+  run(world, 1, DT120)
+  model.setState('surpreso')
+  let max = 0
+  run(world, 2, DT120, () => {
+    max = Math.max(max, model.pose.acc.excl)
+  })
+  assert.ok(max > 1.05 && max < 1.4, `pop de entrada ${max}`)
+  model.setState('neutro')
+  let min = 1
+  let prev = model.pose.acc.excl
+  let mono = true
+  run(world, 2, DT120, () => {
+    const v = model.pose.acc.excl
+    min = Math.min(min, v)
+    if (v > prev + 1e-9) mono = false
+    prev = v
+  })
+  assert.ok(min >= -0.001, `saida passou de zero: ${min}`)
+  assert.ok(mono, 'saida nao e monotonica')
+  // fase dos acessorios: anda em movimento normal, fixa em 0,3 com reduzido
+  const a = makeEv(97, { state: 'sonolento' })
+  const fases = new Set()
+  run(a.world, 3, DT60, () => fases.add(a.model.pose.accPhase))
+  assert.ok(fases.size > 50)
+  for (const f of fases) assert.ok(f >= 0 && f < 1)
+})
+
+test('volume sx*sy desvia menos de 8% em spend, festa, susto, bronca e trocas de estado', () => {
+  for (const dt of [DT60, DT120]) {
+    const { world, model } = makeEv(100)
+    let worst = 0
+    const watch = () => {
+      worst = Math.max(worst, Math.abs(model.pose.sx * model.pose.sy - 1))
+    }
+    run(world, 1, dt, watch)
+    for (const kind of ['spend', 'festa', 'susto', 'bronca']) {
+      model.react(kind)
+      run(world, DURATION[kind] + 0.5, dt, watch)
+    }
+    for (const st of ['triste', 'bravo', 'surpreso', 'neutro', 'atento', 'feliz']) {
+      model.setState(st)
+      run(world, 1.5, dt, watch)
+    }
+    assert.ok(worst < 0.08, `volume desviou ${worst} (dt ${dt})`)
+  }
+})
+
+test('World.step limita dt a 1/30 s e later respeita a ordem (empate pela insercao)', () => {
+  const w = new World()
+  w.step(5)
+  assert.ok(Math.abs(w.t - 1 / 30) < 1e-12)
+  w.step(-1)
+  w.step(NaN)
+  assert.ok(Math.abs(w.t - 1 / 30) < 1e-12)
+  const w2 = new World()
+  const out = []
+  w2.later(100, () => out.push('a'))
+  w2.later(50, () => out.push('b'))
+  w2.later(100, () => out.push('c'))
+  w2.later(100, () => out.push('d'))
+  run(w2, 0.3, DT60)
+  assert.deepEqual(out, ['b', 'a', 'c', 'd'])
+  // dt gigante num modelo: continua finito
+  const { world, model } = make(110)
+  model.setState('triste')
+  world.step(1000)
+  assertFinitePose(model.pose, 'dt gigante')
+  model.update(1e9)
+  assertFinitePose(model.pose, 'update gigante')
+})
+
+test('modelo destruido ou removido nao avanca e as entradas pendentes viram nada', () => {
+  for (const how of ['destroy', 'remove']) {
+    const { world, model } = ready(120)
+    model.react('spend')
+    run(world, 0.1, DT120)
+    const antes = JSON.stringify(model.pose)
+    if (how === 'destroy') model.destroy()
+    else world.remove(model)
+    run(world, 2, DT120)
+    assert.equal(JSON.stringify(model.pose), antes, `${how}: a pose andou`)
+    assert.equal(world._q.length, 0, `${how}: fila nao esvaziou`)
+    assert.equal(model.pose.coin.on, false)
+  }
+  const { world, model } = ready(121)
+  model.destroy()
+  model.react('festa')
+  model.setState('triste')
+  model.setTurn(true)
+  assert.equal(model.touch(), false)
+  assert.equal(model.state, 'neutro')
+  run(world, 1, DT120)
+  assert.equal(model.dead, true)
 })

@@ -2,11 +2,14 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PHRASES_RITMO } from './vintemPhrasesRitmo.js'
 import { SITUATION_META, TONES } from './vintemPhrases.js'
-import { checkBank } from './phraseRules.js'
+import { checkBank, PROFANITY } from './phraseRules.js'
 import { buildSlots, needsOf, pick, pushRecent, recentKey, recentLimit } from './phrasePicker.js'
 
 // Situacoes do grupo ritmo escritas ate aqui (cresce a cada tarefa do plano 04-08).
-const GROUP = ['sem-lancar', 'ritmo-folgado', 'ritmo-atencao', 'ritmo-estourou']
+const GROUP = [
+  'sem-lancar', 'ritmo-folgado', 'ritmo-atencao', 'ritmo-estourou',
+  'dados-velhos', 'inicio', 'toque',
+]
 
 const BANK = /** @type {any} */ (PHRASES_RITMO)
 
@@ -25,6 +28,9 @@ const SLOT_CASES = {
   'ritmo-folgado': [buildSlots({ dias: 12, restanteCents: 120000 })],
   'ritmo-atencao': [buildSlots({ dias: 12, restanteCents: 120000 })],
   'ritmo-estourou': [buildSlots({ dias: 12 })],
+  'dados-velhos': [{}],
+  inicio: [buildSlots({ dias: 12, restanteCents: 120000 }), {}],
+  toque: [buildSlots({ dias: 12 }), {}],
 }
 
 test('o grupo ritmo passa na regua de conteudo (checkBank vazio)', () => {
@@ -98,4 +104,39 @@ test('cada situacao tem pelo menos 3 variantes por tom sem encaixe', () => {
       assert.ok(bare.length >= 3, `${situation}/${tone}: ${bare.length} sem encaixe`)
     }
   }
+})
+
+// Palavras de veredito que dados-velhos nunca pode usar (D-08, LIM-08).
+const VERDICT = [
+  /parab[eé]ns/iu, /[óo]timo/iu, /p[ée]ssimo/iu, /estourou/iu, /passou do/iu,
+  /folgado/iu, /tranquilo/iu, /gastou demais/iu,
+]
+
+test('dados-velhos e neutro nos tres tons: sem veredito, sem palavrao, sem encaixe', () => {
+  for (const tone of TONES) {
+    const list = BANK['dados-velhos'][tone]
+    assert.ok(list.length >= 6, `${tone}: ${list.length} variantes`)
+    for (const p of list) {
+      for (const re of VERDICT) assert.ok(!re.test(p.t), `${p.id} tem veredito: ${re}`)
+      for (const re of PROFANITY) assert.ok(!re.test(p.t), `${p.id} tem palavrao`)
+      assert.deepEqual(needsOf(p.t), [], `${p.id} usa encaixe`)
+      assert.ok(!/\d|R\$/u.test(p.t), `${p.id} cita numero ou valor`)
+    }
+  }
+})
+
+test('inicio e toque tem no minimo 6 variantes por tom e inicio tem 2 sem encaixe', () => {
+  for (const situation of ['inicio', 'toque', 'dados-velhos']) {
+    for (const tone of TONES) {
+      assert.ok(BANK[situation][tone].length >= 6, `${situation}/${tone}`)
+    }
+  }
+  for (const tone of TONES) {
+    const bare = BANK.inicio[tone].filter((p) => needsOf(p.t).length === 0)
+    assert.ok(bare.length >= 2, `inicio/${tone}`)
+  }
+})
+
+test('o grupo ritmo cobre as sete situacoes do plano', () => {
+  assert.deepEqual(Object.keys(BANK).sort(), [...GROUP].sort())
 })

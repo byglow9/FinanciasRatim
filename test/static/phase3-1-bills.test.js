@@ -29,3 +29,21 @@ test('Contas Fixas mantem os tres cartoes de total e o + Nova, sem seletor de me
   }
   assert.doesNotMatch(src, /MonthSelector/)
 })
+
+test('T2: FixedExpenseForm.tsx grava categoryId resolvido e mantem a categoria atual no select', () => {
+  const src = code('src/components/fixed-expenses/FixedExpenseForm.tsx')
+  assert.match(src, /@shared\/core\/categories\.js/)
+  assert.match(src, /\bresolveCategoryId\(/, 'resolveCategoryId nao usado')
+  assert.match(src, /\bcategoryId\b/, 'categoryId nao enviado no onSubmit')
+  assert.match(src, /\bactiveCategoryNames\(/, 'opcoes devem vir das categorias ativas')
+  assert.match(src, /categoryDefs/, 'categoryDefs de useArea nao usado')
+  assert.doesNotMatch(src, /settings\.categories/, 'select nao deve mais ler settings.categories')
+})
+
+test('T2: FixedExpenseList.tsx mostra o nome atual por categoryDisplayName', () => {
+  const src = code('src/components/fixed-expenses/FixedExpenseList.tsx')
+  assert.match(src, /@shared\/core\/categories\.js/)
+  assert.match(src, /\bcategoryDisplayName\(/, 'categoryDisplayName nao usado')
+  assert.match(src, /\buseArea\(\)/, 'useArea nao chamado para obter categoryDefs')
+  assert.doesNotMatch(src, /\{\s*(t|transaction|expense|fe)\.category\s*\}/, 'ainda renderiza o texto cru da categoria')
+})

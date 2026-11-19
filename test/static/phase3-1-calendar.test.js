@@ -33,3 +33,11 @@ test('Calendario: legenda e + na linha do alternador, grade alta e detalhe do di
     assert.match(src, /size="iconSm"/)
   }
 })
+
+test('T2: MonthCalendar.tsx mostra o nome atual por categoryDisplayName', () => {
+  const src = code('src/components/calendar/MonthCalendar.tsx')
+  assert.match(src, /@shared\/core\/categories\.js/)
+  assert.match(src, /\bcategoryDisplayName\(/, 'categoryDisplayName nao usado')
+  assert.match(src, /\buseArea\(\)/, 'useArea nao chamado para obter categoryDefs')
+  assert.doesNotMatch(src, /\{\s*(t|transaction|expense|fe)\.category\s*\}/, 'ainda renderiza o texto cru da categoria')
+})

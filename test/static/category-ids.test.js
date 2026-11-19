@@ -1,8 +1,8 @@
 // Guarda estatica (FUND-05, FUND-06, D-07, D-08, D-12): categorias com id estavel na interface
 // e gasto semanal vindo do nucleo.
 //   T1: tipos, AreaContext e SettingsPage (adicionar, renomear, arquivar por id)
-//   T2: formularios gravam categoryId; listas e calendario mostram o nome atual
-//   T3: relatorios agregam pelo nome resolvido por id; OverviewDashboard usa weeklySpend
+//   T2 e T3 (formularios, listas, calendario e relatorios) moveram para as guardas por tela:
+//   phase3-1-transactions, phase3-1-bills, phase3-1-calendar e phase3-1-reports
 // Rodar: node --test test/static/category-ids.test.js
 // Por tarefa: node --test --test-name-pattern="^T1" test/static/category-ids.test.js
 import { test } from 'node:test'
@@ -91,60 +91,4 @@ test('T1: o editor de categoria, o cartao e a pagina adicionam, renomeiam e arqu
   assert.doesNotMatch(src, /getFixedExpensesByCategory/)
   assert.doesNotMatch(src, /Nao e possivel remover/)
   assert.match(src, /Arquivar categoria/)
-})
-
-// ---------------------------------------------------------------- T2
-
-for (const file of [
-  'src/components/transactions/TransactionForm.tsx',
-  'src/components/fixed-expenses/FixedExpenseForm.tsx',
-]) {
-  test(`T2: ${path.basename(file)} grava categoryId resolvido e mantem a categoria atual no select`, () => {
-    const src = read(file)
-    assert.match(src, /@shared\/core\/categories\.js/)
-    assert.match(src, /\bresolveCategoryId\(/, 'resolveCategoryId nao usado')
-    assert.match(src, /\bcategoryId\b/, 'categoryId nao enviado no onSubmit')
-    assert.match(src, /\bactiveCategoryNames\(/, 'opcoes devem vir das categorias ativas')
-    assert.match(src, /categoryDefs/, 'categoryDefs de useArea nao usado')
-    assert.doesNotMatch(src, /settings\.categories/, 'select nao deve mais ler settings.categories')
-  })
-}
-
-for (const file of [
-  'src/components/transactions/TransactionList.tsx',
-  'src/components/fixed-expenses/FixedExpenseList.tsx',
-  'src/components/calendar/MonthCalendar.tsx',
-]) {
-  test(`T2: ${path.basename(file)} mostra o nome atual por categoryDisplayName`, () => {
-    const src = read(file)
-    assert.match(src, /@shared\/core\/categories\.js/)
-    assert.match(src, /\bcategoryDisplayName\(/, 'categoryDisplayName nao usado')
-    assert.match(src, /\buseArea\(\)/, 'useArea nao chamado para obter categoryDefs')
-    assert.doesNotMatch(src, /\{\s*(t|transaction|expense|fe)\.category\s*\}/, 'ainda renderiza o texto cru da categoria')
-  })
-}
-
-// ---------------------------------------------------------------- T3
-
-for (const file of [
-  'src/components/reports/IncomeBreakdown.tsx',
-  'src/pages/ReportsPage.tsx',
-  'src/components/reports/OverviewDashboard.tsx',
-]) {
-  test(`T3: ${path.basename(file)} agrega por categoryDisplayName`, () => {
-    const src = read(file)
-    assert.match(src, /@shared\/core\/categories\.js/)
-    assert.match(src, /\bcategoryDisplayName\(/)
-    assert.match(src, /categoryDefs/)
-    assert.doesNotMatch(src, /acc\[t\.category\]/, 'ainda agrega pelo texto cru da categoria')
-  })
-}
-
-test('T3: OverviewDashboard usa weeklySpend do nucleo e nao o calculo local com date-fns', () => {
-  const src = read('src/components/reports/OverviewDashboard.tsx')
-  assert.match(src, /import\s*\{[^}]*\bweeklySpend\b[^}]*\}\s*from\s*['"]@shared\/core\/ledger\.js['"]/)
-  assert.match(src, /weeklySpend\(\{/)
-  assert.doesNotMatch(src, /differenceInCalendarDays/)
-  assert.doesNotMatch(src, /\bendOfMonth\b/)
-  assert.doesNotMatch(src, /weeksRemaining\s*=\s*Math\.ceil/, 'formula local duplicada de semanas')
 })

@@ -37,6 +37,7 @@ Requisitos: MASC-01 a MASC-07. Fora desta fase: comentários gerados por IA e pu
 
 ### Tom e banco de frases
 - **D-10:** Três tons: suave acolhe, direto informa, sem filtro zoa. O padrão é **sem filtro, com palavrão e deboche pesado**, sem atacar quem o usuário é. Escolha do tom nas Configurações (MASC-05).
+- **D-10b:** **O tom é um só para o casal** (configuração global, não por pessoa; decisão do dono em 2026-11-19, que resolve a pergunta P-08 do UI-SPEC e a pergunta 5 da pesquisa). O padrão é **sem filtro**, e o dono espera que o Vintém "sempre seja sem filtro". O seletor de tom nas Configurações continua existindo (MASC-05 e o critério 4 do roadmap exigem), mas é uma única escolha do casal, não uma por pessoa; guardar na configuração do casal, não por perfil.
 - **D-11:** **Dialeto e vocabulário brasileiros de verdade**, coloquiais e com gíria, para **não parecer uma IA falando**. Nada de frase de manual, nada de "Olá! Notei que...".
 - **D-12:** **Banco grande de frases**, com muitas variantes por situação e tom, sem repetir as últimas usadas. A Claude escreve o banco e o dono revisa e corta o que não soar como ele, em um checkpoint de revisão antes de fechar a fase. A quantidade exata por situação fica a critério do planejamento (a opção de 5 a 8 foi superada pelo pedido de "várias e várias"), mas cada situação com variante nos três tons.
 - **D-13:** As frases usam encaixes de dados reais (`{loja}`, `{categoria}`, `{vezes}`, `{valor}`, `{pct}`, `{dias}`), preenchidos pelo detector de insights.

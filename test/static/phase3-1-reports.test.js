@@ -38,3 +38,23 @@ test('T3: OverviewDashboard usa weeklySpend do nucleo e nao o calculo local com 
   assert.doesNotMatch(src, /\bendOfMonth\b/)
   assert.doesNotMatch(src, /weeksRemaining\s*=\s*Math\.ceil/, 'formula local duplicada de semanas')
 })
+
+// Plano 03.1-18: dados de Relatorios por ciclo exato (UX-09), uma consulta por janela larga.
+test('18: useCycleSeries faz uma unica consulta por janela larga e respeita ciclo e dataVersion', () => {
+  const src = code('src/hooks/useCycleSeries.ts')
+  const calls = src.match(/getTransactionsInRange\(/g) ?? []
+  assert.equal(calls.length, 1, 'esperava exatamente uma chamada a getTransactionsInRange')
+  assert.match(src, /\bshiftCycle\(/)
+  assert.match(src, /\bdataVersion\b/)
+  assert.match(src, /\buseCycleWindow\(/)
+  assert.match(src, /\bcycleSeries\(/)
+  assert.doesNotMatch(src, /console\./)
+  assert.doesNotMatch(src, /date-fns/)
+})
+
+test('18: series.js usa isInCycle do nucleo e nao tem relogio nem date-fns', () => {
+  const src = code('shared/core/series.js')
+  assert.match(src, /\bisInCycle\b/)
+  assert.match(src, /export function cycleSeries\b/)
+  assert.doesNotMatch(src, /Date\.now|new Date\(\)|date-fns/)
+})

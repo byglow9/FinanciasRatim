@@ -3,6 +3,8 @@ import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCoupleData, type CoupleMode } from '@/hooks/useCoupleData'
 import { CoupleHeadline } from '@/components/couple/CoupleHeadline'
+import { DualBars } from '@/components/couple/DualBars'
+import { SplitBar } from '@/components/couple/SplitBar'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -78,7 +80,23 @@ export function CouplePage() {
           </p>
         </div>
       ) : (
-        <CoupleHeadline together={summary.together} mode={mode} />
+        <>
+          <CoupleHeadline together={summary.together} mode={mode} />
+          <SplitBar
+            firstName={settings.tabNames.area1}
+            secondName={settings.tabNames.area2}
+            firstOutCents={summary.first.outCents}
+            secondOutCents={summary.second.outCents}
+            mode={mode}
+          />
+          <DualBars
+            firstName={settings.tabNames.area1}
+            secondName={settings.tabNames.area2}
+            first={summary.first}
+            second={summary.second}
+            scaleMaxCents={summary.scaleMaxCents}
+          />
+        </>
       )}
     </div>
   )

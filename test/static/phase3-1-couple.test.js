@@ -7,7 +7,9 @@ import { code, assertIncludes, scaleProblems } from './helpers/phase3-1.js'
 const COUPLE = 'src/pages/CouplePage.tsx'
 const HOOK = 'src/hooks/useCoupleData.ts'
 const HEADLINE = 'src/components/couple/CoupleHeadline.tsx'
-const FILES = [COUPLE, HOOK, HEADLINE]
+const SPLIT = 'src/components/couple/SplitBar.tsx'
+const DUAL = 'src/components/couple/DualBars.tsx'
+const FILES = [COUPLE, HOOK, HEADLINE, SPLIT, DUAL]
 
 test('a pagina usa useCoupleData, coupleSummary e o alternador Ciclo e Mes', () => {
   assertIncludes(COUPLE, ['useCoupleData', 'coupleSummary', 'SegmentedControl', 'Casal', 'Ciclo', 'Mês'])
@@ -59,6 +61,16 @@ test('a pagina tem os estados de carregando, vazio e erro em portugues', () => {
 
 test('o Juntos mostra o saldo somado com ajuste automatico e os dois cartoes', () => {
   assertIncludes(HEADLINE, ['Juntos', 'saldo somado dos dois', 'Entradas juntos', 'Saídas juntos', 'displayTier', 'text-[56px]'])
+})
+
+test('Quem gastou mais usa splitShare e descreve a barra por extenso', () => {
+  assertIncludes(SPLIT, ['splitShare', 'role="img"', 'aria-label', 'Quem gastou mais', 'Saídas do ciclo', 'Saídas do mês', 'bg-ele', 'bg-ela'])
+  assertIncludes(COUPLE, ['SplitBar'])
+})
+
+test('as barras duplas usam os tons ele e ela na mesma escala do nucleo', () => {
+  assertIncludes(DUAL, ['tone="ele"', 'tone="ela"', 'scaleMaxCents', 'size="md"', 'Entradas', 'Saídas', 'Saldo', 'min-w-[96px]'])
+  assertIncludes(COUPLE, ['DualBars', 'scaleMaxCents'])
 })
 
 test('os arquivos do Casal ficam na escala tipografica e sem console', () => {

@@ -74,7 +74,7 @@ export function GoalsPage() {
 
   const handleSave = async (data: GoalFormData, id: string | null) => {
     if (id) await update(id, data)
-    else await add(data)
+    else await add({ ...data, currentAmount: 0 })
     show('Meta salva')
   }
 

@@ -12,8 +12,12 @@ import { zonedParts, zonedTimeToInstant } from '@shared/core/time.js'
 const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
 const NAME_MAX = 40
 
-/** Dados gravados: tudo da meta, menos o id e a data de criação. */
-export type GoalFormData = Omit<Goal, 'id' | 'createdAt'>
+/**
+ * Dados gravados pelo formulário: tudo da meta, menos id, data de criação e valor guardado. O
+ * `currentAmount` nunca sai daqui: só o aporte o altera, senão a edição apagaria aportes feitos
+ * em paralelo no outro celular (CR-01).
+ */
+export type GoalFormData = Omit<Goal, 'id' | 'createdAt' | 'currentAmount'>
 
 interface GoalFormProps {
   open: boolean
@@ -118,7 +122,6 @@ export function GoalForm({ open, onClose, person, goal, onSave }: GoalFormProps)
     const data: GoalFormData = {
       name: cleanName,
       targetAmount: fromCents(cents),
-      currentAmount: goal?.currentAmount ?? 0,
       ...(deadlineDate ? { deadline: deadlineDate } : {}),
       person: goal?.person ?? person,
     }

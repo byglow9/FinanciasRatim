@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCalendarData } from '@/hooks/useCalendarData'
+import { CalendarLegend } from '@/components/calendar/CalendarLegend'
 import { MonthGrid } from '@/components/calendar/MonthGrid'
 import { AgendaList } from '@/components/calendar/AgendaList'
 import { Button } from '@/components/ui/button'
@@ -106,6 +107,7 @@ export function CalendarPage() {
             ]}
           />
         </div>
+        <CalendarLegend />
       </div>
 
       {mode === 'financeiro' && !loading && !error ? (

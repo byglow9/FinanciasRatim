@@ -53,6 +53,7 @@ export function MonthGrid({ cycle, models, selectedKey, mode, onSelect }: MonthG
                 parts={cell.parts}
                 model={model}
                 selected={key === selectedKey}
+                focusable={key === selectedKey}
                 mode={mode}
                 onSelect={onSelect}
               />

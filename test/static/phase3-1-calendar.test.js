@@ -9,6 +9,8 @@ const CALENDAR_FILES = [
   'src/components/calendar/DayCell.tsx',
   'src/components/calendar/AgendaList.tsx',
   'src/components/calendar/AgendaDay.tsx',
+  'src/components/calendar/MiniPostIt.tsx',
+  'src/components/calendar/CalendarLegend.tsx',
 ]
 
 test('Calendario v3: a pagina segue o ciclo do topo pelo modelo, sem seletor de mes proprio nem consulta direta', () => {
@@ -22,6 +24,33 @@ test('Calendario v3: a pagina segue o ciclo do topo pelo modelo, sem seletor de 
 test('MonthGrid usa cycleGrid e DayCell e botao com aria-pressed e aria-current', () => {
   assertIncludes('src/components/calendar/MonthGrid.tsx', ['cycleGrid(cycle)'])
   assertIncludes('src/components/calendar/DayCell.tsx', ['<button', 'aria-pressed', 'aria-current'])
+})
+
+test('DayCell: memo, rotulo, roving tabindex e tokens de calor e pontinho', () => {
+  const file = 'src/components/calendar/DayCell.tsx'
+  assertIncludes(file, ['memo(', 'aria-label', 'tabIndex', 'bg-heat-', 'bg-dot-', 'dayAriaLabel(', 'MiniPostIt'])
+  const src = code(file)
+  assert.doesNotMatch(src, /text-muted-foreground/, 'texto muted sobre o calor reprova no contraste')
+})
+
+test('MiniPostIt: 12px, decorativo e com dobra; CalendarLegend em Popover com as tres secoes', () => {
+  assertIncludes('src/components/calendar/MiniPostIt.tsx', ['aria-hidden', 'size-3', 'pointer-events-none', 'bg-pit-'])
+  assertIncludes('src/components/calendar/CalendarLegend.tsx', [
+    'Popover',
+    'Cor do dia',
+    'Pontinhos',
+    'Post-it',
+    'gasto maior, comparado ao seu ciclo',
+    'entrou mais do que saiu',
+    'nota do dia',
+  ])
+  assertIncludes('src/pages/CalendarPage.tsx', ['CalendarLegend'])
+})
+
+test('Calendario: nenhum texto de 8px ou 10px', () => {
+  for (const f of CALENDAR_FILES) {
+    assert.doesNotMatch(code(f), /text-\[(8|10)px\]/, `${f}: texto abaixo de 12px`)
+  }
 })
 
 test('telas do Calendario: escala tipografica e alvos de toque limpos', () => {

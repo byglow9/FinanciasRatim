@@ -5,6 +5,8 @@ import { ptBR } from 'date-fns/locale'
 import { Landmark, Link2, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
+import { Sheet } from '@/components/ui/sheet'
 import { useArea } from '@/contexts/AreaContext'
 import { useNow } from '@/hooks/useNow'
 import { describeBankFreshness } from '@shared/core/bankStatus.js'
@@ -24,6 +26,9 @@ export function BankConnections() {
   const [connections, setConnections] = useState<BankConnection[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [pendingRemoval, setPendingRemoval] = useState<BankConnection | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeFailed, setRemoveFailed] = useState(false)
   const now = useNow(60_000)
 
   useEffect(() => subscribeBankConnections(setConnections), [])
@@ -100,11 +105,24 @@ export function BankConnections() {
       return `Sincronizado: ${imported} novos.`
     })
 
-  const remove = (c: BankConnection) => {
-    if (!window.confirm(`Desconectar ${c.connectorName ?? 'este banco'}? Os lancamentos ja importados ficam.`)) return
-    return run(`rm-${c.itemId}`, async () => {
-      await removeConnection(c.itemId)
-    })
+  const askRemove = (c: BankConnection) => {
+    setRemoveFailed(false)
+    setPendingRemoval(c)
+  }
+
+  const confirmRemove = async () => {
+    if (!pendingRemoval || removing) return
+    setRemoving(true)
+    setRemoveFailed(false)
+    try {
+      await removeConnection(pendingRemoval.itemId)
+    } catch {
+      setRemoving(false)
+      setRemoveFailed(true)
+      return
+    }
+    setRemoving(false)
+    setPendingRemoval(null)
   }
 
   return (
@@ -191,7 +209,7 @@ export function BankConnections() {
                     variant="ghost"
                     size="icon"
                     disabled={busy !== null}
-                    onClick={() => remove(c)}
+                    onClick={() => askRemove(c)}
                     aria-label="Desconectar"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -221,6 +239,46 @@ export function BankConnections() {
         )}
         {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </CardContent>
+      <Sheet
+        open={pendingRemoval !== null}
+        onClose={() => {
+          if (!removing) setPendingRemoval(null)
+        }}
+        title="Desconectar banco"
+      >
+        <div className="mt-4 space-y-3">
+          <p className="text-base font-bold leading-snug">
+            Desconectar {pendingRemoval?.connectorName ?? 'este banco'}? Os lançamentos já importados ficam.
+          </p>
+          {removeFailed ? (
+            <Notice tone="danger">Não foi possível desconectar. Confira a conexão e tente de novo.</Notice>
+          ) : null}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              size="lg"
+              className="flex-1 px-4"
+              onClick={() => void confirmRemove()}
+              disabled={removing}
+              aria-busy={removing}
+            >
+              Desconectar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1 px-4"
+              onClick={() => setPendingRemoval(null)}
+              disabled={removing}
+              data-autofocus=""
+            >
+              Manter
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </Card>
   )
 }

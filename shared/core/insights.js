@@ -225,6 +225,29 @@ export function insightId(person, cycleKey, type, subjectKey, window) {
 }
 
 /**
+ * Projecao do insight para a IA (Fase 7): so tipo, sujeito, metricas e severidade. Descarta
+ * `evidence` (ids de lancamento e dias), id, ciclo e dia. Esta fase nao faz chamada de IA; o
+ * contrato so deixa o caminho pronto. O rotulo so passa se nao tiver e-mail nem 6 digitos.
+ * @param {Insight} insight
+ * @returns {{
+ *   type: InsightType,
+ *   subject: { kind: Insight['subject']['kind'], key: string, label: string | null },
+ *   metrics: Insight['metrics'],
+ *   severity: Insight['severity'],
+ * }}
+ */
+export function toAiPayload(insight) {
+  const label = insight.subject.label
+  const safe = typeof label === 'string' && !/@|\d{6,}/.test(label.replace(/(?<=\d)[ .\-/](?=\d)/g, ''))
+  return {
+    type: insight.type,
+    subject: { kind: insight.subject.kind, key: insight.subject.key, label: safe ? label : null },
+    metrics: { ...insight.metrics },
+    severity: insight.severity,
+  }
+}
+
+/**
  * Severidade de 1 a 3 pela contagem: no minimo 1, uma a mais por compra acima do minimo.
  * @param {number} count
  * @param {number} min

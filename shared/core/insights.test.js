@@ -7,7 +7,9 @@ import {
   baselineAvgToDay,
   buildInsights,
   isSpendSpike,
+  insightId,
   merchantOf,
+  toAiPayload,
   INSIGHT_RULES,
   INSIGHT_VERSION,
 } from './insights.js'
@@ -408,4 +410,171 @@ test('buildBaseline usa so os BASELINE_CYCLES ciclos mais recentes e resolve cat
   assert.equal(b.byCategory.lazer.cycles, 3)
   assert.equal(b.byCategory.lazer.samples, 3)
   assert.equal(b.byCategory.lazer.ticketAvgCents, 300)
+})
+
+// ---- Task 3: id deterministico, projecao para a IA e varredura de privacidade ----
+
+/** Congela o objeto em profundidade (Date fica de fora: nao tem propriedades proprias). */
+function deepFreeze(value) {
+  if (value && typeof value === 'object' && !(value instanceof Date) && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const v of Object.values(value)) deepFreeze(v)
+  }
+  return value
+}
+
+test('insightId e deterministico, sem barra e so com partes estruturadas', () => {
+  assert.equal(insightId('ele', '2026-11', 'delivery-heavy', 'delivery', '2026-11-19'), 'ele__2026-11__delivery-heavy__delivery__2026-11-19')
+  assert.equal(
+    insightId('ela', '2026-11', 'spend-spike', 'a/b', '2026-11-19'),
+    insightId('ela', '2026-11', 'spend-spike', 'a/b', '2026-11-19')
+  )
+  assert.doesNotMatch(insightId('ele', '2026-11', 'x', 'a/b/c', 'd/e'), /\//)
+
+  const list = [
+    food('t1', '2026-11-16T15:00:00Z'),
+    food('t2', '2026-11-17T15:00:00Z'),
+    food('t3', '2026-11-18T15:00:00Z', 30, 'iFood Pizzaria do Fulano'),
+  ]
+  const a = run(list)
+  const b = run([...list].reverse())
+  assert.deepEqual(a.map((i) => i.id), b.map((i) => i.id))
+  assert.equal(a[0].id, 'ele__' + cycle.key + '__delivery-heavy__delivery__2026-11-19')
+  for (const i of a) {
+    assert.doesNotMatch(i.id, /\//)
+    assert.doesNotMatch(i.id, /Fulano|fulano|pizzaria/i)
+  }
+})
+
+test('id de loja desconhecida usa a chave por hash, sem texto da descricao', () => {
+  const list = ['2026-11-15T15:00:00Z', '2026-11-17T15:00:00Z', '2026-11-18T15:00:00Z'].map((d, i) =>
+    tx('saida', 12, d, { id: `p${i}`, description: 'Padaria Estrela Ltda' })
+  )
+  const [i] = run(list)
+  assert.match(i.id, /__merchant-repeat__h:[a-p]{8}__2026-11-19$/)
+  assert.doesNotMatch(i.id, /padaria|estrela/i)
+})
+
+test('toAiPayload remove evidence e devolve so tipo, sujeito, metricas e severidade', () => {
+  const list = [
+    food('t1', '2026-11-16T15:00:00Z'),
+    food('t2', '2026-11-17T15:00:00Z'),
+    food('t3', '2026-11-18T15:00:00Z'),
+  ]
+  const [i] = run(list)
+  const p = toAiPayload(i)
+  assert.deepEqual(Object.keys(p).sort(), ['metrics', 'severity', 'subject', 'type'])
+  assert.equal('evidence' in p, false)
+  assert.deepEqual(p.subject, { kind: 'merchant-group', key: 'delivery', label: 'delivery' })
+  assert.equal(p.type, 'delivery-heavy')
+  assert.equal(p.severity, 1)
+  assert.deepEqual(p.metrics, i.metrics)
+  assert.notEqual(p.metrics, i.metrics)
+  assert.doesNotMatch(JSON.stringify(p), /t1|t2|2026-11/)
+  // rotulo suspeito nao passa, mesmo que viesse de fora do detector.
+  const dirty = { ...i, subject: { kind: 'merchant', key: 'h:aaaaaaaa', label: 'maria@exemplo.com' } }
+  assert.equal(toAiPayload(dirty).subject.label, null)
+  assert.equal(toAiPayload({ ...i, subject: { ...i.subject, label: 'Loja 123.456.789-01' } }).subject.label, null)
+})
+
+test('varredura de privacidade: nenhum insight, id, payload ou baseline tem dado pessoal', () => {
+  const secrets = ['Maria Silva', 'Joao Souza', '123.456.789-01', '12345678901', 'maria@exemplo.com', 'Carlos Pereira']
+  const messy = (id, iso, description, extra = {}) =>
+    tx('saida', 80, iso, { id, description, categoryId: 'lazer', ...extra })
+  const dates = ['2026-11-14T15:00:00Z', '2026-11-15T15:00:00Z', '2026-11-16T15:00:00Z', '2026-11-17T15:00:00Z', '2026-11-18T15:00:00Z']
+  const descriptions = [
+    'Pix para Maria Silva',
+    'Pix de Joao Souza',
+    'Pagamento CPF 123.456.789-01',
+    'Fatura 12345678901',
+    'maria@exemplo.com',
+    'Transferencia de Carlos Pereira',
+  ]
+  const list = []
+  for (const d of descriptions) dates.slice(0, 4).forEach((iso, i) => list.push(messy(`id${list.length}${i}`, iso, d)))
+  list.push(messy('cat1', '2026-11-18T16:00:00Z', 'Lazer'), messy('cat2', '2026-11-18T17:00:00Z', 'Lazer'), messy('cat3', '2026-11-18T18:00:00Z', 'Lazer'))
+  const rows = [row('lazer', 90000, 100000)]
+  const baseline = buildBaseline({
+    pastCycles: [oct, sep, aug].map((c) => ({
+      cycle: c,
+      transactions: descriptions.map((d, i) =>
+        messy(`b${c.key}${i}`, new Date(c.start.getTime() + (i + 1) * 3600_000).toISOString(), d)
+      ),
+    })),
+    categoryDefs: DEFAULT_CATEGORY_DEFS,
+  })
+  const insights = run(list, { rows, baseline, rhythmLevel: 2 })
+  assert.ok(insights.length > 0)
+  const everything = [insights, insights.map(toAiPayload), baseline, insights.map((i) => i.id)]
+  for (const piece of everything) {
+    const text = strings(piece).join('\n')
+    for (const secret of secrets) assert.ok(!text.includes(secret), `vazou: ${secret}`)
+    assert.doesNotMatch(text, /Maria|Joao|Souza|Carlos|Pereira|Silva/)
+    assert.doesNotMatch(text, /\d{6,}/)
+    assert.doesNotMatch(text, /@/)
+    assert.doesNotMatch(text, /pix|transfer/i)
+  }
+  // nenhum rotulo de sujeito vem de uma descricao bloqueada.
+  for (const i of insights) {
+    if (i.subject.kind === 'merchant') assert.ok(i.subject.label !== null)
+  }
+})
+
+test('o resultado e o mesmo em UTC e Toquio quando os lancamentos cruzam a meia-noite de Sao Paulo', () => {
+  // 23:30 de SP (02:30Z do dia seguinte) e 00:10 de SP: dias diferentes no calendario do Brasil.
+  const list = [
+    food('n1', '2026-11-17T02:30:00Z'), // 16/11 23:30 em SP
+    food('n2', '2026-11-17T03:10:00Z'), // 17/11 00:10 em SP
+    food('n3', '2026-11-18T02:59:59Z'), // 17/11 23:59:59 em SP
+    food('n4', '2026-11-18T03:00:00Z'), // 18/11 00:00 em SP
+  ]
+  const r = run(list)
+  assert.equal(r.length, 1)
+  assert.deepEqual(r[0].evidence.dayKeys, ['2026-11-16', '2026-11-17', '2026-11-18'])
+  assert.equal(r[0].metrics.count, 4)
+  assert.equal(r[0].day, '2026-11-19')
+  // dia sem lancar usa o calendario de SP: 16/11 02:30Z e 15/11 23:30 em SP.
+  const quiet = run([tx('saida', 5, '2026-11-16T02:30:00Z', { id: 'q', description: 'Cafe' })])
+  assert.equal(quiet[0].metrics.days, 4)
+  // "agora" logo depois da meia-noite de SP muda o dia do insight.
+  const after = buildInsights({
+    now: new Date('2026-11-20T03:05:00Z'),
+    person: 'ele',
+    cycle,
+    transactions: [food('m1', '2026-11-19T15:00:00Z'), food('m2', '2026-11-19T16:00:00Z'), food('m3', '2026-11-19T17:00:00Z')],
+    categoryDefs: DEFAULT_CATEGORY_DEFS,
+  })
+  assert.equal(after[0].day, '2026-11-20')
+})
+
+test('buildInsights nao muta as entradas', () => {
+  const baseline = ticketBaseline()
+  const list = [
+    food('t1', '2026-11-16T15:00:00Z'),
+    food('t2', '2026-11-17T15:00:00Z'),
+    food('t3', '2026-11-18T15:00:00Z'),
+    lazer('g1', '2026-11-19T14:00:00Z', 400),
+  ]
+  const input = {
+    now: NOW,
+    person: 'ele',
+    cycle,
+    transactions: list,
+    categoryDefs: DEFAULT_CATEGORY_DEFS,
+    rows: [row('lazer', 40000, 100000)],
+    baseline,
+    lastLaunchAt: new Date('2026-11-19T14:00:00Z'),
+    rhythmLevel: 1,
+  }
+  const before = JSON.stringify(input)
+  deepFreeze(input)
+  const r = buildInsights(input)
+  assert.ok(r.length > 0)
+  assert.equal(JSON.stringify(input), before)
+  // o resultado e novo: mexer nele nao altera a entrada.
+  r[0].metrics.count = 999
+  assert.equal(JSON.stringify(input), before)
+  // buildBaseline tambem nao muta.
+  const past = deepFreeze([{ cycle: oct, transactions: [lazer('a', '2026-10-10T15:00:00Z', 100)] }])
+  assert.doesNotThrow(() => buildBaseline({ pastCycles: past, categoryDefs: DEFAULT_CATEGORY_DEFS }))
 })

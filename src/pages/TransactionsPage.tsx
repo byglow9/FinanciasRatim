@@ -23,7 +23,7 @@ import { zonedParts } from '@shared/core/time.js'
 
 export function TransactionsPage() {
   const { currentArea, categoryDefs } = useArea()
-  const { now, bumpData } = useCycle()
+  const { now, bumpData, dataVersion } = useCycle()
   const { open: openLaunch } = useLaunch()
   const { readOnly, guard } = useReadOnly()
   const { show } = useToast()
@@ -112,6 +112,7 @@ export function TransactionsPage() {
           key={`${person}:${cycle.key}`}
           totalsCents={totalsCents}
           loadAccumulated={loadAccumulated}
+          dataVersion={dataVersion}
         />
       ) : null}
 

@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Collapsible } from '@/components/ui/collapsible'
 import { KpiTrio, type KpiItem } from '@/components/ui/kpi-trio'
@@ -13,13 +13,14 @@ interface TotalsCents {
 
 interface TransactionTotalsProps {
   totalsCents: TotalsCents
-  /** Saldo acumulado ate o fim do ciclo, em centavos. So e chamado na primeira abertura de Detalhes. */
+  /** Saldo acumulado ate o fim do ciclo, em centavos. So e chamado com Detalhes aberto. */
   loadAccumulated: () => Promise<number>
+  /** Muda a cada lancamento, edicao ou exclusao: o acumulado guardado fica velho e e pedido de novo. */
+  dataVersion: number
 }
 
 type Accumulated =
   | { status: 'idle' }
-  | { status: 'loading' }
   | { status: 'ready'; cents: number }
   | { status: 'error' }
 
@@ -31,21 +32,34 @@ const exact = (cents: number) => formatMoney(cents, { decimals: 'always' })
  * O saldo total acumulado le todo o historico, entao so e pedido ao abrir Detalhes.
  * Troque a `key` do componente quando mudar a pessoa ou o ciclo.
  */
-export function TransactionTotals({ totalsCents, loadAccumulated }: TransactionTotalsProps) {
+export function TransactionTotals({ totalsCents, loadAccumulated, dataVersion }: TransactionTotalsProps) {
   const panelId = useId()
   const [open, setOpen] = useState(false)
-  const [accumulated, setAccumulated] = useState<Accumulated>({ status: 'idle' })
+  // Resultado guardado junto da versao dos dados: com outra versao ele e velho e conta como nao carregado (WR-04).
+  const [stored, setStored] = useState<{ version: number; result: Accumulated } | null>(null)
+  const accumulated: Accumulated = stored !== null && stored.version === dataVersion ? stored.result : { status: 'idle' }
+
+  useEffect(() => {
+    if (!open || accumulated.status !== 'idle') return
+    let cancelled = false
+    loadAccumulated().then(
+      (cents) => {
+        if (!cancelled) setStored({ version: dataVersion, result: { status: 'ready', cents } })
+      },
+      () => {
+        if (!cancelled) setStored({ version: dataVersion, result: { status: 'error' } })
+      }
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [open, accumulated.status, dataVersion, loadAccumulated])
 
   const toggle = () => {
     const next = !open
     setOpen(next)
-    if (next && (accumulated.status === 'idle' || accumulated.status === 'error')) {
-      setAccumulated({ status: 'loading' })
-      loadAccumulated().then(
-        (cents) => setAccumulated({ status: 'ready', cents }),
-        () => setAccumulated({ status: 'error' })
-      )
-    }
+    // Reabrir depois de uma falha tenta de novo.
+    if (next && accumulated.status === 'error') setStored(null)
   }
 
   const { entradas, saidas, saldo } = totalsCents

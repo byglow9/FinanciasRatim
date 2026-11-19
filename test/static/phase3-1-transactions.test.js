@@ -72,10 +72,10 @@ test('os totais recolhem e expandem e o saldo acumulado so e pedido ao abrir Det
   assert.match(src, /Detalhes/)
   assert.match(src, /Calculando\.\.\./, 'marcador de carga nunca e R$ 0')
   assert.match(src, /compactMoney\(/, 'P-04: reais inteiros truncados')
-  // A chamada fica dentro do gatilho de abertura, nao na montagem.
+  // A chamada so acontece com Detalhes aberto (efeito barrado por !open), nunca na montagem; depois de
+  // um lancamento o acumulado velho e pedido de novo (WR-04, guarda em phase3-1-review-fix).
   assert.equal((src.match(/loadAccumulated\(\)/g) ?? []).length, 1, 'uma unica chamada')
-  assert.match(src, /const toggle = \(\) => \{[\s\S]*next &&[\s\S]*loadAccumulated\(\)/)
-  assert.doesNotMatch(src, /useEffect/, 'sem efeito: nada carrega na montagem')
+  assert.match(src, /useEffect\(\(\) => \{\s*if \(!open \|\|[\s\S]*?return[\s\S]*?loadAccumulated\(\)/, 'a carga deve ser barrada enquanto Detalhes esta fechado')
   assert.doesNotMatch(src, /text-\[10px\]/)
 })
 

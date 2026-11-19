@@ -41,3 +41,11 @@ test('WR-03: aporte soma em centavos inteiros (addAmount) nos dois ramos do serv
   assert.equal((src.match(/addAmount\(/g) ?? []).length, 2, 'esperava addAmount no ramo MOCK e no Firestore')
   assert.doesNotMatch(src, /currentAmount\s*\+\s*amount|currentGoalAmount\s*\+\s*amount/, 'soma crua em reais')
 })
+
+test('WR-04: o saldo acumulado e pedido de novo quando os dados mudam (dataVersion)', () => {
+  const totals = code('src/components/transactions/TransactionTotals.tsx')
+  assert.match(totals, /dataVersion/, 'TransactionTotals nao recebe dataVersion')
+  assert.match(totals, /stored\.version === dataVersion/, 'o acumulado guardado nao e invalidado pela versao')
+  assert.match(totals, /useEffect/, 'sem nova consulta quando a versao muda')
+  assert.match(code('src/pages/TransactionsPage.tsx'), /dataVersion=\{dataVersion\}/, 'a pagina nao passa dataVersion')
+})

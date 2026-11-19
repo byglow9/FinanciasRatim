@@ -1,142 +1,116 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Check } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
-import { useCycleMonth } from '@/hooks/useCycleMonth'
-import { useFixedExpenses } from '@/hooks/useFixedExpenses'
-import { FixedExpenseForm } from '@/components/fixed-expenses/FixedExpenseForm'
-import { FixedExpenseList } from '@/components/fixed-expenses/FixedExpenseList'
+import { useCycle } from '@/contexts/CycleContext'
+import { useCycleBills } from '@/hooks/useCycleBills'
+import { useReadOnly } from '@/hooks/useReadOnly'
+import { BillGroupCard } from '@/components/fixed-expenses/BillGroupCard'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Receipt, CheckCircle, Clock } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
-import type { FixedExpense, PersonType } from '@/types'
+import { Notice } from '@/components/ui/notice'
+import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
+import type { PersonType } from '@/types'
+import { groupBillsByCategory } from '@shared/core/billGroups.js'
+import type { CategorizedBillItem } from '@shared/core/billGroups.js'
+import { categoryDisplayName } from '@shared/core/categories.js'
+import { formatMoney } from '@shared/core/format.js'
+
+const itemKey = (item: CategorizedBillItem) => `${item.billId}-${item.occurrence.year}-${item.occurrence.month}`
 
 export function FixedExpensesPage() {
-  const { currentArea } = useArea()
-  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
-  const selectedMonth = useCycleMonth()
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingExpense, setEditingExpense] = useState<FixedExpense | null>(null)
+  const { currentArea, categoryDefs } = useArea()
+  const { bumpData } = useCycle()
+  const { readOnly, guard } = useReadOnly()
 
-  const person = currentArea === 'porquinho' ? 'ele' : (currentArea as PersonType)
-  const {
-    expenses,
-    loading,
-    error,
-    add,
-    update,
-    remove,
-    togglePaid,
-    isExpensePaid,
-    totals,
-  } = useFixedExpenses(person, selectedMonth)
+  const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
+  const { items, expenses, loading, error, refetch, togglePaid, pendingKeys } = useCycleBills(person)
 
-  const handleSubmit = async (data: Omit<FixedExpense, 'id' | 'createdAt'>) => {
-    if (editingExpense) {
-      await update(editingExpense.id, data)
-    } else {
-      await add(data)
-    }
-    setEditingExpense(null)
+  // O Sheet de ações fica montado enquanto a animação de saída roda, então a linha escolhida
+  // continua guardada depois de fechar.
+  const [selected, setSelected] = useState<CategorizedBillItem | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // O núcleo do ciclo não guarda categoria: acrescenta a da conta de origem a cada ocorrência.
+  const categorized = useMemo<CategorizedBillItem[]>(() => {
+    const byId = new Map(expenses.map((e) => [e.id, e]))
+    return items.map((item) => {
+      const expense = byId.get(item.billId)
+      return { ...item, categoryId: expense?.categoryId, category: expense?.category }
+    })
+  }, [items, expenses])
+
+  // A ordem dos grupos e das linhas vem só do núcleo; nada aqui reordena por pago.
+  const groups = useMemo(() => groupBillsByCategory(categorized, categoryDefs, 'all'), [categorized, categoryDefs])
+
+  const select = (item: CategorizedBillItem) => {
+    setSelected(item)
+    setSheetOpen(true)
   }
 
-  const handleEdit = (expense: FixedExpense) => {
-    setEditingExpense(expense)
-    setFormOpen(true)
-  }
+  // Item vivo: depois de marcar, o Sheet que está saindo já mostra o estado novo.
+  const current = selected ? (categorized.find((i) => itemKey(i) === itemKey(selected)) ?? selected) : null
 
-  const handleOpenChange = (open: boolean) => {
-    setFormOpen(open)
-    if (!open) {
-      setEditingExpense(null)
-    }
+  const toggleFromSheet = async (item: CategorizedBillItem) => {
+    setSheetOpen(false)
+    if (await togglePaid(item)) bumpData()
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Contas Fixas</h1>
-          <p className="hidden text-muted-foreground sm:block">Gerencie suas contas mensais</p>
+    <div className="space-y-4">
+      <h1 className="font-display text-[28px] font-bold leading-tight">Contas fixas</h1>
+
+      {error ? (
+        <Notice
+          tone="danger"
+          title="Não foi possível carregar as contas fixas."
+          action={
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : loading ? (
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Carregando as contas fixas</span>
+          {[0, 1, 2].map((i) => (
+            <div key={i} aria-hidden="true" className="anim-pulse h-[120px] rounded-[22px] bg-card" />
+          ))}
         </div>
-        <Button size="sm" onClick={() => {
-          setEditingExpense(null)
-          setFormOpen(true)
-        }} className="shrink-0">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline sm:ml-1">Nova</span>
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Total Mensal</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold">
-              {formatCurrency(totals.total)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Pagas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-green-600 dark:text-green-400">
-              {formatCurrency(totals.paid)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-orange-500">
-              {formatCurrency(totals.pending)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {error && (
-        <Card className="border-destructive bg-destructive/10">
-          <CardContent className="p-4 text-destructive">
-            <p className="font-medium">Erro ao carregar contas fixas:</p>
-            <p className="text-sm">{error.message}</p>
-          </CardContent>
-        </Card>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <BillGroupCard
+              key={group.key}
+              group={group}
+              togglePaid={togglePaid}
+              pendingKeys={pendingKeys}
+              onSelect={select}
+            />
+          ))}
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Contas do Mes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FixedExpenseList
-            expenses={expenses}
-            onEdit={handleEdit}
-            onDelete={remove}
-            onTogglePaid={togglePaid}
-            isExpensePaid={isExpensePaid}
-            loading={loading}
-          />
-        </CardContent>
-      </Card>
-
-      <FixedExpenseForm
-        key={editingExpense?.id ?? 'new'}
-        open={formOpen}
-        onOpenChange={handleOpenChange}
-        onSubmit={handleSubmit}
-        currentPerson={person}
-        initialData={editingExpense ?? undefined}
+      <RowActionsSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={current?.name ?? ''}
+        subtitle={
+          current
+            ? `${categoryDisplayName(current, categoryDefs)} · dia ${current.occurrence.day}`
+            : undefined
+        }
+        value={current ? formatMoney(current.costCents, { decimals: 'always' }) : undefined}
+        readOnly={readOnly}
+        onBlocked={() => guard('editar')}
+        actions={[
+          {
+            id: 'toggle',
+            label: current?.paid ? 'Desmarcar paga' : 'Marcar como paga',
+            icon: Check,
+            onSelect: () => (current ? toggleFromSheet(current) : undefined),
+          },
+        ]}
       />
     </div>
   )

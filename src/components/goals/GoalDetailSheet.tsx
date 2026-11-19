@@ -7,6 +7,7 @@ import { useGoalContributions } from '@/hooks/useGoalContributions'
 import { formatDate } from '@/lib/utils'
 import type { Goal } from '@/types'
 import { formatMoney } from '@shared/core/format.js'
+import { goalProgress } from '@shared/core/goals.js'
 import { toCents } from '@shared/core/ledger.js'
 
 const RECENT_LIMIT = 8
@@ -35,8 +36,7 @@ export function GoalDetailSheet({ open, onClose, goal }: GoalDetailSheetProps) {
 
   const targetCents = goal ? toCents(goal.targetAmount) : 0
   const currentCents = goal ? toCents(goal.currentAmount) : 0
-  const percentage = targetCents > 0 ? Math.min(100, Math.round((currentCents / targetCents) * 100)) : 0
-  const isComplete = percentage >= 100
+  const { complete: isComplete, percent: percentage } = goalProgress(goal?.currentAmount ?? 0, goal?.targetAmount ?? 0)
   const recent = contributions.slice(0, RECENT_LIMIT)
 
   return (

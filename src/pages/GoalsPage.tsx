@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import type { Goal, PersonType } from '@/types'
 import { formatMoney } from '@shared/core/format.js'
+import { goalProgress } from '@shared/core/goals.js'
 import { toCents } from '@shared/core/ledger.js'
 
 export function GoalsPage() {
@@ -184,7 +185,7 @@ export function GoalsPage() {
         actions={
           current
             ? [
-                ...(current.currentAmount < current.targetAmount
+                ...(!goalProgress(current.currentAmount, current.targetAmount).complete
                   ? [
                       {
                         id: 'contribute',

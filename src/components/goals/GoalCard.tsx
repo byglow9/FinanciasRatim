@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress'
 import { cn, formatDate } from '@/lib/utils'
 import type { Goal } from '@/types'
 import { formatMoney } from '@shared/core/format.js'
+import { goalProgress } from '@shared/core/goals.js'
 import { toCents } from '@shared/core/ledger.js'
 
 interface GoalCardProps {
@@ -16,13 +17,6 @@ interface GoalCardProps {
   onBlocked?: () => void
 }
 
-/** Percentual do alvo, de 0 a 100, a partir dos valores em reais da meta. */
-function goalPercentage(goal: Goal): number {
-  return goal.targetAmount > 0
-    ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
-    : 0
-}
-
 const money = (reais: number) => formatMoney(toCents(reais), { decimals: 'always' })
 
 /**
@@ -31,9 +25,8 @@ const money = (reais: number) => formatMoney(toCents(reais), { decimals: 'always
  * mostra o texto "Concluída" além da cor. Todo texto entra como texto React, nome truncado com title.
  */
 export function GoalCard({ goal, onOpen, onContribute, readOnly, onBlocked }: GoalCardProps) {
-  const percentage = goalPercentage(goal)
-  const isComplete = percentage >= 100
-  const remainingCents = Math.max(0, toCents(goal.targetAmount) - toCents(goal.currentAmount))
+  // Conclusao decidida em centavos (WR-02): 99,5% nao esconde o Aportar nem o quanto falta.
+  const { complete: isComplete, percent: percentage, remainingCents } = goalProgress(goal.currentAmount, goal.targetAmount)
   const Icon = isComplete ? CircleCheck : Target
 
   return (

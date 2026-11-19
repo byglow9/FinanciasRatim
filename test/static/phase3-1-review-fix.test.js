@@ -25,3 +25,13 @@ test('WR-01: desmarcar conta invalida consultas em andamento e reconcilia com o 
   const unmark = body.slice(body.indexOf('if (existing.length > 0)'), body.indexOf('const optimistic'))
   assert.match(unmark, /unmarkAsPaid[\s\S]*await fetchData\(\)/, 'o ramo de desmarcar nao refaz a consulta')
 })
+
+test('WR-02: conclusao da meta decidida em centavos pelo nucleo, sem Math.round no cartao e no detalhe', () => {
+  for (const f of ['src/components/goals/GoalCard.tsx', 'src/components/goals/GoalDetailSheet.tsx', 'src/pages/GoalsPage.tsx']) {
+    const src = code(f)
+    assert.match(src, /goalProgress/, `${f} nao usa goalProgress`)
+    assert.doesNotMatch(src, /Math\.round/, `${f} ainda arredonda o percentual`)
+    assert.doesNotMatch(src, /percentage >= 100/, `${f} decide conclusao pelo percentual`)
+  }
+  assert.doesNotMatch(code('src/pages/GoalsPage.tsx'), /currentAmount < current\.targetAmount/)
+})

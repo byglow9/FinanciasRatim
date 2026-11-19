@@ -4,7 +4,7 @@ import { useArea } from '@/contexts/AreaContext'
 import { useGoals } from '@/hooks/useGoals'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { GoalCard } from '@/components/goals/GoalCard'
-import { GoalForm } from '@/components/goals/GoalForm'
+import { GoalForm, type GoalFormData } from '@/components/goals/GoalForm'
 import { ContributionForm } from '@/components/goals/ContributionForm'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
@@ -30,6 +30,7 @@ export function GoalsPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
+  const [contributionOpen, setContributionOpen] = useState(false)
   const [contributingId, setContributingId] = useState<string | null>(null)
 
   // Meta viva: depois de aportar ou editar, o Sheet que esta saindo ja mostra o valor novo.
@@ -51,6 +52,7 @@ export function GoalsPage() {
     if (guard('editar')) return
     setSheetOpen(false)
     setContributingId(goal.id)
+    setContributionOpen(true)
   }
 
   const openEdit = (goal: Goal) => {
@@ -60,19 +62,16 @@ export function GoalsPage() {
     setFormOpen(true)
   }
 
-  const handleSubmit = async (data: Omit<Goal, 'id' | 'createdAt'>) => {
-    if (editing) await update(editing.id, data)
+  const handleSave = async (data: GoalFormData, id: string | null) => {
+    if (id) await update(id, data)
     else await add(data)
-  }
-
-  const handleFormOpenChange = (open: boolean) => {
-    setFormOpen(open)
-    if (!open) setEditing(null)
+    show('Meta salva')
   }
 
   const handleContribute = async (amount: number, description?: string) => {
     if (!contributing) return
     await contribute(contributing.id, amount, description)
+    show('Aporte salvo')
   }
 
   const handleDelete = async (goal: Goal) => {
@@ -146,20 +145,18 @@ export function GoalsPage() {
 
       <GoalForm
         open={formOpen}
-        onOpenChange={handleFormOpenChange}
-        onSubmit={handleSubmit}
-        initialData={editing || undefined}
+        onClose={() => setFormOpen(false)}
         person={person}
+        goal={editing}
+        onSave={handleSave}
       />
 
-      {contributing ? (
-        <ContributionForm
-          open
-          onOpenChange={(open) => !open && setContributingId(null)}
-          goal={contributing}
-          onContribute={handleContribute}
-        />
-      ) : null}
+      <ContributionForm
+        open={contributionOpen}
+        onClose={() => setContributionOpen(false)}
+        goal={contributing}
+        onSave={handleContribute}
+      />
 
       <RowActionsSheet
         open={sheetOpen}

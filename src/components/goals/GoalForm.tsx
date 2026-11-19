@@ -1,144 +1,224 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Notice } from '@/components/ui/notice'
+import { Sheet } from '@/components/ui/sheet'
 import type { Goal, PersonType } from '@/types'
-import { format } from 'date-fns'
+import { parseBRL } from '@shared/core/format.js'
+import { fromCents } from '@shared/core/ledger.js'
+import { zonedParts, zonedTimeToInstant } from '@shared/core/time.js'
 
-const goalSchema = z.object({
-  name: z.string().min(1, 'Nome obrigatorio'),
-  targetAmount: z.number().positive('Valor alvo deve ser positivo'),
-  currentAmount: z.number().min(0, 'Valor atual nao pode ser negativo'),
-  deadline: z.string().optional(),
-})
+const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
+const NAME_MAX = 40
 
-type GoalFormData = z.infer<typeof goalSchema>
+/** Dados gravados: tudo da meta, menos o id e a data de criação. */
+export type GoalFormData = Omit<Goal, 'id' | 'createdAt'>
 
 interface GoalFormProps {
   open: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
-  initialData?: Goal
+  onClose: () => void
   person: PersonType
+  /** Meta em edição; nulo para criar uma nova. */
+  goal: Goal | null
+  /** Grava; se lançar, o Sheet continua aberto com aviso. */
+  onSave: (data: GoalFormData, id: string | null) => Promise<void>
 }
 
-export function GoalForm({ open, onOpenChange, onSubmit, initialData, person }: GoalFormProps) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<GoalFormData>({
-    resolver: zodResolver(goalSchema),
-    defaultValues: {
-      currentAmount: 0,
-    },
-  })
+type Field = 'name' | 'target' | 'deadline'
+type FieldErrors = Partial<Record<Field, string>>
 
-  useEffect(() => {
+/** Centavos como texto pt-BR para o campo: 18630 vira "186,30". */
+function amountText(reais: number): string {
+  const cents = Math.round(reais * 100)
+  return `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, '0')}`
+}
+
+/** Prazo da meta como yyyy-mm-dd (dia de calendário de São Paulo) para o campo de data. */
+function dateText(deadline: Date | undefined): string {
+  if (!deadline) return ''
+  const p = zonedParts(deadline)
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`
+}
+
+/** Lê yyyy-mm-dd e devolve o instante do meio-dia em São Paulo; nulo se o dia não existe. */
+function parseDeadline(text: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text)
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  const instant = zonedTimeToInstant(y, mo, d, 12)
+  const p = zonedParts(instant)
+  return p.year === y && p.month === mo && p.day === d ? instant : null
+}
+
+/**
+ * Sheet de criar e editar meta (D-03). Valor alvo por parseBRL em centavos inteiros, validação por
+ * campo com mensagem sob o campo, aria-invalid e foco no primeiro erro. Todo texto entra como texto React.
+ */
+export function GoalForm({ open, onClose, person, goal, onSave }: GoalFormProps) {
+  const [name, setName] = useState('')
+  const [target, setTarget] = useState('')
+  const [deadline, setDeadline] = useState('')
+  const [errors, setErrors] = useState<FieldErrors>({})
+  const [failed, setFailed] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const nameRef = useRef<HTMLInputElement>(null)
+  const targetRef = useRef<HTMLInputElement>(null)
+  const deadlineRef = useRef<HTMLInputElement>(null)
+
+  // Recomeça o formulário a cada abertura (ajuste durante a renderização, sem efeito).
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
     if (open) {
-      if (initialData) {
-        reset({
-          name: initialData.name,
-          targetAmount: initialData.targetAmount,
-          currentAmount: initialData.currentAmount,
-          deadline: initialData.deadline
-            ? format(initialData.deadline, 'yyyy-MM-dd')
-            : undefined,
-        })
-      } else {
-        reset({
-          currentAmount: 0,
-        })
-      }
+      setName(goal?.name ?? '')
+      setTarget(goal ? amountText(goal.targetAmount) : '')
+      setDeadline(dateText(goal?.deadline))
+      setErrors({})
+      setFailed(false)
+      setSaving(false)
     }
-  }, [open, initialData, reset])
+  }
 
-  const handleFormSubmit = async (data: GoalFormData) => {
-    await onSubmit({
-      name: data.name,
-      targetAmount: data.targetAmount,
-      currentAmount: data.currentAmount,
-      deadline: data.deadline ? new Date(data.deadline + 'T12:00:00') : undefined,
-      person: initialData?.person ?? person,
-    })
-    reset()
-    onOpenChange(false)
+  const clearFeedback = () => {
+    setErrors({})
+    setFailed(false)
+  }
+
+  const save = async () => {
+    if (saving) return
+    const errs: FieldErrors = {}
+    const cleanName = name.trim()
+    if (!cleanName) errs.name = 'Informe o nome da meta'
+    else if (cleanName.length > NAME_MAX) errs.name = `Use até ${NAME_MAX} letras no nome`
+
+    const cents = parseBRL(target)
+    if (cents === null || cents <= 0) errs.target = 'Informe um valor maior que zero'
+
+    let deadlineDate: Date | undefined
+    if (deadline.trim()) {
+      const parsed = parseDeadline(deadline.trim())
+      if (parsed) deadlineDate = parsed
+      else errs.deadline = 'Informe uma data válida'
+    }
+
+    const first: Field | null = errs.name ? 'name' : errs.target ? 'target' : errs.deadline ? 'deadline' : null
+    if (first || cents === null) {
+      setErrors(errs)
+      setFailed(false)
+      if (first === 'name') nameRef.current?.focus()
+      else if (first === 'target') targetRef.current?.focus()
+      else if (first === 'deadline') deadlineRef.current?.focus()
+      return
+    }
+
+    const data: GoalFormData = {
+      name: cleanName,
+      targetAmount: fromCents(cents),
+      currentAmount: goal?.currentAmount ?? 0,
+      ...(deadlineDate ? { deadline: deadlineDate } : {}),
+      person: goal?.person ?? person,
+    }
+
+    setSaving(true)
+    clearFeedback()
+    try {
+      await onSave(data, goal?.id ?? null)
+    } catch {
+      setSaving(false)
+      setFailed(true)
+      return
+    }
+    setSaving(false)
+    onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initialData ? 'Editar Meta' : 'Nova Meta'}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onClose={onClose} title={goal ? 'Editar meta' : 'Nova meta'}>
+      <form
+        noValidate
+        className="mt-4 space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void save()
+        }}
+      >
+        <div>
+          <Label htmlFor="goal-name">Nome</Label>
+          <Input
+            id="goal-name"
+            ref={nameRef}
+            data-autofocus=""
+            className="mt-1"
+            placeholder="Ex.: Viagem de férias"
+            maxLength={NAME_MAX + 10}
+            value={name}
+            aria-invalid={errors.name ? true : undefined}
+            onChange={(e) => {
+              setName(e.target.value)
+              clearFeedback()
+            }}
+          />
+          {errors.name ? (
+            <p role="alert" className="mt-1 text-xs font-normal text-danger-ink">
+              {errors.name}
+            </p>
+          ) : null}
+        </div>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              placeholder="Ex: Viagem de ferias"
-              {...register('name')}
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
+        <div>
+          <Label htmlFor="goal-target">Valor alvo</Label>
+          <Input
+            id="goal-target"
+            ref={targetRef}
+            className="mt-1"
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00"
+            value={target}
+            aria-invalid={errors.target ? true : undefined}
+            onChange={(e) => {
+              setTarget(e.target.value)
+              clearFeedback()
+            }}
+          />
+          {errors.target ? (
+            <p role="alert" className="mt-1 text-xs font-normal text-danger-ink">
+              {errors.target}
+            </p>
+          ) : null}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="targetAmount">Valor Alvo (R$)</Label>
-            <Input
-              id="targetAmount"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register('targetAmount', { valueAsNumber: true })}
-            />
-            {errors.targetAmount && (
-              <p className="text-sm text-destructive">{errors.targetAmount.message}</p>
-            )}
-          </div>
+        <div>
+          <Label htmlFor="goal-deadline">Prazo (opcional)</Label>
+          <Input
+            id="goal-deadline"
+            ref={deadlineRef}
+            className="mt-1"
+            type="date"
+            value={deadline}
+            aria-invalid={errors.deadline ? true : undefined}
+            onChange={(e) => {
+              setDeadline(e.target.value)
+              clearFeedback()
+            }}
+          />
+          {errors.deadline ? (
+            <p role="alert" className="mt-1 text-xs font-normal text-danger-ink">
+              {errors.deadline}
+            </p>
+          ) : null}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="currentAmount">Valor Atual (R$)</Label>
-            <Input
-              id="currentAmount"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register('currentAmount', { valueAsNumber: true })}
-            />
-            {errors.currentAmount && (
-              <p className="text-sm text-destructive">{errors.currentAmount.message}</p>
-            )}
-          </div>
+        {failed ? <Notice tone="danger">{SAVE_FAILED}</Notice> : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="deadline">Prazo (opcional)</Label>
-            <Input id="deadline" type="date" {...register('deadline')} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <Button type="submit" size="lg" className="w-full" disabled={saving} aria-busy={saving}>
+          Salvar meta
+        </Button>
+      </form>
+    </Sheet>
   )
 }

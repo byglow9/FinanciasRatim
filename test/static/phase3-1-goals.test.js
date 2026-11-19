@@ -8,7 +8,9 @@ const PAGE = 'src/pages/GoalsPage.tsx'
 const CARD = 'src/components/goals/GoalCard.tsx'
 
 // Arquivos de Metas ja migrados para o novo padrao; as tarefas seguintes acrescentam os demais.
-const GOAL_FILES = [PAGE, CARD]
+const FORM = 'src/components/goals/GoalForm.tsx'
+const CONTRIBUTION = 'src/components/goals/ContributionForm.tsx'
+const GOAL_FILES = [PAGE, CARD, FORM, CONTRIBUTION]
 
 test('a pagina usa RowActionsSheet, le o erro do hook e oferece Tentar de novo', () => {
   const src = code(PAGE)
@@ -52,6 +54,41 @@ test('a pagina usa o botao circular Nova meta e o perfil do parceiro fica aria-d
   assert.match(src, /aria-label="Nova meta"/)
   assert.match(src, /aria-disabled=\{readOnly/)
   assert.match(src, /useReadOnly/)
+})
+
+test('GoalForm e ContributionForm sao Sheets com parseBRL e validacao por campo, sem Dialog', () => {
+  for (const f of [FORM, CONTRIBUTION]) {
+    const src = code(f)
+    assert.match(src, /<Sheet\b/, `${f} sem Sheet`)
+    assert.match(src, /parseBRL/, `${f} sem parseBRL`)
+    assert.match(src, /aria-invalid/, `${f} sem aria-invalid`)
+    assert.match(src, /role="alert"/, `${f} sem mensagem sob o campo`)
+    assert.match(src, /\.focus\(\)/, `${f} sem foco no primeiro erro`)
+    assert.match(src, /aria-busy=\{saving\}/, `${f} sem aria-busy no salvar`)
+    assert.match(src, /<Notice tone="danger">/, `${f} sem aviso de falha ao salvar`)
+    assert.doesNotMatch(src, /Dialog/, `${f} ainda usa Dialog`)
+    assert.doesNotMatch(src, /react-hook-form|zodResolver/, `${f} ainda usa react-hook-form`)
+  }
+  assert.match(code(FORM), /zonedTimeToInstant\(/, 'prazo sem zonedTimeToInstant')
+  assert.match(code(FORM), /Salvar meta/)
+  assert.match(code(FORM), /Informe o nome da meta/)
+  assert.match(code(FORM), /Informe um valor maior que zero/)
+  assert.match(code(CONTRIBUTION), /Salvar aporte/)
+  assert.match(code(CONTRIBUTION), /Novo aporte/)
+})
+
+test('a pagina liga Editar e Aportar aos Sheets depois de guard(editar) e mostra os toasts', () => {
+  const src = code(PAGE)
+  assert.match(src, /<GoalForm/)
+  assert.match(src, /<ContributionForm/)
+  assert.match(src, /show\('Meta salva'\)/)
+  assert.match(src, /show\('Aporte salvo'\)/)
+  for (const fn of ['const openEdit', 'const openContribution', 'const openNew']) {
+    const start = src.indexOf(fn)
+    assert.ok(start >= 0, `sem ${fn}`)
+    const flow = src.slice(start, src.indexOf('\n  }\n', start))
+    assert.match(flow, /guard\('editar'\)/, `${fn} sem guard(editar)`)
+  }
 })
 
 test('escala tipografica e alvos de toque limpos nos arquivos de Metas', () => {

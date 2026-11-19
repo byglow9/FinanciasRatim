@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Notice } from '@/components/ui/notice'
 import { Sheet } from '@/components/ui/sheet'
+import { newContributionId } from '@/services/goalContributions.service'
 import type { Goal } from '@/types'
 import { formatMoney, parseBRL } from '@shared/core/format.js'
 import { fromCents, toCents } from '@shared/core/ledger.js'
@@ -16,8 +17,8 @@ interface ContributionFormProps {
   onClose: () => void
   /** Meta que recebe o aporte; nula enquanto o Sheet termina a animação de saída. */
   goal: Goal | null
-  /** Grava o aporte em reais; se lançar, o Sheet continua aberto com aviso. */
-  onSave: (amount: number, description?: string) => Promise<void>
+  /** Grava o aporte em reais com o id gerado nesta abertura; se lançar, o Sheet continua aberto com aviso. */
+  onSave: (amount: number, description: string | undefined, id: string) => Promise<void>
 }
 
 type Field = 'amount' | 'description'
@@ -33,6 +34,9 @@ export function ContributionForm({ open, onClose, goal, onSave }: ContributionFo
   const [errors, setErrors] = useState<FieldErrors>({})
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Id do aporte gerado no cliente UMA vez por abertura e reaproveitado em toda nova tentativa (WR-12):
+  // se a primeira gravação chegou ao servidor, repetir não duplica o aporte.
+  const [contributionId, setContributionId] = useState('')
 
   const amountRef = useRef<HTMLInputElement>(null)
   const descriptionRef = useRef<HTMLInputElement>(null)
@@ -42,6 +46,7 @@ export function ContributionForm({ open, onClose, goal, onSave }: ContributionFo
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) {
+      setContributionId(newContributionId())
       setAmount('')
       setDescription('')
       setErrors({})
@@ -76,7 +81,7 @@ export function ContributionForm({ open, onClose, goal, onSave }: ContributionFo
     setSaving(true)
     clearFeedback()
     try {
-      await onSave(fromCents(cents), cleanDescription || undefined)
+      await onSave(fromCents(cents), cleanDescription || undefined, contributionId)
     } catch {
       setSaving(false)
       setFailed(true)

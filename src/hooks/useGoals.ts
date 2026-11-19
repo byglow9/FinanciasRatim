@@ -46,11 +46,11 @@ export function useGoals(person?: PersonType) {
     await fetchGoals()
   }
 
-  const contribute = async (goalId: string, amount: number, description?: string) => {
+  const contribute = async (goalId: string, amount: number, description?: string, id?: string) => {
     const goal = goals.find((g) => g.id === goalId)
     if (!goal) throw new Error('Meta nao encontrada')
 
-    await addContribution(goalId, amount, goal.currentAmount, description)
+    await addContribution(goalId, amount, goal.currentAmount, description, id)
     await fetchGoals()
   }
 

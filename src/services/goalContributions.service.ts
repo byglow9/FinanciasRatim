@@ -5,6 +5,7 @@ import {
   where,
   orderBy,
   getDocs,
+  documentId,
   deleteDoc,
   Timestamp,
   runTransaction,
@@ -83,17 +84,35 @@ export async function getContributions(goalId: string): Promise<GoalContribution
   })) as GoalContribution[]
 }
 
+/** ID de aporte gerado no cliente, sem rede (WR-12): a mesma tentativa reaproveita o mesmo ID. */
+export function newContributionId(): string {
+  return MOCK ? mId() : doc(collection(db, COL)).id
+}
+
+// As regras negam a leitura direta de documento que ainda nao existe (ownsExisting), entao a pergunta
+// "esse aporte ja foi gravado?" vai por consulta com o escopo do dono, nao por getDoc.
+async function contributionExists(id: string): Promise<boolean> {
+  const snapshot = await getDocs(query(collection(db, COL), ...ownerScope(), where(documentId(), '==', id)))
+  return !snapshot.empty
+}
+
+/**
+ * Grava o aporte e soma na meta. Com `id` (gerado uma vez por abertura do formulario), repetir a chamada
+ * depois de uma falha de rede ambigua nao duplica o aporte nem soma duas vezes na meta (WR-12).
+ */
 export async function addContribution(
   goalId: string,
   amount: number,
   currentGoalAmount: number,
-  description?: string
+  description?: string,
+  id?: string
 ): Promise<string> {
   const now = new Date()
 
   if (MOCK) {
-    const id = mId()
     const contributions = mList<RawContribution>(COL)
+    if (id && contributions.some((c) => c.id === id)) return id
+    id = id ?? mId()
     contributions.push({
       id,
       goalId,
@@ -115,8 +134,12 @@ export async function addContribution(
     return id
   }
 
+  const contributionId = id ?? newContributionId()
+  // Tentativa anterior com o mesmo ID que chegou ao servidor: nada a fazer.
+  if (id && (await contributionExists(contributionId))) return contributionId
+
   // Usar transacao para garantir consistencia
-  const contributionId = await runTransaction(db, async (transaction) => {
+  await runTransaction(db, async (transaction) => {
     const goalRef = doc(db, GOALS_COL, goalId)
     const goalDoc = await transaction.get(goalRef)
 
@@ -131,7 +154,7 @@ export async function addContribution(
     transaction.update(goalRef, { currentAmount: newAmount })
 
     // Criar contribuicao
-    const contributionRef = doc(collection(db, COL))
+    const contributionRef = doc(db, COL, contributionId)
     transaction.set(contributionRef, {
       ownerId: ownerId(),
       goalId,
@@ -140,8 +163,6 @@ export async function addContribution(
       date: Timestamp.fromDate(now),
       createdAt: Timestamp.now(),
     })
-
-    return contributionRef.id
   })
 
   return contributionId

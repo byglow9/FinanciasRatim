@@ -90,3 +90,16 @@ test('WR-11: limpar o prazo da meta na edicao envia deadline null e o servico ap
   assert.match(svc, /updateData\.deadline = goal\.deadline \? Timestamp\.fromDate\(goal\.deadline\) : null/)
   assert.match(code('src/pages/GoalsPage.tsx'), /deadline: data\.deadline \?\? undefined/, 'criar nao pode gravar null como Date')
 })
+
+test('WR-12: aporte de meta com id gerado no cliente, idempotente na nova tentativa', () => {
+  const svc = code('src/services/goalContributions.service.ts')
+  assert.match(svc, /export function newContributionId/)
+  assert.match(svc, /doc\(db, COL, contributionId\)/, 'o aporte deve ser gravado no id do cliente')
+  assert.doesNotMatch(svc, /doc\(collection\(db, COL\)\)\s*\n\s*transaction\.set/, 'ainda gera o id dentro da transacao')
+  assert.match(svc, /contributionExists\(contributionId\)/, 'sem verificacao de aporte ja gravado')
+  assert.match(svc, /ownerScope\(\), where\(documentId\(\)/, 'a verificacao deve ir por consulta com escopo do dono (as regras negam getDoc de documento ausente)')
+  assert.match(svc, /contributions\.some\(\(c\) => c\.id === id\)\) return id/, 'ramo MOCK sem idempotencia')
+  const form = code('src/components/goals/ContributionForm.tsx')
+  assert.match(form, /setContributionId\(newContributionId\(\)\)/)
+  assert.match(form, /onSave\(fromCents\(cents\), cleanDescription \|\| undefined, contributionId\)/)
+})

@@ -79,9 +79,9 @@ export function GoalsPage() {
     show('Meta salva')
   }
 
-  const handleContribute = async (amount: number, description?: string) => {
+  const handleContribute = async (amount: number, description: string | undefined, id: string) => {
     if (!contributing) return
-    await contribute(contributing.id, amount, description)
+    await contribute(contributing.id, amount, description, id)
     show('Aporte salvo')
   }
 

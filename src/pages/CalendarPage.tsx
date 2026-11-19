@@ -1,363 +1,155 @@
-import { useState, useEffect, useRef } from 'react'
-import { isSameMonth, startOfMonth } from 'date-fns'
-import type { Transaction, FixedExpense, FixedExpensePayment, SavingsTransaction, GoalContribution, Goal, Note, PersonType, AgendaEvent, EventCategory } from '@/types'
-import { getTransactions } from '@/services/transactions.service'
-import { getFixedExpenses, getPaymentsForMonth } from '@/services/fixedExpenses.service'
-import { getSavingsTransactions } from '@/services/savings.service'
-import { getContributionsForMonth } from '@/services/goalContributions.service'
-import { getGoals } from '@/services/goals.service'
-import { getNotes, addNote, updateNote, deleteNote } from '@/services/notes.service'
-import { getEventsForMonth, addEvent, updateEvent, deleteEvent } from '@/services/events.service'
-import { getEventCategories } from '@/services/eventCategories.service'
-import { MonthCalendar } from '@/components/calendar/MonthCalendar'
-import { AgendaCalendar } from '@/components/calendar/AgendaCalendar'
-import { EventForm } from '@/components/calendar/EventForm'
-import { NoteForm } from '@/components/notes/NoteForm'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useCallback, useMemo, useState } from 'react'
+import { CalendarDays, ChevronLeft, ChevronRight, Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
-import { useCycleMonth } from '@/hooks/useCycleMonth'
+import { useCycle } from '@/contexts/CycleContext'
+import { useCalendarData } from '@/hooks/useCalendarData'
+import { MonthGrid } from '@/components/calendar/MonthGrid'
+import { AgendaList } from '@/components/calendar/AgendaList'
 import { Button } from '@/components/ui/button'
-import { Info, PiggyBank, Target, StickyNote, Wallet, CalendarDays, Plus } from 'lucide-react'
+import { Notice } from '@/components/ui/notice'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import type { PersonType } from '@/types'
+import type { CalendarMode } from '@shared/core/calendarModel.js'
+import { dayKeyOf } from '@shared/core/dayKey.js'
+import { compactMoney, cycleLabel } from '@shared/core/format.js'
 
-type CalendarMode = 'financeiro' | 'agenda'
 const MODE_STORAGE_KEY = 'calendarMode'
-const modeToIndex: Record<CalendarMode, number> = { financeiro: 0, agenda: 1 }
+
+const NAV_BUTTON =
+  'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40'
 
 export function CalendarPage() {
-  const { currentArea, settings } = useArea()
-  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
-  const selectedMonth = useCycleMonth()
-  const [mode, setMode] = useState<CalendarMode>(() => {
-    const stored = localStorage.getItem(MODE_STORAGE_KEY)
-    return stored === 'agenda' ? 'agenda' : 'financeiro'
-  })
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([])
-  const [payments, setPayments] = useState<FixedExpensePayment[]>([])
-  const [savings, setSavings] = useState<SavingsTransaction[]>([])
-  const [contributions, setContributions] = useState<GoalContribution[]>([])
-  const [goals, setGoals] = useState<Goal[]>([])
-  const [notes, setNotes] = useState<Note[]>([])
-  const [events, setEvents] = useState<AgendaEvent[]>([])
-  const [eventCategories, setEventCategories] = useState<EventCategory[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showLegend, setShowLegend] = useState(false)
-  const legendRef = useRef<HTMLDivElement>(null)
-  const [eventFormOpen, setEventFormOpen] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<AgendaEvent | undefined>(undefined)
-  const [eventFormDate, setEventFormDate] = useState(new Date())
-  const [noteFormOpen, setNoteFormOpen] = useState(false)
-  const [editingNote, setEditingNote] = useState<Note | undefined>(undefined)
-  const [noteFormDate, setNoteFormDate] = useState(new Date())
+  const { currentArea } = useArea()
+  const { now, shift, setOffset, isCurrent } = useCycle()
 
-  const handleModeChange = (value: string) => {
-    const next = value as CalendarMode
+  const [mode, setMode] = useState<CalendarMode>(() =>
+    localStorage.getItem(MODE_STORAGE_KEY) === 'agenda' ? 'agenda' : 'financeiro'
+  )
+  const [pickedKey, setPickedKey] = useState<string | null>(null)
+
+  // Porquinho não tem calendário próprio: usa o último perfil de pessoa.
+  const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
+  const { cycle, dayModels, summary, loading, error, refetch } = useCalendarData(person, mode)
+
+  const todayKey = dayKeyOf(now)
+  const days = useMemo(() => Array.from(dayModels.values()), [dayModels])
+
+  // Dia selecionado: o escolhido, se ainda está no ciclo; senão hoje, se está; senão o primeiro dia.
+  const selectedKey =
+    pickedKey !== null && dayModels.has(pickedKey)
+      ? pickedKey
+      : dayModels.has(todayKey)
+        ? todayKey
+        : (days[0]?.key ?? todayKey)
+
+  const handleMode = (next: CalendarMode) => {
     setMode(next)
     localStorage.setItem(MODE_STORAGE_KEY, next)
   }
 
-  // Data padrão pro botão "+" do cabeçalho: hoje, se estiver dentro do mês
-  // selecionado, senão o 1º dia do mês selecionado
-  const getDefaultFormDate = () => {
-    const today = new Date()
-    return isSameMonth(today, selectedMonth) ? today : startOfMonth(selectedMonth)
+  const handleSelect = useCallback((key: string) => setPickedKey(key), [])
+
+  const goToday = () => {
+    setOffset(0)
+    setPickedKey(todayKey)
   }
 
-  // Close legend when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (legendRef.current && !legendRef.current.contains(event.target as Node)) {
-        setShowLegend(false)
-      }
-    }
-    if (showLegend) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showLegend])
+  // Com salário no dia 1 o ciclo é um mês: "Novembro de 2026"; senão a faixa: "20 nov a 19 dez".
+  const label =
+    cycle.startParts.day === 1 ? `${cycleLabel(cycle)} de ${cycle.startParts.year}` : (cycleLabel(cycle) as string)
 
-  // When porquinho is selected, fall back to 'ele' for person-based data
-  const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-
-  useEffect(() => {
-    if (mode !== 'financeiro') return
-    setLoading(true)
-    const month = selectedMonth.getMonth() + 1
-    const year = selectedMonth.getFullYear()
-
-    Promise.all([
-      getTransactions(person, selectedMonth),
-      getFixedExpenses(person),
-      getPaymentsForMonth(month, year),
-      getSavingsTransactions(),
-      getContributionsForMonth(selectedMonth),
-      getGoals(person),
-      getNotes(person).catch(() => [] as Note[]),
-    ]).then(([tx, fe, pay, sav, contrib, g, n]) => {
-      setTransactions(tx)
-      setFixedExpenses(fe)
-      setPayments(pay)
-      setSavings(
-        sav
-          .filter((s) => isSameMonth(s.date, selectedMonth) && s.person === person)
-      )
-      // Filtrar contribuições: apenas de metas que existem E são do perfil atual
-      const goalIds = new Set(g.map(goal => goal.id))
-      setContributions(contrib.filter(c => goalIds.has(c.goalId)))
-      setGoals(g)
-      setNotes((n as Note[]).filter((note) => note.date && isSameMonth(note.date, selectedMonth)))
-    }).finally(() => setLoading(false))
-  }, [selectedMonth, person, mode])
-
-  // Refetch silencioso (sem mexer em `loading`) usado após criar/editar/excluir nota,
-  // pelo mesmo motivo do fetchAgendaData abaixo: não desmontar o grid e perder o dia selecionado
-  const refetchNotes = () => {
-    getNotes(person).then((n) => {
-      setNotes(n.filter((note) => note.date && isSameMonth(note.date, selectedMonth)))
-    })
-  }
-
-  // showLoading=false ao recarregar após criar/editar/excluir, para não desmontar o
-  // grid (e perder o dia selecionado) durante a atualização
-  const fetchAgendaData = (showLoading = true) => {
-    if (showLoading) setLoading(true)
-    Promise.all([
-      getEventsForMonth(selectedMonth),
-      getEventCategories(),
-    ]).then(([ev, cats]) => {
-      setEvents(ev.filter((e) => e.person === 'conjunto' || e.person === person))
-      setEventCategories(cats)
-    }).finally(() => { if (showLoading) setLoading(false) })
-  }
-
-  useEffect(() => {
-    if (mode !== 'agenda') return
-    fetchAgendaData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, mode, person])
-
-  const handleAddEvent = (date: Date) => {
-    setEditingEvent(undefined)
-    setEventFormDate(date)
-    setEventFormOpen(true)
-  }
-
-  const handleEditEvent = (event: AgendaEvent) => {
-    setEditingEvent(event)
-    setEventFormDate(event.date)
-    setEventFormOpen(true)
-  }
-
-  const handleDeleteEvent = async (event: AgendaEvent) => {
-    if (window.confirm(`Excluir o evento "${event.title}"?`)) {
-      await deleteEvent(event.id)
-      fetchAgendaData(false)
-    }
-  }
-
-  const handleEventFormSubmit = async (data: Omit<AgendaEvent, 'id' | 'createdAt'>) => {
-    if (editingEvent) {
-      await updateEvent(editingEvent.id, data)
-    } else {
-      await addEvent(data)
-    }
-    fetchAgendaData(false)
-  }
-
-  const handleEventFormOpenChange = (open: boolean) => {
-    setEventFormOpen(open)
-    if (!open) setEditingEvent(undefined)
-  }
-
-  const handleAddNote = (date: Date) => {
-    setEditingNote(undefined)
-    setNoteFormDate(date)
-    setNoteFormOpen(true)
-  }
-
-  const handleEditNote = (note: Note) => {
-    setEditingNote(note)
-    setNoteFormDate(note.date ?? new Date())
-    setNoteFormOpen(true)
-  }
-
-  const handleDeleteNote = async (note: Note) => {
-    if (window.confirm(`Excluir a anotação "${note.title}"?`)) {
-      await deleteNote(note.id)
-      refetchNotes()
-    }
-  }
-
-  const handleNoteFormSubmit = async (data: Omit<Note, 'id' | 'createdAt'>) => {
-    if (editingNote) {
-      await updateNote(editingNote.id, data)
-    } else {
-      await addNote(data)
-    }
-    refetchNotes()
-  }
-
-  const handleNoteFormOpenChange = (open: boolean) => {
-    setNoteFormOpen(open)
-    if (!open) setEditingNote(undefined)
-  }
-
-  const areaLabel = currentArea === 'porquinho'
-    ? settings.tabNames.area1
-    : currentArea === 'ele'
-      ? settings.tabNames.area1
-      : settings.tabNames.area2
+  const todayActive = isCurrent && selectedKey === todayKey
 
   return (
     <div className="space-y-4">
-      <div className="hidden sm:block">
-        <h1 className="text-2xl font-bold">
-          Calendario — {mode === 'financeiro' ? areaLabel : 'Agenda'}
-        </h1>
-        <p className="text-muted-foreground">
-          {mode === 'financeiro'
-            ? `Visao mensal dos eventos financeiros de ${areaLabel}`
-            : 'Visao mensal dos nossos compromissos e eventos'}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[28px] font-bold leading-tight">Calendário</h1>
+        <button
+          type="button"
+          aria-disabled={todayActive ? true : undefined}
+          onClick={() => {
+            if (!todayActive) goToday()
+          }}
+          className="inline-flex h-11 shrink-0 items-center rounded-full bg-card px-4 text-base font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Hoje
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" aria-label="Ciclo anterior" onClick={() => shift(-1)} className={NAV_BUTTON}>
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <p className="min-w-0 truncate text-center text-base font-bold" aria-live="polite">
+          {label}
         </p>
+        <button
+          type="button"
+          aria-label="Próximo ciclo"
+          disabled={isCurrent}
+          onClick={() => shift(1)}
+          className={NAV_BUTTON}
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
       </div>
 
-      {/* Alternador Financeiro/Agenda com a legenda e o + na mesma linha */}
       <div className="flex items-center gap-2">
-        <Tabs value={mode} onValueChange={handleModeChange} className="min-w-0 flex-1 sm:flex-none">
-          <TabsList className="grid w-full grid-cols-2 sm:w-[280px]" activeIndex={modeToIndex[mode]} itemCount={2}>
-            <TabsTrigger value="financeiro" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Financeiro
-            </TabsTrigger>
-            <TabsTrigger value="agenda" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Agenda
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
-          {/* Legend Button */}
-          <div className="relative" ref={legendRef}>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Legenda de cores"
-              aria-expanded={showLegend}
-              onClick={() => setShowLegend(!showLegend)}
-            >
-              <Info className="h-4 w-4" />
-            </Button>
-
-            {showLegend && (
-              <div className="absolute right-0 top-full mt-2 z-50 w-56 bg-popover border rounded-lg shadow-lg p-3 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Legenda</p>
-
-                {mode === 'financeiro' ? (
-                  <div className="grid grid-cols-1 gap-1.5 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-green-400 shrink-0" />
-                      <span>Entradas</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-red-400 shrink-0" />
-                      <span>Saidas</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-orange-400 shrink-0" />
-                      <span>Conta fixa pendente</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-green-300 shrink-0" />
-                      <span>Conta fixa paga</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <PiggyBank className="w-3 h-3 text-pink-500 shrink-0" />
-                      <span>Porquinho</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Target className="w-3 h-3 text-purple-500 shrink-0" />
-                      <span>Metas</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StickyNote className="w-3 h-3 text-blue-500 shrink-0" />
-                      <span>Anotações</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-1.5 text-sm">
-                    {eventCategories.length === 0 && (
-                      <p className="text-xs text-muted-foreground">Nenhuma categoria criada ainda.</p>
-                    )}
-                    {eventCategories.map((cat) => (
-                      <div key={cat.id} className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                        <span>{cat.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Atalho de criação rápida: nova nota no Financeiro, novo evento na Agenda */}
-          <Button
-            size="icon"
-            aria-label={mode === 'agenda' ? 'Novo evento' : 'Nova anotação'}
-            onClick={() => mode === 'agenda' ? handleAddEvent(getDefaultFormDate()) : handleAddNote(getDefaultFormDate())}
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
+        <div className="min-w-0 flex-1">
+          <SegmentedControl<CalendarMode>
+            ariaLabel="Modo do calendário"
+            value={mode}
+            onChange={handleMode}
+            options={[
+              { value: 'financeiro', label: 'Financeiro', icon: Wallet },
+              { value: 'agenda', label: 'Agenda', icon: CalendarDays },
+            ]}
+          />
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12 text-muted-foreground">
-          Carregando...
-        </div>
-      ) : mode === 'financeiro' ? (
-        <MonthCalendar
-          month={selectedMonth}
-          transactions={transactions}
-          fixedExpenses={fixedExpenses}
-          payments={payments}
-          savings={savings}
-          contributions={contributions}
-          goals={goals}
-          notes={notes}
-          onAddNote={handleAddNote}
-          onEditNote={handleEditNote}
-          onDeleteNote={handleDeleteNote}
-        />
-      ) : (
-        <AgendaCalendar
-          month={selectedMonth}
-          events={events}
-          categories={eventCategories}
-          onAddEvent={handleAddEvent}
-          onEditEvent={handleEditEvent}
-          onDeleteEvent={handleDeleteEvent}
-        />
-      )}
+      {mode === 'financeiro' && !loading && !error ? (
+        <p className="text-xs font-normal text-muted-foreground">
+          Saiu <span className="font-bold text-foreground">{compactMoney(summary.spentCents)}</span>
+          {' · '}A pagar <span className="font-bold text-foreground">{compactMoney(summary.toPayCents)}</span>
+        </p>
+      ) : null}
 
-      <EventForm
-        key={`event-${editingEvent?.id ?? 'new'}`}
-        open={eventFormOpen}
-        onOpenChange={handleEventFormOpenChange}
-        onSubmit={handleEventFormSubmit}
-        defaultDate={eventFormDate}
-        initialData={editingEvent}
-      />
+      <MonthGrid cycle={cycle} models={dayModels} selectedKey={selectedKey} mode={mode} onSelect={handleSelect} />
 
-      <NoteForm
-        key={`note-${editingNote?.id ?? 'new'}`}
-        open={noteFormOpen}
-        onOpenChange={handleNoteFormOpenChange}
-        onSubmit={handleNoteFormSubmit}
-        currentPerson={person}
-        defaultDate={noteFormDate}
-        initialData={editingNote}
+      <AgendaList
+        days={days}
+        selectedKey={selectedKey}
+        mode={mode}
+        state={
+          error ? (
+            <Notice
+              tone="danger"
+              title="Não foi possível carregar o calendário."
+              action={
+                <Button type="button" variant="outline" onClick={() => void refetch()}>
+                  Tentar de novo
+                </Button>
+              }
+            >
+              Confira a conexão e tente de novo.
+            </Notice>
+          ) : loading ? (
+            <div role="status" className="space-y-2">
+              <span className="sr-only">Carregando o calendário</span>
+              {[0, 1, 2].map((i) => (
+                <div key={i} aria-hidden="true" className="anim-pulse h-[72px] rounded-2xl bg-card" />
+              ))}
+            </div>
+          ) : days.every((d) => d.items.length === 0) ? (
+            <div className="space-y-2">
+              <p className="text-base font-bold">Nada agendado neste ciclo</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                Adicione um post-it ou um evento para ele aparecer aqui.
+              </p>
+            </div>
+          ) : undefined
+        }
       />
     </div>
   )

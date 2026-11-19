@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "03.1"
 current_phase_name: redesign-das-abas
 status: executing
-stopped_at: Completed 03.1-05-PLAN.md
-last_updated: "2026-11-19T13:49:59.809Z"
+stopped_at: Completed 03.1-06-PLAN.md
+last_updated: "2026-11-19T13:57:31.268Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 03.1 execution started
-state_head: 91f74409ae61063cd8f9da9de00f004aecf0396a
+state_head: 8cf21c171f286852e27f1e078a979f62bc7745f9
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 66
-  completed_plans: 46
+  completed_plans: 47
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 5 of 24
+Plan: 6 of 24
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 03.1 execution started
 
@@ -98,6 +98,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P02 | 20 min | 3 tasks | 10 files |
 | Phase 03.1 P04 | 8 min | 3 tasks | 3 files |
 | Phase 03.1 P05 | 25 min | 2 tasks | 2 files |
+| Phase 03.1 P06 | 1 sessão | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: 03.1-02: parseBRL devolve null acima de R$ 999.999,99 (teto do teclado) para nunca perder precisao
 - [Phase 03.1]: 03.1-04: auditoria de layout em Node puro (Chrome 152 + CDP + Vite MOCK) em scripts/ux-audit; violacao de rolagem horizontal ignora carrosseis auto/scroll e contêineres hidden/clip
 - [Phase 03.1]: 03.1-05: sketches 014 e 015 sem requisição de rede (ícones Lucide inline, sem fonte externa); Metas B usa o Sheet de ações como detalhe
+- [Phase 03.1]: [03.1-06] Sketches 016 e 017 offline (SVG inline, sem fontes externas), na escala 12/16/28/56; Login com mensagem fixa de falha
 
 ### Pending Todos
 
@@ -168,6 +170,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T13:49:59.728Z
-Stopped at: Completed 03.1-05-PLAN.md
+Last session: 2026-11-19T13:57:31.176Z
+Stopped at: Completed 03.1-06-PLAN.md
 Resume file: None

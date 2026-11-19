@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 4/24 plans executed
+**Plans:** 5/24 plans executed
 
 Plans:
 **Wave 1**
@@ -207,7 +207,7 @@ Plans:
 - [x] 03.1-02-PLAN.md — Núcleo A: chave de dia, grade do ciclo, ordem estável de categorias, valores e filtro de transações (UX-02, UX-03, UX-05, UX-09)
 - [x] 03.1-04-PLAN.md — Auditoria de layout em Chrome a 360x640 e 390x844, sem dependência nova (UX-08)
 - [x] 03.1-05-PLAN.md — Sketches 014 (Porquinho) e 015 (Metas) para o dono escolher (UX-07)
-- [ ] 03.1-06-PLAN.md — Sketches 016 (Relatórios) e 017 (Login) para o dono escolher (UX-07)
+- [x] 03.1-06-PLAN.md — Sketches 016 (Relatórios) e 017 (Login) para o dono escolher (UX-07)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

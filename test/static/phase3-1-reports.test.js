@@ -4,7 +4,14 @@
 // Rodar: node --test test/static/phase3-1-reports.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code } from './helpers/phase3-1.js'
+import { code, read, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+
+const REPORT_FILES = [
+  'src/pages/ReportsPage.tsx',
+  'src/components/reports/SummaryCards.tsx',
+  'src/components/reports/CategoryPieChart.tsx',
+  'src/components/reports/IncomeBreakdown.tsx',
+]
 
 test('T3: IncomeBreakdown.tsx agrega por categoryDisplayName', () => {
   const src = code('src/components/reports/IncomeBreakdown.tsx')
@@ -14,12 +21,59 @@ test('T3: IncomeBreakdown.tsx agrega por categoryDisplayName', () => {
   assert.doesNotMatch(src, /acc\[t\.category\]/, 'ainda agrega pelo texto cru da categoria')
 })
 
-test('T3: ReportsPage.tsx agrega por categoryDisplayName', () => {
+// Plano 03.1-21 (D-18, D-19): Relatorios na variante A do sketch 016, por ciclo e sem consulta por mes.
+test('21: a pagina segue o ciclo do topo e nao usa seletor de mes nem consulta por mes', () => {
   const src = code('src/pages/ReportsPage.tsx')
+  assert.match(src, /\buseCycleTransactions\(/)
+  assert.match(src, /\bshift\(/)
+  assert.match(src, /\bisCurrent\b/)
+  assert.match(src, /\bcycleLabel\(/)
+  assert.match(src, /\bbillsSummary\(/)
+  assert.doesNotMatch(src, /MonthSelector/)
+  assert.doesNotMatch(src, /subMonths\(/)
+  assert.doesNotMatch(src, /getTransactions\(/)
+  assert.doesNotMatch(src, /getAccumulatedBalance/)
+})
+
+test('21: as quatro abas cabem sem quebrar linha (grade de 4 colunas e rotulo sem quebra)', () => {
+  const src = code('src/pages/ReportsPage.tsx')
+  assert.match(src, /role="tablist"/)
+  assert.match(src, /grid-cols-4/)
+  assert.match(src, /whitespace-nowrap/)
+  assert.doesNotMatch(src, /flex-wrap/)
+  for (const label of ['Visão geral', 'Categorias', 'Evolução', 'Comparação']) {
+    assert.ok(src.includes(`'${label}'`), `aba "${label}" ausente ou sem acento`)
+  }
+})
+
+test('21: CategoryPieChart usa categoryDisplayName, useArea e tem nome acessivel com lista de valores', () => {
+  const src = code('src/components/reports/CategoryPieChart.tsx')
   assert.match(src, /@shared\/core\/categories\.js/)
   assert.match(src, /\bcategoryDisplayName\(/)
-  assert.match(src, /categoryDefs/)
-  assert.doesNotMatch(src, /acc\[t\.category\]/, 'ainda agrega pelo texto cru da categoria')
+  assert.match(src, /\buseArea\(\)/)
+  assert.match(src, /role="img"/)
+  assert.match(src, /aria-label=/)
+  assert.match(src, /<ul\b/)
+  assert.doesNotMatch(src, /<Tooltip/)
+})
+
+test('21: IncomeBreakdown agrega por categoryDisplayName e tem texto equivalente', () => {
+  const src = code('src/components/reports/IncomeBreakdown.tsx')
+  assert.match(src, /\bcategoryDisplayName\(/)
+  assert.match(src, /\buseArea\(\)/)
+  assert.match(src, /role="img"/)
+  assert.match(src, /<ul\b/)
+})
+
+test('21: o resumo e o grafico de categorias usam so a escala e a paleta Moeda', () => {
+  const files = REPORT_FILES
+  assert.deepEqual(scaleProblems(files), [])
+  assert.deepEqual(touchProblems(files), [])
+  for (const f of files) {
+    const src = read(f)
+    assert.doesNotMatch(src, /fontSize:\s*11\b/, `${f}: marca de 11px`)
+    assert.doesNotMatch(src, /text-\[11px\]/, `${f}: text-[11px]`)
+  }
 })
 
 test('T3: OverviewDashboard.tsx agrega por categoryDisplayName', () => {

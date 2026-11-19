@@ -132,17 +132,18 @@ test('MoneyKeypad: usa a logica pura em centavos e nao usa input numerico (T-03-
   for (const tag of ['INPUT', 'TEXTAREA', 'SELECT']) has(src, tag, 'money-keypad.tsx')
 })
 
-test('categoryIcons: um componente Lucide para cada nome de CATEGORY_ICONS, com Tag de reserva', () => {
+test('categoryIcons: um componente Lucide (importado um a um) para cada nome de CATEGORY_ICONS, com Tag de reserva', () => {
   const src = code('src/lib/categoryIcons.ts')
-  assert.equal(CATEGORY_ICONS.length, 16)
+  assert.ok(CATEGORY_ICONS.length >= 60)
+  assert.doesNotMatch(src, /import \* as|from ['"]lucide-react\/dynamic/, 'importacao individual (tree-shaking)')
   for (const name of CATEGORY_ICONS) {
     assert.match(src, new RegExp(`['"]${name}['"]\\s*:`), `categoryIcons.ts sem a chave ${name}`)
   }
   assert.match(src, /export function iconComponent/)
   assert.match(src, /export const CATEGORY_ICON_COMPONENTS/)
   assert.match(src, /return Tag/)
-  // Nenhuma chave alem das 16 permitidas.
-  const keys = [...src.matchAll(/^\s*['"]([a-z-]+)['"]\s*:/gm)].map((m) => m[1])
+  // Nenhuma chave alem das permitidas.
+  const keys = [...src.matchAll(/^\s*['"]([a-z0-9-]+)['"]\s*:/gm)].map((m) => m[1])
   assert.deepEqual([...keys].sort(), [...CATEGORY_ICONS].sort())
 })
 

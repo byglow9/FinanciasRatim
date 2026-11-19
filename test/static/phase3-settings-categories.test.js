@@ -6,6 +6,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { CATEGORY_ICONS } from '../../shared/core/categories.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8')
@@ -36,8 +37,6 @@ test('SettingsPage tem o titulo, a legenda, os seis cartoes na ordem e o botao S
     'Sair da conta',
     'useHashReveal',
     'BankConnections',
-    'id="bancos"',
-    'Bancos conectados',
     'MeuPluggy · Atualizado há',
     'text-danger-ink',
     'h-12',
@@ -160,8 +159,11 @@ test('o limite so se edita em Configuracoes > Categorias (D-21)', () => {
   assert.deepEqual(hits, [EDITOR], 'setCategoryLimit so pode ser chamado pelo CategoryEditorSheet')
 })
 
-test('IconPicker e um radiogroup de 6 colunas com os icones do nucleo e rotulos em portugues', () => {
+test('IconPicker e um radiogroup de 6 colunas, por grupo e com busca, com os icones do nucleo e rotulos em portugues', () => {
   assertIncludes(PICKER, [
+    'CATEGORY_ICON_GROUPS',
+    'SearchField',
+    'overflow-y-auto',
     'role="radiogroup"',
     'role="radio"',
     'aria-checked',
@@ -178,10 +180,7 @@ test('IconPicker e um radiogroup de 6 colunas com os icones do nucleo e rotulos 
   const src = code(PICKER)
   assert.match(src, /import\s*\{[^}]*\biconComponent\b[^}]*\}\s*from\s*'@\/lib\/categoryIcons'/, 'tabela de icones unica')
   // Todo icone permitido tem rotulo em portugues.
-  for (const icon of [
-    'shopping-cart', 'utensils', 'car', 'house', 'heart-pulse', 'party-popper', 'graduation-cap', 'shirt',
-    'wrench', 'banknote', 'trending-up', 'tag', 'credit-card', 'wallet', 'landmark', 'layout-grid',
-  ]) {
+  for (const icon of CATEGORY_ICONS) {
     assert.ok(src.includes(`'${icon}':`), `IconPicker sem rotulo para ${icon}`)
   }
 })
@@ -203,8 +202,28 @@ test('os arquivos nao usam tipografia fora da escala, HTML bruto, emoji, console
   }
 })
 
-test('BankConnections segue intacto no cartao (so o contêiner muda)', () => {
+test('BankConnections: cartao com linhas limpas, um botao Conectar banco, sincronizar em icone e acoes guardadas', () => {
   const src = code('src/components/settings/BankConnections.tsx')
-  assert.match(src, /export function BankConnections\(\)/)
+  assert.match(src, /export function BankConnections\(/)
   assert.match(src, /subscribeBankConnections/)
+  for (const text of ['id="bancos"', 'Bancos conectados', 'aria-label="Sincronizar agora"', 'Conectar banco', 'De quem é essa conexão?', 'settings.tabNames', 'EllipsisVertical']) {
+    assert.ok(src.includes(text), `BankConnections sem "${text}"`)
+  }
+  // so um botao de conectar (o do cartao): nada de "Conectar banco (Nome)" por pessoa
+  assert.doesNotMatch(src, /Conectar banco \(/)
+  // a pagina nao esconde mais o cabecalho do cartao por CSS
+  assert.doesNotMatch(code(PAGE), /first-child\]:hidden/)
+})
+
+test('BankConnections: toda acao passa por useReadOnly().guard(editar) e nunca mostra o texto cru do erro (CR-02, WR-10)', () => {
+  const src = code('src/components/settings/BankConnections.tsx')
+  assert.match(src, /useReadOnly\(\)/)
+  for (const fn of ['const sync', 'const openChooser', 'const choosePerson', 'const askReconnect', 'const askRemove', 'const confirmRemove']) {
+    const at = src.indexOf(fn)
+    assert.ok(at >= 0, `sem ${fn}`)
+    assert.match(src.slice(at, at + 160), /guard\('editar'\)/, `${fn} sem guard('editar')`)
+  }
+  assert.match(src, /aria-disabled=\{blocked/)
+  assert.doesNotMatch(src, /err(or)?\.message|\.message\b/, 'texto cru de erro na tela')
+  assert.match(src, /Não foi possível conectar\. Tente de novo\./)
 })

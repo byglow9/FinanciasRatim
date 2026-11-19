@@ -12,6 +12,7 @@ import {
   activeCategoryNames,
   categoryDisplayName,
   CATEGORY_ICONS,
+  CATEGORY_ICON_GROUPS,
   setCategoryMeta,
   categoryIcon,
   categoryKind,
@@ -125,12 +126,22 @@ test('mapCategory devolve { id, name }, ignora arquivadas e tem fallback', () =>
 
 // ---- icone e tipo (CENT-05)
 
-test('CATEGORY_ICONS tem os 16 nomes permitidos, sem repetir', () => {
-  assert.equal(CATEGORY_ICONS.length, 16)
-  assert.equal(new Set(CATEGORY_ICONS).size, 16)
-  for (const n of ['shopping-cart', 'utensils', 'tag', 'layout-grid', 'landmark']) {
-    assert.ok(CATEGORY_ICONS.includes(n), n)
+test('CATEGORY_ICONS reune os grupos, sem repetir, e mantem os 16 ids ja salvos', () => {
+  const grouped = CATEGORY_ICON_GROUPS.flatMap((g) => g.icons)
+  assert.deepEqual(CATEGORY_ICONS, grouped)
+  assert.equal(new Set(CATEGORY_ICONS).size, CATEGORY_ICONS.length)
+  assert.ok(CATEGORY_ICONS.length >= 60 && CATEGORY_ICONS.length <= 80, `tem ${CATEGORY_ICONS.length}`)
+  for (const n of [
+    'shopping-cart', 'utensils', 'car', 'house', 'heart-pulse', 'party-popper', 'graduation-cap', 'shirt',
+    'wrench', 'banknote', 'trending-up', 'tag', 'credit-card', 'wallet', 'landmark', 'layout-grid',
+  ]) {
+    assert.ok(CATEGORY_ICONS.includes(n), `id ja salvo removido: ${n}`)
   }
+  assert.deepEqual(
+    CATEGORY_ICON_GROUPS.map((g) => g.label),
+    ['Casa', 'Comida', 'Transporte', 'Saúde', 'Lazer', 'Compras', 'Educação', 'Trabalho', 'Família', 'Pets', 'Contas', 'Investimentos', 'Outros']
+  )
+  for (const g of CATEGORY_ICON_GROUPS) assert.ok(g.icons.length > 0, g.id)
 })
 
 test('padroes mantem ids e nomes e ganham icone permitido e tipo', () => {

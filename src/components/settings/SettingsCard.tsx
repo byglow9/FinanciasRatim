@@ -8,6 +8,8 @@ interface SettingsCardProps {
   icon: LucideIcon
   title: string
   subtitle?: string
+  /** Controle opcional à direita do cabeçalho (ex.: botão de ícone de 44px com aria-label). */
+  action?: ReactNode
   children?: ReactNode
 }
 
@@ -15,7 +17,7 @@ interface SettingsCardProps {
  * Contêiner de cada cartão de Configurações (UI-SPEC S5): ícone de 44px, título focável
  * (a página foca `[data-section-title]` ao entrar com hash) e legenda. Só texto React.
  */
-export function SettingsCard({ id, icon, title, subtitle, children }: SettingsCardProps) {
+export function SettingsCard({ id, icon, title, subtitle, action, children }: SettingsCardProps) {
   return (
     <section id={id} className="scroll-mt-4 rounded-card bg-card p-4">
       <header className="flex items-center gap-3">
@@ -32,6 +34,7 @@ export function SettingsCard({ id, icon, title, subtitle, children }: SettingsCa
             <p className="text-xs font-normal text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
+        {action}
       </header>
       {children ? <div className="mt-3 space-y-2">{children}</div> : null}
     </section>

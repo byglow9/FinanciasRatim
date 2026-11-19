@@ -1,6 +1,6 @@
 import { formatDistanceStrict } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CircleAlert, Landmark, LogOut } from 'lucide-react'
+import { CircleAlert, LogOut } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBankFreshness } from '@/hooks/useBankFreshness'
@@ -12,7 +12,6 @@ import { BankConnections } from '@/components/settings/BankConnections'
 import { CategoriesCard } from '@/components/settings/CategoriesCard'
 import { CycleIncomeCard } from '@/components/settings/CycleIncomeCard'
 import { NotificationsCard } from '@/components/settings/NotificationsCard'
-import { SettingsCard } from '@/components/settings/SettingsCard'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 
@@ -86,12 +85,7 @@ export function SettingsPage() {
       <CategoriesCard />
       <AccountsSkeletonCard />
 
-      <SettingsCard id="bancos" icon={Landmark} title="Bancos conectados" subtitle={bankSubtitle}>
-        {/* BankConnections segue com a lógica de sempre; só o contêiner muda (o título e o fundo vêm do cartão). */}
-        <div className="-mx-4 -mb-4 [&>div]:bg-transparent [&>div>div:first-child]:hidden">
-          <BankConnections />
-        </div>
-      </SettingsCard>
+      <BankConnections subtitle={bankSubtitle} />
 
       <AppearanceCard />
       <NotificationsCard />

@@ -65,7 +65,7 @@ test('Reconectar abre o widget em modo updateItem ligado ao connect-token do ite
   const ui = code('src/components/settings/BankConnections.tsx')
   assert.match(ui, /updateItem/)
   assert.match(ui, /createConnectToken\(\{ itemId/)
-  assert.match(ui, />\s*Reconectar\s*</)
+  assert.match(ui, /label="Reconectar"/)
   const svc = code('src/services/bank.service.ts')
   assert.match(svc, /JSON\.stringify\(\{ itemId/)
 })

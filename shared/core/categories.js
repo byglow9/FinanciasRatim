@@ -12,25 +12,81 @@ import { normalize } from './classify.js'
  * @typedef {{ id: string, name: string, color?: string, archived?: boolean, icon?: string, kind?: CategoryKind }} CategoryDef
  */
 
-/** Nomes de icone Lucide permitidos nas categorias (UI-SPEC). */
-export const CATEGORY_ICONS = [
-  'shopping-cart',
-  'utensils',
-  'car',
-  'house',
-  'heart-pulse',
-  'party-popper',
-  'graduation-cap',
-  'shirt',
-  'wrench',
-  'banknote',
-  'trending-up',
-  'tag',
-  'credit-card',
-  'wallet',
-  'landmark',
-  'layout-grid',
+/**
+ * Icones Lucide permitidos nas categorias, por grupo (a ordem e a de exibicao no seletor). Os ids
+ * ja salvos continuam validos: so entram ids novos, nunca se renomeia nem remove um.
+ * @type {{ id: string, label: string, icons: string[] }[]}
+ */
+export const CATEGORY_ICON_GROUPS = [
+  {
+    id: 'casa',
+    label: 'Casa',
+    icons: ['house', 'sofa', 'bed-double', 'bath', 'washing-machine', 'hammer', 'lightbulb'],
+  },
+  {
+    id: 'comida',
+    label: 'Comida',
+    icons: ['utensils', 'shopping-cart', 'coffee', 'pizza', 'apple', 'wine'],
+  },
+  {
+    id: 'transporte',
+    label: 'Transporte',
+    icons: ['car', 'bus', 'train-front', 'bike', 'fuel', 'plane', 'car-taxi-front'],
+  },
+  {
+    id: 'saude',
+    label: 'Saúde',
+    icons: ['heart-pulse', 'stethoscope', 'pill', 'hospital', 'dumbbell', 'smile'],
+  },
+  {
+    id: 'lazer',
+    label: 'Lazer',
+    icons: ['party-popper', 'clapperboard', 'music', 'gamepad-2', 'ticket', 'tv', 'tree-palm'],
+  },
+  {
+    id: 'compras',
+    label: 'Compras',
+    icons: ['shopping-bag', 'shirt', 'gem', 'gift', 'store', 'sparkles'],
+  },
+  {
+    id: 'educacao',
+    label: 'Educação',
+    icons: ['graduation-cap', 'book-open', 'backpack', 'languages'],
+  },
+  {
+    id: 'trabalho',
+    label: 'Trabalho',
+    icons: ['briefcase', 'laptop', 'wrench', 'smartphone', 'wifi'],
+  },
+  {
+    id: 'familia',
+    label: 'Família',
+    icons: ['users', 'baby', 'heart', 'cake'],
+  },
+  {
+    id: 'pets',
+    label: 'Pets',
+    icons: ['paw-print', 'dog', 'cat', 'fish'],
+  },
+  {
+    id: 'contas',
+    label: 'Contas',
+    icons: ['receipt', 'credit-card', 'wallet', 'zap', 'droplets', 'flame', 'shield-check'],
+  },
+  {
+    id: 'investimentos',
+    label: 'Investimentos',
+    icons: ['trending-up', 'banknote', 'piggy-bank', 'coins', 'chart-line', 'landmark', 'bitcoin', 'target', 'hand-coins', 'circle-dollar-sign'],
+  },
+  {
+    id: 'outros',
+    label: 'Outros',
+    icons: ['tag', 'layout-grid', 'star', 'map-pin'],
+  },
 ]
+
+/** Nomes de icone Lucide permitidos nas categorias (todos os grupos, sem repetir). */
+export const CATEGORY_ICONS = CATEGORY_ICON_GROUPS.flatMap((g) => g.icons)
 
 const KINDS = ['gasto', 'receita']
 

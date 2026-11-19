@@ -3,7 +3,7 @@
 // passa por arredondamento que nunca escreve NaN nem infinito. React nunca participa.
 import { VintemModel, type VintemPose } from '@shared/core/vintemModel.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
-import { EYE, FRONT, GROUND } from './geometry'
+import { ACCESSORY_ANCHORS, COIN, EYE, FRONT, GROUND, TEAR } from './geometry'
 import { getPointer, registerInstance, setInstanceFollow, simWorld, wake } from './world'
 
 // ---- escrita de atributos com cache ----
@@ -67,6 +67,17 @@ interface Parts {
   eyeR: EyeParts
   bL: Part
   bR: Part
+  tear: Part
+  accG: Part
+  coinsG: Part
+  sweat: Part
+  anger: Part
+  spark: Part
+  excl: Part
+  z: Part[]
+  coinR: Part
+  coinS: Part
+  coins: Array<{ g: Part; s: Part }>
 }
 
 function findParts(svg: SVGSVGElement, uid: string): Parts {
@@ -106,6 +117,17 @@ function findParts(svg: SVGSVGElement, uid: string): Parts {
     eyeR: eye('R'),
     bL: byId('bL'),
     bR: byId('bR'),
+    tear: byId('tear'),
+    accG: byId('accG'),
+    coinsG: byId('coinsG'),
+    sweat: byId('sweat'),
+    anger: byId('anger'),
+    spark: byId('spark'),
+    excl: byId('excl'),
+    z: [0, 1, 2].map((i) => byId(`z${i}`)),
+    coinR: byId('coinR'),
+    coinS: byId('coinS'),
+    coins: Array.from({ length: COIN.maxSmall }, (_, i) => ({ g: byId(`pc${i}`), s: byId(`pcs${i}`) })),
   }
 }
 
@@ -182,6 +204,80 @@ function drawBrow(p: Part, x: number, y: number, dir: number, bt: number, bc: nu
   put(p, 'd', `M-13,0Q0,${f2(-bc)} 13,0`)
 }
 
+/** Posiciona um acessorio: some abaixo de 0,02; a escala segue o pop da mola. */
+function place(p: Part, v: number, x: number, y: number, rot: number, opacity?: number) {
+  if (v < 0.02) {
+    put(p, 'display', 'none')
+    return
+  }
+  put(p, 'display', 'inline')
+  put(p, 'transform', `translate(${f2(x)},${f2(y)}) rotate(${f2(rot)}) scale(${f3(v)})`)
+  put(p, 'opacity', f2(opacity ?? clamp(v * 1.5, 0, 1)))
+}
+
+/** Acessorios (fora do corpo), lagrima, moeda do gasto e moedinhas da festa. */
+function drawAccessories(P: Parts, pose: VintemPose) {
+  const a = pose.acc
+  const ph = pose.accPhase
+  const wave = Math.sin(ph * Math.PI * 2)
+  const A = ACCESSORY_ANCHORS.front
+  put(P.accG, 'transform', `translate(${f2(pose.px)},${f2(pose.py)})`)
+  put(P.coinsG, 'transform', `translate(${f2(pose.px)},${f2(pose.py)})`)
+
+  // suor escorre; raiva pulsa; brilho gira e pulsa; exclamacao treme; Zzz sobem
+  place(P.sweat, a.sweat, A.sweat.x, A.sweat.y + ph * 26, 0, clamp(1 - ph * 0.8, 0, 1) * clamp(a.sweat * 1.5, 0, 1))
+  place(P.anger, a.anger * (1 + 0.08 * wave), A.anger.x, A.anger.y, 0)
+  place(P.spark, a.spark * (1 + 0.15 * wave), A.spark.x, A.spark.y, ph * 90)
+  place(P.excl, a.excl, A.excl.x, A.excl.y, wave * 3)
+  for (let i = 0; i < 3; i++) {
+    const zp = (ph + i / 3) % 1
+    place(
+      P.z[i],
+      a.z * (0.5 + zp * 0.7),
+      A.z.x + zp * 30 + Math.sin(ph * Math.PI * 2 + i) * 3,
+      A.z.y - zp * 46,
+      0,
+      clamp(Math.sin(zp * Math.PI) * 1.4, 0, 1) * clamp(a.z, 0, 1),
+    )
+  }
+
+  // lagrima: pinga do olho esquerdo em ciclo de 2,8 s (cresce, cai, some)
+  const tr = a.tear
+  if (tr < 0.02) put(P.tear, 'display', 'none')
+  else {
+    const grow = ph < 0.35 ? 0.35 + (ph / 0.35) * 0.65 : 1
+    const fall = ph < 0.35 ? 0 : Math.pow((ph - 0.35) / 0.65, 2) * TEAR.fall
+    const fade = ph < 0.75 ? 1 : clamp((1 - ph) / 0.25, 0, 1)
+    put(P.tear, 'display', 'inline')
+    put(
+      P.tear,
+      'transform',
+      `translate(${f2(GROUND.x - EYE.dx + TEAR.dx)},${f2(EYE.y + pose.e.eh + TEAR.dy + fall)}) scale(${f3(tr * grow * 0.8)})`,
+    )
+    put(P.tear, 'opacity', f2(fade * clamp(tr * 1.5, 0, 1)))
+  }
+
+  // moeda do gasto (recortada acima de y = 55) e moedinhas da festa
+  const c = pose.coin
+  if (c.on) {
+    put(P.coinR, 'display', 'inline')
+    put(P.coinR, 'transform', `translate(${f2(c.x)},${f2(c.y)})`)
+    put(P.coinS, 'transform', `scale(${f3(c.sx)},1)`)
+  } else put(P.coinR, 'display', 'none')
+  for (let i = 0; i < P.coins.length; i++) {
+    const q = pose.coins[i]
+    const slot = P.coins[i]
+    if (!q) {
+      put(slot.g, 'display', 'none')
+      continue
+    }
+    put(slot.g, 'display', 'inline')
+    put(slot.g, 'transform', `translate(${f2(q.x)},${f2(q.y)}) scale(${COIN.smallScale})`)
+    put(slot.s, 'transform', `scale(${f3(Math.max(0.14, Math.abs(Math.cos(q.a))))},1)`)
+    put(slot.g, 'opacity', f2(q.o))
+  }
+}
+
 export type PoseDrawer = (pose: VintemPose) => void
 
 /** Cria o desenhista de um SVG ja montado (ids derivados de `uid`). */
@@ -218,6 +314,8 @@ export function createDrawer(svg: SVGSVGElement, uid: string): PoseDrawer {
     drawEye(P.eyeR, pose, e.cvR, GROUND.x + ex, EYE.y, -1, 1)
     drawBrow(P.bL, GROUND.x - ex, EYE.y - h - EYE.browGap + e.by, 1, e.bt, e.bc)
     drawBrow(P.bR, GROUND.x + ex, EYE.y - h - EYE.browGap + e.by + e.ba, -1, e.bt, e.bc)
+
+    drawAccessories(P, pose)
   }
 }
 
@@ -241,6 +339,12 @@ export interface VintemViewHandle {
   setState: (state: string) => void
   setReduced: (reduced: boolean) => void
   setFollow: (follow: boolean) => void
+  /** Reacao curta ('spend', 'susto', 'bronca', 'festa' ou 'wake'); volta ao humor de fundo. */
+  react: (kind: string) => void
+  /** Toque: desperta o sonolento (devolve true); senao so pisca. */
+  touch: () => boolean
+  /** Giro de lado: frente (falso) ou perfil (verdadeiro). */
+  setTurn: (on: boolean) => void
   destroy: () => void
   /** O modelo vivo (leitura da pose por testes e capturas). */
   model: VintemModel
@@ -300,6 +404,19 @@ export function createVintemView(svg: SVGSVGElement, opts: VintemViewOptions): V
       if (next === follow) return
       follow = next
       setInstanceFollow(svg, next)
+    },
+    react(kind) {
+      model.react(kind)
+      wake()
+    },
+    touch() {
+      const woke = model.touch()
+      wake()
+      return woke
+    },
+    setTurn(on) {
+      model.setTurn(on)
+      wake()
     },
     destroy() {
       unregister()

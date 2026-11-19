@@ -43,3 +43,44 @@ export const EYE = {
   /** Distancia da sobrancelha acima do olho. */
   browGap: 10,
 } as const
+
+/** Formas dos acessorios (centradas na origem; o desenhista posiciona, gira e escala). */
+export const ACCESSORY_SHAPES = {
+  /** Gota de suor e de lagrima. */
+  drop: 'M0,-13C4,-6 8,-2 8,3A8,8 0 0 1 -8,3C-8,-2 -4,-6 0,-13Z',
+  /** Marca de raiva: quatro tracos em cruz. */
+  anger: 'M-9,-4Q-4,-4 -4,-9M4,-9Q4,-4 9,-4M9,4Q4,4 4,9M-4,9Q-4,4 -9,4',
+  /** Brilho de quatro pontas. */
+  spark: 'M0,-14Q1.5,-1.5 14,0Q1.5,1.5 0,14Q-1.5,1.5 -14,0Q-1.5,-1.5 0,-14Z',
+  /** Exclamacao: barra e ponto. */
+  exclBar: { x: -3.6, y: -14, width: 7.2, height: 18, rx: 3.6 },
+  exclDot: { cx: 0, cy: 11, r: 4 },
+  /** Letra Z do sonolento. */
+  z: 'M-6,-6H6L-6,6H6',
+} as const
+
+/** Pontos de ancoragem dos acessorios, em unidades do viewBox (fora do corpo). */
+export const ACCESSORY_ANCHORS = {
+  front: {
+    sweat: { x: 206, y: 70 },
+    anger: { x: 204, y: 44 },
+    spark: { x: 204, y: 52 },
+    excl: { x: 206, y: 48 },
+    z: { x: 176, y: 62 },
+  },
+} as const
+
+/** Lagrima da frente: nasce do olho esquerdo, 4 unidades para dentro, e pinga 40 unidades. */
+export const TEAR = { dx: -4, dy: 4, fall: 40 } as const
+
+/** Moeda do lancar gasto: raio 20, anel e marca central; recortada acima de y = 55 (some na fenda). */
+export const COIN = {
+  r: 20,
+  ringR: 12.5,
+  mark: { x: -2.2, y: -7, width: 4.4, height: 14, rx: 2.2 },
+  clipY: 55,
+  clipTop: -400,
+  /** Moedinhas da festa: escala e limite. */
+  smallScale: 0.55,
+  maxSmall: 8,
+} as const

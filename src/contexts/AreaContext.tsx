@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
-import type { AreaType, CategoryDef, PersonConfig, PersonType, Settings } from '@/types'
+import type { AreaType, CategoryDef, PersonConfig, PersonType, Settings, VintemTone } from '@/types'
 import { DEFAULT_SETTINGS } from '@/types'
 import {
   getSettings,
@@ -36,6 +36,8 @@ interface AreaContextType {
   updateNotifications: (
     partial: Partial<Pick<Settings, 'notificationsEnabled' | 'daysBeforeDueDate'>>
   ) => Promise<void>
+  // Tom do Vintem: campo unico do casal (nao por pessoa). Lanca antes de escrever se as configuracoes nao estao prontas.
+  updateVintemTone: (tone: VintemTone) => Promise<void>
   // Sem uso nesta fase: o tema escuro fica desligado ate a Fase 5 (PR-18).
   updateTheme: (theme: Settings['theme']) => Promise<void>
   // `loading` e o mesmo que settingsStatus === 'loading' (consumidores antigos).
@@ -193,6 +195,17 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateVintemTone = async (tone: VintemTone) => {
+    assertReady()
+    try {
+      await updateSettings({ vintemTone: tone })
+      setSettings(prev => ({ ...prev, vintemTone: tone }))
+    } catch (error) {
+      console.error('Error updating vintem tone')
+      throw error
+    }
+  }
+
   const updateTheme = async (theme: Settings['theme']) => {
     assertReady()
     try {
@@ -218,6 +231,7 @@ export function AreaProvider({ children }: { children: ReactNode }) {
         personConfigFor,
         updatePersonConfig,
         updateNotifications,
+        updateVintemTone,
         updateTheme,
         loading,
         settingsStatus,

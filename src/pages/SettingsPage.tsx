@@ -12,12 +12,13 @@ import { BankConnections } from '@/components/settings/BankConnections'
 import { CategoriesCard } from '@/components/settings/CategoriesCard'
 import { CycleIncomeCard } from '@/components/settings/CycleIncomeCard'
 import { NotificationsCard } from '@/components/settings/NotificationsCard'
+import { VintemToneCard } from '@/components/settings/VintemToneCard'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 
 /**
- * Configurações em seis cartões (UI-SPEC S5, D-15, CENT-05), com âncoras #ciclo, #categorias,
- * #contas, #bancos, #aparencia e #notificacoes. Ao entrar com hash a página rola ao cartão e
+ * Configurações em cartões (UI-SPEC S5 e S6, D-15, CENT-05), com âncoras #ciclo, #categorias,
+ * #contas, #bancos, #aparencia, #vintem (tom do Vintém, entre Aparência e Notificações) e #notificacoes. Ao entrar com hash a página rola ao cartão e
  * foca o título. O limite por categoria só se edita aqui, em Categorias (D-21).
  */
 export function SettingsPage() {
@@ -88,6 +89,7 @@ export function SettingsPage() {
       <BankConnections subtitle={bankSubtitle} />
 
       <AppearanceCard />
+      <VintemToneCard />
       <NotificationsCard />
 
       <button

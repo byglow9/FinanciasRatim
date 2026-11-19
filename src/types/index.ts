@@ -50,6 +50,19 @@ export interface SavingsTransaction {
   createdAt: Date
 }
 
+// Tom das falas do Vintem: um so para o casal, guardado no documento de configuracoes.
+export type VintemTone = 'suave' | 'direto' | 'sem-filtro'
+
+export const VINTEM_TONES: readonly VintemTone[] = ['suave', 'direto', 'sem-filtro']
+
+export const DEFAULT_VINTEM_TONE: VintemTone = 'sem-filtro'
+
+// Valor desconhecido ou ausente (documento antigo ou adulterado) cai no padrao; nunca quebra.
+export function vintemToneOf(settings: { vintemTone?: unknown } | null | undefined): VintemTone {
+  const tone = settings?.vintemTone
+  return VINTEM_TONES.find((t) => t === tone) ?? DEFAULT_VINTEM_TONE
+}
+
 export interface Settings {
   id: string
   tabNames: {
@@ -65,6 +78,8 @@ export interface Settings {
   // Configuracao por pessoa (PR-10). Parcial: documentos antigos nao tem o no;
   // quem le normaliza com normalizePersonConfig do nucleo.
   personConfig?: Partial<Record<PersonType, Partial<PersonConfig>>>
+  // Tom do Vintem (MASC-05). Ausente em documento antigo: vale DEFAULT_VINTEM_TONE.
+  vintemTone?: VintemTone
 }
 
 // Limite de uma categoria a partir de um ciclo (from no formato YYYY-MM); cents null = sem limite.

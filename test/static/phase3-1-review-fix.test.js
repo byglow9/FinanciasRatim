@@ -75,3 +75,10 @@ test('WR-07: Relatorios nunca mostra R$ 0 falso do Porquinho (carregando ou falh
   assert.match(dash, /Saldo indisponível agora/)
   assert.match(dash, /Carregando o saldo/)
 })
+
+test('WR-09: o responsavel do Porquinho abre na pessoa logada, nao em "ele" fixo', () => {
+  const src = code('src/components/savings/SavingsForm.tsx')
+  assert.match(src, /user\?\.person \?\? lastPerson/)
+  assert.doesNotMatch(src, /useState<PersonType>\('ele'\)|setPerson\('ele'\)/)
+  assert.match(src, /setPerson\(defaultPerson\)/)
+})

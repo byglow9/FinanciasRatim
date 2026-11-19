@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -82,12 +83,15 @@ function validate(draft: Draft): Validation {
  * aria-invalid e foco no primeiro erro. Todo texto entra como texto React.
  */
 export function SavingsForm({ open, onClose, onSave }: SavingsFormProps) {
-  const { settings } = useArea()
+  const { settings, lastPerson } = useArea()
+  const { user } = useAuth()
+  // Responsável padrão: quem está logada, nunca um "Ele" fixo (WR-09).
+  const defaultPerson: PersonType = user?.person ?? lastPerson
 
   const [type, setType] = useState<SavingsType>('deposito')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
-  const [person, setPerson] = useState<PersonType>('ele')
+  const [person, setPerson] = useState<PersonType>(defaultPerson)
   const [date, setDate] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const [failed, setFailed] = useState(false)
@@ -105,7 +109,7 @@ export function SavingsForm({ open, onClose, onSave }: SavingsFormProps) {
       setType('deposito')
       setAmount('')
       setDescription('')
-      setPerson('ele')
+      setPerson(defaultPerson)
       setDate(dayKeyOf(new Date()))
       setErrors({})
       setFailed(false)

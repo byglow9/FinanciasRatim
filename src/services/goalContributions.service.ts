@@ -13,7 +13,6 @@ import { db } from '@/lib/firebase'
 import type { GoalContribution } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
-import { startOfMonth, endOfMonth } from 'date-fns'
 
 type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
   date: string
@@ -23,42 +22,8 @@ type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
 const COL = 'goalContributions'
 const GOALS_COL = 'goals'
 
-export async function getContributionsForMonth(month: Date): Promise<GoalContribution[]> {
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
-
-  if (MOCK) {
-    return mList<RawContribution>(COL)
-      .filter((c) => {
-        const d = new Date(c.date)
-        return d >= start && d <= end
-      })
-      .map((c) => ({
-        ...c,
-        date: new Date(c.date),
-        createdAt: new Date(c.createdAt),
-      }))
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-  }
-
-  const q = query(
-    collection(db, COL),
-    ...ownerScope(),
-    where('date', '>=', Timestamp.fromDate(start)),
-    where('date', '<=', Timestamp.fromDate(end)),
-    orderBy('date', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    date: doc.data().date.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as GoalContribution[]
-}
-
 // Aportes da janela exata do ciclo. start e end vem do nucleo (cycle.start e cycle.end): nada de
-// date-fns aqui. Mesmo formato do indice de getContributionsForMonth.
+// date-fns aqui. Consulta so por ownerId e data.
 export async function getContributionsInRange(start: Date, end: Date): Promise<GoalContribution[]> {
   if (MOCK) {
     return mList<RawContribution>(COL)

@@ -2,7 +2,7 @@
 // servicos de intervalo e contas por ocorrencia. Texto estatico, sem rodar o app.
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { assertIncludes, code } from './helpers/phase3-1.js'
+import { assertIncludes, code, exists, listSrc } from './helpers/phase3-1.js'
 
 const NO_NOISE = (file) => {
   const src = code(file)
@@ -95,4 +95,63 @@ test('useCycleBills grava e apaga o pagamento pela ocorrencia e trava o duplo to
   const effect = src.match(/useEffect\(\(\) => \{[\s\S]*?\}, \[([^\]]*)\]\)/)
   assert.ok(effect, 'sem useEffect de carga')
   assert.doesNotMatch(effect[1], /\bcycle\b/, 'o efeito nao pode depender do objeto cycle')
+})
+
+// Guarda final do recorte exato do ciclo (plano 23, UX-09, D-19): o mes-calendario em que o ciclo
+// comeca saiu do codigo e nao pode voltar como aproximacao.
+test('os arquivos legados do mes-calendario nao existem', () => {
+  for (const file of [
+    'src/hooks/useTransactions.ts',
+    'src/hooks/useFixedExpenses.ts',
+    'src/hooks/useCycleMonth.ts',
+    'src/lib/cycleMonth.ts',
+    'src/components/shared/MonthSelector.tsx',
+  ]) {
+    assert.ok(!exists(file), `${file} voltou`)
+  }
+})
+
+test('nenhum arquivo de src referencia o hook, a funcao ou o seletor de mes-calendario', () => {
+  const banned = [
+    /\buseCycleMonth\b/,
+    /\bcycleMonthDate\b/,
+    /\bMonthSelector\b/,
+    /\buseTransactions\b/,
+    /\buseFixedExpenses\b/,
+    /\bgetTransactions\(/,
+    /\bgetAllTransactionsForMonth\b/,
+    /\bgetAccumulatedBalance\b/,
+    /\bgetEventsForMonth\b/,
+    /\bgetContributionsForMonth\b/,
+  ]
+  for (const file of listSrc('src')) {
+    const src = code(file)
+    for (const re of banned) assert.doesNotMatch(src, re, `${file} referencia ${re}`)
+  }
+})
+
+test('as consultas por mes dos servicos nao usam date-fns para limitar o intervalo', () => {
+  for (const file of [
+    'src/services/transactions.service.ts',
+    'src/services/events.service.ts',
+    'src/services/goalContributions.service.ts',
+  ]) {
+    assert.doesNotMatch(code(file), /startOfMonth|endOfMonth|monthRangeOf/, `${file} limita por mes-calendario`)
+  }
+})
+
+test('as paginas de Transacoes, Contas Fixas, Calendario, Casal e Relatorios usam os hooks por ciclo', () => {
+  const pages = [
+    ['src/pages/TransactionsPage.tsx', 'useCycleTransactions'],
+    ['src/pages/FixedExpensesPage.tsx', 'useCycleBills'],
+    ['src/pages/CalendarPage.tsx', 'useCalendarData'],
+    ['src/pages/CouplePage.tsx', 'useCoupleData'],
+  ]
+  for (const [file, hook] of pages) assertIncludes(file, [`${hook}(`])
+  // Relatorios: a serie por ciclo chega pelos graficos filhos, a pagina nao deriva mes.
+  const reports = ['src/pages/ReportsPage.tsx', ...listSrc('src/components/reports')]
+  assert.ok(
+    reports.some((f) => code(f).includes('useCycleSeries(')),
+    'Relatorios sem useCycleSeries'
+  )
 })

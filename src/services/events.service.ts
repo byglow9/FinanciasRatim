@@ -12,7 +12,6 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { AgendaEvent } from '@/types'
-import { startOfMonth, endOfMonth } from 'date-fns'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
 
@@ -20,41 +19,8 @@ type RawEvent = Omit<AgendaEvent, 'date' | 'createdAt'> & { date: string; create
 
 const COL = 'events'
 
-export async function getEventsForMonth(month: Date): Promise<AgendaEvent[]> {
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
-
-  if (MOCK) {
-    return mList<RawEvent>(COL)
-      .filter((e) => {
-        const d = new Date(e.date)
-        return d >= start && d <= end
-      })
-      .map((e) => ({ ...e, date: new Date(e.date), createdAt: new Date(e.createdAt) }))
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-  }
-
-  const q = query(
-    collection(db, COL),
-    ...ownerScope(),
-    where('date', '>=', Timestamp.fromDate(start)),
-    where('date', '<=', Timestamp.fromDate(end)),
-    orderBy('date', 'asc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((d) => {
-    const data = d.data()
-    return {
-      id: d.id,
-      ...data,
-      date: data.date.toDate(),
-      createdAt: data.createdAt.toDate(),
-    } as AgendaEvent
-  })
-}
-
 // Eventos da janela exata do ciclo. start e end vem do nucleo (cycle.start e cycle.end): nada de
-// date-fns aqui. Sem filtro de pessoa (mesmo formato do indice de getEventsForMonth); quem chama
+// date-fns aqui. Sem filtro de pessoa (consulta so por ownerId e data); quem chama
 // filtra o conjunto ou a pessoa.
 export async function getEventsInRange(start: Date, end: Date): Promise<AgendaEvent[]> {
   if (MOCK) {

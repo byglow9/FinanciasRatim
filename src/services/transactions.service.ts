@@ -12,11 +12,9 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Transaction, PersonType } from '@/types'
-import { startOfMonth, endOfMonth } from 'date-fns'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
 import { accumulatedBalance } from '@shared/core/ledger.js'
-import { monthRangeOf } from '@shared/core/time.js'
 
 type RawTransaction = Omit<Transaction, 'date' | 'createdAt'> & {
   date: string
@@ -24,41 +22,6 @@ type RawTransaction = Omit<Transaction, 'date' | 'createdAt'> & {
 }
 
 const COL = 'transactions'
-
-export async function getTransactions(
-  person: PersonType,
-  month: Date
-): Promise<Transaction[]> {
-  if (MOCK) {
-    const start = startOfMonth(month)
-    const end = endOfMonth(month)
-    return mList<RawTransaction>(COL)
-      .filter((t) => {
-        const d = new Date(t.date)
-        return t.person === person && d >= start && d <= end
-      })
-      .map((t) => ({ ...t, date: new Date(t.date), createdAt: new Date(t.createdAt) }))
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-  }
-
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
-  const q = query(
-    collection(db, COL),
-    ...ownerScope(),
-    where('person', '==', person),
-    where('date', '>=', Timestamp.fromDate(start)),
-    where('date', '<=', Timestamp.fromDate(end)),
-    orderBy('date', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    date: doc.data().date.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as Transaction[]
-}
 
 // Lancamentos da janela exata do ciclo. start e end vem do nucleo (cycle.start e cycle.end,
 // fuso de Sao Paulo): nada de date-fns aqui. Usa o indice (ownerId, person, date DESC).
@@ -81,37 +44,6 @@ export async function getTransactionsInRange(
     collection(db, COL),
     ...ownerScope(),
     where('person', '==', person),
-    where('date', '>=', Timestamp.fromDate(start)),
-    where('date', '<=', Timestamp.fromDate(end)),
-    orderBy('date', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    date: doc.data().date.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as Transaction[]
-}
-
-export async function getAllTransactionsForMonth(month: Date): Promise<Transaction[]> {
-  if (MOCK) {
-    const start = startOfMonth(month)
-    const end = endOfMonth(month)
-    return mList<RawTransaction>(COL)
-      .filter((t) => {
-        const d = new Date(t.date)
-        return d >= start && d <= end
-      })
-      .map((t) => ({ ...t, date: new Date(t.date), createdAt: new Date(t.createdAt) }))
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-  }
-
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
-  const q = query(
-    collection(db, COL),
-    ...ownerScope(),
     where('date', '>=', Timestamp.fromDate(start)),
     where('date', '<=', Timestamp.fromDate(end)),
     orderBy('date', 'desc')
@@ -210,39 +142,6 @@ export async function getTransactionsByCategory(category: string): Promise<Trans
     date: doc.data().date.toDate(),
     createdAt: doc.data().createdAt.toDate(),
   })) as Transaction[]
-}
-
-export async function getAccumulatedBalance(
-  person: PersonType,
-  untilMonth: Date
-): Promise<number> {
-  // Limite: ultimo milissegundo do mes em Sao Paulo (D-12); a soma em centavos vem do nucleo.
-  const until = monthRangeOf(untilMonth.getFullYear(), untilMonth.getMonth() + 1).end
-
-  if (MOCK) {
-    return accumulatedBalance(
-      mList<RawTransaction>(COL)
-        .filter((t) => t.person === person)
-        .map((t) => ({ type: t.type, amount: t.amount, date: new Date(t.date) })),
-      until
-    )
-  }
-
-  // Busca todas as transações da pessoa e filtra por data no nucleo
-  // para evitar necessidade de índice composto no Firestore (so igualdade: ownerId e person)
-  const q = query(
-    collection(db, COL),
-    ...ownerScope(),
-    where('person', '==', person)
-  )
-  const snapshot = await getDocs(q)
-  return accumulatedBalance(
-    snapshot.docs.map((d) => {
-      const data = d.data()
-      return { type: data.type, amount: data.amount, date: data.date.toDate() }
-    }),
-    until
-  )
 }
 
 // Saldo acumulado ate o fim do ciclo. `until` ja vem pronto de cycle.end (nucleo): sem monthRangeOf.

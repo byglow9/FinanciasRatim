@@ -68,3 +68,31 @@ test('loadAccumulated le o saldo ate o fim do ciclo so sob demanda', () => {
   const fetchBody = src.slice(src.indexOf('const fetchData'), src.indexOf('useEffect('))
   assert.doesNotMatch(fetchBody, /getAccumulatedBalanceUntil/)
 })
+
+test('useCycleBills grava e apaga o pagamento pela ocorrencia e trava o duplo toque', () => {
+  const file = 'src/hooks/useCycleBills.ts'
+  assertIncludes(file, [
+    'useCycleWindow(person)',
+    'billsForCycle',
+    'toBills(',
+    'toBillPayments(',
+    'getPaymentsForMonths(cycleMonths(cycle))',
+    'markAsPaid(',
+    'unmarkAsPaid(',
+    'occurrence.month',
+    'occurrence.year',
+    '`${item.billId}-${item.occurrence.year}-${item.occurrence.month}`',
+    'useRef(new Set<string>())',
+    'pending.current.has(key)',
+    'pendingKeys',
+    'Promise.all',
+    'dataVersion',
+  ])
+  NO_NOISE(file)
+  const src = code(file)
+  assert.doesNotMatch(src, /getPaymentsForMonth\(/, 'o hook usa os meses da ocorrencia, nunca um mes so')
+  assert.doesNotMatch(src, /transactions\.service/, 'contas nao importam o servico de transacoes')
+  const effect = src.match(/useEffect\(\(\) => \{[\s\S]*?\}, \[([^\]]*)\]\)/)
+  assert.ok(effect, 'sem useEffect de carga')
+  assert.doesNotMatch(effect[1], /\bcycle\b/, 'o efeito nao pode depender do objeto cycle')
+})

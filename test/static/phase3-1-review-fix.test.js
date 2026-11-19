@@ -117,3 +117,9 @@ test('WR-13: "Manter" devolve o foco ao botao de apagar e a falha devolve ao bot
     assert.match(src, /keepRef\.current\?\.focus\(\)\s*\n\s*\}, \[deleting, (deleteFailed|failed)\]\)/, `${f}: falha ao apagar sem foco no botao seguro`)
   }
 })
+
+test('WR-08: Comparacao avisa quando os ciclos das duas pessoas comecam em dias diferentes', () => {
+  const src = code('src/components/reports/ComparisonBarChart.tsx')
+  assert.match(src, /cycle\.start\.getTime\(\) !== p\.cycle\.start\.getTime\(\)/)
+  assert.match(src, /começam em dias diferentes/)
+})

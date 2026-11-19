@@ -67,6 +67,11 @@ export function ComparisonBarChart({ area1Name, area2Name }: ComparisonBarChartP
     ela: ela.series[i] ? pick(ela.series[i]) : 0,
   }))
 
+  // Salários em dias diferentes: o mesmo rótulo cobre ciclos distintos de cada pessoa (WR-08).
+  const differentCycles = ele.series.some(
+    (p, i) => ela.series[i] !== undefined && ela.series[i].cycle.start.getTime() !== p.cycle.start.getTime()
+  )
+
   const hasData = data.some((d) => d.ele > 0 || d.ela > 0)
   const totals = data.reduce((acc, d) => ({ ele: acc.ele + d.ele, ela: acc.ela + d.ela }), { ele: 0, ela: 0 })
   const kindLabel = kind === 'saidas' ? 'Gastos' : 'Receitas'
@@ -86,6 +91,12 @@ export function ComparisonBarChart({ area1Name, area2Name }: ComparisonBarChartP
       <SegmentedControl value={kind} onChange={setKind} options={KINDS} ariaLabel="Tipo de valor" />
       <p className="text-xs font-normal text-muted-foreground">Quantidade de ciclos</p>
       <SegmentedControl value={period} onChange={setPeriod} options={PERIODS} ariaLabel="Quantidade de ciclos" />
+
+      {differentCycles && !loading && !error ? (
+        <p className="text-xs font-normal text-muted-foreground">
+          {`Os ciclos de ${area1Name} e ${area2Name} começam em dias diferentes. O rótulo mostra o ciclo de ${area1Name}.`}
+        </p>
+      ) : null}
 
       {error ? (
         <Notice

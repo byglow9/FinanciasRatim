@@ -137,6 +137,32 @@ export function CalendarPage() {
     [scrollAgendaTo]
   )
 
+  // Teclado (D-11, D-12): o dia pedido pode estar fora do ciclo. Antes do início volta um ciclo; depois do fim
+  // avança um ciclo, mas só se não for o atual (não há ciclo futuro, P-01), senão fica no último dia.
+  const handleMove = (key: string) => {
+    const first = days[0]?.key
+    const last = days[days.length - 1]?.key
+    if (first === undefined || last === undefined) return
+    if (key < first) {
+      shift(-1)
+      setPickedKey(key)
+    } else if (key > last) {
+      if (isCurrent) handleSelect(last)
+      else {
+        shift(1)
+        setPickedKey(key)
+      }
+    } else {
+      handleSelect(key)
+    }
+  }
+
+  // Deslizar a grade troca o ciclo como as setas do período: esquerda avança, direita volta (nunca além do atual).
+  const handleSwipe = (direction: -1 | 1) => {
+    if (direction === -1) shift(-1)
+    else if (!isCurrent) shift(1)
+  }
+
   const goToday = () => {
     setPickedKey(todayKey)
     if (isCurrent) {
@@ -230,6 +256,8 @@ export function CalendarPage() {
           mode={mode}
           collapsed={collapsed}
           onSelect={handleSelect}
+          onMove={handleMove}
+          onSwipe={handleSwipe}
         />
 
         <button

@@ -66,6 +66,7 @@ export const DayCell = memo(function DayCell({ parts, model, selected, focusable
   return (
     <button
       type="button"
+      data-key={model.key}
       aria-label={dayAriaLabel(model, mode)}
       aria-pressed={selected}
       aria-current={model.isToday ? 'date' : undefined}

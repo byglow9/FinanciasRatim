@@ -220,3 +220,28 @@ test('Calendario: toda rolagem programatica liga markProgrammatic antes de rolar
   assert.match(grid, /motion-reduce:transition-none/, 'transicao de altura instantanea com movimento reduzido')
   assert.match(grid, /inert/, 'linhas recolhidas saem do foco')
 })
+
+test('Calendario: teclado por addDaysToParts e gesto de deslizar sem bloquear a rolagem vertical', () => {
+  const grid = code('src/components/calendar/MonthGrid.tsx')
+  for (const text of ['addDaysToParts', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'onPointerDown', 'onPointerUp', 'data-key']) {
+    assert.ok(grid.includes(text), `MonthGrid sem "${text}"`)
+  }
+  assert.match(grid, /ArrowUp:\s*-7/, 'seta para cima move sete dias')
+  assert.match(grid, /ArrowDown:\s*7/, 'seta para baixo move sete dias')
+  assert.match(grid, /SWIPE_MIN_PX\s*=\s*48/, 'limiar do gesto de 48px')
+  assertIncludes('src/components/calendar/DayCell.tsx', ['data-key='])
+  // Nada que bloqueie a rolagem vertical da pagina.
+  for (const f of CALENDAR_FILES) {
+    assert.doesNotMatch(code(f), /touch-none|touch-pan-x|touch-pinch-zoom|touch-action:\s*(none|pan-x)/, `${f}: touch-action bloqueia a rolagem vertical`)
+  }
+})
+
+test('Calendario: o gesto e as setas do teclado nunca passam do ciclo atual e Hoje fica aria-disabled', () => {
+  const page = code('src/pages/CalendarPage.tsx')
+  assert.match(page, /else if \(!isCurrent\) shift\(1\)/, 'deslizar para o proximo so se nao for o ciclo atual')
+  assert.match(page, /if \(isCurrent\) handleSelect\(last\)/, 'seta alem do fim no ciclo atual fica no ultimo dia')
+  assert.match(page, /shift\(-1\)/, 'seta antes do inicio volta um ciclo')
+  assert.match(page, /onMove=\{handleMove\}/)
+  assert.match(page, /onSwipe=\{handleSwipe\}/)
+  assert.match(page, /aria-disabled=\{todayActive \? true : undefined\}/, 'Hoje aria-disabled no ciclo e dia atuais')
+})

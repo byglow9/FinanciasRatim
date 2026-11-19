@@ -136,3 +136,13 @@ export function deriveVintemState(facts, reaction, nowMs) {
   }
   return { state: 'neutro', situation: 'inicio', subject: null }
 }
+
+/**
+ * Situacao da fala ao tocar no Vintem (esqueleto do passo RED).
+ * @param {MoodFacts} facts
+ * @returns {string | null}
+ */
+export function situationForTap(facts) {
+  void facts
+  return null
+}

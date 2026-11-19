@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MOOD_BANDS, limitBand, deriveVintemState } from './vintemMood.js'
+import { MOOD_BANDS, limitBand, deriveVintemState, situationForTap } from './vintemMood.js'
 
 // Linha de limite como a Home entrega: state vem do orcamento (over so com gasto > limite).
 const line = (spentCents, limitCents = 10000, categoryId = 'alimentacao') => ({
@@ -132,3 +132,139 @@ test('portao neutro: cada uma das cinco condicoes devolve neutro sem situacao', 
 test('portao neutro: sem a condicao o estouro fala normalmente', () => {
   assert.equal(derive({ rows: [line(15000)] }).situation, 'limite-estourou')
 })
+
+// ---- Precedencia completa de D-06b, ritmo, sonolento e janela de reacao ----
+
+const TODAY = '2026-11-19'
+const ins = (type, extra = {}) => ({ type, day: TODAY, severity: 2, subject: { key: 'alimentacao' }, ...extra })
+const SPIKE = ins('spend-spike')
+const DELIVERY = ins('delivery-heavy', { severity: 2 })
+const NOLAUNCH = ins('days-without-launch', { subject: { key: 'x' } })
+
+test('precedencia: cada nivel de D-06b vence o seguinte, na situacao escolhida', () => {
+  const rows = (...r) => r
+  // 9 posicoes: monta os fatos de cima para baixo e vai tirando o vencedor
+  const all = {
+    rows: rows(line(12000, 10000, 'a'), line(9000, 10000, 'b'), line(7600, 10000, 'c')),
+    insights: [SPIKE, DELIVERY, NOLAUNCH],
+    cheer: 'meta-batida',
+    rhythmLevel: 4,
+  }
+  assert.equal(derive(all).situation, 'limite-estourou')
+  // sem estouro: gasto grande
+  const noOver = { ...all, rows: rows(line(9000, 10000, 'b'), line(7600, 10000, 'c')) }
+  assert.equal(derive(noOver).situation, 'gasto-grande')
+  // sem gasto grande: perto
+  const noSpike = { ...noOver, insights: [DELIVERY, NOLAUNCH] }
+  assert.equal(derive(noSpike).situation, 'limite-perto')
+  // sem perto: atento
+  const noNear = { ...noSpike, rows: rows(line(7600, 10000, 'c')) }
+  assert.equal(derive(noNear).situation, 'limite-atento')
+  // sem linhas: leitura de gasto
+  const noRows = { ...noNear, rows: [] }
+  assert.equal(derive(noRows).situation, 'delivery-semana')
+  // sem leitura: meta
+  const noRead = { ...noRows, insights: [NOLAUNCH] }
+  assert.equal(derive(noRead).situation, 'meta-batida')
+  // sem cheer: ritmo
+  const noCheer = { ...noRead, cheer: null }
+  assert.equal(derive(noCheer).situation, 'ritmo-estourou')
+  // sem ritmo: sem lancar
+  const noRhythm = { ...noCheer, rhythmLevel: null }
+  assert.equal(derive(noRhythm).situation, 'sem-lancar')
+  // sem nada: inicio
+  assert.equal(derive({ ...noRhythm, insights: [] }).situation, 'inicio')
+})
+
+test('gasto grande so conta com day igual a todayKey; antigo e ignorado', () => {
+  const today = derive({ insights: [SPIKE] })
+  assert.equal(today.situation, 'gasto-grande')
+  assert.equal(today.state, 'surpreso')
+  const old = derive({ insights: [ins('spend-spike', { day: '2026-11-18' })] })
+  assert.equal(old.situation, 'inicio')
+  assert.equal(old.state, 'neutro')
+})
+
+test('leitura de gasto: pega a maior severidade; 3 e bravo, demais atento', () => {
+  const hi = derive({
+    insights: [ins('category-over-average', { severity: 1 }), ins('delivery-heavy', { severity: 3 })],
+  })
+  assert.equal(hi.situation, 'delivery-semana')
+  assert.equal(hi.state, 'bravo')
+  const lo = derive({ insights: [ins('merchant-repeat', { severity: 2, subject: { key: 'ifood' } })] })
+  assert.equal(lo.situation, 'loja-repete')
+  assert.equal(lo.state, 'atento')
+  assert.deepEqual(lo.subject, { merchantKey: 'ifood' })
+  const cat = derive({ insights: [ins('category-over-average', { subject: { key: 'lazer' } })] })
+  assert.equal(cat.situation, 'categoria-acima-media')
+  assert.deepEqual(cat.subject, { categoryId: 'lazer' })
+})
+
+test('ritmo: 4 triste, 3 atento, 2 neutro, 1 sem situacao, 0 folgado feliz', () => {
+  assert.deepEqual(pick(derive({ rhythmLevel: 4 })), ['triste', 'ritmo-estourou'])
+  assert.deepEqual(pick(derive({ rhythmLevel: 3 })), ['atento', 'ritmo-atencao'])
+  assert.deepEqual(pick(derive({ rhythmLevel: 2 })), ['neutro', 'ritmo-atencao'])
+  assert.deepEqual(pick(derive({ rhythmLevel: 1 })), ['neutro', 'inicio'])
+  assert.deepEqual(pick(derive({ rhythmLevel: 0 })), ['feliz', 'ritmo-folgado'])
+})
+
+test('ritmo 0 so e folgado com todas as linhas abaixo de 40 por cento', () => {
+  assert.deepEqual(pick(derive({ rhythmLevel: 0, rows: [line(3999), line(1000, 10000, 'b')] })), ['feliz', 'ritmo-folgado'])
+  assert.deepEqual(pick(derive({ rhythmLevel: 0, rows: [line(4000)] })), ['neutro', 'inicio'])
+})
+
+test('sonolento troca feliz ou neutro com dias sem lancar; atento, bravo e triste ficam', () => {
+  assert.equal(derive({ insights: [NOLAUNCH] }).state, 'sonolento')
+  assert.equal(derive({ rhythmLevel: 0, insights: [NOLAUNCH] }).state, 'sonolento')
+  assert.equal(derive({ rhythmLevel: 2, insights: [NOLAUNCH] }).state, 'sonolento')
+  assert.equal(derive({ rows: [line(8500)], insights: [NOLAUNCH] }).state, 'atento')
+  assert.equal(derive({ rows: [line(12000)], insights: [NOLAUNCH] }).state, 'bravo')
+  assert.equal(derive({ rows: [line(14000)], insights: [NOLAUNCH] }).state, 'triste')
+  assert.equal(derive({ rhythmLevel: 4, insights: [NOLAUNCH] }).state, 'triste')
+  assert.equal(derive({ insights: [SPIKE, NOLAUNCH] }).state, 'surpreso')
+})
+
+test('sem outra situacao, dias sem lancar dao sem-lancar', () => {
+  assert.deepEqual(pick(derive({ insights: [NOLAUNCH] })), ['sonolento', 'sem-lancar'])
+})
+
+test('cheer meta-batida e porquinho-guardou dao feliz; nunca feliz com linha estourada', () => {
+  assert.deepEqual(pick(derive({ cheer: 'meta-batida' })), ['feliz', 'meta-batida'])
+  assert.deepEqual(pick(derive({ cheer: 'porquinho-guardou' })), ['feliz', 'porquinho-guardou'])
+  for (const tone of ['suave', 'direto', 'sem-filtro']) {
+    for (const cheer of ['meta-batida', 'porquinho-guardou', null]) {
+      const out = derive({ rows: [line(10001)], cheer, rhythmLevel: 0, tone })
+      assert.notEqual(out.state, 'feliz')
+      assert.equal(out.situation, 'limite-estourou')
+    }
+  }
+})
+
+test('reacao ativa troca o estado, a situacao de fundo continua; depois volta', () => {
+  const f = facts({ rows: [line(8000)] })
+  const reaction = { kind: 'festa', state: 'feliz', untilMs: NOW + 2300 }
+  const during = deriveVintemState(f, reaction, NOW + 100)
+  assert.equal(during.state, 'feliz')
+  assert.equal(during.situation, 'limite-perto')
+  const edge = deriveVintemState(f, reaction, NOW + 2300)
+  assert.equal(edge.state, 'atento')
+  assert.equal(deriveVintemState(f, reaction, NOW + 5000).state, 'atento')
+  assert.equal(deriveVintemState(f, null, NOW).state, 'atento')
+})
+
+test('dado velho nunca elogia nem briga: o portao vence ate a reacao', () => {
+  const reaction = { kind: 'bronca', state: 'bravo', untilMs: NOW + 1700 }
+  const out = deriveVintemState(facts({ suppressed: true, rows: [line(15000)] }), reaction, NOW)
+  assert.deepEqual(out, { state: 'neutro', situation: null, subject: null })
+})
+
+test('situationForTap: dado velho, somente leitura e normal', () => {
+  assert.equal(situationForTap(facts({ suppressed: true })), 'dados-velhos')
+  assert.equal(situationForTap(facts({ readOnly: true })), null)
+  assert.equal(situationForTap(facts()), 'toque')
+  assert.equal(situationForTap(facts({ readOnly: true, suppressed: true })), null)
+})
+
+function pick(out) {
+  return [out.state, out.situation]
+}

@@ -248,3 +248,17 @@ export function situationForTap(facts) {
   if (facts.suppressed) return 'dados-velhos'
   return 'toque'
 }
+
+// Esqueleto do passo RED: sera implementado no passo GREEN.
+export const REACTION_MS = Object.freeze({})
+/** @param {string} kind */
+export function reactionState(kind) {
+  void kind
+  return 'neutro'
+}
+/** @param {{ view: unknown, kind: string, categoryId: string | null, cents: number, bigSpend?: boolean, counted?: boolean }} args */
+export function reactionForLaunch(args) {
+  void args
+  return null
+}
+export const SAMPLE_SITUATION_BY_STATE = Object.freeze({})

@@ -1,6 +1,16 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MOOD_BANDS, limitBand, deriveVintemState, situationForTap } from './vintemMood.js'
+import {
+  MOOD_BANDS,
+  limitBand,
+  deriveVintemState,
+  situationForTap,
+  REACTION_MS,
+  reactionState,
+  reactionForLaunch,
+  SAMPLE_SITUATION_BY_STATE,
+} from './vintemMood.js'
+import { VINTEM_STATES } from './vintemStates.js'
 
 // Linha de limite como a Home entrega: state vem do orcamento (over so com gasto > limite).
 const line = (spentCents, limitCents = 10000, categoryId = 'alimentacao') => ({
@@ -268,3 +278,94 @@ test('situationForTap: dado velho, somente leitura e normal', () => {
 function pick(out) {
   return [out.state, out.situation]
 }
+
+// ---- Reacao a um lancamento novo e duracao das reacoes ----
+
+// View minima feita a mao: so o que reactionForLaunch le (spend.rows, income, safeCents).
+const view = (rows, income = {}) => ({
+  safeCents: 50000,
+  income: { expectedCents: 300000, receivedCents: 300000, effectiveCents: 300000, ...income },
+  spend: { rows },
+})
+const react = (args) => reactionForLaunch({ view: view([line(5000)]), kind: 'gasto', categoryId: 'alimentacao', cents: 1000, bigSpend: false, counted: false, ...args })
+const rs = (out) => [out.reaction, out.situation]
+
+test('gasto que estoura a categoria e bronca; bigSpend abaixo do limite e susto; estourou ainda vence', () => {
+  const v = view([line(9500)])
+  assert.deepEqual(rs(react({ view: v, cents: 600 })), ['bronca', 'limite-estourou'])
+  assert.deepEqual(rs(react({ view: view([line(1000)]), cents: 500, bigSpend: true })), ['susto', 'gasto-grande'])
+  assert.deepEqual(rs(react({ view: v, cents: 600, bigSpend: true })), ['bronca', 'limite-estourou'])
+  // gasto igual ao limite nao estoura
+  assert.deepEqual(rs(react({ view: view([line(9000)]), cents: 1000 })), ['susto', 'limite-perto'])
+})
+
+test('gasto que leva a 80 por cento ou mais e susto de limite-perto', () => {
+  assert.deepEqual(rs(react({ view: view([line(7000)]), cents: 1000 })), ['susto', 'limite-perto'])
+  assert.deepEqual(rs(react({ view: view([line(7000)]), cents: 999 })), ['spend', 'limite-atento'])
+})
+
+test('de 75 a menos de 80 e spend com limite-atento; abaixo de 75 ou sem limite e lancamento-ok', () => {
+  assert.deepEqual(rs(react({ view: view([line(7000)]), cents: 500 })), ['spend', 'limite-atento'])
+  assert.deepEqual(rs(react({ view: view([line(7000)]), cents: 499 })), ['spend', 'lancamento-ok'])
+  assert.deepEqual(rs(react({ view: view([line(0)]), cents: 100 })), ['spend', 'lancamento-ok'])
+  assert.deepEqual(rs(react({ view: view([]), cents: 100 })), ['spend', 'lancamento-ok'])
+  assert.deepEqual(rs(react({ view: view([line(5000, 10000, 'lazer')]), categoryId: 'mercado', cents: 100 })), ['spend', 'lancamento-ok'])
+})
+
+test('sem linha de limite, bigSpend ainda e susto de gasto-grande', () => {
+  assert.deepEqual(rs(react({ view: view([]), bigSpend: true })), ['susto', 'gasto-grande'])
+})
+
+test('counted verdadeiro: o gasto ja esta no view e nao soma de novo', () => {
+  const v = view([line(10500)]) // ja estourado com o lancamento incluso
+  assert.deepEqual(rs(react({ view: v, cents: 600, counted: true })), ['bronca', 'limite-estourou'])
+  // 9000 ja inclui os 1000: nao soma de novo, entao 90 por cento e perto, nao estourou
+  assert.deepEqual(rs(react({ view: view([line(9000)]), cents: 1000, counted: true })), ['susto', 'limite-perto'])
+  // 7500 ja inclui o lancamento de 5000: nao soma de novo, fica em 75 por cento
+  assert.deepEqual(rs(react({ view: view([line(7500)]), cents: 5000, counted: true })), ['spend', 'limite-atento'])
+  assert.deepEqual(rs(react({ view: view([line(7000)]), cents: 5000, counted: true })), ['spend', 'lancamento-ok'])
+})
+
+test('reactionForLaunch devolve o categoryId pedido', () => {
+  assert.equal(react({ categoryId: 'alimentacao' }).categoryId, 'alimentacao')
+})
+
+test('receita comum e festa; receita que eleva a renda efetiva acima do esperado e susto', () => {
+  const calm = view([], { expectedCents: 300000, receivedCents: 100000, effectiveCents: 300000 })
+  assert.deepEqual(rs(reactionForLaunch({ view: calm, kind: 'receita', categoryId: null, cents: 50000 })), ['festa', 'receita'])
+  const rich = view([], { expectedCents: 300000, receivedCents: 300000, effectiveCents: 300000 })
+  assert.deepEqual(rs(reactionForLaunch({ view: rich, kind: 'receita', categoryId: null, cents: 50000 })), ['susto', 'receita'])
+})
+
+test('porquinho: guardar e festa, retirar e susto', () => {
+  assert.deepEqual(rs(reactionForLaunch({ view: view([]), kind: 'porquinho-guardou', categoryId: null, cents: 5000 })), ['festa', 'porquinho-guardou'])
+  assert.deepEqual(rs(reactionForLaunch({ view: view([]), kind: 'porquinho-retirou', categoryId: null, cents: 5000 })), ['susto', 'porquinho-retirou'])
+})
+
+test('tipo desconhecido de lancamento nao reage', () => {
+  assert.equal(reactionForLaunch({ view: view([]), kind: 'outro', categoryId: null, cents: 100 }), null)
+})
+
+test('REACTION_MS e reactionState', () => {
+  assert.deepEqual({ ...REACTION_MS }, { spend: 1400, susto: 1300, bronca: 1700, festa: 2300, wake: 650 })
+  assert.ok(Object.isFrozen(REACTION_MS))
+  assert.equal(REACTION_MS.festa, 2300)
+  assert.equal(reactionState('spend'), 'feliz')
+  assert.equal(reactionState('festa'), 'feliz')
+  assert.equal(reactionState('susto'), 'surpreso')
+  assert.equal(reactionState('wake'), 'surpreso')
+  assert.equal(reactionState('bronca'), 'bravo')
+})
+
+test('SAMPLE_SITUATION_BY_STATE cobre exatamente os sete estados', () => {
+  assert.deepEqual(Object.keys(SAMPLE_SITUATION_BY_STATE).sort(), [...VINTEM_STATES].sort())
+  assert.deepEqual({ ...SAMPLE_SITUATION_BY_STATE }, {
+    neutro: 'inicio',
+    feliz: 'ritmo-folgado',
+    triste: 'limite-estourou',
+    bravo: 'limite-estourou',
+    sonolento: 'sem-lancar',
+    surpreso: 'gasto-grande',
+    atento: 'limite-perto',
+  })
+})

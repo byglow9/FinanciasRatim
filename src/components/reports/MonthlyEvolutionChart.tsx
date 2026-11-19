@@ -1,29 +1,37 @@
-import { useState, useEffect } from 'react'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select } from '@/components/ui/select'
-import { formatCurrency } from '@/lib/utils'
-import { getTransactions, getAccumulatedBalance } from '@/services/transactions.service'
-import { subMonths, format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { EmptyState } from './EmptyState'
+import { useState } from 'react'
+import { AlertCircle, ChevronDown } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { useCycleSeries } from '@/hooks/useCycleSeries'
+import { Button } from '@/components/ui/button'
+import { Notice } from '@/components/ui/notice'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { PersonType } from '@/types'
+import { MONTH_SHORT, formatMoney, shortDate } from '@shared/core/format.js'
+import { EmptyState } from './EmptyState'
 
-interface MonthlyEvolution {
-  month: string
-  entradas: number
-  saidas: number
-  saldo: number
-  saldoAcumulado: number
+// Paleta Moeda: entradas no verde, saídas no âmbar.
+const IN_COLOR = '#16a34a'
+const OUT_COLOR = '#d97706'
+const TICK = { fontSize: 12, fill: '#77746a' }
+
+type Period = '3' | '6' | '12'
+const PERIODS: { value: Period; label: string }[] = [
+  { value: '3', label: '3 ciclos' },
+  { value: '6', label: '6 ciclos' },
+  { value: '12', label: '12 ciclos' },
+]
+
+// Rótulo curto do eixo: o mês quando o ciclo começa no dia 1; senão o dia e o mês de início.
+function shortCycle(cycle: { startParts: { day: number; month: number; year: number } }): string {
+  const p = cycle.startParts
+  return p.day === 1 ? MONTH_SHORT[p.month - 1] : (shortDate(p) as string)
+}
+
+// Marca do eixo vertical: reais inteiros abaixo de mil e milhares com "k" a partir daí.
+function axisMoney(cents: number): string {
+  const reais = Math.round(cents / 100)
+  if (reais < 1000) return String(reais)
+  return `${Math.round(reais / 100) / 10}k`.replace('.', ',')
 }
 
 interface MonthlyEvolutionChartProps {
@@ -31,133 +39,120 @@ interface MonthlyEvolutionChartProps {
   personName: string
 }
 
+// Evolução de entradas e saídas dos últimos ciclos (o ciclo escolhido no topo é o último). Uma
+// consulta por janela larga (useCycleSeries); o mesmo dado aparece em tabela de texto.
 export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionChartProps) {
-  const [period, setPeriod] = useState<string>('6')
-  const [data, setData] = useState<MonthlyEvolution[]>([])
-  const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState<Period>('6')
+  const { series, loading, error, refetch } = useCycleSeries(person, Number(period))
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const monthCount = parseInt(period)
-        const months = Array.from({ length: monthCount }, (_, i) =>
-          subMonths(new Date(), monthCount - 1 - i)
-        )
+  const hasData = series.some((p) => p.entradasCents > 0 || p.saidasCents > 0)
 
-        const results = await Promise.all(
-          months.map(async (m) => {
-            const [transactions, accumulated] = await Promise.all([
-              getTransactions(person, m),
-              getAccumulatedBalance(person, m),
-            ])
-            const entradas = transactions
-              .filter((t) => t.type === 'entrada')
-              .reduce((sum, t) => sum + t.amount, 0)
-            const saidas = transactions
-              .filter((t) => t.type === 'saida')
-              .reduce((sum, t) => sum + t.amount, 0)
+  const data = series.map((p) => ({
+    key: p.key,
+    label: shortCycle(p.cycle),
+    entradas: p.entradasCents,
+    saidas: p.saidasCents,
+    saldo: p.saldoCents,
+  }))
 
-            return {
-              month: format(m, 'MMM', { locale: ptBR }),
-              entradas,
-              saidas,
-              saldo: entradas - saidas,
-              saldoAcumulado: accumulated,
-            }
-          })
-        )
-        setData(results)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [period, person])
-
-  const hasData = data.some((m) => m.entradas > 0 || m.saidas > 0)
+  const summary = data
+    .map(
+      (d) =>
+        `${d.label}: entradas ${formatMoney(d.entradas, { decimals: 'always' })}, saídas ${formatMoney(d.saidas, { decimals: 'always' })}`
+    )
+    .join('; ')
 
   return (
-    <Card>
-      <CardHeader className="flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
-        <CardTitle className="text-sm sm:text-base">Evolucao Mensal — {personName}</CardTitle>
-        <Select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="w-full sm:w-[110px]"
+    <section className="space-y-3 rounded-[22px] bg-card p-4">
+      <h2 className="font-display text-base font-bold">Evolução por ciclo — {personName}</h2>
+      <SegmentedControl
+        value={period}
+        onChange={setPeriod}
+        options={PERIODS}
+        ariaLabel="Quantidade de ciclos"
+      />
+
+      {error ? (
+        <Notice
+          tone="danger"
+          icon={AlertCircle}
+          title="Não foi possível carregar os relatórios."
+          action={
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          }
         >
-          <option value="3">3 meses</option>
-          <option value="6">6 meses</option>
-          <option value="12">12 meses</option>
-        </Select>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            Carregando...
-          </div>
-        ) : !hasData ? (
-          <EmptyState
-            title="Sem dados"
-            description="Nenhuma transacao registrada no periodo"
-          />
-        ) : (
-          <div className="h-[220px] sm:h-[300px]">
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : loading ? (
+        <div role="status" aria-busy="true">
+          <span className="sr-only">Carregando os relatórios</span>
+          <div aria-hidden="true" className="anim-pulse h-[180px] rounded-2xl bg-surface-2" />
+        </div>
+      ) : !hasData ? (
+        <EmptyState
+          title="Sem lançamentos neste período"
+          description="Quando houver gastos ou receitas, os gráficos aparecem aqui."
+        />
+      ) : (
+        <>
+          <ul className="flex flex-wrap gap-3 text-xs font-normal" aria-label="Legenda">
+            <li className="inline-flex items-center gap-2">
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: IN_COLOR }} />
+              Entradas
+            </li>
+            <li className="inline-flex items-center gap-2">
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: OUT_COLOR }} />
+              Saídas
+            </li>
+          </ul>
+
+          <div
+            role="img"
+            aria-label={`Barras de entradas e saídas dos últimos ${period} ciclos de ${personName}. ${summary}`}
+            className="h-[200px] w-full"
+          >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" className="capitalize" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 12 }} width={50} />
-                <Tooltip
-                  formatter={(value: number | undefined) =>
-                    value !== undefined ? formatCurrency(value) : ''
-                  }
-                  labelStyle={{ fontWeight: 600 }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line
-                  type="monotone"
-                  dataKey="entradas"
-                  name="Entradas"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saidas"
-                  name="Saidas"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saldo"
-                  name="Saldo Mensal"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saldoAcumulado"
-                  name="Saldo Total"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
+              <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} accessibilityLayer={false}>
+                <CartesianGrid stroke="#e6e0d1" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: '#b9b2a0' }} />
+                <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={axisMoney} />
+                <Bar dataKey="entradas" name="Entradas" fill={IN_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="saidas" name="Saídas" fill={OUT_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <details className="group">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              Ver valores por ciclo
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <table className="w-full border-collapse text-xs font-normal">
+              <caption className="sr-only">Entradas, saídas e saldo por ciclo</caption>
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th scope="col" className="py-1.5 text-left font-normal">Ciclo</th>
+                  <th scope="col" className="py-1.5 text-right font-normal">Entradas</th>
+                  <th scope="col" className="py-1.5 text-right font-normal">Saídas</th>
+                  <th scope="col" className="py-1.5 text-right font-normal">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((d) => (
+                  <tr key={d.key} className="border-t border-border">
+                    <th scope="row" className="py-1.5 text-left font-bold">{d.label}</th>
+                    <td className="py-1.5 text-right">{formatMoney(d.entradas)}</td>
+                    <td className="py-1.5 text-right">{formatMoney(d.saidas)}</td>
+                    <td className="py-1.5 text-right">{formatMoney(d.saldo)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        </>
+      )}
+    </section>
   )
 }

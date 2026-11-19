@@ -119,3 +119,44 @@ test('18: ledger.js exporta weeklySpendForCycle e continua exportando weeklySpen
   assert.match(src, /export function weeklySpend\b/)
   assert.doesNotMatch(src, /Date\.now|new Date\(\)|date-fns/)
 })
+
+// Plano 03.1-21, tarefa 2: evolucao e comparacao por ciclo, uma consulta por serie e dado em texto.
+for (const f of ['src/components/reports/MonthlyEvolutionChart.tsx', 'src/components/reports/ComparisonBarChart.tsx']) {
+  const name = f.split('/').pop()
+
+  test(`21: ${name} usa useCycleSeries, nao consulta por mes e tem nome acessivel e tabela`, () => {
+    const src = code(f)
+    assert.match(src, /\buseCycleSeries\(/)
+    assert.match(src, /role="img"/)
+    assert.match(src, /aria-label=/)
+    assert.match(src, /<table\b/)
+    assert.match(src, /<caption\b/)
+    assert.doesNotMatch(src, /subMonths\(/)
+    assert.doesNotMatch(src, /getTransactions\(/)
+    assert.doesNotMatch(src, /getAccumulatedBalance/)
+    assert.doesNotMatch(src, /date-fns/)
+    assert.doesNotMatch(src, /fontSize:\s*11\b/)
+    assert.doesNotMatch(src, /text-\[11px\]/)
+  })
+
+  test(`21: ${name} usa marca de eixo de 12px, SegmentedControl e texto de carregando em portugues`, () => {
+    const src = code(f)
+    assert.match(src, /fontSize:\s*12\b/)
+    assert.match(src, /<SegmentedControl\b/)
+    assert.match(src, /Carregando os relatórios/)
+    assert.match(src, /Tentar de novo/)
+    assert.match(src, /<EmptyState\b/)
+    assert.deepEqual(scaleProblems([f]), [])
+    assert.deepEqual(touchProblems([f]), [])
+  })
+}
+
+test('21: ComparisonBarChart usa as cores Ele e Ela da paleta Moeda e os nomes das configuracoes', () => {
+  const src = code('src/components/reports/ComparisonBarChart.tsx')
+  assert.match(src, /#14532d/)
+  assert.match(src, /#c2410c/)
+  assert.match(src, /area1Name/)
+  assert.match(src, /area2Name/)
+  assert.doesNotMatch(src, /['">]Ele['"<]/)
+  assert.doesNotMatch(src, /['">]Ela['"<]/)
+})

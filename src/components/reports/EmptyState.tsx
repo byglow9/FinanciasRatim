@@ -1,23 +1,23 @@
-import { FileX2 } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { BarChart3 } from 'lucide-react'
 
 interface EmptyStateProps {
   title?: string
   description?: string
-  icon?: React.ReactNode
+  icon?: ReactNode
 }
 
+// Estado vazio de Relatórios: ícone, título 16/700 e apoio 12/400, sempre em português.
 export function EmptyState({
-  title = 'Nenhum dado encontrado',
-  description = 'Adicione transacoes para ver os relatorios',
+  title = 'Sem lançamentos neste ciclo',
+  description = 'Quando houver gastos ou receitas, os gráficos aparecem aqui.',
   icon,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="rounded-full bg-muted p-4 mb-4">
-        {icon || <FileX2 className="h-8 w-8 text-muted-foreground" />}
-      </div>
-      <h3 className="text-lg font-medium text-foreground mb-1">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-xs">{description}</p>
+    <div className="flex flex-col items-center gap-2 py-8 text-center">
+      {icon ?? <BarChart3 className="size-7 text-muted-foreground" aria-hidden="true" />}
+      <p className="text-base font-bold">{title}</p>
+      <p className="max-w-xs text-xs font-normal text-muted-foreground">{description}</p>
     </div>
   )
 }

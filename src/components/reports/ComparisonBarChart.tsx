@@ -21,9 +21,9 @@ const KINDS: { value: Kind; label: string }[] = [
 
 type Period = '3' | '6' | '12'
 const PERIODS: { value: Period; label: string }[] = [
-  { value: '3', label: '3 ciclos' },
-  { value: '6', label: '6 ciclos' },
-  { value: '12', label: '12 ciclos' },
+  { value: '3', label: '3' },
+  { value: '6', label: '6' },
+  { value: '12', label: '12' },
 ]
 
 // Rótulo curto do eixo: o mês quando o ciclo começa no dia 1; senão o dia e o mês de início.
@@ -84,6 +84,7 @@ export function ComparisonBarChart({ area1Name, area2Name }: ComparisonBarChartP
         {kindLabel} por ciclo — {area1Name} e {area2Name}
       </h2>
       <SegmentedControl value={kind} onChange={setKind} options={KINDS} ariaLabel="Tipo de valor" />
+      <p className="text-xs font-normal text-muted-foreground">Quantidade de ciclos</p>
       <SegmentedControl value={period} onChange={setPeriod} options={PERIODS} ariaLabel="Quantidade de ciclos" />
 
       {error ? (

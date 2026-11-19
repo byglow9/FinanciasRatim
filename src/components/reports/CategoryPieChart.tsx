@@ -69,7 +69,7 @@ export function CategoryPieChart({
       <div
         role="img"
         aria-label={`Rosca: ${title} em ${periodLabel}. ${summary}`}
-        className="relative mx-auto mt-3 h-[160px] w-full max-w-[240px]"
+        className="relative mx-auto mt-3 h-[190px] w-full max-w-[260px]"
       >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart accessibilityLayer={false}>
@@ -79,7 +79,7 @@ export function CategoryPieChart({
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius="62%"
+              innerRadius="72%"
               outerRadius="100%"
               paddingAngle={slices.length > 1 ? 2 : 0}
               stroke="none"

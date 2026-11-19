@@ -4,6 +4,8 @@ import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCycleTransactions } from '@/hooks/useCycleTransactions'
 import { useCycleBills } from '@/hooks/useCycleBills'
+import { useCycleSeries } from '@/hooks/useCycleSeries'
+import { useSavings } from '@/hooks/useSavings'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { Notice } from '@/components/ui/notice'
@@ -13,10 +15,12 @@ import {
   ComparisonBarChart,
   MonthlyEvolutionChart,
   IncomeBreakdown,
+  OverviewDashboard,
   EmptyState,
 } from '@/components/reports'
 import { cn } from '@/lib/utils'
-import type { PersonType } from '@/types'
+import type { PersonType, Transaction } from '@/types'
+import type { Cycle } from '@shared/core/cycle.js'
 import { billsSummary } from '@shared/core/billGroups.js'
 import { cycleLabel, shortRange } from '@shared/core/format.js'
 
@@ -60,7 +64,7 @@ function ReportTabs({ value, onChange }: { value: ReportTab; onChange: (tab: Rep
       role="tablist"
       aria-label="Seções do relatório"
       onKeyDown={onKeyDown}
-      className="grid grid-cols-4 gap-0.5 rounded-full bg-card p-0.5"
+      className="flex gap-0.5 rounded-full bg-card p-0.5"
     >
       {TABS.map((tab, index) => {
         const selected = index === active
@@ -78,7 +82,7 @@ function ReportTabs({ value, onChange }: { value: ReportTab; onChange: (tab: Rep
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
             className={cn(
-              'h-11 min-w-0 whitespace-nowrap rounded-full px-1 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'h-11 flex-auto whitespace-nowrap rounded-full px-1 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               selected ? 'bg-surface-2 text-foreground' : 'text-muted-foreground'
             )}
           >
@@ -87,6 +91,42 @@ function ReportTabs({ value, onChange }: { value: ReportTab; onChange: (tab: Rep
         )
       })}
     </div>
+  )
+}
+
+interface OverviewTabProps {
+  person: PersonType
+  personName: string
+  transactions: Transaction[]
+  cycle: Cycle
+  label: string
+  entradasCents: number
+  saidasCents: number
+  saldoCents: number
+  fixas: { paidCount: number; count: number; pendingCents: number } | null
+}
+
+// Visão geral: só aqui roda a consulta da série dos últimos ciclos (uma por janela larga).
+function OverviewTab({ person, personName, transactions, cycle, label, entradasCents, saidasCents, saldoCents, fixas }: OverviewTabProps) {
+  const { settings } = useArea()
+  const { series, loading, error, refetch } = useCycleSeries(person, 4)
+  const { balance: savingsBalance } = useSavings()
+
+  return (
+    <>
+      <SummaryCards entradasCents={entradasCents} saidasCents={saidasCents} saldoCents={saldoCents} fixas={fixas} />
+      <OverviewDashboard
+        transactions={transactions}
+        cycle={cycle}
+        savingsBalance={savingsBalance}
+        piggyName={settings.tabNames.piggy}
+        series={series}
+        seriesLoading={loading}
+        seriesError={error}
+        onRetrySeries={() => void refetch()}
+      />
+      <IncomeBreakdown transactions={transactions} personName={personName} periodLabel={label} />
+    </>
   )
 }
 
@@ -180,15 +220,17 @@ export function ReportsPage() {
               />
             </div>
           ) : activeTab === 'visao-geral' ? (
-            <>
-              <SummaryCards
-                entradasCents={totalsCents.entradas}
-                saidasCents={totalsCents.saidas}
-                saldoCents={totalsCents.saldo}
-                fixas={fixas}
-              />
-              <IncomeBreakdown transactions={transactions} personName={personName} periodLabel={label} />
-            </>
+            <OverviewTab
+              person={person}
+              personName={personName}
+              transactions={transactions}
+              cycle={cycle}
+              label={label}
+              entradasCents={totalsCents.entradas}
+              saidasCents={totalsCents.saidas}
+              saldoCents={totalsCents.saldo}
+              fixas={fixas}
+            />
           ) : (
             <CategoryPieChart
               transactions={transactions}

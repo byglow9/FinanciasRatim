@@ -16,9 +16,9 @@ const TICK = { fontSize: 12, fill: '#77746a' }
 
 type Period = '3' | '6' | '12'
 const PERIODS: { value: Period; label: string }[] = [
-  { value: '3', label: '3 ciclos' },
-  { value: '6', label: '6 ciclos' },
-  { value: '12', label: '12 ciclos' },
+  { value: '3', label: '3' },
+  { value: '6', label: '6' },
+  { value: '12', label: '12' },
 ]
 
 // Rótulo curto do eixo: o mês quando o ciclo começa no dia 1; senão o dia e o mês de início.
@@ -65,6 +65,7 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
   return (
     <section className="space-y-3 rounded-[22px] bg-card p-4">
       <h2 className="font-display text-base font-bold">Evolução por ciclo — {personName}</h2>
+      <p className="text-xs font-normal text-muted-foreground">Quantidade de ciclos</p>
       <SegmentedControl
         value={period}
         onChange={setPeriod}

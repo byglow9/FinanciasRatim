@@ -1,312 +1,175 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { TrendingUp, TrendingDown, PiggyBank, Wallet, Landmark } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
-import { cn } from '@/lib/utils'
-import { getTransactions, getAccumulatedBalance } from '@/services/transactions.service'
-import { subMonths, format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts'
-import type { PersonType, Transaction } from '@/types'
+import { useMemo } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
+import { useCycle } from '@/contexts/CycleContext'
+import { Button } from '@/components/ui/button'
+import { Notice } from '@/components/ui/notice'
+import type { Transaction } from '@/types'
+import type { Cycle } from '@shared/core/cycle.js'
+import type { CyclePoint } from '@shared/core/series.js'
 import { categoryDisplayName } from '@shared/core/categories.js'
-import { weeklySpend } from '@shared/core/ledger.js'
+import { MONTH_SHORT, formatMoney, plural, shortDate } from '@shared/core/format.js'
+import { toCents, weeklySpendForCycle } from '@shared/core/ledger.js'
+
+// Paleta Moeda: verde para saldo positivo, vermelho para negativo, barras de gasto em âmbar.
+const OK_COLOR = '#16a34a'
+const DANGER_COLOR = '#dc2626'
+const OUT_COLOR = '#d97706'
 
 interface OverviewDashboardProps {
-  person: PersonType
-  personName?: string
   transactions: Transaction[]
-  selectedMonth: Date
+  cycle: Cycle
   savingsBalance: number
   piggyName: string
+  // Série dos últimos ciclos (a página faz a consulta por janela larga com useCycleSeries).
+  series: CyclePoint[]
+  seriesLoading: boolean
+  seriesError: Error | null
+  onRetrySeries: () => void
 }
 
-interface MiniEvolution {
-  month: string
-  saldo: number
-  saldoAcumulado: number
+// Rótulo curto do ciclo: o mês quando começa no dia 1; senão o dia e o mês de início.
+function shortCycle(cycle: Cycle): string {
+  const p = cycle.startParts
+  return p.day === 1 ? MONTH_SHORT[p.month - 1] : (shortDate(p) as string)
 }
 
+// Visão geral do ciclo escolhido: gasto máximo por semana, saldo dos últimos ciclos, três maiores
+// gastos e o saldo do Porquinho. Tudo em centavos inteiros e com o texto na própria tela.
 export function OverviewDashboard({
-  person,
   transactions,
-  selectedMonth,
+  cycle,
   savingsBalance,
   piggyName,
+  series,
+  seriesLoading,
+  seriesError,
+  onRetrySeries,
 }: OverviewDashboardProps) {
   const { categoryDefs } = useArea()
-  const [evolutionData, setEvolutionData] = useState<MiniEvolution[]>([])
-  const [loadingEvolution, setLoadingEvolution] = useState(true)
+  const { now, isCurrent } = useCycle()
 
-  useEffect(() => {
-    const fetchEvolution = async () => {
-      setLoadingEvolution(true)
-      try {
-        const months = Array.from({ length: 4 }, (_, i) =>
-          subMonths(new Date(), 3 - i)
-        )
-
-        const results = await Promise.all(
-          months.map(async (m) => {
-            const [txs, accumulated] = await Promise.all([
-              getTransactions(person, m),
-              getAccumulatedBalance(person, m),
-            ])
-            const entradas = txs
-              .filter((t) => t.type === 'entrada')
-              .reduce((sum, t) => sum + t.amount, 0)
-            const saidas = txs
-              .filter((t) => t.type === 'saida')
-              .reduce((sum, t) => sum + t.amount, 0)
-
-            return {
-              month: format(m, 'MMM', { locale: ptBR }),
-              saldo: entradas - saidas,
-              saldoAcumulado: accumulated,
-            }
-          })
-        )
-        setEvolutionData(results)
-      } finally {
-        setLoadingEvolution(false)
-      }
+  const topCategories = useMemo(() => {
+    const sums = new Map<string, number>()
+    for (const t of transactions) {
+      if (t.type !== 'saida') continue
+      const name = categoryDisplayName(t, categoryDefs) || 'Sem categoria'
+      sums.set(name, (sums.get(name) ?? 0) + toCents(t.amount))
     }
+    return [...sums.entries()]
+      .map(([name, cents]) => ({ name, cents }))
+      .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name, 'pt-BR'))
+      .slice(0, 3)
+  }, [transactions, categoryDefs])
 
-    fetchEvolution()
-  }, [person])
+  const topMax = topCategories.reduce((max, c) => Math.max(max, c.cents), 0)
 
-  const categoryData = transactions
-    .filter((t) => t.type === 'saida')
-    .reduce<Record<string, number>>((acc, t) => {
-      const name = categoryDisplayName(t, categoryDefs)
-      acc[name] = (acc[name] ?? 0) + t.amount
-      return acc
-    }, {})
+  // Gasto semanal pelo núcleo (D-12, FUND-06): janela exata do ciclo escolhido, relógio injetado.
+  const weekly = weeklySpendForCycle({ transactions, cycle, now })
+  const weeklyCents = toCents(weekly.maxWeeklySpend)
 
-  const topCategories = Object.entries(categoryData)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 3)
-
-  const totalExpenses = topCategories.reduce((sum, c) => sum + c.value, 0)
-
-  // Top 3 receitas
-  const incomeData = transactions
-    .filter((t) => t.type === 'entrada')
-    .reduce<Record<string, number>>((acc, t) => {
-      const name = categoryDisplayName(t, categoryDefs)
-      acc[name] = (acc[name] ?? 0) + t.amount
-      return acc
-    }, {})
-
-  const topIncomes = Object.entries(incomeData)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 3)
-
-  const totalIncomes = topIncomes.reduce((sum, c) => sum + c.value, 0)
-
-  // Gasto semanal pelo nucleo (D-12, FUND-06): mes escolhido, dia de referencia em Sao Paulo.
-  const { weeksRemaining, maxWeeklySpend } = weeklySpend({
-    transactions,
-    now: new Date(),
-    month: { year: selectedMonth.getFullYear(), month: selectedMonth.getMonth() + 1 },
-  })
-
-  const currentAccumulatedBalance = evolutionData.length > 0
-    ? evolutionData[evolutionData.length - 1].saldoAcumulado
-    : 0
+  const evoMax = series.reduce((max, p) => Math.max(max, Math.abs(p.saldoCents)), 0)
+  const evoSummary = series
+    .map((p) => `${shortCycle(p.cycle)}: ${formatMoney(p.saldoCents, { decimals: 'always' })}`)
+    .join('; ')
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-            Evolucao do Saldo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingEvolution ? (
-            <div className="h-[120px] flex items-center justify-center text-muted-foreground">
-              Carregando...
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={evolutionData}>
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis hide />
-                <Tooltip
-                  formatter={(value: number | undefined) =>
-                    value !== undefined ? formatCurrency(value) : ''
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saldo"
-                  name="Mensal"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 3 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saldoAcumulado"
-                  name="Total"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      {isCurrent && (
+        <section className="rounded-[22px] bg-card p-4">
+          <h2 className="font-display text-base font-bold">Gasto máximo por semana</h2>
+          <p
+            className={
+              weeklyCents < 0
+                ? 'font-display text-[28px] font-bold leading-tight text-danger-ink'
+                : 'font-display text-[28px] font-bold leading-tight'
+            }
+          >
+            {formatMoney(weeklyCents, { decimals: 'always' })}
+          </p>
+          <p className="text-xs font-normal text-muted-foreground">
+            Saldo do ciclo dividido em {plural(weekly.weeksRemaining, 'semana restante', 'semanas restantes')}
+          </p>
+        </section>
+      )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            Top 3 Gastos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topCategories.length === 0 ? (
-            <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
-              Nenhum gasto registrado
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {topCategories.map((cat, i) => {
-                const percentage = totalExpenses > 0 ? (cat.value / totalExpenses) * 100 : 0
-                return (
-                  <div key={cat.name} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{i + 1}.</span>
-                        {cat.name}
-                      </span>
-                      <span className="font-medium">{formatCurrency(cat.value)}</span>
-                    </div>
-                    <Progress value={percentage} className="h-1.5" />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            Top 3 Receitas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topIncomes.length === 0 ? (
-            <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
-              Nenhuma receita registrada
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {topIncomes.map((cat, i) => {
-                const percentage = totalIncomes > 0 ? (cat.value / totalIncomes) * 100 : 0
-                return (
-                  <div key={cat.name} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{i + 1}.</span>
-                        {cat.name}
-                      </span>
-                      <span className="font-medium">{formatCurrency(cat.value)}</span>
-                    </div>
-                    <Progress value={percentage} className="h-1.5 [&>div]:bg-green-500" />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-amber-500" />
-            Gasto Maximo por Semana
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-[120px]">
-            <p className={cn(
-              'text-2xl font-bold',
-              maxWeeklySpend >= 0 ? 'text-amber-500' : 'text-red-500'
-            )}>
-              {formatCurrency(maxWeeklySpend)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 text-center">
-              Saldo do mes / {weeksRemaining} {weeksRemaining === 1 ? 'semana restante' : 'semanas restantes'}
-            </p>
+      <section className="rounded-[22px] bg-card p-4">
+        <h2 className="font-display text-base font-bold">Saldo dos últimos ciclos</h2>
+        {seriesError ? (
+          <div className="mt-2">
+            <Notice
+              tone="danger"
+              icon={AlertCircle}
+              title="Não foi possível carregar os relatórios."
+              action={
+                <Button type="button" variant="outline" onClick={onRetrySeries}>
+                  Tentar de novo
+                </Button>
+              }
+            >
+              Confira a conexão e tente de novo.
+            </Notice>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Landmark className="h-4 w-4 text-purple-500" />
-            Saldo Total
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-[120px]">
-            {loadingEvolution ? (
-              <p className="text-muted-foreground">Carregando...</p>
-            ) : (
-              <>
-                <p className={cn(
-                  'text-2xl font-bold',
-                  currentAccumulatedBalance >= 0 ? 'text-purple-500' : 'text-red-500'
-                )}>
-                  {formatCurrency(currentAccumulatedBalance)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">Patrimonio acumulado</p>
-              </>
-            )}
+        ) : seriesLoading ? (
+          <div role="status" aria-busy="true" className="mt-2">
+            <span className="sr-only">Carregando os relatórios</span>
+            <div aria-hidden="true" className="anim-pulse h-[96px] rounded-2xl bg-surface-2" />
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <ul aria-label={`Saldo dos últimos ciclos. ${evoSummary}`} className="mt-2">
+            {series.map((p) => {
+              const width = evoMax > 0 ? Math.max(2, (Math.abs(p.saldoCents) / evoMax) * 100) : 0
+              return (
+                <li
+                  key={p.key}
+                  className="grid min-h-8 grid-cols-[40px_1fr_auto] items-center gap-2 border-t border-border text-xs font-normal first:border-t-0"
+                >
+                  <span className={p.key === cycle.key ? 'font-bold' : 'text-muted-foreground'}>{shortCycle(p.cycle)}</span>
+                  <span aria-hidden="true" className="block h-2 rounded-full bg-track">
+                    <span
+                      className="block h-2 rounded-full"
+                      style={{ width: `${width}%`, backgroundColor: p.saldoCents < 0 ? DANGER_COLOR : OK_COLOR }}
+                    />
+                  </span>
+                  <b className="font-bold">{formatMoney(p.saldoCents, { decimals: 'always' })}</b>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <PiggyBank className="h-4 w-4 text-pink-500" />
-            {piggyName}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-[120px]">
-            <p className={cn(
-              'text-2xl font-bold',
-              savingsBalance >= 0 ? 'text-pink-500' : 'text-red-500'
-            )}>
-              {formatCurrency(savingsBalance)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Saldo atual</p>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="rounded-[22px] bg-card p-4">
+        <h2 className="font-display text-base font-bold">Três maiores gastos</h2>
+        {topCategories.length === 0 ? (
+          <p className="mt-2 text-xs font-normal text-muted-foreground">Nenhum gasto registrado neste ciclo.</p>
+        ) : (
+          <ol className="mt-2 space-y-2">
+            {topCategories.map((c, index) => (
+              <li key={c.name} className="text-xs font-normal">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate">
+                    {index + 1}. {c.name}
+                  </span>
+                  <b className="shrink-0 font-bold">{formatMoney(c.cents, { decimals: 'always' })}</b>
+                </div>
+                <div aria-hidden="true" className="mt-1 h-2 rounded-full bg-track">
+                  <div
+                    className="h-2 rounded-full"
+                    style={{ width: `${topMax > 0 ? (c.cents / topMax) * 100 : 0}%`, backgroundColor: OUT_COLOR }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="rounded-[22px] bg-card p-4">
+        <h2 className="font-display text-base font-bold">{piggyName}</h2>
+        <p className="font-display text-base font-bold">{formatMoney(toCents(savingsBalance), { decimals: 'always' })}</p>
+        <p className="text-xs font-normal text-muted-foreground">Saldo atual</p>
+      </section>
     </div>
   )
 }

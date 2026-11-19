@@ -25,6 +25,7 @@ test('T3: IncomeBreakdown.tsx agrega por categoryDisplayName', () => {
 test('21: a pagina segue o ciclo do topo e nao usa seletor de mes nem consulta por mes', () => {
   const src = code('src/pages/ReportsPage.tsx')
   assert.match(src, /\buseCycleTransactions\(/)
+  assert.match(src, /\buseCycleSeries\(/)
   assert.match(src, /\bshift\(/)
   assert.match(src, /\bisCurrent\b/)
   assert.match(src, /\bcycleLabel\(/)
@@ -35,10 +36,10 @@ test('21: a pagina segue o ciclo do topo e nao usa seletor de mes nem consulta p
   assert.doesNotMatch(src, /getAccumulatedBalance/)
 })
 
-test('21: as quatro abas cabem sem quebrar linha (grade de 4 colunas e rotulo sem quebra)', () => {
+test('21: as quatro abas cabem sem quebrar linha (flex-auto e rotulo sem quebra)', () => {
   const src = code('src/pages/ReportsPage.tsx')
   assert.match(src, /role="tablist"/)
-  assert.match(src, /grid-cols-4/)
+  assert.match(src, /flex-auto/)
   assert.match(src, /whitespace-nowrap/)
   assert.doesNotMatch(src, /flex-wrap/)
   for (const label of ['Visão geral', 'Categorias', 'Evolução', 'Comparação']) {
@@ -84,12 +85,16 @@ test('T3: OverviewDashboard.tsx agrega por categoryDisplayName', () => {
   assert.doesNotMatch(src, /acc\[t\.category\]/, 'ainda agrega pelo texto cru da categoria')
 })
 
-test('T3: OverviewDashboard usa weeklySpend do nucleo e nao o calculo local com date-fns', () => {
+test('21: OverviewDashboard usa weeklySpendForCycle do nucleo, sem consulta por mes nem date-fns', () => {
   const src = code('src/components/reports/OverviewDashboard.tsx')
-  assert.match(src, /import\s*\{[^}]*\bweeklySpend\b[^}]*\}\s*from\s*['"]@shared\/core\/ledger\.js['"]/)
-  assert.match(src, /weeklySpend\(\{/)
+  assert.match(src, /import\s*\{[^}]*\bweeklySpendForCycle\b[^}]*\}\s*from\s*['"]@shared\/core\/ledger\.js['"]/)
+  assert.match(src, /weeklySpendForCycle\(\{/)
+  assert.doesNotMatch(src, /\bweeklySpend\(/)
   assert.doesNotMatch(src, /differenceInCalendarDays/)
   assert.doesNotMatch(src, /\bendOfMonth\b/)
+  assert.doesNotMatch(src, /getAccumulatedBalance/)
+  assert.doesNotMatch(src, /getTransactions\(/)
+  assert.doesNotMatch(src, /subMonths\(/)
   assert.doesNotMatch(src, /weeksRemaining\s*=\s*Math\.ceil/, 'formula local duplicada de semanas')
 })
 
@@ -159,4 +164,62 @@ test('21: ComparisonBarChart usa as cores Ele e Ela da paleta Moeda e os nomes d
   assert.match(src, /area2Name/)
   assert.doesNotMatch(src, /['">]Ele['"<]/)
   assert.doesNotMatch(src, /['">]Ela['"<]/)
+})
+
+// Plano 03.1-21, tarefa 3: visao geral, estados e escala de todos os arquivos de Relatorios.
+const ALL_REPORT_FILES = [
+  'src/pages/ReportsPage.tsx',
+  'src/components/reports/SummaryCards.tsx',
+  'src/components/reports/CategoryPieChart.tsx',
+  'src/components/reports/MonthlyEvolutionChart.tsx',
+  'src/components/reports/ComparisonBarChart.tsx',
+  'src/components/reports/OverviewDashboard.tsx',
+  'src/components/reports/IncomeBreakdown.tsx',
+  'src/components/reports/EmptyState.tsx',
+]
+
+test('21: OverviewDashboard agrega os gastos por categoryDisplayName e usa a serie do ciclo', () => {
+  const src = code('src/components/reports/OverviewDashboard.tsx')
+  assert.match(src, /\bcategoryDisplayName\(/)
+  assert.match(src, /\buseArea\(\)/)
+  assert.match(src, /categoryDefs/)
+  assert.match(src, /\bseries\b/)
+})
+
+test('21: a pagina tem os estados carregando, erro e vazio em portugues', () => {
+  const src = code('src/pages/ReportsPage.tsx')
+  assert.ok(src.includes('Carregando os relatórios'))
+  assert.ok(src.includes('Tentar de novo'))
+  assert.ok(src.includes('Não foi possível carregar os relatórios.'))
+  assert.ok(src.includes('Confira a conexão e tente de novo.'))
+  assert.match(src, /<Notice\s+tone="danger"/)
+  const empty = code('src/components/reports/EmptyState.tsx')
+  assert.ok(empty.includes('Sem lançamentos neste ciclo'))
+  assert.ok(empty.includes('Quando houver gastos ou receitas, os gráficos aparecem aqui.'))
+})
+
+test('21: nenhum arquivo de Relatorios usa seletor de mes, consulta por mes ou saldo acumulado', () => {
+  for (const f of ALL_REPORT_FILES) {
+    const src = code(f)
+    assert.doesNotMatch(src, /MonthSelector/, f)
+    assert.doesNotMatch(src, /subMonths\(/, f)
+    assert.doesNotMatch(src, /getTransactions\(/, f)
+    assert.doesNotMatch(src, /getAccumulatedBalance/, f)
+    assert.doesNotMatch(src, /fontSize:\s*11\b/, f)
+    assert.doesNotMatch(src, /text-\[11px\]/, f)
+  }
+})
+
+test('21: todos os arquivos de Relatorios passam na escala tipografica e no alvo de toque', () => {
+  assert.deepEqual(scaleProblems(ALL_REPORT_FILES), [])
+  assert.deepEqual(touchProblems(ALL_REPORT_FILES), [])
+})
+
+test('21: nenhum texto de Relatorios perdeu o acento', () => {
+  for (const f of ALL_REPORT_FILES) {
+    const src = code(f)
+    for (const bad of ['Relatorios', 'Evolucao', 'Comparacao', 'Saidas', 'Visao geral', 'transacoes', 'lancamentos', 'Nao foi']) {
+      assert.ok(!src.includes(bad), `${f}: "${bad}" sem acento`)
+    }
+  }
 })

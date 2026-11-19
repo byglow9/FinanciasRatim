@@ -103,3 +103,17 @@ test('WR-12: aporte de meta com id gerado no cliente, idempotente na nova tentat
   assert.match(form, /setContributionId\(newContributionId\(\)\)/)
   assert.match(form, /onSave\(fromCents\(cents\), cleanDescription \|\| undefined, contributionId\)/)
 })
+
+test('WR-13: "Manter" devolve o foco ao botao de apagar e a falha devolve ao botao seguro', () => {
+  for (const f of [
+    'src/components/ui/row-actions-sheet.tsx',
+    'src/components/calendar/NoteSheet.tsx',
+    'src/components/calendar/EventSheet.tsx',
+  ]) {
+    const src = code(f)
+    assert.match(src, /restoreFocus\.current = true\s*\n\s*setConfirming\(false\)/, `${f}: Manter nao marca a volta do foco`)
+    assert.match(src, /askRef\.current\?\.focus\(\)/, `${f}: sem foco no gatilho de apagar`)
+    assert.match(src, /ref=\{askRef\}/, `${f}: gatilho sem askRef`)
+    assert.match(src, /keepRef\.current\?\.focus\(\)\s*\n\s*\}, \[deleting, (deleteFailed|failed)\]\)/, `${f}: falha ao apagar sem foco no botao seguro`)
+  }
+})

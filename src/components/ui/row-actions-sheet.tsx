@@ -63,6 +63,9 @@ export function RowActionsSheet({
   const [deleting, setDeleting] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
   const keepRef = React.useRef<HTMLButtonElement>(null)
+  // Gatilho "Apagar" e marca de que o foco deve voltar a ele ao tocar em "Manter" (WR-13).
+  const askRef = React.useRef<HTMLButtonElement>(null)
+  const restoreFocus = React.useRef(false)
 
   // Volta a primeira etapa a cada abertura (ajuste durante a renderizacao, sem efeito).
   const [wasOpen, setWasOpen] = React.useState(false)
@@ -78,7 +81,16 @@ export function RowActionsSheet({
   // O foco vai para "Manter" (a opcao segura) quando o conteudo troca pela confirmacao.
   React.useEffect(() => {
     if (confirming) keepRef.current?.focus()
+    else if (restoreFocus.current) {
+      restoreFocus.current = false
+      askRef.current?.focus()
+    }
   }, [confirming])
+
+  // Depois de uma falha ao apagar, o foco volta ao botao seguro em vez de ficar num botao desabilitado.
+  React.useEffect(() => {
+    if (!deleting && failed) keepRef.current?.focus()
+  }, [deleting, failed])
 
   const press = (action: RowAction) => {
     if (readOnly) {
@@ -146,7 +158,10 @@ export function RowActionsSheet({
               variant="outline"
               size="lg"
               className="flex-1 px-4"
-              onClick={() => setConfirming(false)}
+              onClick={() => {
+                restoreFocus.current = true
+                setConfirming(false)
+              }}
               disabled={deleting}
             >
               {deletion.keepLabel ?? "Manter"}
@@ -174,6 +189,7 @@ export function RowActionsSheet({
           })}
           {deletion ? (
             <button
+              ref={askRef}
               type="button"
               data-autofocus={actions.length === 0 ? "" : undefined}
               aria-disabled={readOnly ? true : undefined}

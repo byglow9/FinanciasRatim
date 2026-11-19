@@ -59,6 +59,9 @@ export function NoteSheet({ open, onClose, note, date, onSave, onDelete, readOnl
 
   const swatches = useRef<(HTMLButtonElement | null)[]>([])
   const keepRef = useRef<HTMLButtonElement>(null)
+  // Gatilho de apagar e marca de que o foco deve voltar a ele ao tocar em "Manter" (WR-13).
+  const askRef = useRef<HTMLButtonElement>(null)
+  const restoreFocus = useRef(false)
 
   // Recomeça o formulário a cada abertura (ajuste durante a renderização, sem efeito).
   const [wasOpen, setWasOpen] = useState(false)
@@ -79,7 +82,16 @@ export function NoteSheet({ open, onClose, note, date, onSave, onDelete, readOnl
   // O foco vai para "Manter" (a opção segura) quando o conteúdo troca pela confirmação.
   useEffect(() => {
     if (confirming) keepRef.current?.focus()
+    else if (restoreFocus.current) {
+      restoreFocus.current = false
+      askRef.current?.focus()
+    }
   }, [confirming])
+
+  // Depois de uma falha ao apagar, o foco volta ao botão seguro em vez de ficar num botão desabilitado.
+  useEffect(() => {
+    if (!deleting && deleteFailed) keepRef.current?.focus()
+  }, [deleting, deleteFailed])
 
   const noteDate = note?.date ?? date
 
@@ -203,7 +215,10 @@ export function NoteSheet({ open, onClose, note, date, onSave, onDelete, readOnl
               variant="outline"
               size="lg"
               className="flex-1 px-4"
-              onClick={() => setConfirming(false)}
+              onClick={() => {
+                restoreFocus.current = true
+                setConfirming(false)
+              }}
               disabled={deleting}
             >
               Manter
@@ -302,6 +317,7 @@ export function NoteSheet({ open, onClose, note, date, onSave, onDelete, readOnl
           </Button>
           {note ? (
             <button
+              ref={askRef}
               type="button"
               aria-disabled={readOnly || undefined}
               onClick={askDeletion}

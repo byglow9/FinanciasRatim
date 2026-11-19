@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 12/24 plans executed
+**Plans:** 13/24 plans executed
 
 Plans:
 **Wave 1**
@@ -221,7 +221,7 @@ Plans:
 
 - [x] 03.1-11-PLAN.md — Transações: três números, Detalhes, busca e filtros fixos, lista por dia e Sheet de ações (UX-02, UX-08, UX-09)
 - [x] 03.1-12-PLAN.md — Contas Fixas: grupos em ordem fixa, caixa quadrada de 44px, filtro e formulário por campo (UX-05, UX-08, UX-09)
-- [ ] 03.1-13-PLAN.md — Casal: Mistura A+B com alternador Ciclo e Mês (UX-06, UX-08, UX-09)
+- [x] 03.1-13-PLAN.md — Casal: Mistura A+B com alternador Ciclo e Mês (UX-06, UX-08, UX-09)
 - [ ] 03.1-14-PLAN.md — Calendário: modelo do dia, redutor de recolhimento e dados por ciclo (UX-03, UX-09)
 - [ ] 03.1-15-PLAN.md — Calendário: Sheets de post-it e de evento (UX-04, UX-08)
 - [ ] 03.1-16-PLAN.md — Porquinho conforme a variante escolhida (UX-07, UX-08)

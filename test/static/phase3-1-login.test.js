@@ -81,3 +81,12 @@ test('AuthContext e ProtectedRoute continuam usando o mesmo contrato', () => {
   assert.match(code('src/components/auth/ProtectedRoute.tsx'), /<LoginForm \/>/)
   assert.match(code('src/contexts/AuthContext.tsx'), /accessError/)
 })
+
+test('envio acessivel: aria-busy, Entrando..., botao desabilitado e foco no primeiro erro', () => {
+  const src = code(FILE)
+  assert.ok(src.includes('aria-busy'), 'sem aria-busy')
+  assert.ok(src.includes('Entrando...'), 'sem o texto Entrando...')
+  assert.match(src, /disabled=\{isSubmitting\}/, 'botao nao fica desabilitado no envio')
+  assert.ok(/shouldFocusError: true|\.focus\(/.test(src), 'sem foco no primeiro campo com erro')
+  assert.match(src, /setAuthFailed\(false\)/, 'a mensagem de falha nao e limpa em novo envio')
+})

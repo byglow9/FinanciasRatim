@@ -1,20 +1,30 @@
 import { useCallback, useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Wallet } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
+import { useCalendarActions } from '@/hooks/useCalendarActions'
 import { useCalendarData } from '@/hooks/useCalendarData'
+import { useReadOnly } from '@/hooks/useReadOnly'
 import { CalendarLegend } from '@/components/calendar/CalendarLegend'
+import { EventSheet } from '@/components/calendar/EventSheet'
 import { MonthGrid } from '@/components/calendar/MonthGrid'
+import { NoteSheet } from '@/components/calendar/NoteSheet'
 import { AgendaList } from '@/components/calendar/AgendaList'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { SegmentedControl } from '@/components/ui/segmented-control'
-import type { PersonType } from '@/types'
+import type { AgendaEvent, Note, PersonType } from '@/types'
 import type { CalendarMode } from '@shared/core/calendarModel.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import { compactMoney, cycleLabel } from '@shared/core/format.js'
 
 const MODE_STORAGE_KEY = 'calendarMode'
+
+/** Meio-dia local da chave YYYY-MM-DD: a data gravada não escorrega de dia por causa do fuso. */
+function dateOfKey(key: string): Date {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Date(year, month - 1, day, 12)
+}
 
 const NAV_BUTTON =
   'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40'
@@ -30,7 +40,25 @@ export function CalendarPage() {
 
   // Porquinho não tem calendário próprio: usa o último perfil de pessoa.
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-  const { cycle, dayModels, summary, loading, error, refetch } = useCalendarData(person, mode)
+  const { cycle, dayModels, summary, notes, events, eventCategories, loading, error, refetch } = useCalendarData(
+    person,
+    mode
+  )
+  const { readOnly, guard } = useReadOnly()
+  const { saveNote, removeNote, saveEvent, removeEvent } = useCalendarActions({
+    person,
+    // Refetch silencioso: não liga o carregando, então a grade e o dia selecionado continuam.
+    onChanged: () => {
+      void refetch()
+    },
+  })
+
+  // Os Sheets ficam montados durante a animação de saída: o item em edição é guardado à parte de `open`.
+  const [noteSheet, setNoteSheet] = useState<{ open: boolean; note: Note | null }>({ open: false, note: null })
+  const [eventSheet, setEventSheet] = useState<{ open: boolean; event: AgendaEvent | null }>({
+    open: false,
+    event: null,
+  })
 
   const todayKey = dayKeyOf(now)
   const days = useMemo(() => Array.from(dayModels.values()), [dayModels])
@@ -46,6 +74,23 @@ export function CalendarPage() {
   const handleMode = (next: CalendarMode) => {
     setMode(next)
     localStorage.setItem(MODE_STORAGE_KEY, next)
+  }
+
+  const openNote = useCallback((id: string) => {
+    const note = notes.find((n) => n.id === id)
+    if (note) setNoteSheet({ open: true, note })
+  }, [notes])
+
+  const openEvent = useCallback((id: string) => {
+    const event = events.find((e) => e.id === id)
+    if (event) setEventSheet({ open: true, event })
+  }, [events])
+
+  // Criar vale para o dia selecionado: nota no Financeiro, evento na Agenda.
+  const openCreate = () => {
+    if (guard('editar')) return
+    if (mode === 'agenda') setEventSheet({ open: true, event: null })
+    else setNoteSheet({ open: true, note: null })
   }
 
   const handleSelect = useCallback((key: string) => setPickedKey(key), [])
@@ -108,6 +153,16 @@ export function CalendarPage() {
           />
         </div>
         <CalendarLegend />
+        <Button
+          type="button"
+          size="circle"
+          aria-label={mode === 'agenda' ? 'Novo evento' : 'Nova nota'}
+          aria-disabled={readOnly ? true : undefined}
+          onClick={openCreate}
+          className="shrink-0 aria-disabled:opacity-50"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+        </Button>
       </div>
 
       {mode === 'financeiro' && !loading && !error ? (
@@ -123,6 +178,8 @@ export function CalendarPage() {
         days={days}
         selectedKey={selectedKey}
         mode={mode}
+        onOpenNote={openNote}
+        onOpenEvent={openEvent}
         state={
           error ? (
             <Notice
@@ -149,9 +206,34 @@ export function CalendarPage() {
               <p className="text-xs font-normal text-muted-foreground">
                 Adicione um post-it ou um evento para ele aparecer aqui.
               </p>
+              <Button type="button" variant="outline" onClick={openCreate}>
+                {mode === 'agenda' ? 'Adicionar evento' : 'Adicionar post-it'}
+              </Button>
             </div>
           ) : undefined
         }
+      />
+
+      <NoteSheet
+        open={noteSheet.open}
+        onClose={() => setNoteSheet((s) => ({ ...s, open: false }))}
+        note={noteSheet.note}
+        date={noteSheet.note?.date ?? dateOfKey(selectedKey)}
+        onSave={saveNote}
+        onDelete={removeNote}
+        readOnly={readOnly}
+        onBlocked={() => guard('editar')}
+      />
+      <EventSheet
+        open={eventSheet.open}
+        onClose={() => setEventSheet((s) => ({ ...s, open: false }))}
+        event={eventSheet.event}
+        date={eventSheet.event?.date ?? dateOfKey(selectedKey)}
+        categories={eventCategories}
+        onSave={saveEvent}
+        onDelete={removeEvent}
+        readOnly={readOnly}
+        onBlocked={() => guard('editar')}
       />
     </div>
   )

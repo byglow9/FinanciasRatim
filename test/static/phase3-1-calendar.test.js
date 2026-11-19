@@ -1,7 +1,7 @@
 // Guarda estatica do Calendario da Fase 3.1 (planos 14 e 20). Rodar: node --test test/static/phase3-1-calendar.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { assertIncludes, code, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+import { assertIncludes, code, exists, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const CALENDAR_FILES = [
   'src/pages/CalendarPage.tsx',
@@ -11,6 +11,7 @@ const CALENDAR_FILES = [
   'src/components/calendar/AgendaDay.tsx',
   'src/components/calendar/MiniPostIt.tsx',
   'src/components/calendar/CalendarLegend.tsx',
+  'src/components/calendar/PostItCard.tsx',
 ]
 
 test('Calendario v3: a pagina segue o ciclo do topo pelo modelo, sem seletor de mes proprio nem consulta direta', () => {
@@ -51,6 +52,47 @@ test('Calendario: nenhum texto de 8px ou 10px', () => {
   for (const f of CALENDAR_FILES) {
     assert.doesNotMatch(code(f), /text-\[(8|10)px\]/, `${f}: texto abaixo de 12px`)
   }
+})
+
+test('Calendario: sem confirmacao nativa e sem os quatro arquivos legados', () => {
+  for (const f of CALENDAR_FILES) {
+    assert.doesNotMatch(code(f), /window\.confirm|\bconfirm\(/, `${f}: confirmacao nativa do navegador`)
+  }
+  for (const f of [
+    'src/components/calendar/MonthCalendar.tsx',
+    'src/components/calendar/AgendaCalendar.tsx',
+    'src/components/calendar/EventForm.tsx',
+    'src/components/notes/NoteForm.tsx',
+  ]) {
+    assert.equal(exists(f), false, `${f} deveria ter sido removido`)
+  }
+})
+
+test('Calendario: a pagina liga NoteSheet, EventSheet e as acoes depois de guard("editar")', () => {
+  assertIncludes('src/pages/CalendarPage.tsx', [
+    'NoteSheet',
+    'EventSheet',
+    'useCalendarActions(',
+    "guard('editar')",
+    'readOnly={readOnly}',
+    'onBlocked=',
+    'Nova nota',
+    'Novo evento',
+    'Adicionar post-it',
+    'Adicionar evento',
+    'Nada agendado neste ciclo',
+    'Carregando o calendário',
+    'Não foi possível carregar o calendário.',
+    'Tentar de novo',
+  ])
+})
+
+test('AgendaDay e PostItCard: nome de categoria atual, estado da conta, token de post-it e dobra', () => {
+  const day = 'src/components/calendar/AgendaDay.tsx'
+  assertIncludes(day, ['@shared/core/categories.js', 'categoryDisplayName(', 'useArea()', 'billSupportText', 'shortSigned(', 'PostItCard'])
+  const src = code(day)
+  assert.doesNotMatch(src, /\{\s*(t|tx|item|transaction)\.category\s*\}/, 'renderiza o texto cru da categoria')
+  assertIncludes('src/components/calendar/PostItCard.tsx', ['bg-pit-', 'rounded-[4px_4px_16px_4px]', 'motion-reduce:rotate-0', '<button'])
 })
 
 test('telas do Calendario: escala tipografica e alvos de toque limpos', () => {

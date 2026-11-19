@@ -84,11 +84,11 @@ test('6: encaixe fora de meta.slots, comprimento no pior caso e id fora do padra
   assert.ok(has(check('direto', `{categoria} ${'a'.repeat(60)}`, 'lp-di-01', central), 'compr'))
 })
 
-function bankWith(counts, extra = {}) {
+function bankWith(counts) {
   const make = (tone, code, n, profane) =>
     Array.from({ length: n }, (_, i) => ({
       id: `lp-${code}-${String(i + 1).padStart(2, '0')}`,
-      t: `${profane && i < profane ? 'Porra, ' : ''}{categoria} variante ${'abcdefghij'[i]}${extra.suffix || ''}.`,
+      t: `${profane && i < profane ? 'Porra, ' : ''}{categoria} variante ${'abcdefghij'[i]} do tom ${tone}.`,
     }))
   return {
     'limite-perto': {

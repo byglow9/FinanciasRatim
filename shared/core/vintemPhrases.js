@@ -17,6 +17,8 @@
 //   semana" e nunca "{vezes} vezes". {ordinal} vem por extenso ("quarto").
 // - Ids estaveis: prefixo da situacao, tom (su, di, sf) e numero de dois digitos.
 import { PHRASES_LIMITES } from './vintemPhrasesLimites.js'
+import { PHRASES_LANCAMENTO } from './vintemPhrasesLancamento.js'
+import { PHRASES_RITMO } from './vintemPhrasesRitmo.js'
 
 /** Os tres tons, na ordem das opcoes de Configuracoes. */
 export const TONES = Object.freeze(['suave', 'direto', 'sem-filtro'])
@@ -70,8 +72,28 @@ export const SITUATION_META = Object.freeze({
   'categoria-acima-media': meta('ca', 'reacao', ['categoria', 'pct', 'valor']),
 })
 
-/** Mescla de `PHRASES_LIMITES` por ora (os outros grupos entram na tarefa seguinte). */
-export const PHRASES = Object.freeze({ ...PHRASES_LIMITES })
+/**
+ * Junta os modulos de grupo em um so objeto. Duas fontes com a mesma situacao
+ * sao erro na carga (cada situacao pertence a um unico grupo).
+ * @param {ReadonlyArray<Record<string, any>>} groups
+ * @returns {Readonly<Record<string, any>>}
+ */
+export function mergeGroups(groups) {
+  /** @type {Record<string, any>} */
+  const out = {}
+  for (const group of groups) {
+    for (const situation of Object.keys(group)) {
+      if (Object.prototype.hasOwnProperty.call(out, situation)) {
+        throw new Error(`vintemPhrases: situacao "${situation}" definida em dois modulos de grupo`)
+      }
+      out[situation] = group[situation]
+    }
+  }
+  return Object.freeze(out)
+}
+
+/** Mescla dos tres modulos de grupo (limites, lancamento, ritmo). */
+export const PHRASES = mergeGroups([PHRASES_LIMITES, PHRASES_LANCAMENTO, PHRASES_RITMO])
 
 /** Revisao do dono (D-12): `reviewedAt` vira data quando o dono fechar o checkpoint de conteudo. */
 export const REVIEW = Object.freeze({ reviewedAt: null })

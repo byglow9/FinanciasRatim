@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "03.1"
 current_phase_name: redesign-das-abas
 status: executing
-stopped_at: Completed 03.1-13-PLAN.md
-last_updated: "2026-11-19T14:42:45.078Z"
+stopped_at: Completed 03.1-14-PLAN.md
+last_updated: "2026-11-19T14:50:19.107Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 03.1 execution started
-state_head: 0dc156451cdcc12c75c963c65768799cf9eae048
+state_head: dfaa862dbe707f667fd270daaa6a792b16aa45d4
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 66
-  completed_plans: 55
+  completed_plans: 56
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 13 of 24
+Plan: 14 of 24
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 03.1 execution started
 
@@ -106,6 +106,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P11 | 35 min | 3 tasks | 9 files |
 | Phase 03.1 P12 | 40 min | 3 tasks | 7 files |
 | Phase 03.1 P13 | 35 min | 3 tasks | 8 files |
+| Phase 03.1 P14 | 35 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: [03.1-08] Icone Plus do botao de lancamento usa size-7 (28px) para nao ser acusado como alvo de toque pelo helper touchProblems
 - [Phase 03.1]: [03.1-09] Hooks por ciclo so consultam com settingsStatus ready; loadAccumulated devolve centavos; togglePaid devolve boolean
 - [Phase 03.1]: 03.1-11: editar sem mudar o dia mantem o instante original da transacao; RowActionsSheet unico na pagina
+- [Phase 03.1]: 03.1-14: nota sem data nao entra no calendario (mantido o comportamento atual do app); modo agenda ignora camada financeira
 
 ### Pending Todos
 
@@ -181,6 +183,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T14:42:44.992Z
-Stopped at: Completed 03.1-13-PLAN.md
+Last session: 2026-11-19T14:50:19.012Z
+Stopped at: Completed 03.1-14-PLAN.md
 Resume file: None

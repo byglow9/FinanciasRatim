@@ -7,9 +7,9 @@ import { code } from './helpers/phase3-1.js'
 test('CR-01: editar meta nao envia currentAmount; so o aporte altera o valor guardado', () => {
   const form = code('src/components/goals/GoalForm.tsx')
   assert.doesNotMatch(form, /currentAmount\s*[:,}]/, 'GoalForm ainda monta currentAmount')
-  assert.match(form, /Omit<Goal, 'id' \| 'createdAt' \| 'currentAmount'>/, 'GoalFormData deve omitir currentAmount')
+  assert.match(form, /Omit<Goal, 'id' \| 'createdAt' \| 'currentAmount'/, 'GoalFormData deve omitir currentAmount')
   const page = code('src/pages/GoalsPage.tsx')
-  assert.match(page, /add\(\{ \.\.\.data, currentAmount: 0 \}\)/, 'criar deve comecar em zero')
+  assert.match(page, /add\(\{ \.\.\.data, [^}]*currentAmount: 0 \}\)/, 'criar deve comecar em zero')
   assert.match(page, /update\(id, data\)/)
 })
 

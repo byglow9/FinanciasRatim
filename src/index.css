@@ -239,6 +239,33 @@
   animation: dialog-content-in 0.2s ease-out;
 }
 
+/* ---- Fase 4: paleta do Vintem. Bloco plano (fora de @theme e de :root) para nao entrar no mapa de
+   tokens da guarda de contraste. O corpo segue o token de acao; as demais cores derivam dele ou sao
+   tokens proprios. Valores hexadecimais existem so aqui, nunca em .ts e .tsx. A classe .vt precisa
+   estar no elemento que desenha o Vintem ou em um ancestral dele. ---- */
+@layer base {
+  .vt {
+    --vintem-body: var(--color-action);
+    --vintem-snout: color-mix(in srgb, var(--color-action) 85%, white);
+    --vintem-far: color-mix(in srgb, var(--color-action) 75%, black);
+    --vintem-ink: color-mix(in srgb, var(--color-action) 55%, black);
+    --vintem-eye: #ffffff;
+    --vintem-brow: var(--color-action-text);
+    --vintem-wet: #93c5fd;
+    --vintem-tear: #7dd3fc;
+    --vintem-sweat: #2563eb;
+    --vintem-anger: #dc2626;
+    --vintem-spark: #f59e0b;
+    --vintem-excl: #d97706;
+    --vintem-accent-line: #92400e;
+    --vintem-z: #66635a;
+    --vintem-coin: #fbbf24;
+    --vintem-coin-line: #92400e;
+    --vintem-balloon: hsl(var(--foreground));
+    --vintem-balloon-fg: hsl(var(--background));
+  }
+}
+
 /* ---- Fase 3: classes de animacao e utilitarios (unico dono: este arquivo) ---- */
 
 .num-display {

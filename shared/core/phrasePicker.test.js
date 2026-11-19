@@ -133,7 +133,7 @@ test('pick devolve nulo sem o encaixe categoria e sem banco para a situacao', ()
       null,
     )
   }
-  assert.equal(pick({ situation: 'receita', tone: 'suave', slots: SLOTS, rand: seeded(1), bank: PHRASES }), null)
+  assert.equal(pick({ situation: 'situacao-inexistente', tone: 'suave', slots: SLOTS, rand: seeded(1), bank: PHRASES }), null)
 })
 
 test('pick respeita maxLen e devolve nulo quando nenhuma cabe', () => {

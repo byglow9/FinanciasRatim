@@ -5,11 +5,14 @@ import { buildSlots, pick, pushRecent, recentKey, recentLimit, needsOf } from '.
 import { SITUATION_META, TONES } from './vintemPhrases.js'
 import { PHRASES_LANCAMENTO } from './vintemPhrasesLancamento.js'
 
-// Situacoes do grupo ja escritas, com os encaixes reais usados na varredura de pick.
+// Situacoes do grupo (as seis), com os encaixes reais usados na varredura de pick.
 const GROUP = {
   'gasto-grande': buildSlots({ categoria: 'Mercado', valorCents: 35000 }),
   'lancamento-ok': buildSlots({ categoria: 'Lazer', valorCents: 4590 }),
   receita: buildSlots({ categoria: 'Lazer', valorCents: 4590 }),
+  'porquinho-guardou': buildSlots({ valorCents: 15000 }),
+  'porquinho-retirou': buildSlots({ valorCents: 15000 }),
+  'meta-batida': buildSlots({ valorCents: 15000 }),
 }
 
 const profane = (t) => PROFANITY.some((re) => re.test(t))
@@ -59,6 +62,12 @@ test('receita nao afirma se a entrada era esperada ou nao', () => {
       assert.doesNotMatch(p.t, /esperad|previst/i, p.id)
     }
   }
+})
+
+test('o grupo cobre as seis situacoes e nada alem delas', () => {
+  const six = ['lancamento-ok', 'gasto-grande', 'receita', 'porquinho-guardou', 'porquinho-retirou', 'meta-batida']
+  assert.deepEqual(Object.keys(GROUP).sort(), six.slice().sort())
+  assert.deepEqual(Object.keys(PHRASES_LANCAMENTO).sort(), six.slice().sort())
 })
 
 // Acaso deterministico (LCG) para a varredura ser reprodutivel.

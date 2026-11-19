@@ -190,18 +190,20 @@ Plans:
 **Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-07, UX-08, UX-09
 **Depends on:** Phase 3
 **Success Criteria** (what must be TRUE):
+
   1. O dock não tem fade de borda, usa um só verde e deixa só o próximo ícone da direita parcialmente visível
   2. Transações, Calendário, Contas Fixas e Casal seguem os sketches aprovados 009, 010, 011 e 013 (mês que recolhe, mapa de calor, mini post-it no canto, categorias em ordem fixa, caixa quadrada de marcar, mistura A+B do Casal)
   3. Marcar uma conta como paga nunca muda a ordem das categorias e não mostra aviso de desfazer
   4. Relatórios, Metas, Porquinho e Login só são implementados depois de o dono escolher o layout em sketch
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
-**Plans:** 24 plans
+
+**Plans:** 1/24 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 03.1-01-PLAN.md — Guardas estáticas particionadas por tela e módulo de apoio (UX-08)
+- [x] 03.1-01-PLAN.md — Guardas estáticas particionadas por tela e módulo de apoio (UX-08)
 - [ ] 03.1-02-PLAN.md — Núcleo A: chave de dia, grade do ciclo, ordem estável de categorias, valores e filtro de transações (UX-02, UX-03, UX-05, UX-09)
 - [ ] 03.1-04-PLAN.md — Auditoria de layout em Chrome a 360x640 e 390x844, sem dependência nova (UX-08)
 - [ ] 03.1-05-PLAN.md — Sketches 014 (Porquinho) e 015 (Metas) para o dono escolher (UX-07)

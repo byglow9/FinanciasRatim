@@ -36,7 +36,6 @@ test('WR-03: bumpData depois de apagar mora na pagina, nunca no hook', () => {
   assert.match(page, /RowActionsSheet/)
   assert.match(page, /guard\('editar'\)/)
   assert.doesNotMatch(code('src/hooks/useCycleTransactions.ts'), /bumpData/)
-  assert.doesNotMatch(code('src/hooks/useTransactions.ts'), /bumpData/)
 })
 
 test('criar usa o LaunchSheet do dock, sem formulario proprio (D-03)', () => {

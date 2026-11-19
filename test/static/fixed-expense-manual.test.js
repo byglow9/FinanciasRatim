@@ -25,7 +25,7 @@ function walk(dir, exts, out = []) {
 }
 
 const SERVICE = 'src/services/fixedExpenses.service.ts'
-const HOOK = 'src/hooks/useFixedExpenses.ts'
+const HOOK = 'src/hooks/useCycleBills.ts'
 
 test('markAsPaid grava em PAY_COL e nao toca lancamentos', () => {
   const text = read(SERVICE)
@@ -44,9 +44,9 @@ test('PAY_COL continua sendo a colecao fixedExpensePayments', () => {
   assert.match(code(read(SERVICE)), /const PAY_COL\s*=\s*'fixedExpensePayments'/)
 })
 
-test('o hook de contas fixas nao importa o servico de lancamentos e usa markAsPaid', () => {
+test('o hook de contas fixas por ciclo nao importa o servico de lancamentos e usa markAsPaid', () => {
   const src = code(read(HOOK))
-  assert.ok(!/@\/services\/transactions\.service/.test(src), 'useFixedExpenses importa transactions.service')
+  assert.ok(!/@\/services\/transactions\.service/.test(src), 'useCycleBills importa transactions.service')
   assert.ok(src.includes('markAsPaid('), 'o hook precisa chamar markAsPaid(')
   assert.ok(src.includes('unmarkAsPaid('), 'o hook precisa chamar unmarkAsPaid(')
 })

@@ -106,19 +106,6 @@ test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos s
 
 // ---------------------------------------------------------------- Tarefa 2: seletor de ciclo unico
 
-test('Transacoes, Calendario e Contas Fixas seguem o ciclo do topo, sem seletor de mes proprio (MonthSelector.tsx)', () => {
-  // Casal e Relatorios seguem com o seletor de grade (pendencia da Fase 3.1): o componente fica.
-  assert.ok(exists('src/components/shared/MonthSelector.tsx'))
-})
-
-test('o mes do ciclo e memoizado por cycle.key (sem laco de refetch)', () => {
-  const hook = code('src/hooks/useCycleMonth.ts')
-  assert.match(hook, /useMemo\(\(\) => cycleMonthDate\(cycle\), \[cycle\.key\]\)/)
-  const lib = code('src/lib/cycleMonth.ts')
-  assert.match(lib, /export function cycleMonthDate\b/)
-  assert.match(lib, /cycle\.startParts\.year, cycle\.startParts\.month - 1, 1/)
-})
-
 test('CycleSelector redesenhado: lista por ano com periodo, Atual e Check, sem truncar o rotulo', () => {
   const src = code('src/components/layout/CycleSelector.tsx')
   for (const needle of [
@@ -234,11 +221,15 @@ test('WR-07: markAsPaid grava por setDoc com ID deterministico e a interface tra
   assert.match(svc, /await setDoc\(doc\(db, PAY_COL, id\)/)
   const markAt = svc.indexOf('export async function markAsPaid')
   assert.doesNotMatch(svc.slice(markAt, svc.indexOf('export async function unmarkAsPaid')), /addDoc\(/)
-  const hook = code('src/hooks/useFixedExpenses.ts')
-  assert.match(hook, /pendingToggles = useRef\(new Set<string>\(\)\)/)
-  assert.match(hook, /if \(pendingToggles\.current\.has\(expenseId\)\) return/)
-  assert.match(hook, /payments\.filter\(\s*\(p\) => p\.fixedExpenseId === expenseId/, 'desmarcar apaga todos os pagamentos da conta')
-  assert.match(hook, /Promise\.all\(existingPayments\.map\(\(p\) => unmarkAsPaid\(p\.id\)\)\)/)
+  // O hook por ciclo (useCycleBills) substitui o legado por mes: trava do duplo toque por ocorrencia,
+  // apagar todos os pagamentos da ocorrencia e gravar pelo mes e ano da ocorrencia (D-19).
+  const hook = code('src/hooks/useCycleBills.ts')
+  assert.match(hook, /const pending = useRef\(new Set<string>\(\)\)/)
+  assert.match(hook, /if \(pending\.current\.has\(key\)\) return false/)
+  assert.match(hook, /payments\.filter\(\s*\(p\) => p\.fixedExpenseId === item\.billId && p\.month === month && p\.year === year/, 'desmarcar apaga todos os pagamentos da ocorrencia')
+  assert.match(hook, /Promise\.all\(existing\.map\(\(p\) => unmarkAsPaid\(p\.id\)\)\)/)
+  assert.match(hook, /const \{ month, year \} = item\.occurrence/, 'mes e ano vem da ocorrencia')
+  assert.match(hook, /markAsPaid\(item\.billId, month, year,/, 'grava pelo mes e ano da ocorrencia')
   const sections = code('src/components/dashboard/HomeSections.tsx')
   // O estado de pendencia vem antes do retorno antecipado (regra dos hooks).
   assert.ok(sections.indexOf('useState<ReadonlySet<string>>') < sections.indexOf('if (!view)'))

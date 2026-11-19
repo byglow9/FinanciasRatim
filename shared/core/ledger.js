@@ -4,6 +4,7 @@
 // os limites e os alertas nascem na Fase 3 e nao entram aqui (D-12).
 
 import { DEFAULT_TZ, monthRangeOf, zonedParts } from './time.js'
+import { daysBetweenParts } from './cycle.js'
 
 /** @typedef {{ type: string, amount: number, date: Date }} LedgerTx */
 
@@ -94,6 +95,36 @@ export function weeklySpend({ transactions, now, month, tz = DEFAULT_TZ }) {
     daysRemaining,
     weeksRemaining,
     saldoMensal: fromCents(saldoCents),
+    maxWeeklySpend: fromCents(Math.round(saldoCents / weeksRemaining)),
+  }
+}
+
+/**
+ * Variante por ciclo de weeklySpend: mesma semantica, mas sobre a janela exata
+ * cycle.start a cycle.end (nao o mes-calendario). Os dias restantes contam hoje
+ * ate cycle.endParts, inclusive; antes do inicio a referencia e o inicio, depois
+ * do fim e o fim (1 dia). Semanas = teto de dias / 7; o limite semanal e o saldo
+ * do ciclo dividido pelas semanas, arredondado ao centavo.
+ * @param {{
+ *   transactions: LedgerTx[],
+ *   cycle: import('./cycle.js').Cycle,
+ *   now: Date,
+ *   tz?: string
+ * }} input
+ * @returns {{ daysRemaining: number, weeksRemaining: number, saldoCiclo: number, maxWeeklySpend: number }}
+ */
+export function weeklySpendForCycle({ transactions, cycle, now, tz = DEFAULT_TZ }) {
+  const startMs = cycle.start.getTime()
+  const endMs = cycle.end.getTime()
+  const inCycle = transactions.filter((t) => t.date.getTime() >= startMs && t.date.getTime() <= endMs)
+  const reference = now.getTime() < startMs ? cycle.start : now.getTime() > endMs ? cycle.end : now
+  const daysRemaining = daysBetweenParts(zonedParts(reference, tz), cycle.endParts) + 1
+  const weeksRemaining = Math.ceil(daysRemaining / 7)
+  const saldoCents = netCents(inCycle)
+  return {
+    daysRemaining,
+    weeksRemaining,
+    saldoCiclo: fromCents(saldoCents),
     maxWeeklySpend: fromCents(Math.round(saldoCents / weeksRemaining)),
   }
 }

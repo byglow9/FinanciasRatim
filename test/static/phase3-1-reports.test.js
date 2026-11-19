@@ -58,3 +58,10 @@ test('18: series.js usa isInCycle do nucleo e nao tem relogio nem date-fns', () 
   assert.match(src, /export function cycleSeries\b/)
   assert.doesNotMatch(src, /Date\.now|new Date\(\)|date-fns/)
 })
+
+test('18: ledger.js exporta weeklySpendForCycle e continua exportando weeklySpend', () => {
+  const src = code('shared/core/ledger.js')
+  assert.match(src, /export function weeklySpendForCycle\b/)
+  assert.match(src, /export function weeklySpend\b/)
+  assert.doesNotMatch(src, /Date\.now|new Date\(\)|date-fns/)
+})

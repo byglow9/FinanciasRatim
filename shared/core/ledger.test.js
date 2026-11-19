@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { toCents, fromCents, monthTotals, accumulatedBalance, weeklySpend } from './ledger.js'
+import { toCents, fromCents, monthTotals, accumulatedBalance, weeklySpend, weeklySpendForCycle } from './ledger.js'
+import { cycleOf } from './cycle.js'
 
 const tx = (type, amount, iso) => ({ type, amount, date: new Date(iso) })
 
@@ -83,4 +84,101 @@ test('weeklySpend arredonda o limite semanal ao centavo e ignora lancamentos de 
   })
   assert.equal(three.weeksRemaining, 3)
   assert.equal(three.maxWeeklySpend, 33.33)
+})
+
+// weeklySpendForCycle: mesma semantica de weeklySpend, mas sobre cycle.start a cycle.end.
+// Dia de salario 15: ciclo 15/01/2026 a 14/02/2026 (31 dias) em Sao Paulo.
+const janCycle = cycleOf(new Date('2026-01-20T15:00:00Z'), 15)
+
+test('weeklySpendForCycle com now no meio do ciclo conta hoje ate endParts, inclusive', () => {
+  const list = [
+    tx('entrada', 3000, '2026-01-16T15:00:00Z'),
+    tx('saida', 1000, '2026-01-18T15:00:00Z'),
+  ]
+  // 20/01 ate 14/02 = 25 dias de diferenca + 1 = 26; teto(26/7) = 4 semanas
+  const r = weeklySpendForCycle({ transactions: list, cycle: janCycle, now: new Date('2026-01-20T15:00:00Z') })
+  assert.equal(r.daysRemaining, 26)
+  assert.equal(r.weeksRemaining, 4)
+  assert.equal(r.saldoCiclo, 2000)
+  assert.equal(r.maxWeeklySpend, 500)
+})
+
+test('weeklySpendForCycle: now antes do inicio usa o inicio e depois do fim usa o fim', () => {
+  const before = weeklySpendForCycle({ transactions: [], cycle: janCycle, now: new Date('2026-01-10T15:00:00Z') })
+  assert.deepEqual([before.daysRemaining, before.weeksRemaining], [31, 5])
+  const after = weeklySpendForCycle({ transactions: [], cycle: janCycle, now: new Date('2026-03-01T15:00:00Z') })
+  assert.deepEqual([after.daysRemaining, after.weeksRemaining], [1, 1])
+  // 1 ms depois do fim ainda e "depois": referencia no fim, 1 dia
+  const justAfter = weeklySpendForCycle({
+    transactions: [],
+    cycle: janCycle,
+    now: new Date(janCycle.end.getTime() + 1),
+  })
+  assert.equal(justAfter.daysRemaining, 1)
+  // no instante exato do inicio: ciclo inteiro
+  const atStart = weeklySpendForCycle({ transactions: [], cycle: janCycle, now: janCycle.start })
+  assert.equal(atStart.daysRemaining, 31)
+})
+
+test('weeklySpendForCycle usa o dia de Sao Paulo na fronteira da meia-noite', () => {
+  // 2026-01-20T02:30Z ainda e 19/01 em Sao Paulo: 27 dias ate 14/02, nao 26
+  const r = weeklySpendForCycle({ transactions: [], cycle: janCycle, now: new Date('2026-01-20T02:30:00Z') })
+  assert.equal(r.daysRemaining, 27)
+  assert.equal(r.weeksRemaining, 4)
+})
+
+test('weeklySpendForCycle soma so a janela do ciclo, nas pontas inclusive, em centavos', () => {
+  const list = [
+    tx('entrada', 0.1, '2026-01-15T03:00:00.000Z'), // start
+    tx('entrada', 0.2, '2026-02-15T02:59:59.999Z'), // end
+    tx('entrada', 9999, '2026-01-15T02:59:59.999Z'), // 1 ms antes: fora
+    tx('entrada', 9999, '2026-02-15T03:00:00.000Z'), // 1 ms depois: fora
+  ]
+  const r = weeklySpendForCycle({ transactions: list, cycle: janCycle, now: new Date('2026-01-20T15:00:00Z') })
+  assert.equal(r.saldoCiclo, 0.3)
+})
+
+test('weeklySpendForCycle arredonda o limite semanal ao centavo', () => {
+  // 14 dias restantes -> 2 semanas; 100 / 2 = 50
+  const odd = weeklySpendForCycle({
+    transactions: [tx('entrada', 100, '2026-01-16T15:00:00Z')],
+    cycle: janCycle,
+    now: new Date('2026-02-01T15:00:00Z'),
+  })
+  assert.equal(odd.weeksRemaining, 2)
+  assert.equal(odd.maxWeeklySpend, 50)
+  // 22 dias -> 4 semanas... use 15 dias -> 3 semanas: 100 / 3 = 33.33
+  const three = weeklySpendForCycle({
+    transactions: [tx('entrada', 100, '2026-01-16T15:00:00Z')],
+    cycle: janCycle,
+    now: new Date('2026-01-31T15:00:00Z'),
+  })
+  assert.equal(three.daysRemaining, 15)
+  assert.equal(three.weeksRemaining, 3)
+  assert.equal(three.maxWeeklySpend, 33.33)
+})
+
+test('weeklySpendForCycle com dia de salario 1 coincide com weeklySpend do mes-calendario', () => {
+  const now = new Date('2026-11-09T15:00:00Z')
+  const list = [...novTxs, tx('entrada', 9999, '2026-10-02T15:00:00Z')]
+  const legacy = weeklySpend({ transactions: list, now, month: month(11) })
+  const cyc = weeklySpendForCycle({ transactions: list, cycle: cycleOf(now, 1), now })
+  assert.equal(cyc.daysRemaining, legacy.daysRemaining)
+  assert.equal(cyc.weeksRemaining, legacy.weeksRemaining)
+  assert.equal(cyc.saldoCiclo, legacy.saldoMensal)
+  assert.equal(cyc.maxWeeklySpend, legacy.maxWeeklySpend)
+})
+
+test('weeklySpendForCycle atravessa a virada do ano (ciclo 15/12 a 14/01)', () => {
+  const dec = cycleOf(new Date('2025-12-20T15:00:00Z'), 15)
+  // 31/12 ate 14/01 = 14 dias + 1 = 15 -> 3 semanas
+  const r = weeklySpendForCycle({
+    transactions: [tx('entrada', 300, '2025-12-16T15:00:00Z'), tx('saida', 30, '2026-01-02T15:00:00Z')],
+    cycle: dec,
+    now: new Date('2025-12-31T15:00:00Z'),
+  })
+  assert.equal(r.daysRemaining, 15)
+  assert.equal(r.weeksRemaining, 3)
+  assert.equal(r.saldoCiclo, 270)
+  assert.equal(r.maxWeeklySpend, 90)
 })

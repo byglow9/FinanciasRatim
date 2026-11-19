@@ -1,0 +1,150 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css">
+<title>017 Login</title>
+<style>
+/* Sketch 017: autossuficiente (sem fontes nem scripts externos, mitigação T-3.1-05-01). Só tamanhos 12, 16 e 28 e pesos 400 e 700. */
+*{box-sizing:border-box;margin:0}
+body{background:#cfcfd4;font:400 16px/1.4 var(--font-sans);color:var(--color-text);min-height:100vh}
+button,select,input{font:inherit;color:inherit}
+#variant-nav{position:relative;background:#fff;border-bottom:1px solid #ddd;padding:6px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font:400 12px var(--font-sans)}
+.variant-tab{height:44px;border:1px solid #ccc;background:#fff;border-radius:8px;padding:0 12px;cursor:pointer;font:400 12px var(--font-sans);color:#111}
+.variant-tab.active{background:#111;color:#fff;border-color:#111}
+#variant-nav label{margin-left:auto}
+#ressel{height:44px;border:1px solid #ccc;border-radius:8px;background:#fff;font:400 12px var(--font-sans);padding:0 8px}
+.phone{width:390px;max-width:100%;height:780px;margin:12px auto;background:var(--color-bg);border-radius:36px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.note{max-width:420px;margin:6px auto 0;font:400 12px var(--font-sans);color:#444;padding:0 8px}
+#selftest{white-space:pre-wrap;font:400 12px monospace;max-width:520px;margin:8px auto;color:#333}
+.page{height:100%;overflow-y:auto;display:flex;flex-direction:column;padding:16px;scrollbar-width:none}.page::-webkit-scrollbar{display:none}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #14532d;outline-offset:2px}
+.mark{width:56px;height:56px;border-radius:50%;background:var(--color-surface-2);color:#14532d;display:grid;place-items:center;flex:none}
+h1{font:700 28px/1.2 var(--font-sans);letter-spacing:-.02em}
+.sub{font:400 16px var(--font-sans);color:var(--color-text-muted)}
+.fld{margin-top:16px}
+.fld label{display:block;font:700 12px var(--font-sans);color:var(--color-text-muted);margin-bottom:4px}
+.fld input{width:100%;height:52px;border-radius:16px;border:1px solid #b9b2a0;background:var(--color-surface-2);padding:0 16px;font:400 16px var(--font-sans);color:var(--color-text)}
+.fld input[aria-invalid="true"]{border-color:#b91c1c}
+.fld input[readonly]{opacity:.7}
+.pw{position:relative}.pw input{padding-right:56px}
+.eye{position:absolute;right:4px;top:4px;width:44px;height:44px;border:0;border-radius:12px;background:none;display:grid;place-items:center;cursor:pointer;padding:0}
+.err{font:700 12px var(--font-sans);color:#b91c1c;margin-top:4px}.err:empty{display:none}
+.notice{background:#fef2f2;color:#991b1b;border-radius:16px;padding:12px 16px;margin-top:16px;font:400 16px var(--font-sans)}
+.okmsg{background:var(--color-surface);color:#166534;border-radius:16px;padding:12px 16px;margin-top:16px;font:700 16px var(--font-sans)}
+.go{width:100%;height:56px;margin-top:16px;border:0;border-radius:16px;background:#14532d;color:#fff;font:700 16px var(--font-sans);cursor:pointer}
+.go:disabled{opacity:.7;cursor:default}
+.ic{flex:none}
+/* A: cartão centralizado */
+.va{justify-content:center}.va .cardA{background:var(--color-surface);border-radius:22px;padding:24px 16px}.va .brand{display:grid;justify-items:center;text-align:center;gap:8px}
+/* B: marca no topo, formulário embaixo */
+.vb{padding:0}.vb .brand{flex:1;display:grid;place-content:center;justify-items:center;text-align:center;gap:8px;padding:16px;min-height:220px}
+.vb .sheet{background:var(--color-surface);border-radius:28px 28px 0 0;padding:8px 16px 32px}
+/* C: formulário compacto */
+.vc{padding:24px 16px}.vc .brand{display:flex;align-items:center;gap:12px}.vc .mark{width:44px;height:44px}.vc .sub{font-size:12px;margin-top:8px}
+.vc .fld{margin-top:12px}.vc .fld input{height:48px}.vc .eye{top:2px}.vc .go{height:56px}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab" data-v="a">A: Cartão centralizado</button>
+<button class="variant-tab" data-v="b">B: Marca no topo</button>
+<button class="variant-tab" data-v="c">C: Formulário compacto</button>
+<label for="ressel">Resultado do envio:</label>
+<select id="ressel"><option value="auth">Credencial errada</option><option value="acesso">Conta sem acesso</option><option value="ok">Entra</option></select></div>
+<div class="phone"><div id="app" style="height:100%"></div></div>
+<div class="note" id="vnote"></div><div id="selftest"></div>
+<script>
+(function(){
+'use strict';
+var errors=[];window.addEventListener('error',function(e){errors.push(String(e.message))});
+var NOTES={a:'A: Cartão centralizado sobre o fundo Moeda. A marca fica dentro do cartão, o formulário logo abaixo.',
+b:'B: Marca no topo ocupando o espaço livre; o formulário fica na metade de baixo, ao alcance do polegar.',
+c:'C: Formulário compacto de uma coluna, sem cartão. Cabe com o teclado aberto.'};
+var MSG={auth:'E-mail ou senha incorretos.',acesso:'Conta sem acesso.'};
+var IC={piggy:'<path d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2z"/><path d="M16 10h.01"/><path d="M2 8v1a2 2 0 0 0 2 2h1"/>',
+ eye:'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+ eyeoff:'<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>'};
+function ic(n,s){s=s||20;return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+IC[n]+'</svg>'}
+var S={v:'a',email:'',pass:'',show:false,busy:false,err:{},notice:'',ok:false,outcome:'auth'};
+var pending=null,tm=null;
+function $(id){return document.getElementById(id)}
+function brand(){var sub='Entre para gerenciar suas finanças';
+ if(S.v==='c')return '<div class="brand"><span class="mark">'+ic('piggy',24)+'</span><h1>Financias Ratimbum</h1></div><p class="sub">'+sub+'</p>';
+ return '<div class="brand"><span class="mark">'+ic('piggy',28)+'</span><h1>Financias Ratimbum</h1><p class="sub">'+sub+'</p></div>'}
+function form(){var E=S.err;
+ return '<form id="f" novalidate aria-label="Entrar">'+
+ '<div class="fld"><label for="email">E-mail</label><input id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="voce@email.com" value="'+S.email+'"'+(S.busy?' readonly':'')+' aria-invalid="'+!!E.email+'" aria-describedby="e-email"><p class="err" id="e-email" role="alert">'+(E.email||'')+'</p></div>'+
+ '<div class="fld"><label for="pass">Senha</label><div class="pw"><input id="pass" name="password" type="'+(S.show?'text':'password')+'" autocomplete="current-password" value="'+S.pass+'"'+(S.busy?' readonly':'')+' aria-invalid="'+!!E.pass+'" aria-describedby="e-pass"><button type="button" class="eye" data-act="eye" aria-label="'+(S.show?'Ocultar senha':'Mostrar senha')+'" aria-pressed="'+S.show+'">'+ic(S.show?'eyeoff':'eye')+'</button></div><p class="err" id="e-pass" role="alert">'+(E.pass||'')+'</p></div>'+
+ (S.notice?'<div class="notice" id="notice" role="alert">'+MSG[S.notice]+'</div>':'')+(S.ok?'<div class="okmsg" role="status">Entrada simulada: aqui o app abriria o Início.</div>':'')+
+ '<button type="submit" class="go" id="go"'+(S.busy?' disabled aria-busy="true"':'')+'>'+(S.busy?'Entrando...':'Entrar')+'</button></form>'}
+function render(){var app=$('app');
+ var inner=S.v==='a'?'<div class="cardA">'+brand()+form()+'</div>':S.v==='b'?brand()+'<div class="sheet">'+form()+'</div>':brand()+form();
+ app.innerHTML='<div class="page v'+S.v+'" id="page">'+inner+'</div>';
+ document.querySelectorAll('.variant-tab').forEach(function(b){b.classList.toggle('active',b.dataset.v===S.v)});$('vnote').textContent=NOTES[S.v];$('ressel').value=S.outcome}
+function validate(){var e={},m=S.email.trim();
+ if(!m)e.email='Informe o e-mail';else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m))e.email='E-mail inválido';
+ if(!S.pass)e.pass='Informe a senha';return e}
+/* "Servidor" fictício: devolve texto cru que a interface NUNCA mostra (T-3.1-06-02). */
+function fakeServer(){return S.outcome==='ok'?null:{message:S.outcome==='acesso'?'Firebase: sem claim hid (auth/no-claim).':'Firebase: Error (auth/invalid-credential).',kind:S.outcome}}
+function submit(){if(S.busy)return;S.err=validate();S.notice='';S.ok=false;
+ if(S.err.email||S.err.pass){render();$(S.err.email?'email':'pass').focus();return}
+ S.busy=true;render();
+ pending=function(){pending=null;var r=fakeServer();S.busy=false;if(r)S.notice=r.kind==='acesso'?'acesso':'auth';else S.ok=true;render()};
+ tm=setTimeout(pending,700)}
+var app=$('app');
+app.addEventListener('submit',function(e){e.preventDefault();submit()});
+app.addEventListener('click',function(e){var b=e.target.closest('[data-act="eye"]');if(!b)return;S.show=!S.show;var p=$('pass');b.setAttribute('aria-label',S.show?'Ocultar senha':'Mostrar senha');b.setAttribute('aria-pressed',String(S.show));b.innerHTML=ic(S.show?'eyeoff':'eye');p.type=S.show?'text':'password'});
+app.addEventListener('input',function(e){var t=e.target;if(t.id==='email'){S.email=t.value;S.err.email='';$('e-email').textContent='';t.setAttribute('aria-invalid','false')}
+ else if(t.id==='pass'){S.pass=t.value;S.err.pass='';$('e-pass').textContent='';t.setAttribute('aria-invalid','false')}});
+document.querySelectorAll('.variant-tab').forEach(function(b){b.addEventListener('click',function(){S.v=b.dataset.v;render()})});
+$('ressel').addEventListener('change',function(){S.outcome=this.value});
+var qs=location.search;if(/[?&]w=(\d+)/.test(qs)){var s0=document.createElement('style');s0.textContent='.phone{width:'+RegExp.$1+'px!important}';document.head.appendChild(s0)}
+if(/[?&]v=([abc])/.test(qs))S.v=RegExp.$1;if(/[?&]erro=(auth|acesso)/.test(qs)){S.notice=RegExp.$1;S.outcome=RegExp.$1}
+render();
+/* ---------- autoteste (?test) ---------- */
+if(/[?&]test/.test(qs)){var R=[];function ok(n,c,x){R.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ function click(sel){var e=document.querySelector(sel);if(!e)throw new Error('sem elemento '+sel);e.click()}
+ function txt(id){return $(id).textContent}
+ function typeIn(id,v){var i=$(id);i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}))}
+ function reset(v){clearTimeout(tm);pending=null;S.v=v;S.email='';S.pass='';S.show=false;S.busy=false;S.err={};S.notice='';S.ok=false;S.outcome='auth';render()}
+ function finish(){if(pending){clearTimeout(tm);pending()}}
+ var ph=document.querySelector('.phone');
+ function targets(){var bad=[];ph.querySelectorAll('button,a[href],input,select,textarea,summary,[role=tab]').forEach(function(e){if(!e.getClientRects().length)return;var r=e.getBoundingClientRect();if(r.width<43.99||r.height<43.99)bad.push((e.getAttribute('aria-label')||e.id||e.textContent.trim().slice(0,16))+' '+Math.round(r.width)+'x'+Math.round(r.height))});return bad}
+ function typeScale(){var bad=[];ph.querySelectorAll('*').forEach(function(e){if(e.closest('svg'))return;var own=[].some.call(e.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;var cs=getComputedStyle(e),fs=parseFloat(cs.fontSize),fw=cs.fontWeight;if([12,16,28,56].indexOf(fs)<0||(fw!=='400'&&fw!=='700'))bad.push(e.tagName.toLowerCase()+' '+fs+'/'+fw)});return bad}
+ function dark(){var bad=[],n=0;ph.querySelectorAll('button').forEach(function(b){if(!b.getClientRects().length)return;var cs=getComputedStyle(b),m=cs.backgroundColor.match(/[\d.]+/g).map(Number);if(m.length>3&&m[3]===0)return;if((0.2126*m[0]+0.7152*m[1]+0.0722*m[2])/255<0.5){n++;if(cs.color!=='rgb(255, 255, 255)')bad.push(b.textContent.trim()+' '+cs.color)}});return {bad:bad,n:n}}
+ ['a','b','c'].forEach(function(v){try{var T='['+v+'] ';reset(v);
+  ok(T+'variante ativa e nota exibida',document.querySelector('.variant-tab.active').dataset.v===v&&$('vnote').textContent.length>20);
+  var pg=txt('page');ok(T+'mantém o nome atual do app e não traz onboarding nem nome novo',pg.indexOf('Financias Ratimbum')>-1&&!new RegExp('coin'+'ki','i').test(document.documentElement.outerHTML)&&!/Bem-vind|Pular|Próximo passo|etapa/i.test(pg)&&document.querySelectorAll('h1').length===1);
+  var em=$('email'),pw=$('pass');ok(T+'campos: e-mail (type email, username) e senha (current-password) com rótulo visível',em.type==='email'&&em.autocomplete==='username'&&pw.autocomplete==='current-password'&&pw.type==='password'&&document.querySelector('label[for="email"]').textContent==='E-mail'&&document.querySelector('label[for="pass"]').textContent==='Senha'&&getComputedStyle(document.querySelector('label[for="pass"]')).display!=='none');
+  ok(T+'texto dos campos com 16px (sem zoom no iOS)',parseFloat(getComputedStyle(em).fontSize)===16&&parseFloat(getComputedStyle(pw).fontSize)===16);
+  var tb=targets(),dk=dark(),ts=typeScale(),pge=$('page');
+  ok(T+'alvos >= 44px (menor lado)'+(tb.length?': '+tb.join(', '):''),tb.length===0,tb.join(', '));
+  ok(T+'sem rolagem horizontal ('+pge.scrollWidth+'/'+pge.clientWidth+')',pge.scrollWidth<=pge.clientWidth+1);
+  ok(T+'só tamanhos 12, 16 e 28 e pesos 400 e 700'+(ts.length?': '+ts.join(', '):''),ts.length===0,ts.join(', '));
+  ok(T+'botão Entrar escuro (#14532d) com texto branco, 56px de altura',dk.n>=1&&dk.bad.length===0&&Math.round($('go').getBoundingClientRect().height)===56&&getComputedStyle($('go')).backgroundColor==='rgb(20, 83, 45)',dk.n+' '+dk.bad.join());
+  // mostrar/ocultar senha
+  var eye=document.querySelector('[data-act="eye"]');ok(T+'botão de mostrar senha tem nome acessível e 44px',eye.getAttribute('aria-label')==='Mostrar senha'&&eye.getBoundingClientRect().width>=44&&eye.getBoundingClientRect().height>=44);
+  eye.click();ok(T+'mostrar senha troca o tipo, o rótulo e aria-pressed',$('pass').type==='text'&&document.querySelector('[data-act="eye"]').getAttribute('aria-label')==='Ocultar senha'&&document.querySelector('[data-act="eye"]').getAttribute('aria-pressed')==='true');
+  document.querySelector('[data-act="eye"]').click();ok(T+'ocultar volta a type password',$('pass').type==='password');
+  // validação por campo e foco
+  click('#go');ok(T+'envio vazio: erro por campo ("Informe o e-mail", "Informe a senha") e foco no primeiro',txt('e-email')==='Informe o e-mail'&&txt('e-pass')==='Informe a senha'&&$('email').getAttribute('aria-invalid')==='true'&&$('pass').getAttribute('aria-invalid')==='true'&&document.activeElement.id==='email'&&!S.busy,txt('e-email')+'|'+txt('e-pass')+'|'+document.activeElement.id);
+  typeIn('email','x');ok(T+'digitar limpa o erro do próprio campo',txt('e-email')===''&&$('email').getAttribute('aria-invalid')==='false'&&txt('e-pass')==='Informe a senha');
+  click('#go');ok(T+'e-mail sem formato: "E-mail inválido" e foco no e-mail',txt('e-email')==='E-mail inválido'&&document.activeElement.id==='email'&&txt('e-pass')==='Informe a senha',txt('e-email'));
+  typeIn('email','ele@exemplo.com');click('#go');ok(T+'e-mail válido e senha vazia: só a senha com erro e foco nela',txt('e-email')===''&&txt('e-pass')==='Informe a senha'&&document.activeElement.id==='pass'&&$('email').value==='ele@exemplo.com',txt('e-email')+'|'+document.activeElement.id);
+  // envio: credencial errada
+  typeIn('pass','senha-qualquer');click('#go');var go=$('go');
+  ok(T+'enviando: botão "Entrando..." desabilitado com aria-busy e campos somente leitura',go.textContent==='Entrando...'&&go.disabled&&go.getAttribute('aria-busy')==='true'&&$('email').readOnly&&$('pass').readOnly,go.textContent);
+  click('#go');ok(T+'segundo toque durante o envio é ignorado',S.busy&&!!pending);
+  finish();var nt=document.getElementById('notice'),all=txt('page');
+  ok(T+'credencial errada: mensagem fixa "E-mail ou senha incorretos." e nada do texto cru do servidor',!!nt&&nt.textContent==='E-mail ou senha incorretos.'&&all.indexOf('Firebase')<0&&all.indexOf('auth/')<0&&nt.getAttribute('role')==='alert',nt?nt.textContent:'sem aviso');
+  ok(T+'depois do erro o botão volta a "Entrar" e os campos mantêm o que foi digitado',$('go').textContent==='Entrar'&&!$('go').disabled&&$('email').value==='ele@exemplo.com'&&$('pass').value==='senha-qualquer'&&$('pass').type==='password');
+  var tb2=targets(),ts2=typeScale();ok(T+'com aviso de erro: alvos >= 44px e tipografia'+(tb2.concat(ts2).length?': '+tb2.concat(ts2).join(', '):''),tb2.length===0&&ts2.length===0);
+  // conta sem acesso
+  S.outcome='acesso';click('#go');finish();ok(T+'conta sem claim: aviso "Conta sem acesso." e nada cru',document.getElementById('notice')&&document.getElementById('notice').textContent==='Conta sem acesso.'&&txt('page').indexOf('claim')<0&&txt('page').indexOf('auth/')<0);
+  // sucesso
+  S.outcome='ok';click('#go');finish();ok(T+'entrada simulada: sem aviso de erro e com confirmação (status)',!document.getElementById('notice')&&!!document.querySelector('[role="status"]'));
+  // textos
+  reset(v);var allTxt=txt('page');ok(T+'textos com acento (finanças) e sem formas sem acento conhecidas',allTxt.indexOf('finanças')>-1&&!/\b(financas|invalido|obrigatoria|conexao)\b/i.test(allTxt+' '+document.documentElement.outerHTML.replace(/<script[\s\S]*?<\/script>/g,'')));
+ }catch(err){ok('['+v+'] EXCEÇÃO',false,err.message+' @ '+(err.stack||'').split('\n')[1])}});
+ ok('sem emoji',!/\p{Extended_Pictographic}/u.test(document.documentElement.outerHTML));
+ ok('sem fontes nem scripts externos (offline)',!document.querySelector('script[src],link[href^="http"],link[href^="//"]')&&!/https?:\/\//.test(document.documentElement.outerHTML));
+ ok('sem erros de JS',errors.length===0,errors.join('|'));var f=R.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ $('selftest').textContent='TOTAL '+R.length+' | FALHAS '+f+'\n'+R.join('\n')}
+})();
+</script></body></html>

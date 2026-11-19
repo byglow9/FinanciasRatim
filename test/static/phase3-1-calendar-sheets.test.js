@@ -58,3 +58,46 @@ test('NoteSheet: edicao preserva o conteudo antigo e apagar tem duas etapas sem 
   // O conteudo antigo nunca entra no rascunho gravado.
   assert.doesNotMatch(src, /content\s*:/, 'NoteSheet grava content')
 })
+
+const EVENT = 'src/components/calendar/EventSheet.tsx'
+
+test('EventSheet: Collapsible de detalhes, categorias do usuario em chips pressionaveis e CTA', () => {
+  assert.match(code(EVENT), /@\/components\/ui\/sheet/, 'EventSheet nao importa o Sheet compartilhado')
+  assertIncludes(EVENT, [
+    'Collapsible',
+    'Mais detalhes',
+    'aria-expanded',
+    'Salvar evento',
+    'Apagar evento',
+    'Apagar este evento?',
+    'Manter',
+    'aria-invalid',
+    'data-autofocus',
+    'Escreva o título do evento',
+    'categories.map',
+    'category.color',
+    'pressed={',
+    'type="time"',
+  ])
+  // O aria-pressed sai do Chip (ramo com onClick): a guarda confere o contrato nos dois arquivos.
+  assert.match(code('src/components/ui/chip.tsx'), /aria-pressed=\{pressed\}/)
+  assert.deepEqual(scaleProblems([EVENT]), [])
+  assert.deepEqual(touchProblems([EVENT]), [])
+})
+
+test('EventSheet nao usa confirmacao nativa nem lista fixa de categorias e respeita somente leitura', () => {
+  const src = code(EVENT)
+  assert.doesNotMatch(src, /window\.confirm/, 'EventSheet usa a confirmacao nativa do navegador')
+  assert.doesNotMatch(src, /\bconfirm\(/)
+  assert.doesNotMatch(src, /DEFAULT_EVENT_CATEGORY_COLORS/, 'EventSheet usa as cores fixas em vez das categorias do usuario')
+  assertIncludes(EVENT, ['aria-disabled', 'onBlocked'])
+})
+
+test('useCalendarActions: eventos gravam depois de guard("editar"), avisam e mantem a pessoa na edicao', () => {
+  const src = code(HOOK)
+  for (const text of ['addEvent', 'updateEvent', 'deleteEvent', 'Evento salvo', 'Evento apagado', "person: 'conjunto'"]) {
+    assert.ok(src.includes(text), `${HOOK} sem "${text}"`)
+  }
+  assert.equal((src.match(/guard\('editar'\)/g) ?? []).length, 4, 'cada gravacao passa pela guarda')
+  assert.doesNotMatch(src, /updateEvent\([^)]*person/s, 'a edicao nao deve trocar a pessoa do evento')
+})

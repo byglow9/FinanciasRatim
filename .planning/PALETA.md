@@ -10,7 +10,7 @@ A guarda `test/static/palette-contrast.test.js` mede todos os pares abaixo e fal
 | Nome | Hex | Papel |
 |---|---|---|
 | Creme | `#f5ecdb` | fundo da pagina (`--background`) e icones sobre a dock |
-| Areia | `#bb9a77` | ancora `--color-sand`; base do botao + (escurecida, ver ajustes); apoio decorativo |
+| Areia | `#bb9a77` | ancora `--color-sand`; apoio decorativo |
 | Salvia | `#888b76` | ancora `--color-sage`; eixos dos graficos; base da borda de campo (escurecida) |
 | Oliva escuro | `#4c513b` | acao: botoes, item ativo, foco, dock, serie Ele |
 | Quase-preto | `#1e1f19` | texto principal (`--foreground`) |
@@ -39,7 +39,7 @@ A guarda `test/static/palette-contrast.test.js` mede todos os pares abaixo e fal
 | `--color-rhythm-0..4-bg/fg` | ver `index.css` | chips de ritmo (0 melhor, 4 pior) |
 | `--color-dock` / `-dock-fg` | `#4c513b` / `#f5ecdb` | dock oliva com icones creme |
 | `--color-dock-active` / `-dock-active-fg` | `#f5ecdb` / `#4c513b` | item ativo: pilula creme com icone oliva |
-| `--color-fab` / `-fab-fg` | `#a27b55` / `#1e1f19` | botao + em areia escurecida com icone quase-preto |
+| `--color-fab` / `-fab-fg` | `#788f56` / `#1e1f19` | botao + em verde-folha (oliva-salvia mais claro) com icone quase-preto |
 | `--color-ele` / `--color-ela` | `#4c513b` / `#9a4a26` | Ele (oliva) e Ela (siena) no Casal e nos graficos |
 | `--color-chart-1..8`, `-axis`, `-grid` | ver `index.css` | series, eixos e grade dos graficos |
 | `--color-heat-*`, `--color-pit-*`, `--color-dot-*`, `--color-bill-*` | ver `index.css` | calendario: mapa de calor, post-its, pontinhos, linhas de conta |
@@ -51,7 +51,7 @@ O bloco `.dark` nao mudou (tema escuro e da Fase 5).
 
 1. **Cartao mais claro que o fundo.** O tema anterior tinha o cartao mais escuro que o fundo. Agora cartao `#fbf6ea` sobre fundo `#f5ecdb`; a separacao vem do tom e da sombra, nao de borda.
 2. **Texto secundario `#5c604a`, nao a salvia pura.** `#888b76` da 2,98:1 sobre o creme; escurecida para `#5c604a` passa com 5,55:1 no fundo e 6,03:1 no cartao.
-3. **Botao + em areia escurecida `#a27b55`.** A areia pura `#bb9a77` da 2,24:1 contra o fundo (abaixo de 3:1 para o contorno do botao). `#a27b55` da 3,25:1 contra o fundo e o icone quase-preto fica em 4,35:1.
+3. **Botao + em verde-folha `#788f56`.** O dono nao gostou do marrom; o botao ganhou um verde mais claro, da familia do oliva. Passa de 3:1 contra o fundo (3,05) e o icone quase-preto fica em 4,63:1. Contra a dock oliva a razao e 2,30:1: nao existe cor que de 3:1 ao mesmo tempo contra o creme (luminancia ~0,84) e contra o oliva (~0,08), entao o botao se separa da dock pelo vao de fundo entre os dois e pela sombra. Descartados: `#5d9358` e `#589367` (verdes mais vivos que destoam do oliva), `#7d8f58`, `#7b8d5a`, `#7a8c62` (mais acinzentados) e `#a27b55` (marrom anterior).
 4. **Borda de campo `#7a7d66`.** A salvia pura da 2,98:1 sobre o fundo; escurecida passa de 3:1 em fundo, cartao e superficie 2.
 5. **Eixos dos graficos com a salvia pura `#888b76`.** Os eixos ficam sobre o cartao (3,24:1), entao a cor medida serve.
 6. **Verde, ambar e vermelho semanticos** reescritos em tons quentes (`#3f8a4a`, `#a8650a`, `#b3382c`; tintas `#2e6a34`, `#7c4a12`, `#9c2f23`) para harmonizar com o oliva e passar contraste. O verde de ok ficou distinto do oliva de acao: ok = verde-folha, acao = oliva escuro.
@@ -107,8 +107,9 @@ Coluna "min" e o limite da guarda (4,5 texto, 3 nao textual). Todos passam.
 | dock: item ativo | dock-active-fg #4c513b | dock-active #f5ecdb | 7.03 | 4.5 |
 | dock: pilula ativa sobre o dock | dock-active #f5ecdb | dock #4c513b | 7.03 | 3 |
 | dock sobre o fundo | dock #4c513b | background #f5ecdb | 7.03 | 3 |
-| botao +: icone | fab-fg #1e1f19 | fab #a27b55 | 4.35 | 3 |
-| botao + sobre o fundo | fab #a27b55 | background #f5ecdb | 3.25 | 3 |
+| botao +: icone | fab-fg #1e1f19 | fab #788f56 | 4.63 | 4.5 |
+| botao + sobre o fundo | fab #788f56 | background #f5ecdb | 3.05 | 3 |
+| botao + ao lado da dock | fab #788f56 | dock #4c513b | 2.30 | 2.2 (teto fisico, ver ajuste 3) |
 | ok: texto no fundo suave | ok-ink #2e6a34 | ok-bg #dfe8c8 | 5.12 | 4.5 |
 | atencao: texto no fundo suave | warn-ink #7c4a12 | warn-bg #f6e3b4 | 5.82 | 4.5 |
 | perigo: texto no fundo suave | danger-ink #9c2f23 | danger-bg #f3d5cb | 5.34 | 4.5 |

@@ -51,12 +51,12 @@
   --color-pig-bg: #f4dfe3;
   --color-pig-ink: #9a2e5a;
 
-  /* Dock flutuante: oliva escuro com icones creme; item ativo em pilula creme; botao + em areia */
+  /* Dock flutuante: oliva escuro com icones creme; item ativo em pilula creme; botao + em verde-folha */
   --color-dock: #4c513b;
   --color-dock-fg: #f5ecdb;
   --color-dock-active: #f5ecdb;
   --color-dock-active-fg: #4c513b;
-  --color-fab: #a27b55;
+  --color-fab: #788f56;
   --color-fab-fg: #1e1f19;
 
   /* Ancoras da paleta de referencia sem uso direto como texto (PALETA.md): areia e salvia */

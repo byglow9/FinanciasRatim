@@ -63,8 +63,10 @@ export const PAIRS = [
   ['dock: item ativo', 'dock-active-fg', 'dock-active', 4.5],
   ['dock: pilula ativa sobre o dock', 'dock-active', 'dock', 3],
   ['dock sobre o fundo', 'dock', 'background', 3],
-  ['botao +: icone', 'fab-fg', 'fab', 3],
+  ['botao +: icone', 'fab-fg', 'fab', 4.5],
   ['botao + sobre o fundo', 'fab', 'background', 3],
+  // 3:1 contra o creme e contra o oliva ao mesmo tempo e impossivel; 2.2 trava a separacao possivel
+  ['botao + ao lado da dock', 'fab', 'dock', 2.2],
   ['ok: texto no fundo suave', 'ok-ink', 'ok-bg', 4.5],
   ['atencao: texto no fundo suave', 'warn-ink', 'warn-bg', 4.5],
   ['perigo: texto no fundo suave', 'danger-ink', 'danger-bg', 4.5],

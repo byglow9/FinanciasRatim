@@ -50,7 +50,7 @@ test('componentes nao espalham cor em hex literal nem branco/preto puro: tudo ve
   assert.deepEqual(offenders, [])
 })
 
-test('o dock nao e branco e o botao + usa os tokens de areia', () => {
+test('o dock nao e branco e o botao + usa os tokens fab (verde-folha)', () => {
   const nav = code('src/components/layout/NavRail.tsx')
   assert.match(nav, /bg-dock\b/)
   assert.match(nav, /bg-fab\b/)

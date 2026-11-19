@@ -1,0 +1,287 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css"><link rel="stylesheet" href="../themes/base.css"><link rel="stylesheet" href="../themes/v31.css"><link rel="stylesheet" href="../themes/dock.css">
+<title>015 Metas</title>
+<style>
+/* Piso S8: tokens Moeda, texto só em 12/16/28/56 com pesos 400/700, alvos de 44px, cartões raio 22 sem borda e sem sombra, ícones Lucide inline (sem rede). */
+:root{--ok-ink:#166534;--danger-ink:#b91c1c}
+body{font-family:var(--font-sans)}
+.phone{height:800px;font:400 16px/1.5 var(--font-sans);color:var(--color-text)}
+:where(.phone) button,:where(.phone) input{font:inherit;color:inherit}
+.phone :focus-visible{outline:2px solid var(--color-action);outline-offset:2px}
+.page{height:100%;overflow-y:auto;padding:16px 16px 120px;scrollbar-width:none;position:relative}.page::-webkit-scrollbar{display:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
+.phone .top h1{font:700 28px/1.2 var(--font-num);letter-spacing:0;margin:0}
+.eyebrow{font:700 12px/1.5 var(--font-sans);color:var(--color-text-muted);margin:0}
+.cap{font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted);margin:0}
+.disp{font:700 56px/1.1 var(--font-num);letter-spacing:-.03em;white-space:nowrap;margin:0}
+.cd{background:var(--color-surface);border-radius:22px;padding:16px;border:0;box-shadow:none}
+.lst{list-style:none;padding:0;margin:0}.lst>li+li{margin-top:8px}
+.gh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 2px 8px;font:700 12px/1.5 var(--font-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-muted)}
+.gh h2{font:inherit;margin:0;letter-spacing:inherit}.gh span{text-transform:none;letter-spacing:0}
+.mid{flex:1;min-width:0;display:block}
+.mid .t{display:block;font:700 16px/1.5 var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mid .s{display:block;font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc{font:700 16px/1.5 var(--font-num);white-space:nowrap}
+.ic{width:44px;height:44px;border-radius:50%;background:var(--color-surface-2);display:grid;place-items:center;flex:none}
+.rw{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:8px 12px;border:0;border-radius:16px;background:var(--color-surface);text-align:left;cursor:pointer}
+.grp{background:var(--color-surface);border-radius:22px;padding:4px 12px;border:0;margin-top:16px}
+.grp .lst>li+li{margin-top:0;border-top:1px solid var(--color-track)}
+.grp .rw{background:none;border-radius:0;padding:8px 0}
+.rw>svg:last-child{color:var(--color-text-muted)}
+.rg{position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center}
+.rg svg{position:absolute;inset:0;width:48px;height:48px;transform:rotate(-90deg)}.rg b{font:700 12px/1 var(--font-num);position:relative}
+.goal{margin-top:12px}
+.gbtn{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0;border:0;background:none;text-align:left;cursor:pointer;border-radius:16px}
+.bar2{height:12px;border-radius:99px;background:var(--color-track);overflow:hidden;margin-top:12px}.bar2 i{display:block;height:100%;border-radius:99px;background:var(--color-primary);transition:width .4s ease-out}
+.nums{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin-top:8px}
+.nums b{font:700 16px/1.5 var(--font-num);white-space:nowrap}.nums span{font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted)}.nums .fl{margin-left:auto}
+.cta2{margin-top:12px;width:100%;min-height:48px;border-radius:999px;border:0;background:var(--color-action);color:var(--color-action-text);font:700 16px/1.5 var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.done{display:flex;align-items:center;gap:6px;margin:12px 0 0;min-height:48px;font:700 16px/1.5 var(--font-sans);color:var(--ok-ink)}
+.feat .disp{margin-top:4px}.feat .t2{font:700 16px/1.5 var(--font-sans);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{height:6px;border-radius:99px;background:var(--color-track);overflow:hidden;margin:4px 0}.mini i{display:block;height:100%;background:var(--color-primary)}
+.state{text-align:center;padding:40px 8px}.state svg{width:28px;height:28px;color:var(--color-text-muted)}
+.state .t{font:700 16px/1.5 var(--font-sans);margin:8px 0 0}.state .s{font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted);margin:0}
+.cta{margin-top:16px;min-height:48px;padding:0 20px;border-radius:999px;border:0;background:var(--color-action);color:var(--color-action-text);font:700 16px/1.5 var(--font-sans);cursor:pointer}
+.sk{height:56px;border-radius:16px;background:var(--color-surface);margin-top:8px}.sk.h{height:140px;border-radius:22px;margin-top:16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;font:400 12px/1.5 var(--font-sans)}
+.sheetbg{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:50;display:flex;align-items:flex-end}
+.sheetin{width:100%;background:var(--color-bg);border-radius:28px 28px 0 0;padding:10px 16px 22px;max-height:92%;overflow:auto}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--color-track);margin:0 auto 12px}
+.sh-hd{display:flex;align-items:center;gap:12px}.sh-hd .ti{flex:1;min-width:0}
+.sh-hd h2{font:700 16px/1.5 var(--font-sans);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sh-hd p{font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted);margin:0}
+.sh-hd .v{font:700 16px/1.5 var(--font-num);white-space:nowrap}
+.sheetin .act-row{display:flex;align-items:center;gap:12px;width:100%;height:56px;border:0;border-radius:16px;padding:0 12px;margin-top:8px;background:var(--color-surface);font:700 16px/1.5 var(--font-sans);text-align:left;cursor:pointer}
+.sheetin .act-row.dg{color:var(--danger-ink)}
+.recent{margin-top:4px}.recent li{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+.recent b{font:700 16px/1.5 var(--font-num);color:var(--ok-ink);white-space:nowrap}.recent span{font:400 12px/1.5 var(--font-sans);color:var(--color-text-muted);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.q{font:700 16px/1.5 var(--font-sans);margin:0}.q+p{font:400 16px/1.5 var(--font-sans);margin:4px 0 0;color:var(--color-text-muted)}
+.row2{display:flex;gap:8px;margin-top:16px}.row2 button{flex:1;height:56px;border-radius:16px;border:0;font:700 16px/1.5 var(--font-sans);cursor:pointer}
+.btn-p{background:var(--color-action);color:var(--color-action-text)}.btn-s{background:var(--color-surface);color:var(--color-text)}.btn-d{background:var(--danger-ink);color:#fff}
+.fld{margin-top:12px}.fld label{display:block;font:700 12px/1.5 var(--font-sans);color:var(--color-text-muted);margin-bottom:4px}
+.fld input{width:100%;height:52px;border-radius:16px;border:1px solid var(--color-border);background:var(--color-surface-2);padding:0 16px;font:400 16px/1.5 var(--font-sans);color:var(--color-text)}
+.fld input[aria-invalid="true"]{border-color:var(--danger-ink)}
+.err{font:400 12px/1.5 var(--font-sans);color:var(--danger-ink);margin-top:4px}
+.toast{position:absolute;left:16px;right:16px;top:12px;min-height:48px;background:var(--color-action);color:var(--color-action-text);border-radius:16px;padding:10px 16px;font:700 16px/1.5 var(--font-sans);z-index:60}
+#variant-nav label{font:12px system-ui;margin-left:auto;display:flex;align-items:center;gap:6px}#estsel{font:12px system-ui;height:32px}
+#selftest{white-space:pre-wrap;font:12px monospace;max-width:420px;margin:8px auto;color:#333}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab" data-v="a">A: Cartões com Aportar</button>
+<button class="variant-tab" data-v="b">B: Lista com anel</button>
+<button class="variant-tab" data-v="c">C: Meta mais próxima</button>
+<label>Estado <select id="estsel"><option value="ok">Com dados</option><option value="vazio">Vazio</option><option value="carregando">Carregando</option><option value="erro">Erro</option></select></label></div>
+<div class="phone"><div id="app" style="height:100%"></div><div id="dockhost"></div></div>
+<div class="note" id="vnote"></div><div id="selftest"></div>
+<script>
+(function(){
+'use strict';
+var errors=[];window.addEventListener('error',function(e){errors.push(String(e.message))});
+var TODAY='2026-11-18';
+var P={
+'plus':'<path d="M5 12h14"/><path d="M12 5v14"/>','check':'<path d="M20 6 9 17l-5-5"/>','chevron-right':'<path d="m9 18 6-6-6-6"/>',
+'trash-2':'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+'pencil':'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+'target':'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+'circle-check':'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+'piggy-bank':'<path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h.01"/>',
+'house':'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+'receipt':'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+'calendar':'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+'repeat':'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+'flag':'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+'pie-chart':'<path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"/><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>',
+'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+'circle-alert':'<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>'};
+function ic(n){return '<svg class="lucide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+P[n]+'</svg>'}
+var DOCK=[['house','Início'],['receipt','Transações'],['calendar','Calendário'],['repeat','Contas fixas'],['flag','Metas'],['pie-chart','Relatórios'],['users','Casal'],['piggy-bank','Porquinho']];
+var NOTES={a:'Cartões empilhados: cada meta mostra barra de progresso, percentual, quanto falta e o botão Aportar no próprio cartão. Tocar no topo do cartão abre as ações (Aportar, Editar, Apagar). Boa para aportar rápido, sem abrir nada antes.',
+b:'Lista compacta com anel de progresso. Tocar numa meta abre o detalhe em Sheet: barra, quanto falta, aportes recentes e as ações. Boa para ver todas as metas de uma vez sem rolar muito.',
+c:'A meta mais próxima do prazo ganha destaque (percentual grande, barra e Aportar); as demais ficam numa lista simples abaixo. Boa para o casal focar no que vence primeiro.'};
+var DEFAULT=[
+{id:'g1',name:'Viagem de férias',target:6000,cur:3900,deadline:'2027-01-31',ap:[{id:'a1',amount:1000,desc:'Bônus do trabalho',date:'2026-11-10'},{id:'a2',amount:800,desc:'',date:'2026-10-28'},{id:'a3',amount:700,desc:'',date:'2026-10-05'},{id:'a4',amount:900,desc:'Venda de itens usados',date:'2026-09-15'},{id:'a5',amount:500,desc:'',date:'2026-09-01'}]},
+{id:'g2',name:'Reserva de emergência',target:10000,cur:4200,deadline:null,ap:[{id:'a6',amount:1500,desc:'Sobra do mês',date:'2026-11-15'},{id:'a7',amount:1200,desc:'',date:'2026-10-20'},{id:'a8',amount:800,desc:'',date:'2026-09-30'},{id:'a9',amount:700,desc:'',date:'2026-09-10'}]},
+{id:'g3',name:'Notebook novo',target:3500,cur:3500,deadline:'2026-12-20',ap:[{id:'a10',amount:2000,desc:'Trabalho extra',date:'2026-11-02'},{id:'a11',amount:1000,desc:'',date:'2026-10-12'},{id:'a12',amount:500,desc:'',date:'2026-09-20'}]},
+{id:'g4',name:'Curso de inglês',target:1800,cur:450,deadline:'2026-12-15',ap:[{id:'a13',amount:250,desc:'',date:'2026-11-12'},{id:'a14',amount:200,desc:'Primeiro aporte',date:'2026-10-25'}]}];
+function clone(o){return JSON.parse(JSON.stringify(o))}
+var S={v:'a',estado:'ok',goals:clone(DEFAULT),seq:100,sheet:null,toast:null,err:{},opener:null};
+function brl(v){return 'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function dm(iso){return iso.slice(8,10)+'/'+iso.slice(5,7)}
+function dmy(iso){return iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4)}
+function toFmt(v){return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function pct(g){return g.target>0?Math.min(100,Math.round(g.cur/g.target*100)):0}
+function done(g){return g.cur>=g.target}
+function left(g){return Math.max(0,Math.round((g.target-g.cur)*100)/100)}
+function days(iso){var a=iso.split('-'),b=TODAY.split('-');return Math.round((Date.UTC(+a[0],+a[1]-1,+a[2])-Date.UTC(+b[0],+b[1]-1,+b[2]))/864e5)}
+function prazo(g){if(!g.deadline)return 'Sem prazo';var d=days(g.deadline);return 'Prazo '+dmy(g.deadline)+(d>1?' · em '+d+' dias':d===1?' · amanhã':d===0?' · hoje':' · venceu')}
+function find(id){return S.goals.filter(function(g){return g.id===id})[0]}
+function nearest(){var inc=S.goals.filter(function(g){return !done(g)});var wd=inc.filter(function(g){return g.deadline}).sort(function(a,b){return a.deadline<b.deadline?-1:1});return wd[0]||inc[0]||null}
+function head(){return '<div class="top"><h1>Metas</h1><button class="round act" data-act="new" aria-label="Nova meta" title="Nova meta">'+ic('plus')+'</button></div>'}
+function bar(g){return '<div class="bar2" role="progressbar" aria-valuenow="'+pct(g)+'" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso de '+esc(g.name)+'"><i style="width:'+pct(g)+'%"></i></div>'}
+function nums(g){return '<div class="nums"><b>'+brl(g.cur)+'</b><span>de '+brl(g.target)+'</span><span class="fl">'+(done(g)?'Meta atingida':'Faltam '+brl(left(g)))+'</span></div>'}
+function pcEl(g){return '<b class="pc" data-pct="'+g.id+'">'+pct(g)+'%</b>'}
+function ring(g){var c=125.66,off=Math.round(c*(1-pct(g)/100)*100)/100;return '<span class="rg"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--color-track)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--color-primary)" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'"/></svg><b data-pct="'+g.id+'">'+pct(g)+'%</b></span>'}
+function openLabel(g){return 'Opções da meta '+esc(g.name)+', '+pct(g)+'%'}
+function cardA(g){return '<article class="cd goal" data-g="'+g.id+'" aria-labelledby="gn-'+g.id+'"><button class="gbtn" data-act="open" data-id="'+g.id+'" aria-label="'+openLabel(g)+'"><span class="ic">'+ic(done(g)?'circle-check':'target')+'</span><span class="mid"><b class="t" id="gn-'+g.id+'">'+esc(g.name)+'</b><span class="s">'+prazo(g)+'</span></span>'+pcEl(g)+'</button>'+bar(g)+nums(g)+
+ (done(g)?'<p class="done">'+ic('check')+'Concluída</p>':'<button class="cta2" data-act="aportar" data-id="'+g.id+'" aria-label="Aportar em '+esc(g.name)+'">'+ic('plus')+'Aportar</button>')+'</article>'}
+function bodyA(){return S.goals.map(cardA).join('')}
+function bodyB(){return '<div class="grp"><ul class="lst">'+S.goals.map(function(g){return '<li data-g="'+g.id+'"><button class="rw" data-act="open" data-id="'+g.id+'" aria-label="'+openLabel(g)+'">'+ring(g)+'<span class="mid"><b class="t">'+esc(g.name)+'</b><span class="s">'+(done(g)?'Concluída · '+brl(g.target):brl(g.cur)+' de '+brl(g.target))+'</span></span>'+ic('chevron-right')+'</button></li>'}).join('')+'</ul></div>'}
+function bodyC(){var f=nearest(),h='';
+ if(f)h+='<section class="cd feat" style="margin-top:16px" data-g="'+f.id+'" aria-labelledby="fh"><h2 class="eyebrow" id="fh">Meta mais próxima do prazo</h2><button class="gbtn" data-act="open" data-id="'+f.id+'" aria-label="'+openLabel(f)+'" style="margin-top:4px"><span class="mid"><b class="t2" style="display:block">'+esc(f.name)+'</b><span class="cap" style="display:block">'+prazo(f)+'</span></span>'+ic('chevron-right')+'</button><div class="disp" data-pct="'+f.id+'">'+pct(f)+'%</div>'+bar(f)+nums(f)+'<button class="cta2" data-act="aportar" data-id="'+f.id+'" aria-label="Aportar em '+esc(f.name)+'">'+ic('plus')+'Aportar</button></section>';
+ var rest=S.goals.filter(function(g){return !f||g.id!==f.id});
+ if(rest.length)h+='<div class="gh"><h2>'+(f?'Outras metas':'Metas')+'</h2><span>'+rest.length+(rest.length===1?' meta':' metas')+'</span></div><ul class="lst">'+rest.map(function(g){return '<li data-g="'+g.id+'"><button class="rw" data-act="open" data-id="'+g.id+'" aria-label="'+openLabel(g)+'"><span class="mid"><b class="t">'+esc(g.name)+'</b><span class="mini" aria-hidden="true" style="display:block"><i style="width:'+pct(g)+'%;display:block"></i></span><span class="s">'+(done(g)?'Concluída · '+brl(g.target):brl(g.cur)+' de '+brl(g.target)+' · '+prazo(g))+'</span></span>'+pcEl(g)+'</button></li>'}).join('')+'</ul>';
+ return h}
+function stateHTML(k){
+ if(k==='carregando')return '<div role="status" aria-live="polite"><span class="sr">Carregando as metas</span><div class="sk h"></div><div class="sk"></div><div class="sk"></div></div>';
+ if(k==='erro')return '<div class="state" role="alert">'+ic('circle-alert')+'<p class="t">Não foi possível carregar as metas.</p><button class="cta" data-act="retry">Tentar de novo</button></div>';
+ return '<div class="state">'+ic('target')+'<p class="t">Nenhuma meta ainda.</p><p class="s">Crie uma meta e acompanhe os aportes do casal.</p><button class="cta" data-act="new">Criar a primeira meta</button></div>'}
+function field(id,label,val,ph,err,extra){return '<div class="fld"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="text" '+(extra||'')+' value="'+esc(val)+'" placeholder="'+ph+'" aria-invalid="'+!!err+'" aria-describedby="e-'+id.slice(2)+'"><div class="err" id="e-'+id.slice(2)+'" role="alert">'+(err||'')+'</div></div>'}
+function sheetHTML(){var sh=S.sheet;if(!sh)return '';var E=S.err,g=sh.id?find(sh.id):null;
+ if(sh.kind==='menu'){if(!g)return '';
+  if(sh.confirm)return '<div class="sheetbg" data-act="close"><div class="sheetin" role="alertdialog" aria-modal="true" aria-label="Apagar meta"><div class="grab"></div><p class="q">Apagar esta meta?</p><p>A meta e os aportes dela somem. Isso não pode ser desfeito.</p><div class="row2"><button class="btn-d" data-act="confirmdel">Apagar</button><button class="btn-s" data-act="close" data-first="1">Manter</button></div></div></div>';
+  var detail='';if(S.v==='b'){detail=bar(g)+'<p class="cap" style="margin-top:8px">'+(done(g)?'Meta atingida':'Faltam '+brl(left(g)))+' · '+prazo(g)+'</p><h3 class="eyebrow" style="margin-top:12px">Aportes recentes</h3>'+(g.ap.length?'<ul class="recent lst">'+g.ap.slice(0,3).map(function(a){return '<li><b>+'+brl(a.amount)+'</b><span>'+(a.desc?esc(a.desc)+' · ':'')+dm(a.date)+'</span></li>'}).join('')+'</ul>':'<p class="cap">Nenhum aporte ainda.</p>')}
+  return '<div class="sheetbg" data-act="close"><div class="sheetin" role="dialog" aria-modal="true" aria-label="Opções da meta '+esc(g.name)+'"><div class="grab"></div><div class="sh-hd"><div class="ti"><h2>'+esc(g.name)+'</h2><p>'+brl(g.cur)+' de '+brl(g.target)+' · '+pct(g)+'%</p></div><b class="v">'+brl(g.cur)+'</b></div>'+detail+
+  (done(g)?'':'<button class="act-row" data-act="aportar" data-id="'+g.id+'" data-first="1">'+ic('plus')+'Aportar</button>')+'<button class="act-row" data-act="edit" data-id="'+g.id+'"'+(done(g)?' data-first="1"':'')+'>'+ic('pencil')+'Editar</button><button class="act-row dg" data-act="del">'+ic('trash-2')+'Apagar</button></div></div>'}
+ if(sh.kind==='aporte'){var v=sh.draft;return '<div class="sheetbg" data-act="close"><div class="sheetin" role="dialog" aria-modal="true" aria-label="Aportar em '+esc(g.name)+'"><div class="grab"></div><h2 class="q">Aportar em '+esc(g.name)+'</h2><p class="cap">Faltam '+brl(left(g))+'</p>'+field('f-amount','Valor (R$)',v.amount,'0,00',E.amount,'inputmode="decimal"')+field('f-desc','Descrição (opcional)',v.desc,'Ex.: Bônus do trabalho',E.desc,'maxlength="40"')+'<div class="row2"><button class="btn-p" data-act="saveap">Registrar aporte</button></div></div></div>'}
+ var v2=sh.draft,ed=!!g;return '<div class="sheetbg" data-act="close"><div class="sheetin" role="dialog" aria-modal="true" aria-label="'+(ed?'Editar meta':'Nova meta')+'"><div class="grab"></div><h2 class="q">'+(ed?'Editar meta':'Nova meta')+'</h2>'+field('f-name','Nome',v2.name,'Ex.: Viagem de férias',E.name,'maxlength="40"')+field('f-target','Valor alvo (R$)',v2.target,'0,00',E.target,'inputmode="decimal"')+field('f-deadline','Prazo (opcional)',v2.deadline,'dd/mm/aaaa',E.deadline,'inputmode="numeric" maxlength="10"')+'<div class="row2"><button class="btn-p" data-act="savemeta">'+(ed?'Salvar meta':'Criar meta')+'</button></div></div></div>'}
+function toastHTML(){return S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':''}
+var tt=null;function toast(text){S.toast=text;clearTimeout(tt);render();tt=setTimeout(function(){S.toast=null;var t=document.querySelector('.toast');if(t&&t.parentNode)t.parentNode.removeChild(t)},4200)}
+function viewState(){return S.estado==='ok'&&!S.goals.length?'vazio':S.estado==='vazio'?'vazio':S.estado}
+function render(){var app=document.getElementById('app'),pg=app.querySelector('.page'),st=pg?pg.scrollTop:0,vs=viewState();
+ var body=vs==='ok'?(S.v==='a'?bodyA():S.v==='b'?bodyB():bodyC()):stateHTML(vs);
+ app.innerHTML='<div class="page" id="page"><main>'+head()+body+'</main></div>'+sheetHTML()+toastHTML();
+ app.querySelector('.page').scrollTop=st;
+ document.querySelectorAll('.variant-tab').forEach(function(b){b.classList.toggle('active',b.dataset.v===S.v)});document.getElementById('vnote').textContent=NOTES[S.v];document.getElementById('estsel').value=S.estado;
+ if(S.sheet){var f=S.sheet.focus?document.getElementById(S.sheet.focus):app.querySelector('.sheetin [data-first]');if(f)f.focus()}}
+function restoreFocus(){var o=S.opener,el=null;if(o)el=document.querySelector('#app '+o);if(!el)el=document.querySelector('#app [data-act="new"]');if(el)el.focus()}
+function closeSheet(){S.sheet=null;S.err={};render();restoreFocus()}
+function val(id){var e=document.getElementById(id);return e?e.value:''}
+function parseMoney(s){return parseFloat(String(s).replace(/\./g,'').replace(',','.'))}
+function parseDate(s){s=s.trim();var m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);if(!m)return null;var dt=new Date(+m[3],+m[2]-1,+m[1]);return dt.getFullYear()===+m[3]&&dt.getMonth()===+m[2]-1&&dt.getDate()===+m[1]?m[3]+'-'+m[2]+'-'+m[1]:null}
+function act(el){var a=el.dataset.act,id=el.dataset.id,fromSheet=!!el.closest('.sheetin');
+ if(a==='new'){S.opener='[data-act="new"]';S.err={};S.sheet={kind:'meta',id:null,draft:{name:'',target:'',deadline:''},focus:'f-name'};render()}
+ else if(a==='open'){S.opener='[data-act="open"][data-id="'+id+'"]';S.sheet={kind:'menu',id:id};render()}
+ else if(a==='aportar'){if(!fromSheet)S.opener='[data-act="aportar"][data-id="'+id+'"]';S.err={};S.sheet={kind:'aporte',id:id,draft:{amount:'',desc:''},focus:'f-amount'};render()}
+ else if(a==='edit'){var g=find(id);S.err={};S.sheet={kind:'meta',id:id,draft:{name:g.name,target:toFmt(g.target),deadline:g.deadline?dmy(g.deadline):''},focus:'f-name'};render()}
+ else if(a==='del'){S.sheet.confirm=true;render()}
+ else if(a==='confirmdel'){var nm=find(S.sheet.id).name;S.goals=S.goals.filter(function(x){return x.id!==S.sheet.id});S.sheet=null;S.opener=null;toast('Meta apagada: '+nm);restoreFocus()}
+ else if(a==='close'){closeSheet()}
+ else if(a==='saveap'){var g2=find(S.sheet.id),amt=parseMoney(val('f-amount')),d=val('f-desc'),e={};
+  if(!(amt>0))e.amount='Informe um valor maior que zero.';S.err=e;
+  if(e.amount){S.sheet.draft={amount:val('f-amount'),desc:d};S.sheet.focus='f-amount';render();return}
+  amt=Math.round(amt*100)/100;var was=done(g2);g2.cur=Math.round((g2.cur+amt)*100)/100;g2.ap.unshift({id:'n'+(S.seq++),amount:amt,desc:d.trim(),date:TODAY});S.sheet=null;S.err={};
+  var now=done(g2);toast(now&&!was?'Meta concluída: '+g2.name:'Aporte registrado');restoreFocus()}
+ else if(a==='savemeta'){var d2={name:val('f-name'),target:val('f-target'),deadline:val('f-deadline')},e2={},tg=parseMoney(d2.target),dl=d2.deadline.trim()?parseDate(d2.deadline):'';
+  if(!d2.name.trim())e2.name='Dê um nome à meta.';if(!(tg>0))e2.target='Informe um valor alvo maior que zero.';if(dl===null)e2.deadline='Use uma data válida, como 31/12/2026.';S.err=e2;
+  if(Object.keys(e2).length){S.sheet.draft=d2;S.sheet.focus=e2.name?'f-name':e2.target?'f-target':'f-deadline';render();return}
+  tg=Math.round(tg*100)/100;
+  if(S.sheet.id){var g3=find(S.sheet.id);g3.name=d2.name.trim();g3.target=tg;g3.deadline=dl||null;S.sheet=null;S.err={};toast('Meta atualizada')}
+  else{S.goals.push({id:'n'+(S.seq++),name:d2.name.trim(),target:tg,cur:0,deadline:dl||null,ap:[]});S.sheet=null;S.err={};toast('Meta criada')}
+  restoreFocus()}
+ else if(a==='retry'){S.estado='ok';render()}}
+var app=document.getElementById('app');
+app.addEventListener('click',function(e){var el=e.target.closest('[data-act]');if(!el)return;if(el.dataset.act==='close'&&e.target!==el)return;act(el)});
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'&&S.sheet){closeSheet();return}
+ if(S.sheet&&e.key==='Tab'){var f=[].slice.call(document.querySelectorAll('.sheetin button,.sheetin input')).filter(function(x){return x.tabIndex>=0});if(!f.length)return;var i=f.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus()}}
+ if(e.key==='Enter'&&S.sheet&&(S.sheet.kind==='meta'||S.sheet.kind==='aporte')&&e.target.closest&&e.target.closest('.fld')){var b=document.querySelector('[data-act="savemeta"],[data-act="saveap"]');if(b)act(b)}});
+function setEstado(v){S.estado=v;S.sheet=null;if(v==='vazio'){S.goals=[]}else if(v==='ok'&&!S.goals.length){S.goals=clone(DEFAULT)}render()}
+document.querySelectorAll('.variant-tab').forEach(function(b){b.addEventListener('click',function(){S.v=b.dataset.v;S.sheet=null;render()})});
+document.getElementById('estsel').addEventListener('change',function(){setEstado(this.value)});
+(function buildDock(){var host=document.getElementById('dockhost');host.className='dk dk-a';
+ host.innerHTML='<nav aria-label="Navegação principal">'+DOCK.map(function(d,i){var on=i===4;return '<button class="it'+(on?' on':'')+'" aria-label="'+d[1]+'"'+(on?' aria-current="page"':'')+'>'+ic(d[0])+'</button>'}).join('')+'</nav><button class="fab" aria-label="Novo lançamento">'+ic('plus')+'</button>';
+ var nav=host.querySelector('nav'),a=nav.querySelector('.on');if(a)nav.scrollLeft=Math.max(0,a.offsetLeft-6);
+ host.querySelector('.fab').addEventListener('click',function(){toast('O + do dock abre o lançamento de gasto ou receita')})})();
+var qs=location.search;if(/[?&]w=(\d+)/.test(qs)){var s0=document.createElement('style');s0.textContent='.phone{width:'+RegExp.$1+'px!important}';document.head.appendChild(s0)}
+if(/[?&]v=([abc])/.test(qs))S.v=RegExp.$1;
+if(/[?&]estado=(vazio|carregando|erro)/.test(qs)){S.estado=RegExp.$1;if(S.estado==='vazio')S.goals=[]}
+if(/[?&]sheet=new/.test(qs))S.sheet={kind:'meta',id:null,draft:{name:'',target:'',deadline:''},focus:'f-name'};
+if(/[?&]sheet=menu/.test(qs))S.sheet={kind:'menu',id:'g1'};
+render();
+if(/[?&]test/.test(qs)){var R=[];function ok(n,c,x){R.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ function click(sel){var e=document.querySelector(sel);if(!e)throw new Error('sem elemento '+sel);e.click()}
+ function txt(sel){return document.querySelector(sel).textContent.replace(/ /g,' ')}
+ function typeIn(id,v){document.getElementById(id).value=v}
+ function reset(v){S.v=v;S.estado='ok';S.goals=clone(DEFAULT);S.sheet=null;S.toast=null;S.err={};S.opener=null;render()}
+ function esc2(){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}
+ function targets(T,lbl){var bad=[];[].forEach.call(document.querySelectorAll('.phone button,.phone input,.phone select,.phone a[href]'),function(el){var r=el.getBoundingClientRect();if(r.width<43.5||r.height<43.5)bad.push((el.getAttribute('aria-label')||el.textContent||el.id).trim().slice(0,24)+' '+Math.round(r.width)+'x'+Math.round(r.height))});
+  ok(T+'alvos >= 44px a 360px ('+lbl+')',bad.length===0,bad.join(' | '))}
+ function typo(T,lbl){var bad=[],SZ={'12px':1,'16px':1,'28px':1,'56px':1},WT={'400':1,'700':1};[].forEach.call(document.querySelectorAll('.phone *'),function(el){if(el.closest('svg'))return;var own=[].some.call(el.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()})||el.tagName==='INPUT';if(!own)return;var cs=getComputedStyle(el);if(!SZ[cs.fontSize]||!WT[cs.fontWeight])bad.push(el.tagName+'.'+el.className+' '+cs.fontSize+'/'+cs.fontWeight)});
+  ok(T+'tipografia só 12/16/28/56 e pesos 400/700 ('+lbl+')',bad.length===0,bad.slice(0,4).join(' | '))}
+ function pcOk(T){var bad=[];S.goals.forEach(function(g){var els=document.querySelectorAll('[data-pct="'+g.id+'"]');if(!els.length)bad.push(g.id+' sem percentual');[].forEach.call(els,function(e){if(e.textContent!==Math.round(g.cur/g.target*100)+'%')bad.push(g.id+' '+e.textContent)})});ok(T+'percentual exibido = atual dividido pelo alvo',bad.length===0,bad.join(','))}
+ var w=document.querySelector('.phone').getBoundingClientRect().width;
+ ok('moldura com 360px de largura (?w=360)',Math.round(w)===360,w);
+ ok('sem requisição de rede (nenhum link ou script externo)',document.querySelectorAll('[src^="http"],link[href^="http"],script[src]').length===0);
+ ok('sem emoji no documento',!/\p{Extended_Pictographic}/u.test(document.documentElement.outerHTML));
+ ok('texto branco nos botões de fundo escuro (verde de ação e vermelho de apagar)',(function(){var bad=[];reset('a');['.cta','.cta2','.btn-p','.btn-d','.round.act'].forEach(function(q){[].forEach.call(document.querySelectorAll(q),function(b){if(getComputedStyle(b).color!=='rgb(255, 255, 255)')bad.push(q+' '+getComputedStyle(b).color)})});return bad.length===0})(),'cores');
+ ok('três variantes existem',document.querySelectorAll('.variant-tab').length===3);
+ ok('aportes dos dados fictícios somam o valor atual de cada meta',DEFAULT.every(function(g){return Math.round(g.ap.reduce(function(s,a){return s+a.amount},0)*100)===Math.round(g.cur*100)}));
+ ['a','b','c'].forEach(function(v){try{var T='['+v+'] ';reset(v);
+  document.querySelector('.variant-tab[data-v="'+v+'"]').click();ok(T+'aba da variante alterna a tela',S.v===v&&document.querySelector('.variant-tab.active').dataset.v===v&&document.getElementById('vnote').textContent===NOTES[v]);
+  ok(T+'H1 "Metas" e botão "Nova meta"',document.querySelector('h1').textContent==='Metas'&&!!document.querySelector('button.round[aria-label="Nova meta"]'));
+  ok(T+'quatro metas aparecem e tocar abre as ações',document.querySelectorAll('#page [data-act="open"]').length===4,document.querySelectorAll('#page [data-act="open"]').length);
+  pcOk(T);
+  ok(T+'meta concluída marcada com texto além da cor',document.querySelector('#page [data-g="g3"]').textContent.indexOf('Concluída')>-1);
+  ok(T+'meta concluída não oferece Aportar',!document.querySelector('#page [data-act="aportar"][data-id="g3"]'));
+  if(v==='a'){ok(T+'Aportar no cartão das 3 metas abertas',document.querySelectorAll('#page [data-act="aportar"]').length===3);
+   ok(T+'barra de progresso com valor 65 / 42 / 100 / 25',[].map.call(document.querySelectorAll('[role="progressbar"]'),function(b){return b.getAttribute('aria-valuenow')}).join()==='65,42,100,25');
+   ok(T+'cartão mostra quanto falta (Faltam R$ 2.100,00) e prazo',txt('[data-g="g1"]').indexOf('Faltam R$ 2.100,00')>-1&&txt('[data-g="g1"]').indexOf('Prazo 31/01/2027 · em 74 dias')>-1,txt('[data-g="g1"]'));
+   ok(T+'meta sem prazo diz "Sem prazo"',txt('[data-g="g2"]').indexOf('Sem prazo')>-1)}
+  if(v==='b'){ok(T+'cada linha tem anel de progresso',document.querySelectorAll('.rg').length===4);
+   ok(T+'linha da meta atingida diz "Concluída"',txt('[data-g="g3"]').indexOf('Concluída')>-1)}
+  if(v==='c'){var ft=document.querySelector('.feat');ok(T+'destaque é a meta de prazo mais próximo (Curso de inglês, 25%)',ft.dataset.g==='g4'&&ft.querySelector('.disp').textContent==='25%'&&ft.textContent.indexOf('em 27 dias')>-1,ft.dataset.g);
+   ok(T+'demais metas em lista (3) com barra',document.querySelectorAll('.lst>li').length===3&&document.querySelectorAll('.lst .mini').length===3);
+   ok(T+'Aportar só no destaque',document.querySelectorAll('#page [data-act="aportar"]').length===1)}
+  var pg=document.getElementById('page');ok(T+'sem rolagem horizontal ('+pg.scrollWidth+'/'+pg.clientWidth+')',pg.scrollWidth<=pg.clientWidth+1);
+  var cd=document.querySelector('.cd,.grp'),cs=getComputedStyle(cd);ok(T+'cartão com raio 22, sem borda e sem sombra',cs.borderTopLeftRadius==='22px'&&cs.borderTopWidth==='0px'&&cs.boxShadow==='none',cs.borderTopLeftRadius+' '+cs.borderTopWidth+' '+cs.boxShadow);
+  ok(T+'todo botão tem nome acessível',[].every.call(document.querySelectorAll('.phone button'),function(b){return (b.getAttribute('aria-label')||b.textContent).trim().length>0}));
+  typo(T,'tela');targets(T,'tela');
+  // ações da linha
+  click('#page [data-act="open"][data-id="g1"]');var dl=document.querySelector('[role="dialog"]');
+  ok(T+'tocar na meta abre o Sheet com nome, resumo e ações Aportar, Editar e Apagar',!!dl&&document.querySelector('.sh-hd h2').textContent==='Viagem de férias'&&[].map.call(document.querySelectorAll('.sheetin .act-row'),function(b){return b.textContent}).join()==='Aportar,Editar,Apagar');
+  ok(T+'foco inicial na primeira ação',document.activeElement&&document.activeElement.dataset.act==='aportar');
+  if(v==='b')ok(T+'detalhe em Sheet: barra, quanto falta e aportes recentes (3)',!!document.querySelector('.sheetin [role="progressbar"]')&&document.querySelector('.sheetin').textContent.indexOf('Faltam R$ 2.100,00')>-1&&document.querySelectorAll('.sheetin .recent li').length===3&&document.querySelector('.sheetin .recent li').textContent==='+R$ 1.000,00Bônus do trabalho · 10/11',document.querySelectorAll('.sheetin .recent li').length);
+  else ok(T+'Sheet de ações sem detalhe extra (só resumo)',!document.querySelector('.sheetin .recent'));
+  targets(T,'Sheet de ações');typo(T,'Sheet de ações');esc2();
+  ok(T+'Esc fecha o Sheet e devolve o foco à meta',!document.querySelector('.sheetbg')&&document.activeElement===document.querySelector('#page [data-act="open"][data-id="g1"]'));
+  // apagar em duas etapas
+  click('#page [data-act="open"][data-id="g2"]');click('.sheetin [data-act="del"]');ok(T+'Apagar pede confirmação e não apaga ainda',!!document.querySelector('[role="alertdialog"]')&&!!find('g2')&&/Apagar esta meta\?/.test(document.querySelector('.sheetin').textContent));
+  ok(T+'confirmação tem "Apagar" e "Manter" lado a lado',[].map.call(document.querySelectorAll('.row2 button'),function(b){return b.textContent}).join()==='Apagar,Manter');
+  targets(T,'confirmação');typo(T,'confirmação');
+  click('.sheetin .btn-s');ok(T+'Manter fecha e mantém a meta, com o foco de volta',!!find('g2')&&!document.querySelector('.sheetbg')&&document.activeElement===document.querySelector('#page [data-act="open"][data-id="g2"]'));
+  click('#page [data-act="open"][data-id="g2"]');click('.sheetin [data-act="del"]');click('[data-act="confirmdel"]');ok(T+'confirmar apaga a meta',!find('g2')&&document.querySelectorAll('#page [data-act="open"]').length===3&&!document.querySelector('.sheetbg'));
+  ok(T+'aviso de meta apagada',document.querySelector('.toast').textContent==='Meta apagada: Reserva de emergência');
+  // aportar
+  reset(v);click('#page [data-act="open"][data-id="g4"]');click('.sheetin [data-act="aportar"]');
+  ok(T+'Aportar abre o Sheet com Valor e Descrição (opcional) e mostra quanto falta',!!document.querySelector('[role="dialog"][aria-label="Aportar em Curso de inglês"]')&&!!document.querySelector('label[for="f-amount"]')&&document.querySelector('label[for="f-desc"]').textContent==='Descrição (opcional)'&&document.querySelector('.sheetin').textContent.indexOf('Faltam R$ 1.350,00')>-1&&document.activeElement.id==='f-amount');
+  targets(T,'Sheet de aporte');typo(T,'Sheet de aporte');
+  click('[data-act="saveap"]');ok(T+'aporte sem valor mostra erro sob o campo, marca e foca o campo',txt('#e-amount')==='Informe um valor maior que zero.'&&document.getElementById('f-amount').getAttribute('aria-invalid')==='true'&&document.activeElement.id==='f-amount'&&find('g4').cur===450);
+  typeIn('f-amount','150,00');typeIn('f-desc','Reembolso');click('[data-act="saveap"]');var g4=find('g4');
+  ok(T+'aporte grava e atualiza (R$ 600,00, 33%)',g4.cur===600&&g4.ap[0].amount===150&&g4.ap[0].desc==='Reembolso'&&!document.querySelector('.sheetbg'),g4.cur);pcOk(T+'após aporte: ');
+  ok(T+'aviso "Aporte registrado" e foco devolvido',document.querySelector('.toast').textContent==='Aporte registrado'&&!!document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.id==='g4'&&document.activeElement.dataset.act==='open',document.activeElement.outerHTML.slice(0,60));
+  if(v!=='b'){click('#page [data-act="aportar"][data-id="g4"]');ok(T+'Aportar direto do cartão abre o Sheet de aporte',!!document.querySelector('[role="dialog"][aria-label="Aportar em Curso de inglês"]'));typeIn('f-amount','1.200,00');click('[data-act="saveap"]');
+   ok(T+'completar a meta mostra "Concluída" e tira o Aportar',done(find('g4'))&&document.querySelector('#page [data-g="g4"]').textContent.indexOf('Concluída')>-1&&!document.querySelector('#page [data-act="aportar"][data-id="g4"]')&&document.querySelector('.toast').textContent==='Meta concluída: Curso de inglês',document.querySelector('.toast').textContent);pcOk(T+'meta concluída: ')}
+  // nova meta
+  reset(v);click('[data-act="new"].round');ok(T+'+ abre o Sheet com Nome, Valor alvo e Prazo (opcional)',!!document.querySelector('[role="dialog"][aria-label="Nova meta"]')&&document.querySelector('label[for="f-name"]').textContent==='Nome'&&document.querySelector('label[for="f-target"]').textContent==='Valor alvo (R$)'&&document.querySelector('label[for="f-deadline"]').textContent==='Prazo (opcional)'&&document.activeElement.id==='f-name');
+  targets(T,'Sheet de nova meta');typo(T,'Sheet de nova meta');
+  click('[data-act="savemeta"]');ok(T+'validação por campo: nome e valor alvo com mensagem sob o campo, prazo vazio é aceito',txt('#e-name')==='Dê um nome à meta.'&&txt('#e-target')==='Informe um valor alvo maior que zero.'&&txt('#e-deadline')===''&&S.goals.length===4&&!!document.querySelector('.sheetbg'));
+  ok(T+'campos inválidos marcados (aria-invalid) e foco no primeiro erro',document.getElementById('f-name').getAttribute('aria-invalid')==='true'&&document.getElementById('f-target').getAttribute('aria-invalid')==='true'&&document.getElementById('f-deadline').getAttribute('aria-invalid')==='false'&&document.activeElement.id==='f-name');
+  typeIn('f-name','Bicicleta');typeIn('f-target','1.200,00');typeIn('f-deadline','31/02/2027');click('[data-act="savemeta"]');ok(T+'prazo impossível é recusado, mantendo o que foi digitado',txt('#e-deadline')==='Use uma data válida, como 31/12/2026.'&&document.getElementById('f-name').value==='Bicicleta'&&document.activeElement.id==='f-deadline'&&S.goals.length===4);
+  typeIn('f-deadline','');click('[data-act="savemeta"]');var nm=S.goals[S.goals.length-1];ok(T+'meta nova gravada (1200, sem prazo, 0%) e listada',nm.name==='Bicicleta'&&nm.target===1200&&nm.cur===0&&nm.deadline===null&&!document.querySelector('.sheetbg')&&document.querySelectorAll('#page [data-act="open"]').length===5);pcOk(T+'meta nova: ');
+  ok(T+'aviso "Meta criada" e foco de volta no botão +',document.querySelector('.toast').textContent==='Meta criada'&&document.activeElement===document.querySelector('[data-act="new"]'));
+  // editar
+  reset(v);click('#page [data-act="open"][data-id="g1"]');click('.sheetin [data-act="edit"]');ok(T+'Editar abre o formulário preenchido (Viagem de férias, 6.000,00, 31/01/2027)',!!document.querySelector('[role="dialog"][aria-label="Editar meta"]')&&document.getElementById('f-name').value==='Viagem de férias'&&document.getElementById('f-target').value==='6.000,00'&&document.getElementById('f-deadline').value==='31/01/2027');
+  typeIn('f-name','Viagem do casal');typeIn('f-target','7.500,00');typeIn('f-deadline','');click('[data-act="savemeta"]');var e1=find('g1');ok(T+'edição grava e recalcula o progresso (52%)',e1.name==='Viagem do casal'&&e1.target===7500&&e1.deadline===null&&e1.cur===3900&&!document.querySelector('.sheetbg'));pcOk(T+'após editar: ');
+  // estados
+  reset(v);S.estado='vazio';S.goals=[];render();var ve=document.querySelector('.state');ok(T+'estado vazio em português com botão "Criar a primeira meta"',/Nenhuma meta ainda\./.test(ve.textContent)&&ve.querySelector('[data-act="new"]').textContent==='Criar a primeira meta');
+  typo(T,'vazio');targets(T,'vazio');click('.state [data-act="new"]');ok(T+'botão do vazio abre o Sheet de nova meta',!!document.querySelector('[role="dialog"][aria-label="Nova meta"]'));esc2();
+  S.estado='carregando';S.goals=clone(DEFAULT);render();var vc=document.querySelector('[role="status"]');ok(T+'estado carregando com texto para leitor de tela e blocos neutros',vc.textContent==='Carregando as metas'&&vc.querySelectorAll('.sk').length===3&&!document.querySelector('[data-act="open"]'));
+  typo(T,'carregando');
+  S.estado='erro';render();var vr=document.querySelector('[role="alert"]');ok(T+'estado de erro em português com "Tentar de novo"',vr.textContent.indexOf('Não foi possível carregar as metas.')>-1&&vr.querySelector('[data-act="retry"]').textContent==='Tentar de novo');
+  typo(T,'erro');targets(T,'erro');click('[data-act="retry"]');ok(T+'Tentar de novo recarrega as metas',S.estado==='ok'&&document.querySelectorAll('#page [data-act="open"]').length===4);
+ }catch(err){ok('['+v+'] EXCEÇÃO',false,err.message+' @ '+(err.stack||'').split('\n')[1])}});
+ ok('acentuação completa ("Nova meta", "Descrição", "Concluída", "Não foi possível")',document.documentElement.outerHTML.indexOf('Descrição')>-1&&document.documentElement.outerHTML.indexOf('Concluída')>-1&&document.documentElement.outerHTML.indexOf('Não foi possível')>-1);
+ ok('sem erros de JS',errors.length===0,errors.join('|'));var f=R.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ document.getElementById('selftest').textContent='TOTAL '+R.length+' | FALHAS '+f+'\n'+R.join('\n')}
+})();
+</script></body></html>

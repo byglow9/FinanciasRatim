@@ -8,6 +8,9 @@
 //   (gasto igual ao limite ainda e perto); estourou so quando gasto > limite, que
 //   e `row.state === 'over'` (mesma regra dos alertas), nunca `pct >= 100`.
 
+import { previewLaunch } from './budget.js'
+import { VINTEM_STATES } from './vintemStates.js'
+
 /**
  * Cortes das faixas, em porcentagem do limite. `estourouBravoAte` e o fim da
  * faixa em que o tom escolhe entre triste e bravo; acima dele e sempre triste.
@@ -249,16 +252,94 @@ export function situationForTap(facts) {
   return 'toque'
 }
 
-// Esqueleto do passo RED: sera implementado no passo GREEN.
-export const REACTION_MS = Object.freeze({})
-/** @param {string} kind */
+/**
+ * Duracao de cada reacao a um lancamento, em ms (UI-SPEC, secao Reacoes).
+ * `wake` e o despertar ao tocar no Vintem sonolento.
+ */
+export const REACTION_MS = Object.freeze({ spend: 1400, susto: 1300, bronca: 1700, festa: 2300, wake: 650 })
+
+/**
+ * Estado do Vintem durante uma reacao.
+ * @param {string} kind
+ * @returns {VintemState}
+ */
 export function reactionState(kind) {
-  void kind
-  return 'neutro'
+  switch (kind) {
+    case 'spend':
+    case 'festa':
+      return 'feliz'
+    case 'susto':
+    case 'wake':
+      return 'surpreso'
+    case 'bronca':
+      return 'bravo'
+    default:
+      return 'neutro'
+  }
 }
-/** @param {{ view: unknown, kind: string, categoryId: string | null, cents: number, bigSpend?: boolean, counted?: boolean }} args */
-export function reactionForLaunch(args) {
-  void args
+
+/**
+ * Reacao e situacao de um lancamento novo, sem refazer leitura. Gasto segue a
+ * ordem de D-06b: estourou, gasto grande, perto, atento, ok. `counted` diz que
+ * o gasto ja esta somado na view e nao deve entrar de novo.
+ * @param {{
+ *   view: { safeCents: number, income: any, spend?: { rows: MoodFacts['rows'] } },
+ *   kind: string,
+ *   categoryId?: string | null,
+ *   cents: number,
+ *   bigSpend?: boolean,
+ *   counted?: boolean,
+ * }} args
+ * @returns {{ reaction: 'spend' | 'susto' | 'bronca' | 'festa', situation: string, categoryId: string | null } | null}
+ */
+export function reactionForLaunch({ view, kind, categoryId = null, cents, bigSpend = false, counted = false }) {
+  const cat = categoryId ?? null
+  if (kind === 'gasto') {
+    const row = (view.spend?.rows ?? []).find((r) => r.categoryId === cat)
+    const add = counted || !Number.isFinite(cents) || cents <= 0 ? 0 : cents
+    const band = row
+      ? limitBand({
+          spentCents: row.spentCents + add,
+          limitCents: row.limitCents,
+          state: row.spentCents + add > row.limitCents ? 'over' : 'ok',
+        })
+      : 'abaixo'
+    if (band === 'estourou') return { reaction: 'bronca', situation: 'limite-estourou', categoryId: cat }
+    if (bigSpend) return { reaction: 'susto', situation: 'gasto-grande', categoryId: cat }
+    if (band === 'perto') return { reaction: 'susto', situation: 'limite-perto', categoryId: cat }
+    if (band === 'atento') return { reaction: 'spend', situation: 'limite-atento', categoryId: cat }
+    return { reaction: 'spend', situation: 'lancamento-ok', categoryId: cat }
+  }
+  if (kind === 'receita') {
+    const unexpected = previewLaunch(/** @type {any} */ (view), 'receita', cents).raisesSafe
+    return { reaction: unexpected ? 'susto' : 'festa', situation: 'receita', categoryId: null }
+  }
+  if (kind === 'porquinho-guardou') {
+    return { reaction: 'festa', situation: 'porquinho-guardou', categoryId: null }
+  }
+  if (kind === 'porquinho-retirou') {
+    return { reaction: 'susto', situation: 'porquinho-retirou', categoryId: null }
+  }
   return null
 }
-export const SAMPLE_SITUATION_BY_STATE = Object.freeze({})
+
+/**
+ * Uma situacao de exemplo por estado, para a pagina de teste do Vintem. As
+ * chaves sao exatamente VINTEM_STATES.
+ */
+export const SAMPLE_SITUATION_BY_STATE = Object.freeze(
+  /** @type {Record<VintemState, string>} */ ({
+    neutro: 'inicio',
+    feliz: 'ritmo-folgado',
+    triste: 'limite-estourou',
+    bravo: 'limite-estourou',
+    sonolento: 'sem-lancar',
+    surpreso: 'gasto-grande',
+    atento: 'limite-perto',
+  }),
+)
+
+// Guarda de consistencia: a tabela de exemplo cobre os sete estados da tabela de arte.
+if (VINTEM_STATES.some((st) => !(st in SAMPLE_SITUATION_BY_STATE))) {
+  throw new Error('SAMPLE_SITUATION_BY_STATE precisa cobrir VINTEM_STATES')
+}

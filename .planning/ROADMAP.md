@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 19/24 plans executed
+**Plans:** 20/24 plans executed
 
 Plans:
 **Wave 1**
@@ -231,7 +231,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03.1-20-PLAN.md — Calendário: cabeçalho, grade com calor e mini post-it, agenda e ligação dos Sheets (UX-03, UX-04, UX-08, UX-09)
+- [x] 03.1-20-PLAN.md — Calendário: cabeçalho, grade com calor e mini post-it, agenda e ligação dos Sheets (UX-03, UX-04, UX-08, UX-09)
 - [ ] 03.1-21-PLAN.md — Relatórios conforme a variante escolhida, por ciclo e com gráficos acessíveis (UX-07, UX-08, UX-09)
 
 **Wave 5** *(blocked on Wave 4 completion)*

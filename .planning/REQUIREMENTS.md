@@ -75,7 +75,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [x] **UX-01**: O dock de navegação não tem fade de borda, usa uma só cor de ação (`#14532d`) para o item ativo e para o botão +, rola com encaixe (a borda esquerda fecha limpa e o próximo ícone da direita aparece parcialmente) e mantém os 8 destinos
 - [x] **UX-02**: Transações mostra Entradas, Saídas e Saldo numa linha (com "Detalhes" para o saldo total), busca e filtros fixos no topo, lista agrupada por dia com o total do dia, e editar ou apagar por um Sheet aberto ao tocar na linha
 - [x] **UX-03**: O Calendário tem mês que recolhe para a semana ao rolar a agenda, mapa de calor do gasto por percentil do mês, pontinhos por tipo, "hoje" em círculo e mini post-it no canto da célula, e agenda corrida que abre em hoje, com saldo do dia e contas vencidas ou a vencer sinalizadas
-- [ ] **UX-04**: Usuário cria, edita e apaga post-its (5 cores) e eventos pelo Calendário, e os post-its aparecem na agenda do dia
+- [x] **UX-04**: Usuário cria, edita e apaga post-its (5 cores) e eventos pelo Calendário, e os post-its aparecem na agenda do dia
 - [x] **UX-05**: Contas Fixas agrupa por categoria em **ordem fixa** (que nunca muda ao marcar paga ou filtrar), com subtotal e progresso por grupo, filtro Todas, Pendentes e Pagas, os três totais e o + Nova, e marca como paga por uma caixa quadrada com área de toque de 44px, sem aviso de desfazer
 - [x] **UX-06**: Casal mostra o saldo somado, a proporção de gastos de cada um, barras comparativas por métrica, a categoria em que cada um mais gasta e o Porquinho, com alternador Ciclo e Mês, sem o `MonthSelector` de grade nem o gráfico antigo
 - [x] **UX-07**: Relatórios, Metas, Porquinho e Login seguem o mesmo padrão visual e de toque, cada um com layout escolhido pelo dono em sketch antes da implementação
@@ -186,7 +186,7 @@ Preenchida na criação do roadmap.
 | UX-01 | Phase 3.1 | Complete |
 | UX-02 | Phase 3.1 | Complete |
 | UX-03 | Phase 3.1 | Complete |
-| UX-04 | Phase 3.1 | Pending |
+| UX-04 | Phase 3.1 | Complete |
 | UX-05 | Phase 3.1 | Complete |
 | UX-06 | Phase 3.1 | Complete |
 | UX-07 | Phase 3.1 | Complete |

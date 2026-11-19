@@ -2,13 +2,17 @@ import { useMemo, useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCoupleData, type CoupleMode } from '@/hooks/useCoupleData'
+import { useSavings } from '@/hooks/useSavings'
 import { CoupleHeadline } from '@/components/couple/CoupleHeadline'
 import { DualBars } from '@/components/couple/DualBars'
+import { PiggyCard } from '@/components/couple/PiggyCard'
 import { SplitBar } from '@/components/couple/SplitBar'
+import { TopCategoryRows } from '@/components/couple/TopCategoryRows'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { coupleSummary } from '@shared/core/couple.js'
+import { toCents } from '@shared/core/ledger.js'
 
 /**
  * Casal (UX-06, D-17, sketch 010 Mistura A+B): leitura dos dois no mesmo periodo. A janela e unica
@@ -20,6 +24,9 @@ export function CouplePage() {
   const { settings, categoryDefs } = useArea()
   const { viewPerson } = useCycle()
   const { first, second, loading, error, refetch, periodLabel, sameSalaryDay } = useCoupleData(mode)
+
+  const savings = useSavings()
+  const savingsCents = savings.loading || savings.error ? null : toCents(savings.balance)
 
   const viewName = viewPerson === 'ele' ? settings.tabNames.area1 : settings.tabNames.area2
 
@@ -96,8 +103,16 @@ export function CouplePage() {
             second={summary.second}
             scaleMaxCents={summary.scaleMaxCents}
           />
+          <TopCategoryRows
+            firstName={settings.tabNames.area1}
+            secondName={settings.tabNames.area2}
+            first={first ?? []}
+            second={second ?? []}
+          />
         </>
       )}
+
+      <PiggyCard label={settings.tabNames.piggy} balanceCents={savingsCents} failed={savings.error !== null} />
     </div>
   )
 }

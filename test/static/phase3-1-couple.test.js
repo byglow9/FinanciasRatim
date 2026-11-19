@@ -9,7 +9,9 @@ const HOOK = 'src/hooks/useCoupleData.ts'
 const HEADLINE = 'src/components/couple/CoupleHeadline.tsx'
 const SPLIT = 'src/components/couple/SplitBar.tsx'
 const DUAL = 'src/components/couple/DualBars.tsx'
-const FILES = [COUPLE, HOOK, HEADLINE, SPLIT, DUAL]
+const TOP = 'src/components/couple/TopCategoryRows.tsx'
+const PIGGY = 'src/components/couple/PiggyCard.tsx'
+const FILES = [COUPLE, HOOK, HEADLINE, SPLIT, DUAL, TOP, PIGGY]
 
 test('a pagina usa useCoupleData, coupleSummary e o alternador Ciclo e Mes', () => {
   assertIncludes(COUPLE, ['useCoupleData', 'coupleSummary', 'SegmentedControl', 'Casal', 'Ciclo', 'Mês'])
@@ -71,6 +73,16 @@ test('Quem gastou mais usa splitShare e descreve a barra por extenso', () => {
 test('as barras duplas usam os tons ele e ela na mesma escala do nucleo', () => {
   assertIncludes(DUAL, ['tone="ele"', 'tone="ela"', 'scaleMaxCents', 'size="md"', 'Entradas', 'Saídas', 'Saldo', 'min-w-[96px]'])
   assertIncludes(COUPLE, ['DualBars', 'scaleMaxCents'])
+})
+
+test('Onde cada um mais gasta usa leadCategories e o empate vira quase empatado', () => {
+  assertIncludes(TOP, ['leadCategories', 'Onde cada um mais gasta', 'maior gasto de', 'quase empatado', 'min-h-14', 'bg-ele', 'bg-ela', 'text-white'])
+  assertIncludes(COUPLE, ['TopCategoryRows'])
+})
+
+test('o cartao do Porquinho leva para /porquinho com alvo de 72px', () => {
+  assertIncludes(PIGGY, ['to="/porquinho"', 'min-h-[72px]', 'PiggyBank', 'ChevronRight', '#fce7f3', '#be185d'])
+  assertIncludes(COUPLE, ['PiggyCard', 'useSavings', 'tabNames.piggy'])
 })
 
 test('os arquivos do Casal ficam na escala tipografica e sem console', () => {

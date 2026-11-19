@@ -103,21 +103,66 @@ function overState(row, tone) {
   return tone === 'suave' ? 'triste' : 'bravo'
 }
 
+/** Tipos de insight de leitura de gasto e a situacao de cada um (ordem = desempate). */
+const READING_SITUATION = Object.freeze({
+  'delivery-heavy': 'delivery-semana',
+  'merchant-repeat': 'loja-repete',
+  'category-over-average': 'categoria-acima-media',
+})
+const READING_TYPES = Object.keys(READING_SITUATION)
+
 /**
- * Humor de fundo e situacao da fala.
+ * Sujeito de um insight: so identificador ja filtrado (nunca descricao crua).
+ * `merchant-repeat` traz merchantKey; os demais trazem categoryId.
+ * @param {{ type: string, subject?: { key?: string } }} insight
+ * @returns {MoodResult['subject']}
+ */
+function subjectOf(insight) {
+  const key = insight.subject?.key
+  if (typeof key !== 'string' || key === '') return null
+  return insight.type === 'merchant-repeat' ? { merchantKey: key } : { categoryId: key }
+}
+
+/**
+ * Insight de leitura de maior severidade; empate pela ordem dos tipos e depois
+ * pela chave, para o resultado nao depender da ordem de entrada.
+ * @param {MoodFacts['insights']} insights
+ */
+function topReading(insights) {
+  let best = null
+  for (const ins of insights) {
+    if (!READING_TYPES.includes(ins.type)) continue
+    if (best === null) {
+      best = ins
+      continue
+    }
+    const a = ins.severity ?? 0
+    const b = best.severity ?? 0
+    if (a !== b) {
+      if (a > b) best = ins
+      continue
+    }
+    const ta = READING_TYPES.indexOf(ins.type)
+    const tb = READING_TYPES.indexOf(best.type)
+    if (ta !== tb) {
+      if (ta < tb) best = ins
+      continue
+    }
+    if (String(ins.subject?.key ?? '') < String(best.subject?.key ?? '')) best = ins
+  }
+  return best
+}
+
+/**
+ * Situacao e estado de fundo, na ordem de D-06b: estourou, gasto grande, perto,
+ * atento, leitura de gasto, meta ou aporte, ritmo, sem lancar, inicio.
  * @param {MoodFacts} facts
- * @param {{ kind: string, state: VintemState, untilMs: number } | null | undefined} reaction
- * @param {number} nowMs
  * @returns {MoodResult}
  */
-export function deriveVintemState(facts, reaction, nowMs) {
-  void reaction
-  void nowMs
-  // Portao neutro (D-08): nunca elogio nem bronca sobre dado velho ou ausente.
-  if (facts.loading || facts.readOnly || facts.isPast || facts.noIncome || facts.suppressed) {
-    return { ...NEUTRAL }
-  }
+function backgroundMood(facts) {
   const rows = facts.rows ?? []
+  const insights = facts.insights ?? []
+
   const over = worstRow(rows, 'estourou')
   if (over) {
     return {
@@ -126,6 +171,8 @@ export function deriveVintemState(facts, reaction, nowMs) {
       subject: { categoryId: over.categoryId },
     }
   }
+  const spike = insights.find((i) => i.type === 'spend-spike' && i.day === facts.todayKey)
+  if (spike) return { state: 'surpreso', situation: 'gasto-grande', subject: subjectOf(spike) }
   const near = worstRow(rows, 'perto')
   if (near) {
     return { state: 'atento', situation: 'limite-perto', subject: { categoryId: near.categoryId } }
@@ -134,15 +181,70 @@ export function deriveVintemState(facts, reaction, nowMs) {
   if (watch) {
     return { state: 'atento', situation: 'limite-atento', subject: { categoryId: watch.categoryId } }
   }
+  const reading = topReading(insights)
+  if (reading) {
+    return {
+      state: (reading.severity ?? 0) >= 3 ? 'bravo' : 'atento',
+      situation: READING_SITUATION[/** @type {keyof typeof READING_SITUATION} */ (reading.type)],
+      subject: subjectOf(reading),
+    }
+  }
+  if (facts.cheer === 'meta-batida' || facts.cheer === 'porquinho-guardou') {
+    return { state: 'feliz', situation: facts.cheer, subject: null }
+  }
+  switch (facts.rhythmLevel) {
+    case 4:
+      return { state: 'triste', situation: 'ritmo-estourou', subject: null }
+    case 3:
+      return { state: 'atento', situation: 'ritmo-atencao', subject: null }
+    case 2:
+      return { state: 'neutro', situation: 'ritmo-atencao', subject: null }
+    case 0:
+      if (rows.every((r) => r.pct < 40)) {
+        return { state: 'feliz', situation: 'ritmo-folgado', subject: null }
+      }
+      break
+    default:
+      break
+  }
+  if (insights.some((i) => i.type === 'days-without-launch')) {
+    return { state: 'neutro', situation: 'sem-lancar', subject: null }
+  }
   return { state: 'neutro', situation: 'inicio', subject: null }
 }
 
 /**
- * Situacao da fala ao tocar no Vintem (esqueleto do passo RED).
+ * Humor de fundo e situacao da fala. O portao neutro (D-08) vem antes de tudo,
+ * inclusive da reacao: dado velho nunca gera elogio nem bronca. Com reacao
+ * ativa (`nowMs < untilMs`) o estado e o da reacao e a situacao continua a de
+ * fundo (D-09). Varios dias sem lancar tornam feliz ou neutro em sonolento;
+ * atento, bravo, triste e surpreso nunca sao trocados.
+ * @param {MoodFacts} facts
+ * @param {{ kind: string, state: VintemState, untilMs: number } | null | undefined} reaction
+ * @param {number} nowMs
+ * @returns {MoodResult}
+ */
+export function deriveVintemState(facts, reaction, nowMs) {
+  if (facts.loading || facts.readOnly || facts.isPast || facts.noIncome || facts.suppressed) {
+    return { ...NEUTRAL }
+  }
+  const mood = backgroundMood(facts)
+  const sleepy = (facts.insights ?? []).some((i) => i.type === 'days-without-launch')
+  if (sleepy && (mood.state === 'feliz' || mood.state === 'neutro')) mood.state = 'sonolento'
+  if (reaction && Number.isFinite(nowMs) && nowMs < reaction.untilMs) {
+    return { ...mood, state: reaction.state }
+  }
+  return mood
+}
+
+/**
+ * Situacao da fala ao tocar no Vintem: perfil somente leitura nao fala; dado
+ * velho tem uma unica fala neutra e sem veredito; nos demais casos, `toque`.
  * @param {MoodFacts} facts
  * @returns {string | null}
  */
 export function situationForTap(facts) {
-  void facts
-  return null
+  if (facts.readOnly) return null
+  if (facts.suppressed) return 'dados-velhos'
+  return 'toque'
 }

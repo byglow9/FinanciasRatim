@@ -10,6 +10,7 @@
 
 import { daysBetweenParts } from './cycle.js'
 import { compareGroupKeys, groupKeyOf } from './categoryOrder.js'
+import { parseBRL, plural } from './format.js'
 
 /** @typedef {import('./budget.js').BillItem} BillItem */
 /** @typedef {import('./categories.js').CategoryDef} CategoryDef */
@@ -38,6 +39,45 @@ import { compareGroupKeys, groupKeyOf } from './categoryOrder.js'
  *   subtotalCents: number,
  * }} BillGroup
  */
+
+/**
+ * Totais das ocorrencias do ciclo. `totalCents` e a soma de `costCents`, o mesmo
+ * numero de `billsForCycle(...).totalCents` da Home.
+ * @typedef {{
+ *   totalCents: number,
+ *   paidCents: number,
+ *   pendingCents: number,
+ *   paidCount: number,
+ *   count: number,
+ * }} BillsSummary
+ */
+
+/** @typedef {'name' | 'amount' | 'day' | 'category'} BillField */
+
+/**
+ * Rascunho do formulario, com o texto que o usuario digitou.
+ * @typedef {{ name?: unknown, amount?: unknown, day?: unknown, category?: unknown }} BillDraft
+ */
+
+/**
+ * @typedef {{
+ *   ok: boolean,
+ *   errors: Partial<Record<BillField, string>>,
+ *   firstInvalid: BillField | null,
+ *   value: { name: string, amountCents: number, day: number, category: string } | null,
+ * }} BillDraftResult
+ */
+
+/** Mensagens por campo, exatamente as do contrato de copia da UI-SPEC. */
+const BILL_MESSAGES = Object.freeze({
+  name: 'Informe o nome da conta',
+  amount: 'Informe um valor maior que zero',
+  day: 'Informe um dia de 1 a 31',
+  category: 'Escolha uma categoria',
+})
+
+/** Ordem de validacao e do foco no primeiro campo com erro. */
+const BILL_FIELD_ORDER = /** @type {const} */ (['name', 'amount', 'day', 'category'])
 
 /** Ate quantos dias antes do vencimento a conta aparece como "em breve" (D-15). */
 const SOON_DAYS = 3
@@ -136,4 +176,92 @@ export function groupBillsByCategory(items, defs, filter = 'all') {
     })
   }
   return groups
+}
+
+/**
+ * Resumo das ocorrencias do ciclo (D-13), da mesma origem dos totais da Home:
+ * total e a soma de `costCents`, pagas e pendentes dividem esse total, entao
+ * `totalCents` e sempre `paidCents + pendingCents`.
+ * @param {BillItem[]} items
+ * @returns {BillsSummary}
+ */
+export function billsSummary(items) {
+  let totalCents = 0
+  let paidCents = 0
+  let paidCount = 0
+  let count = 0
+  for (const item of items ?? []) {
+    count += 1
+    totalCents += item.costCents
+    if (item.paid) {
+      paidCount += 1
+      paidCents += item.costCents
+    }
+  }
+  return { totalCents, paidCents, pendingCents: totalCents - paidCents, paidCount, count }
+}
+
+/**
+ * Frase de apoio da linha da conta (UI-SPEC, contrato de copia): so o dia do mes
+ * aparece no texto; a diferenca vem de `daysBetweenParts`.
+ * "Venceu dia 5 \u00b7 3 dias de atraso", "Vence hoje",
+ * "Vence amanh\u00e3 \u00b7 dia 19", "Vence dia 25 \u00b7 em 12 dias", "Paga".
+ * @param {DateParts} occurrence
+ * @param {BillStatus} status
+ * @param {DateParts} todayParts
+ * @returns {string}
+ */
+export function billSupportText(occurrence, status, todayParts) {
+  if (status === 'paid') return 'Paga'
+  const diff = daysBetweenParts(todayParts, occurrence)
+  if (status === 'overdue' || diff < 0) {
+    return `Venceu dia ${occurrence.day} \u00b7 ${plural(Math.abs(diff), 'dia', 'dias')} de atraso`
+  }
+  if (diff === 0) return 'Vence hoje'
+  if (diff === 1) return `Vence amanh\u00e3 \u00b7 dia ${occurrence.day}`
+  return `Vence dia ${occurrence.day} \u00b7 em ${plural(diff, 'dia', 'dias')}`
+}
+
+/**
+ * Texto do dia: so 1 ou 2 digitos, de 1 a 31 (T-3.1-07-01). Aceita numero inteiro.
+ * @param {unknown} raw
+ * @returns {number | null}
+ */
+function parseDay(raw) {
+  const text = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : ''
+  if (!/^\d{1,2}$/.test(text)) return null
+  const day = Number(text)
+  return day >= 1 && day <= 31 ? day : null
+}
+
+/**
+ * Valida o formulario de conta (D-15), um erro por campo. Valor so por
+ * `parseBRL` em centavos inteiros; dia so por 1 ou 2 digitos entre 1 e 31; nome
+ * com trim; a categoria precisa estar entre as permitidas (o chamador inclui a
+ * categoria atual da conta mesmo arquivada). `firstInvalid` segue a ordem nome,
+ * valor, dia, categoria.
+ * @param {BillDraft} draft
+ * @param {string[]} allowedCategoryNames
+ * @returns {BillDraftResult}
+ */
+export function validateBillDraft(draft, allowedCategoryNames) {
+  const input = draft ?? {}
+  const name = typeof input.name === 'string' ? input.name.trim() : ''
+  const amountCents = parseBRL(input.amount)
+  const day = parseDay(input.day)
+  const category = typeof input.category === 'string' ? input.category.trim() : ''
+  const allowed = new Set((allowedCategoryNames ?? []).map((n) => String(n).trim()))
+
+  /** @type {Partial<Record<BillField, string>>} */
+  const errors = {}
+  if (name === '') errors.name = BILL_MESSAGES.name
+  if (amountCents === null || amountCents <= 0) errors.amount = BILL_MESSAGES.amount
+  if (day === null) errors.day = BILL_MESSAGES.day
+  if (category === '' || !allowed.has(category)) errors.category = BILL_MESSAGES.category
+
+  const firstInvalid = BILL_FIELD_ORDER.find((field) => errors[field] !== undefined) ?? null
+  if (firstInvalid !== null || amountCents === null || day === null) {
+    return { ok: false, errors, firstInvalid, value: null }
+  }
+  return { ok: true, errors: {}, firstInvalid: null, value: { name, amountCents, day, category } }
 }

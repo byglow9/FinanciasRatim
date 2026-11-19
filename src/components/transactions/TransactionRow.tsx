@@ -15,7 +15,7 @@ interface TransactionRowProps {
 }
 
 /** Valor com sinal: saida com menos (U+2212), entrada com mais; sempre com centavos. */
-export function signedAmount(transaction: Pick<Transaction, 'type' | 'amount'>): string {
+function signedAmount(transaction: Pick<Transaction, 'type' | 'amount'>): string {
   const cents = toCents(transaction.amount)
   return transaction.type === 'entrada'
     ? `+${formatMoney(cents, { decimals: 'always' })}`

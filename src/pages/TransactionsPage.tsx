@@ -6,6 +6,8 @@ import { useLaunch } from '@/contexts/LaunchContext'
 import { useCycleTransactions } from '@/hooks/useCycleTransactions'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { TransactionDayGroup } from '@/components/transactions/TransactionDayGroup'
+import { TransactionFilters, type TypeFilter } from '@/components/transactions/TransactionFilters'
+import { TransactionTotals } from '@/components/transactions/TransactionTotals'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
@@ -13,6 +15,7 @@ import { useToast } from '@/components/ui/toast'
 import type { PersonType, Transaction } from '@/types'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { dayKeyOf, transactionDayGroups } from '@shared/core/dayKey.js'
+import { categoriesPresent, filterTransactions } from '@shared/core/txFilter.js'
 import { dayMonth, formatMoney } from '@shared/core/format.js'
 import { toCents } from '@shared/core/ledger.js'
 import { zonedParts } from '@shared/core/time.js'
@@ -25,15 +28,43 @@ export function TransactionsPage() {
   const { show } = useToast()
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-  const { transactions, loading, error, remove, refetch } = useCycleTransactions(person)
+  const { cycle, transactions, loading, error, remove, refetch, totalsCents, loadAccumulated } =
+    useCycleTransactions(person)
 
   // O Sheet de acoes fica montado enquanto a animacao de saida roda, entao a linha escolhida
   // continua guardada mesmo depois de fechar.
   const [selected, setSelected] = useState<Transaction | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  const [query, setQuery] = useState('')
+  const [type, setType] = useState<TypeFilter>('all')
+  const [categoryKey, setCategoryKey] = useState<string | null>(null)
+
   const todayKey = dayKeyOf(now)
-  const groups = useMemo(() => transactionDayGroups(transactions), [transactions])
+  const categories = useMemo(() => categoriesPresent(transactions, categoryDefs), [transactions, categoryDefs])
+  // Categoria que sumiu do ciclo (troca de pessoa ou de ciclo) deixa de filtrar.
+  const activeCategory = categories.some((c) => c.key === categoryKey) ? categoryKey : null
+  const filtered = useMemo(
+    () =>
+      filterTransactions(
+        transactions,
+        {
+          type: type === 'all' ? undefined : type,
+          categoryId: activeCategory ?? undefined,
+          query,
+        },
+        categoryDefs
+      ),
+    [transactions, type, activeCategory, query, categoryDefs]
+  )
+  // Os totais do cartao sao do ciclo inteiro; so a lista segue o filtro.
+  const groups = useMemo(() => transactionDayGroups(filtered), [filtered])
+
+  const clearFilters = () => {
+    setQuery('')
+    setType('all')
+    setCategoryKey(null)
+  }
 
   const select = (transaction: Transaction) => {
     setSelected(transaction)
@@ -65,6 +96,26 @@ export function TransactionsPage() {
         </Button>
       </div>
 
+      {!error && !loading ? (
+        <TransactionTotals
+          key={`${person}:${cycle.key}`}
+          totalsCents={totalsCents}
+          loadAccumulated={loadAccumulated}
+        />
+      ) : null}
+
+      {!error && !loading && transactions.length > 0 ? (
+        <TransactionFilters
+          query={query}
+          onQueryChange={setQuery}
+          type={type}
+          onTypeChange={setType}
+          categoryKey={activeCategory}
+          onCategoryChange={setCategoryKey}
+          categories={categories}
+        />
+      ) : null}
+
       {error ? (
         <Notice
           tone="danger"
@@ -79,8 +130,16 @@ export function TransactionsPage() {
         </Notice>
       ) : loading ? (
         <p className="text-xs font-normal text-muted-foreground">Carregando transações</p>
-      ) : groups.length === 0 ? (
+      ) : transactions.length === 0 ? (
         <p className="text-base font-bold">Nenhuma transação neste ciclo</p>
+      ) : groups.length === 0 ? (
+        <div className="space-y-2">
+          <p className="text-base font-bold">Nada encontrado</p>
+          <p className="text-xs font-normal text-muted-foreground">Tente outra palavra ou limpe os filtros.</p>
+          <Button type="button" variant="outline" onClick={clearFilters}>
+            Limpar filtros
+          </Button>
+        </div>
       ) : (
         <div className="space-y-4">
           {groups.map((group) => (

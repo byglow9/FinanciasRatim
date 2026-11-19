@@ -7,6 +7,8 @@ import { code, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 const PAGE = 'src/pages/TransactionsPage.tsx'
 const ROW = 'src/components/transactions/TransactionRow.tsx'
 const GROUP = 'src/components/transactions/TransactionDayGroup.tsx'
+const TOTALS = 'src/components/transactions/TransactionTotals.tsx'
+const FILTERS = 'src/components/transactions/TransactionFilters.tsx'
 
 test('a pagina usa o ciclo exato e o agrupamento por dia, sem seletor de mes nem consulta por mes', () => {
   const src = code(PAGE)
@@ -55,7 +57,47 @@ test('TransactionRow e um botao de 56px que mostra a categoria pelo nome atual',
 
 test('o cabecalho do dia tem 32px por min-h-8 e a pagina e a linha passam na escala e no alvo de toque', () => {
   assert.match(code(GROUP), /min-h-8/)
-  const files = [PAGE, ROW, GROUP]
+  const files = [PAGE, ROW, GROUP, TOTALS, FILTERS]
   assert.deepEqual(scaleProblems(files), [])
   assert.deepEqual(touchProblems(files), [])
+})
+
+test('os totais recolhem e expandem e o saldo acumulado so e pedido ao abrir Detalhes', () => {
+  const src = code(TOTALS)
+  assert.match(src, /\bKpiTrio\b/)
+  assert.match(src, /variant="joined"/)
+  assert.match(src, /aria-expanded=\{open\}/)
+  assert.match(src, /aria-controls=/)
+  assert.match(src, /<Collapsible\b/)
+  assert.match(src, /Detalhes/)
+  assert.match(src, /Calculando\.\.\./, 'marcador de carga nunca e R$ 0')
+  assert.match(src, /compactMoney\(/, 'P-04: reais inteiros truncados')
+  // A chamada fica dentro do gatilho de abertura, nao na montagem.
+  assert.equal((src.match(/loadAccumulated\(\)/g) ?? []).length, 1, 'uma unica chamada')
+  assert.match(src, /const toggle = \(\) => \{[\s\S]*next &&[\s\S]*loadAccumulated\(\)/)
+  assert.doesNotMatch(src, /useEffect/, 'sem efeito: nada carrega na montagem')
+  assert.doesNotMatch(src, /text-\[10px\]/)
+})
+
+test('busca e chips ficam fixos no topo e a linha de chips rola por dentro', () => {
+  const src = code(FILTERS)
+  assert.match(src, /sticky top-0/)
+  assert.match(src, /<SearchField\b/)
+  assert.match(src, /placeholder="Buscar transação"/)
+  assert.match(src, /pressed=\{/)
+  assert.match(src, /overflow-x-auto/)
+  assert.match(src, /no-scrollbar/)
+  assert.match(src, /env\(safe-area-inset-top\)/)
+  for (const label of ['Tudo', 'Saídas', 'Entradas']) assert.ok(src.includes(label), `chip ${label}`)
+  assert.match(code(PAGE), /categoriesPresent\(/, 'chips de categoria vem de categoriesPresent')
+  assert.doesNotMatch(src, /text-\[10px\]/)
+})
+
+test('o filtro e aplicado antes do agrupamento por dia e os totais seguem o ciclo inteiro', () => {
+  const src = code(PAGE)
+  const filterAt = src.indexOf('filterTransactions(')
+  const groupAt = src.indexOf('transactionDayGroups(filtered)')
+  assert.ok(filterAt > 0 && groupAt > filterAt, 'filterTransactions antes de transactionDayGroups')
+  assert.match(src, /<TransactionTotals[\s\S]*totalsCents=\{totalsCents\}/)
+  assert.match(src, /<TransactionFilters\b/)
 })

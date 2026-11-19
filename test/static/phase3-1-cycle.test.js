@@ -39,3 +39,32 @@ test('useCycleTransactions consulta o intervalo exato e so depende da chave do c
   assert.doesNotMatch(effect[1], /\bcycle\b/, 'o efeito nao pode depender do objeto cycle')
   assert.match(effect[1], /dataVersion/, 'o efeito recarrega pelo dataVersion')
 })
+
+test('servicos de intervalo existem com ramo MOCK e escopo de dono, sem date-fns nos limites', () => {
+  const cases = [
+    ['src/services/events.service.ts', 'getEventsInRange'],
+    ['src/services/goalContributions.service.ts', 'getContributionsInRange'],
+    ['src/services/transactions.service.ts', 'getAccumulatedBalanceUntil'],
+  ]
+  for (const [file, name] of cases) {
+    const src = code(file)
+    const start = src.indexOf(`export async function ${name}(`)
+    assert.ok(start >= 0, `${file} sem ${name}`)
+    const rest = src.slice(start + 1)
+    const next = rest.search(/\nexport (async )?function /)
+    const body = next === -1 ? rest : rest.slice(0, next)
+    assert.ok(body.includes('if (MOCK)'), `${name} sem ramo MOCK`)
+    assert.ok(body.includes('...ownerScope()'), `${name} sem ...ownerScope()`)
+    assert.ok(body.indexOf('if (MOCK)') < body.indexOf('query('), `${name}: MOCK antes da consulta`)
+    assert.doesNotMatch(body, /startOfMonth|endOfMonth|monthRangeOf/, `${name}: limite vem do nucleo`)
+  }
+})
+
+test('loadAccumulated le o saldo ate o fim do ciclo so sob demanda', () => {
+  const src = code('src/hooks/useCycleTransactions.ts')
+  assert.ok(src.includes('getAccumulatedBalanceUntil(person, cycle.end)'))
+  assert.ok(src.includes('loadAccumulated'))
+  // Nao pode rodar na carga: fora do efeito de busca.
+  const fetchBody = src.slice(src.indexOf('const fetchData'), src.indexOf('useEffect('))
+  assert.doesNotMatch(fetchBody, /getAccumulatedBalanceUntil/)
+})

@@ -5,6 +5,7 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useCycleWindow } from '@/hooks/useCycleWindow'
 import {
   getTransactionsInRange,
+  getAccumulatedBalanceUntil,
   addTransaction,
   updateTransaction,
   deleteTransaction,
@@ -83,6 +84,13 @@ export function useCycleTransactions(person: PersonType) {
     return { entradas: toCents(t.entradas), saidas: toCents(t.saidas), saldo: toCents(t.saldo) }
   }, [transactions])
 
+  // Saldo acumulado ate o fim do ciclo, em centavos. So sob demanda (ao abrir "Detalhes"): le todo o
+  // historico da pessoa e a cota do Spark nao comporta isso a cada carga.
+  const loadAccumulated = useCallback(
+    async (): Promise<number> => toCents(await getAccumulatedBalanceUntil(person, cycle.end)),
+    [person, cycle.end]
+  )
+
   return {
     cycle,
     transactions,
@@ -93,5 +101,6 @@ export function useCycleTransactions(person: PersonType) {
     remove,
     refetch: fetchData,
     totalsCents,
+    loadAccumulated,
   }
 }

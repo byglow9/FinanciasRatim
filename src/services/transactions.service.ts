@@ -244,3 +244,34 @@ export async function getAccumulatedBalance(
     until
   )
 }
+
+// Saldo acumulado ate o fim do ciclo. `until` ja vem pronto de cycle.end (nucleo): sem monthRangeOf.
+// Le todo o historico da pessoa, por isso so roda sob demanda (cota do Spark). Consulta so de
+// igualdade (ownerId e person): nao precisa de indice novo.
+export async function getAccumulatedBalanceUntil(
+  person: PersonType,
+  until: Date
+): Promise<number> {
+  if (MOCK) {
+    return accumulatedBalance(
+      mList<RawTransaction>(COL)
+        .filter((t) => t.person === person)
+        .map((t) => ({ type: t.type, amount: t.amount, date: new Date(t.date) })),
+      until
+    )
+  }
+
+  const q = query(
+    collection(db, COL),
+    ...ownerScope(),
+    where('person', '==', person)
+  )
+  const snapshot = await getDocs(q)
+  return accumulatedBalance(
+    snapshot.docs.map((d) => {
+      const data = d.data()
+      return { type: data.type, amount: data.amount, date: data.date.toDate() }
+    }),
+    until
+  )
+}

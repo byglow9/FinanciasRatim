@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "03.1"
 current_phase_name: redesign-das-abas
 status: executing
-stopped_at: Completed 03.1-07-PLAN.md
-last_updated: "2026-11-19T14:07:04.515Z"
+stopped_at: Completed 03.1-08-PLAN.md
+last_updated: "2026-11-19T14:10:06.152Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 03.1 execution started
-state_head: f64d9c13410b360620a96820729454ff94574e96
+state_head: 3429dc20a5f23da2d940fde26f9a50acd2e1ff4a
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 66
-  completed_plans: 49
+  completed_plans: 50
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 8 of 24
+Plan: 9 of 24
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 03.1 execution started
 
@@ -101,6 +101,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P06 | 1 sessão | 2 tasks | 2 files |
 | Phase 03.1 P03 | 5 min | 3 tasks | 9 files |
 | Phase 03.1 P07 | 25 min | 3 tasks | 6 files |
+| Phase 03.1 P08 | 14 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: 03.1-05: sketches 014 e 015 sem requisição de rede (ícones Lucide inline, sem fonte externa); Metas B usa o Sheet de ações como detalhe
 - [Phase 03.1]: [03.1-06] Sketches 016 e 017 offline (SVG inline, sem fontes externas), na escala 12/16/28/56; Login com mensagem fixa de falha
 - [Phase 03.1]: 03.1-07: groupBillsByCategory recebe itens com categoria acrescentada pelo chamador (BillItem nao carrega categoria) — budget.js fora do escopo; tela junta a categoria da conta a cada ocorrencia
+- [Phase 03.1]: [03.1-08] Icone Plus do botao de lancamento usa size-7 (28px) para nao ser acusado como alvo de toque pelo helper touchProblems
 
 ### Pending Todos
 
@@ -173,6 +175,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T14:07:04.434Z
-Stopped at: Completed 03.1-07-PLAN.md
+Last session: 2026-11-19T14:10:06.071Z
+Stopped at: Completed 03.1-08-PLAN.md
 Resume file: None

@@ -72,7 +72,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Redesign das abas e UX mobile (UX)
 
-- [ ] **UX-01**: O dock de navegação não tem fade de borda, usa uma só cor de ação (`#14532d`) para o item ativo e para o botão +, rola com encaixe (a borda esquerda fecha limpa e o próximo ícone da direita aparece parcialmente) e mantém os 8 destinos
+- [x] **UX-01**: O dock de navegação não tem fade de borda, usa uma só cor de ação (`#14532d`) para o item ativo e para o botão +, rola com encaixe (a borda esquerda fecha limpa e o próximo ícone da direita aparece parcialmente) e mantém os 8 destinos
 - [x] **UX-02**: Transações mostra Entradas, Saídas e Saldo numa linha (com "Detalhes" para o saldo total), busca e filtros fixos no topo, lista agrupada por dia com o total do dia, e editar ou apagar por um Sheet aberto ao tocar na linha
 - [x] **UX-03**: O Calendário tem mês que recolhe para a semana ao rolar a agenda, mapa de calor do gasto por percentil do mês, pontinhos por tipo, "hoje" em círculo e mini post-it no canto da célula, e agenda corrida que abre em hoje, com saldo do dia e contas vencidas ou a vencer sinalizadas
 - [ ] **UX-04**: Usuário cria, edita e apaga post-its (5 cores) e eventos pelo Calendário, e os post-its aparecem na agenda do dia
@@ -183,7 +183,7 @@ Preenchida na criação do roadmap.
 | CENT-05 | Phase 3 | Complete |
 | CENT-06 | Phase 3 | Complete |
 | IDEN-07 | Phase 3 | Complete |
-| UX-01 | Phase 3.1 | Pending |
+| UX-01 | Phase 3.1 | Complete |
 | UX-02 | Phase 3.1 | Complete |
 | UX-03 | Phase 3.1 | Complete |
 | UX-04 | Phase 3.1 | Pending |

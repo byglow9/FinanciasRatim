@@ -170,3 +170,53 @@ test('nucleo do Calendario: sem relogio, sem filtrar conta pelo numero do dia e 
   }
   assertIncludes('shared/core/calendarModel.js', ['heatLevels', 'billStatus', 'dayKeyOf'])
 })
+
+// ---------------------------------------------------------------------------
+// Plano 03.1-22: recolhimento do mes, abertura em hoje, teclado, gesto e cenario real
+// ---------------------------------------------------------------------------
+
+test('Calendario: a agenda e o unico conteiner rolavel e recebe o scrollRef do hook', () => {
+  const page = 'src/pages/CalendarPage.tsx'
+  assertIncludes(page, [
+    'useCollapseOnScroll(',
+    'scrollRef',
+    'containerRef={scrollRef}',
+    'markProgrammatic',
+    'agendaScrollTarget(',
+    'aria-expanded',
+    'Recolher mês',
+    'Mostrar mês inteiro',
+    'collapsed={collapsed}',
+    'onClick={toggle}',
+    '100dvh',
+  ])
+  assertIncludes('src/components/calendar/AgendaList.tsx', ['overflow-y-auto', 'overscroll-contain', 'relative'])
+  for (const f of CALENDAR_FILES.filter((x) => x !== 'src/components/calendar/AgendaList.tsx')) {
+    assert.doesNotMatch(code(f), /overflow-y-(auto|scroll)/, `${f}: so a agenda rola`)
+  }
+})
+
+test('Calendario: scrollTop nunca e lido fora do hook e nao ha listener de scroll na pagina', () => {
+  for (const f of CALENDAR_FILES) {
+    const src = code(f)
+    assert.doesNotMatch(src, /\bscrollTop\b/, `${f}: leitura de scrollTop fora do hook`)
+    assert.doesNotMatch(src, /addEventListener\(\s*['"]scroll['"]/, `${f}: listener de scroll fora do hook`)
+    assert.doesNotMatch(src, /\bonScroll=/, `${f}: onScroll no JSX`)
+  }
+})
+
+test('Calendario: toda rolagem programatica liga markProgrammatic antes de rolar e o mes anima so com movimento permitido', () => {
+  const page = code('src/pages/CalendarPage.tsx')
+  const scrolls = page.match(/\.scrollTo\(/g) ?? []
+  assert.equal(scrolls.length, 1, 'a rolagem da agenda passa por uma unica funcao')
+  const fn = page.slice(0, page.indexOf('.scrollTo('))
+  assert.ok(
+    fn.lastIndexOf('markProgrammatic()') > fn.lastIndexOf('const scrollAgendaTo'),
+    'markProgrammatic() precisa vir antes do scrollTo'
+  )
+  assert.match(page, /reset\(\)/, 'trocar de ciclo reabre o mes (reset)')
+  const grid = code('src/components/calendar/MonthGrid.tsx')
+  assert.match(grid, /collapsed/, 'MonthGrid tem a prop collapsed')
+  assert.match(grid, /motion-reduce:transition-none/, 'transicao de altura instantanea com movimento reduzido')
+  assert.match(grid, /inert/, 'linhas recolhidas saem do foco')
+})

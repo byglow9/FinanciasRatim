@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Wallet } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Wallet } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCalendarActions } from '@/hooks/useCalendarActions'
 import { useCalendarData } from '@/hooks/useCalendarData'
+import { useCollapseOnScroll } from '@/hooks/useCollapseOnScroll'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { CalendarLegend } from '@/components/calendar/CalendarLegend'
 import { EventSheet } from '@/components/calendar/EventSheet'
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { AgendaEvent, Note, PersonType } from '@/types'
+import { agendaScrollTarget } from '@shared/core/calendarModel.js'
 import type { CalendarMode } from '@shared/core/calendarModel.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import { compactMoney, cycleLabel } from '@shared/core/format.js'
@@ -44,6 +46,7 @@ export function CalendarPage() {
     person,
     mode
   )
+  const { collapsed, scrollRef, toggle, markProgrammatic, reset } = useCollapseOnScroll()
   const { readOnly, guard } = useReadOnly()
   const { saveNote, removeNote, saveEvent, removeEvent } = useCalendarActions({
     person,
@@ -71,6 +74,38 @@ export function CalendarPage() {
         ? todayKey
         : (days[0]?.key ?? todayKey)
 
+  // Dias com item, em ordem: alvo da rolagem da agenda. Em ref para os callbacks da grade seguirem estáveis.
+  const itemKeys = useMemo(() => days.filter((d) => d.items.length > 0).map((d) => d.key), [days])
+  const itemKeysRef = useRef(itemKeys)
+  useEffect(() => {
+    itemKeysRef.current = itemKeys
+  }, [itemKeys])
+
+  // Rolagem PROGRAMÁTICA da agenda ao dia pedido, ou ao próximo dia com item, ou ao último (D-08). Sempre
+  // liga `markProgrammatic()` antes de rolar: rolar por código nunca recolhe o mês. Sem ler scrollTop aqui.
+  const scrollAgendaTo = useCallback(
+    (wantedKey: string) => {
+      const el = scrollRef.current
+      if (el === null) return
+      const target = agendaScrollTarget(itemKeysRef.current, wantedKey)
+      const row = target === null ? null : el.querySelector<HTMLElement>(`[data-day="${target}"]`)
+      markProgrammatic()
+      el.scrollTo({ top: row === null ? 0 : Math.max(0, row.offsetTop - 4) })
+    },
+    [scrollRef, markProgrammatic]
+  )
+
+  // Abre a agenda em hoje (ou no primeiro dia do ciclo quando hoje não está nele) uma vez por ciclo e modo,
+  // depois de carregar, e fecha o recolhimento (reset). Cobre também a troca de ciclo feita pelo topo.
+  const openedRef = useRef<string | null>(null)
+  const openKey = `${cycle.key}|${mode}`
+  useEffect(() => {
+    if (loading || openedRef.current === openKey) return
+    openedRef.current = openKey
+    reset()
+    scrollAgendaTo(dayModels.has(todayKey) ? todayKey : (days[0]?.key ?? todayKey))
+  }, [loading, openKey, reset, scrollAgendaTo, dayModels, todayKey, days])
+
   const handleMode = (next: CalendarMode) => {
     setMode(next)
     localStorage.setItem(MODE_STORAGE_KEY, next)
@@ -93,11 +128,24 @@ export function CalendarPage() {
     else setNoteSheet({ open: true, note: null })
   }
 
-  const handleSelect = useCallback((key: string) => setPickedKey(key), [])
+  // Tocar num dia seleciona e rola a agenda a ele (programático: não recolhe o mês).
+  const handleSelect = useCallback(
+    (key: string) => {
+      setPickedKey(key)
+      scrollAgendaTo(key)
+    },
+    [scrollAgendaTo]
+  )
 
   const goToday = () => {
-    setOffset(0)
     setPickedKey(todayKey)
+    if (isCurrent) {
+      reset()
+      scrollAgendaTo(todayKey)
+    } else {
+      // Outro ciclo: o efeito de abertura reabre o mês e rola a hoje quando o ciclo atual carregar.
+      setOffset(0)
+    }
   }
 
   // Com salário no dia 1 o ciclo é um mês: "Novembro de 2026"; senão a faixa: "20 nov a 19 dez".
@@ -107,74 +155,100 @@ export function CalendarPage() {
   const todayActive = isCurrent && selectedKey === todayKey
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[28px] font-bold leading-tight">Calendário</h1>
-        <button
-          type="button"
-          aria-disabled={todayActive ? true : undefined}
-          onClick={() => {
-            if (!todayActive) goToday()
-          }}
-          className="inline-flex h-11 shrink-0 items-center rounded-full bg-card px-4 text-base font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          Hoje
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" aria-label="Ciclo anterior" onClick={() => shift(-1)} className={NAV_BUTTON}>
-          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-        </button>
-        <p className="min-w-0 truncate text-center text-base font-bold" aria-live="polite">
-          {label}
-        </p>
-        <button
-          type="button"
-          aria-label="Próximo ciclo"
-          disabled={isCurrent}
-          onClick={() => shift(1)}
-          className={NAV_BUTTON}
-        >
-          <ChevronRight className="h-5 w-5" aria-hidden="true" />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <SegmentedControl<CalendarMode>
-            ariaLabel="Modo do calendário"
-            value={mode}
-            onChange={handleMode}
-            options={[
-              { value: 'financeiro', label: 'Financeiro', icon: Wallet },
-              { value: 'agenda', label: 'Agenda', icon: CalendarDays },
-            ]}
-          />
+    // Coluna da altura da janela menos a barra superior (60px) e a folga do conteúdo (24px de topo e 112px
+    // do dock): cabeçalho e grade ficam fora da rolagem e a agenda é o único contêiner rolável (D-08).
+    <div className="flex h-[calc(100dvh-196px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[420px] flex-col gap-3">
+      <div className="shrink-0 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-[28px] font-bold leading-tight">Calendário</h1>
+          <button
+            type="button"
+            aria-disabled={todayActive ? true : undefined}
+            onClick={() => {
+              if (!todayActive) goToday()
+            }}
+            className="inline-flex h-11 shrink-0 items-center rounded-full bg-card px-4 text-base font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Hoje
+          </button>
         </div>
-        <CalendarLegend />
-        <Button
+
+        <div className="flex items-center justify-between gap-2">
+          <button type="button" aria-label="Ciclo anterior" onClick={() => shift(-1)} className={NAV_BUTTON}>
+            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <p className="min-w-0 truncate text-center text-base font-bold" aria-live="polite">
+            {label}
+          </p>
+          <button
+            type="button"
+            aria-label="Próximo ciclo"
+            disabled={isCurrent}
+            onClick={() => shift(1)}
+            className={NAV_BUTTON}
+          >
+            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SegmentedControl<CalendarMode>
+              ariaLabel="Modo do calendário"
+              value={mode}
+              onChange={handleMode}
+              options={[
+                { value: 'financeiro', label: 'Financeiro', icon: Wallet },
+                { value: 'agenda', label: 'Agenda', icon: CalendarDays },
+              ]}
+            />
+          </div>
+          <CalendarLegend />
+          <Button
+            type="button"
+            size="circle"
+            aria-label={mode === 'agenda' ? 'Novo evento' : 'Nova nota'}
+            aria-disabled={readOnly ? true : undefined}
+            onClick={openCreate}
+            className="shrink-0 aria-disabled:opacity-50"
+          >
+            <Plus className="h-5 w-5" aria-hidden="true" />
+          </Button>
+        </div>
+
+        {mode === 'financeiro' && !loading && !error ? (
+          <p className="text-xs font-normal text-muted-foreground">
+            Saiu <span className="font-bold text-foreground">{compactMoney(summary.spentCents)}</span>
+            {' · '}A pagar <span className="font-bold text-foreground">{compactMoney(summary.toPayCents)}</span>
+          </p>
+        ) : null}
+
+        <MonthGrid
+          cycle={cycle}
+          models={dayModels}
+          selectedKey={selectedKey}
+          mode={mode}
+          collapsed={collapsed}
+          onSelect={handleSelect}
+        />
+
+        <button
           type="button"
-          size="circle"
-          aria-label={mode === 'agenda' ? 'Novo evento' : 'Nova nota'}
-          aria-disabled={readOnly ? true : undefined}
-          onClick={openCreate}
-          className="shrink-0 aria-disabled:opacity-50"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Mostrar mês inteiro' : 'Recolher mês'}
+          onClick={toggle}
+          className="mx-auto flex h-11 w-24 items-center justify-center rounded-full text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Plus className="h-5 w-5" aria-hidden="true" />
-        </Button>
+          {collapsed ? (
+            <ChevronDown className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <ChevronUp className="h-5 w-5" aria-hidden="true" />
+          )}
+        </button>
       </div>
-
-      {mode === 'financeiro' && !loading && !error ? (
-        <p className="text-xs font-normal text-muted-foreground">
-          Saiu <span className="font-bold text-foreground">{compactMoney(summary.spentCents)}</span>
-          {' · '}A pagar <span className="font-bold text-foreground">{compactMoney(summary.toPayCents)}</span>
-        </p>
-      ) : null}
-
-      <MonthGrid cycle={cycle} models={dayModels} selectedKey={selectedKey} mode={mode} onSelect={handleSelect} />
 
       <AgendaList
+        containerRef={scrollRef}
         days={days}
         selectedKey={selectedKey}
         mode={mode}

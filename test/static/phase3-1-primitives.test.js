@@ -13,6 +13,8 @@ const NEW = [
   `${UI}search-field.tsx`,
   `${UI}chip.tsx`,
   `${UI}progress.tsx`,
+  `${UI}row-actions-sheet.tsx`,
+  `${UI}kpi-trio.tsx`,
 ]
 
 const TOKENS = {
@@ -79,6 +81,19 @@ test('Chip repassa pressed como aria-pressed', () => {
 
 test('Progress aceita os tons ele e ela e o tamanho md sem perder o contrato', () => {
   assertIncludes(`${UI}progress.tsx`, ['bg-ele', 'bg-ela', 'h-3', 'h-2', 'size?: ProgressSize', 'role="progressbar"', 'aria-label', 'duration-[400ms]'])
+})
+
+test('RowActionsSheet reaproveita o Sheet e confirma o apagar em duas etapas no mesmo Sheet', () => {
+  const file = `${UI}row-actions-sheet.tsx`
+  assertIncludes(file, ['from "@/components/ui/sheet"', 'export function RowActionsSheet', 'export type { RowAction', 'Manter', 'Apagar', 'aria-disabled', 'onBlocked', 'Notice tone="danger"', 'wasOpen', 'h-14'])
+  const src = code(file)
+  assert.ok(!/from "@\/components\/ui\/dialog"/.test(src), 'nao recria o Sheet nem usa Dialog')
+  // Falha na gravacao mantem o Sheet aberto: onClose so depois do await bem sucedido.
+  assert.ok(src.indexOf('await deletion.onConfirm()') < src.lastIndexOf('onClose()'), 'onClose deve vir depois da gravacao')
+})
+
+test('KpiTrio mostra o texto compacto e leva o valor exato no title e no aria-label', () => {
+  assertIncludes(`${UI}kpi-trio.tsx`, ['export function KpiTrio', 'title=', 'aria-label=', 'num-display', 'tabular-nums', 'rounded-[22px]', "'joined' | 'cards'".replace(/'/g, '"')])
 })
 
 test('arquivos novos respeitam escala, pesos, emoji e HTML bruto', () => {

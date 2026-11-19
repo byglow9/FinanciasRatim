@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 23/24 plans executed
+**Plans:** 24/24 plans executed
 
 Plans:
 **Wave 1**
@@ -241,7 +241,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 03.1-24-PLAN.md — Fechamento: guarda transversal, suíte e auditoria verdes, mapa de validação e roteiro de UAT (UX-01 a UX-09)
+- [x] 03.1-24-PLAN.md — Fechamento: guarda transversal, suíte e auditoria verdes, mapa de validação e roteiro de UAT (UX-01 a UX-09)
 
 ### Phase 4: Mascote Vintém
 

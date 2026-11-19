@@ -80,7 +80,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [x] **UX-06**: Casal mostra o saldo somado, a proporção de gastos de cada um, barras comparativas por métrica, a categoria em que cada um mais gasta e o Porquinho, com alternador Ciclo e Mês, sem o `MonthSelector` de grade nem o gráfico antigo
 - [x] **UX-07**: Relatórios, Metas, Porquinho e Login seguem o mesmo padrão visual e de toque, cada um com layout escolhido pelo dono em sketch antes da implementação
 - [x] **UX-08**: Em 360px de largura nenhuma tela das abas tem rolagem horizontal, todo alvo tocável tem pelo menos 44px e estados de vazio, carregando e erro estão em português
-- [ ] **UX-09**: Transações, Calendário e Contas Fixas usam o recorte exato do ciclo escolhido no topo (inclusive com dia de salário diferente de 1), e Casal e Relatórios respeitam o ciclo, com testes de fuso e de virada de ciclo
+- [x] **UX-09**: Transações, Calendário e Contas Fixas usam o recorte exato do ciclo escolhido no topo (inclusive com dia de salário diferente de 1), e Casal e Relatórios respeitam o ciclo, com testes de fuso e de virada de ciclo
 
 ### Cartão de crédito (CARD)
 
@@ -191,7 +191,7 @@ Preenchida na criação do roadmap.
 | UX-06 | Phase 3.1 | Complete |
 | UX-07 | Phase 3.1 | Complete |
 | UX-08 | Phase 3.1 | Complete |
-| UX-09 | Phase 3.1 | Pending |
+| UX-09 | Phase 3.1 | Complete |
 | MASC-01 | Phase 4 | Pending |
 | MASC-02 | Phase 4 | Pending |
 | MASC-03 | Phase 4 | Pending |

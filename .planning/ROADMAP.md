@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 8/24 plans executed
+**Plans:** 9/24 plans executed
 
 Plans:
 **Wave 1**
@@ -214,7 +214,7 @@ Plans:
 - [x] 03.1-03-PLAN.md — Primitivos novos e tokens: SquareCheck, Popover, SearchField, RowActionsSheet, KpiTrio (UX-02, UX-03, UX-05, UX-06, UX-07, UX-08)
 - [x] 03.1-07-PLAN.md — Núcleo B: contas por categoria em ordem fixa, resumo do casal e mapa de calor (UX-03, UX-05, UX-06)
 - [x] 03.1-08-PLAN.md — Dock sem fade, uma cor de ação, scroll-snap e espiada medida a 360px (UX-01, UX-08)
-- [ ] 03.1-09-PLAN.md — Camada de dados por ciclo exato: janela estável, transações, contas por ocorrência e serviços de intervalo (UX-09)
+- [x] 03.1-09-PLAN.md — Camada de dados por ciclo exato: janela estável, transações, contas por ocorrência e serviços de intervalo (UX-09)
 - [ ] 03.1-10-PLAN.md — Portão de decisões do dono: premissas P-01 a P-04 e layout de Porquinho, Metas, Relatórios e Login (UX-03, UX-06, UX-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*

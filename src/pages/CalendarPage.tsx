@@ -28,6 +28,11 @@ function dateOfKey(key: string): Date {
   return new Date(year, month - 1, day, 12)
 }
 
+// Altura de uma semana da grade (célula de 48px mais 4px de respiro) e altura mínima útil da agenda: com o mês
+// aberto, uma tela baixa (360x640) deixa a agenda sem altura para rolar, então a tela abre com o mês recolhido.
+const WEEK_ROW_PX = 52
+const MIN_AGENDA_PX = 96
+
 const NAV_BUTTON =
   'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40'
 
@@ -103,8 +108,12 @@ export function CalendarPage() {
     if (loading || openedRef.current === openKey) return
     openedRef.current = openKey
     reset()
+    // Altura que a agenda teria com o mês aberto: a atual menos o que as semanas escondidas lhe emprestam.
+    const el = scrollRef.current
+    const hiddenRows = document.querySelectorAll('[data-week-row][data-hidden]').length
+    if (el !== null && el.clientHeight - hiddenRows * WEEK_ROW_PX < MIN_AGENDA_PX) toggle()
     scrollAgendaTo(dayModels.has(todayKey) ? todayKey : (days[0]?.key ?? todayKey))
-  }, [loading, openKey, reset, scrollAgendaTo, dayModels, todayKey, days])
+  }, [loading, openKey, reset, toggle, scrollRef, scrollAgendaTo, dayModels, todayKey, days])
 
   const handleMode = (next: CalendarMode) => {
     setMode(next)
@@ -184,7 +193,7 @@ export function CalendarPage() {
     // Coluna da altura da janela menos a barra superior (60px) e a folga do conteúdo (24px de topo e 112px
     // do dock): cabeçalho e grade ficam fora da rolagem e a agenda é o único contêiner rolável (D-08).
     <div className="flex h-[calc(100dvh-196px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[420px] flex-col gap-3">
-      <div className="shrink-0 space-y-4">
+      <div className="shrink-0 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-display text-[28px] font-bold leading-tight">Calendário</h1>
           <button

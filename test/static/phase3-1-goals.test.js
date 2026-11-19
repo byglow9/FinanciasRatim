@@ -2,7 +2,7 @@
 // Rodar: node --test test/static/phase3-1-goals.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+import { code, exists, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const PAGE = 'src/pages/GoalsPage.tsx'
 const CARD = 'src/components/goals/GoalCard.tsx'
@@ -10,7 +10,8 @@ const CARD = 'src/components/goals/GoalCard.tsx'
 // Arquivos de Metas ja migrados para o novo padrao; as tarefas seguintes acrescentam os demais.
 const FORM = 'src/components/goals/GoalForm.tsx'
 const CONTRIBUTION = 'src/components/goals/ContributionForm.tsx'
-const GOAL_FILES = [PAGE, CARD, FORM, CONTRIBUTION]
+const DETAIL = 'src/components/goals/GoalDetailSheet.tsx'
+const GOAL_FILES = [PAGE, CARD, FORM, CONTRIBUTION, DETAIL]
 
 test('a pagina usa RowActionsSheet, le o erro do hook e oferece Tentar de novo', () => {
   const src = code(PAGE)
@@ -89,6 +90,29 @@ test('a pagina liga Editar e Aportar aos Sheets depois de guard(editar) e mostra
     const flow = src.slice(start, src.indexOf('\n  }\n', start))
     assert.match(flow, /guard\('editar'\)/, `${fn} sem guard(editar)`)
   }
+})
+
+test('o detalhe da meta e um Sheet e o GoalDetailModal foi removido', () => {
+  assert.ok(exists(DETAIL), 'GoalDetailSheet.tsx nao existe')
+  assert.ok(!exists('src/components/goals/GoalDetailModal.tsx'), 'GoalDetailModal.tsx ainda existe')
+  const src = code(DETAIL)
+  assert.match(src, /<Sheet\b/, 'GoalDetailSheet sem Sheet')
+  assert.doesNotMatch(src, /Dialog/, 'GoalDetailSheet usa Dialog')
+  assert.match(src, /getContributions|useGoalContributions/, 'detalhe sem os aportes')
+  assert.match(src, /min-h-12/, 'linhas de aporte sem min-h-12')
+  assert.match(src, /Nenhum aporte ainda/)
+  assert.match(code(PAGE), /<GoalDetailSheet/, 'a pagina nao usa GoalDetailSheet')
+  assert.doesNotMatch(code(PAGE), /GoalDetailModal/)
+})
+
+test('a pagina cobre carregando, vazio e erro em portugues, sem spinner mudo', () => {
+  const src = code(PAGE)
+  assert.match(src, /Carregando as metas/, 'sem o texto de leitor de tela do carregando')
+  assert.match(src, /anim-pulse/, 'carregando sem blocos neutros')
+  assert.doesNotMatch(src, /Loader2/, 'ainda usa spinner sem texto')
+  assert.match(src, /Nenhuma meta ainda/)
+  assert.match(src, /Criar a primeira meta/)
+  assert.match(src, /Não foi possível carregar as metas\./)
 })
 
 test('escala tipografica e alvos de toque limpos nos arquivos de Metas', () => {

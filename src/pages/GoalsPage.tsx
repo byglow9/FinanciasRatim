@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Pencil, PiggyBank, Plus, Target } from 'lucide-react'
+import { History, Pencil, PiggyBank, Plus, Target } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useGoals } from '@/hooks/useGoals'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { GoalCard } from '@/components/goals/GoalCard'
+import { GoalDetailSheet } from '@/components/goals/GoalDetailSheet'
 import { GoalForm, type GoalFormData } from '@/components/goals/GoalForm'
 import { ContributionForm } from '@/components/goals/ContributionForm'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ export function GoalsPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [contributionOpen, setContributionOpen] = useState(false)
   const [contributingId, setContributingId] = useState<string | null>(null)
 
@@ -37,9 +39,17 @@ export function GoalsPage() {
   const current = selectedId ? (goals.find((g) => g.id === selectedId) ?? null) : null
   const contributing = contributingId ? (goals.find((g) => g.id === contributingId) ?? null) : null
 
+  // Perfil do parceiro: o Sheet de acoes so teria linhas bloqueadas, entao o toque abre o detalhe (leitura).
   const select = (goal: Goal) => {
     setSelectedId(goal.id)
-    setSheetOpen(true)
+    if (readOnly) setDetailOpen(true)
+    else setSheetOpen(true)
+  }
+
+  const openDetail = (goal: Goal) => {
+    setSelectedId(goal.id)
+    setSheetOpen(false)
+    setDetailOpen(true)
   }
 
   const openNew = () => {
@@ -158,6 +168,8 @@ export function GoalsPage() {
         onSave={handleContribute}
       />
 
+      <GoalDetailSheet open={detailOpen} onClose={() => setDetailOpen(false)} goal={current} />
+
       <RowActionsSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -182,6 +194,7 @@ export function GoalsPage() {
                       },
                     ]
                   : []),
+                { id: 'detail', label: 'Ver aportes', icon: History, onSelect: () => openDetail(current) },
                 { id: 'edit', label: 'Editar', icon: Pencil, onSelect: () => openEdit(current) },
               ]
             : []

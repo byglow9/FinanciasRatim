@@ -3,9 +3,9 @@
 // zonedParts em America/Sao_Paulo, nunca de Date#getDate nem de date-fns (que
 // usam o fuso do computador). Sem relogio implicito: o "hoje" entra como chave.
 
-import { DEFAULT_TZ, zonedParts } from './time.js'
+import { DEFAULT_TZ, zonedParts, zonedTimeToInstant } from './time.js'
 import { toCents } from './ledger.js'
-import { MONTH_SHORT } from './format.js'
+import { MONTH_LONG, MONTH_SHORT } from './format.js'
 
 /**
  * Data de calendario (sem hora).
@@ -36,6 +36,28 @@ function pad(n, width) {
 export function dayKeyOf(instant, tz = DEFAULT_TZ) {
   const p = zonedParts(instant, tz)
   return `${pad(p.year, 4)}-${pad(p.month, 2)}-${pad(p.day, 2)}`
+}
+
+/**
+ * Meio-dia de Sao Paulo do dia pedido, por chave YYYY-MM-DD ou por instante. E o instante que se
+ * grava para "um dia": a chave volta igual em qualquer fuso do aparelho (WR-05).
+ * @param {string | Date} dayOrKey
+ * @returns {Date}
+ */
+export function noonOfDay(dayOrKey) {
+  const key = typeof dayOrKey === 'string' ? dayOrKey : dayKeyOf(dayOrKey)
+  const [year, month, day] = key.split('-').map(Number)
+  return zonedTimeToInstant(year, month, day, 12)
+}
+
+/**
+ * "18 de novembro" no dia de Sao Paulo do instante.
+ * @param {Date} instant
+ * @returns {string}
+ */
+export function dayLabelOf(instant) {
+  const p = zonedParts(instant)
+  return `${p.day} de ${MONTH_LONG[p.month - 1].toLowerCase()}`
 }
 
 /**

@@ -10,7 +10,7 @@ import { Sheet } from '@/components/ui/sheet'
 import type { EventDraft } from '@/hooks/useCalendarActions'
 import type { AgendaEvent, EventCategory } from '@/types'
 import { cn } from '@/lib/utils'
-import { MONTH_LONG } from '@shared/core/format.js'
+import { dayLabelOf, noonOfDay } from '@shared/core/dayKey.js'
 
 const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
 const DELETE_FAILED = 'Não foi possível apagar. Confira a conexão e tente de novo.'
@@ -34,16 +34,6 @@ interface EventSheetProps {
   /** Perfil do parceiro: salvar e apagar ficam aria-disabled (focáveis) e o toque chama onBlocked. */
   readOnly?: boolean
   onBlocked?: () => void
-}
-
-/** "18 de novembro" a partir de uma data local. */
-function dayLabel(date: Date): string {
-  return `${date.getDate()} de ${MONTH_LONG[date.getMonth()].toLowerCase()}`
-}
-
-/** Meio-dia local: a data do evento não escorrega de dia por causa do fuso. */
-function noon(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12)
 }
 
 /** Texto aparado, ou undefined quando fica vazio. */
@@ -152,7 +142,7 @@ export function EventSheet({
     try {
       done = await onSave(event, {
         title: trimmed,
-        date: event?.date ?? noon(date),
+        date: event?.date ?? noonOfDay(date),
         categoryId: categoryId || undefined,
         time: optional(time),
         location: optional(location),
@@ -240,7 +230,7 @@ export function EventSheet({
             void save()
           }}
         >
-          <p className="text-xs font-normal text-muted-foreground">{`Para ${dayLabel(eventDate)}`}</p>
+          <p className="text-xs font-normal text-muted-foreground">{`Para ${dayLabelOf(eventDate)}`}</p>
 
           <div>
             <Label htmlFor="event-title">Título</Label>

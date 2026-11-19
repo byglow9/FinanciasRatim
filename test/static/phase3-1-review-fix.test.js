@@ -49,3 +49,12 @@ test('WR-04: o saldo acumulado e pedido de novo quando os dados mudam (dataVersi
   assert.match(totals, /useEffect/, 'sem nova consulta quando a versao muda')
   assert.match(code('src/pages/TransactionsPage.tsx'), /dataVersion=\{dataVersion\}/, 'a pagina nao passa dataVersion')
 })
+
+test('WR-05: Calendario, NoteSheet e EventSheet usam o dia de Sao Paulo do nucleo, nao o fuso do aparelho', () => {
+  for (const f of ['src/pages/CalendarPage.tsx', 'src/components/calendar/NoteSheet.tsx', 'src/components/calendar/EventSheet.tsx']) {
+    const src = code(f)
+    assert.doesNotMatch(src, /new Date\(\s*(date|year)\b/, `${f} monta data local`)
+    assert.doesNotMatch(src, /\.getDate\(\)|\.getMonth\(\)|\.getFullYear\(\)/, `${f} le o dia pelo fuso do aparelho`)
+  }
+  assert.match(code('src/pages/CalendarPage.tsx'), /noonOfDay\(selectedKey\)/)
+})

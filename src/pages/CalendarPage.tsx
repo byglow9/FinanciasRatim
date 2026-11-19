@@ -17,16 +17,10 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { AgendaEvent, Note, PersonType } from '@/types'
 import { agendaScrollTarget } from '@shared/core/calendarModel.js'
 import type { CalendarMode } from '@shared/core/calendarModel.js'
-import { dayKeyOf } from '@shared/core/dayKey.js'
+import { dayKeyOf, noonOfDay } from '@shared/core/dayKey.js'
 import { compactMoney } from '@shared/core/format.js'
 
 const MODE_STORAGE_KEY = 'calendarMode'
-
-/** Meio-dia local da chave YYYY-MM-DD: a data gravada não escorrega de dia por causa do fuso. */
-function dateOfKey(key: string): Date {
-  const [year, month, day] = key.split('-').map(Number)
-  return new Date(year, month - 1, day, 12)
-}
 
 // Altura de uma semana da grade (célula de 48px mais 4px de respiro) e altura mínima útil da agenda: com o mês
 // aberto, uma tela baixa (360x640) deixa a agenda sem altura para rolar, então a tela abre com o mês recolhido.
@@ -306,7 +300,7 @@ export function CalendarPage() {
         open={noteSheet.open}
         onClose={() => setNoteSheet((s) => ({ ...s, open: false }))}
         note={noteSheet.note}
-        date={noteSheet.note?.date ?? dateOfKey(selectedKey)}
+        date={noteSheet.note?.date ?? noonOfDay(selectedKey)}
         onSave={saveNote}
         onDelete={removeNote}
         readOnly={readOnly}
@@ -316,7 +310,7 @@ export function CalendarPage() {
         open={eventSheet.open}
         onClose={() => setEventSheet((s) => ({ ...s, open: false }))}
         event={eventSheet.event}
-        date={eventSheet.event?.date ?? dateOfKey(selectedKey)}
+        date={eventSheet.event?.date ?? noonOfDay(selectedKey)}
         categories={eventCategories}
         onSave={saveEvent}
         onDelete={removeEvent}

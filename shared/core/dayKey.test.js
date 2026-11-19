@@ -87,3 +87,37 @@ test('dayHeading: ontem atravessa mes e ano', () => {
   assert.equal(dayHeading('2026-12-31', '2027-01-01'), 'Ontem')
   assert.equal(dayHeading('2026-02-28', '2026-03-01'), 'Ontem')
 })
+
+// WR-05: o dia gravado e lido em Sao Paulo, qualquer que seja o fuso do aparelho. Cada fuso roda num
+// processo proprio porque o fuso do Node so e lido na partida.
+import { spawnSync } from 'node:child_process'
+import { noonOfDay, dayLabelOf } from './dayKey.js'
+
+test('noonOfDay e dayLabelOf: chave e rotulo voltam iguais em qualquer fuso do aparelho', () => {
+  const script = `
+    import { noonOfDay, dayKeyOf, dayLabelOf } from ${JSON.stringify(new URL('./dayKey.js', import.meta.url).href)}
+    const out = []
+    for (const key of ['2026-11-19', '2026-01-01', '2026-12-31', '2026-03-01']) {
+      const instant = noonOfDay(key)
+      out.push(dayKeyOf(instant) === key, noonOfDay(instant).getTime() === instant.getTime())
+    }
+    out.push(dayLabelOf(noonOfDay('2026-11-19')) === '19 de novembro')
+    // o caminho antigo (meio-dia local) escorregava de dia a leste de UTC+9
+    const legacy = dayKeyOf(new Date(2026, 10, 19, 12))
+    process.stdout.write(JSON.stringify({ ok: out.every(Boolean), legacy }))
+  `
+  for (const tz of ['UTC', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland', 'America/Sao_Paulo']) {
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      env: { ...process.env, TZ: tz },
+      encoding: 'utf8',
+    })
+    assert.equal(r.status, 0, `${tz}: ${r.stderr}`)
+    assert.equal(JSON.parse(r.stdout).ok, true, `${tz}: noonOfDay/dayLabelOf escorregou de dia`)
+  }
+})
+
+test('noonOfDay aceita instante e normaliza para o meio-dia de Sao Paulo', () => {
+  assert.equal(noonOfDay(new Date('2026-11-19T02:00:00Z')).toISOString(), '2026-11-18T15:00:00.000Z')
+  assert.equal(noonOfDay('2026-11-19').toISOString(), '2026-11-19T15:00:00.000Z')
+  assert.equal(dayLabelOf(new Date('2026-11-19T15:00:00Z')), '19 de novembro')
+})

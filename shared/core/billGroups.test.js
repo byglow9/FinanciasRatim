@@ -2,7 +2,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { billsForCycle } from './budget.js'
 import { cycleOf } from './cycle.js'
-import { billStatus, groupBillsByCategory } from './billGroups.js'
+import {
+  billStatus,
+  billSupportText,
+  billsSummary,
+  groupBillsByCategory,
+  validateBillDraft,
+} from './billGroups.js'
 
 const at = (iso) => new Date(iso)
 const parts = (year, month, day) => ({ year, month, day })
@@ -237,4 +243,155 @@ test('nao muta a lista de entrada', () => {
   const snapshot = JSON.stringify(items)
   groupBillsByCategory(items, DEFS, 'pending')
   assert.equal(JSON.stringify(items), snapshot)
+})
+
+// ---- resumo, texto de apoio e validacao ----
+
+test('billsSummary: total, pagas e pendentes saem dos mesmos itens da Home', () => {
+  const payments = [
+    { billId: 'aluguel', month: 11, year: 2026, paidCents: 148000 },
+    { billId: 'luz', month: 11, year: 2026, paidCents: 18000 },
+  ]
+  const result = billsForCycle({ bills: BILLS, payments, cycle: NOV })
+  const items = itemsFor({ bills: BILLS, payments, cycle: NOV })
+  const summary = billsSummary(items)
+  assert.equal(summary.totalCents, result.totalCents)
+  assert.equal(summary.count, result.totalCount)
+  assert.equal(summary.paidCount, result.paidCount)
+  assert.equal(summary.paidCents, 148000 + 18000)
+  assert.equal(summary.totalCents, summary.paidCents + summary.pendingCents)
+})
+
+test('billsSummary: lista vazia e tudo pendente', () => {
+  assert.deepEqual(billsSummary([]), {
+    totalCents: 0,
+    paidCents: 0,
+    pendingCents: 0,
+    paidCount: 0,
+    count: 0,
+  })
+  const summary = billsSummary(itemsFor({ bills: BILLS, cycle: NOV }))
+  assert.equal(summary.paidCents, 0)
+  assert.equal(summary.paidCount, 0)
+  assert.equal(summary.pendingCents, summary.totalCents)
+})
+
+test('billSupportText: as cinco frases do contrato de copia', () => {
+  const today = parts(2026, 11, 18)
+  const text = (occ, paid = false) => billSupportText(occ, billStatus(occ, paid, today), today)
+  assert.equal(text(parts(2026, 11, 5)), 'Venceu dia 5 \u00b7 13 dias de atraso')
+  assert.equal(text(parts(2026, 11, 15)), 'Venceu dia 15 \u00b7 3 dias de atraso')
+  assert.equal(text(parts(2026, 11, 17)), 'Venceu dia 17 \u00b7 1 dia de atraso')
+  assert.equal(text(parts(2026, 11, 18)), 'Vence hoje')
+  assert.equal(text(parts(2026, 11, 19)), 'Vence amanh\u00e3 \u00b7 dia 19')
+  assert.equal(text(parts(2026, 11, 21)), 'Vence dia 21 \u00b7 em 3 dias')
+  assert.equal(text(parts(2026, 11, 30)), 'Vence dia 30 \u00b7 em 12 dias')
+  assert.equal(text(parts(2026, 11, 5), true), 'Paga')
+})
+
+test('billSupportText usa a diferenca de calendario na virada de mes', () => {
+  const today = parts(2026, 11, 30)
+  const occ = parts(2026, 12, 2)
+  assert.equal(billSupportText(occ, billStatus(occ, false, today), today), 'Vence dia 2 \u00b7 em 2 dias')
+  const tomorrow = parts(2026, 12, 1)
+  assert.equal(
+    billSupportText(tomorrow, billStatus(tomorrow, false, today), today),
+    'Vence amanh\u00e3 \u00b7 dia 1',
+  )
+  const late = parts(2026, 11, 29)
+  assert.equal(
+    billSupportText(late, billStatus(late, false, parts(2026, 12, 1)), parts(2026, 12, 1)),
+    'Venceu dia 29 \u00b7 2 dias de atraso',
+  )
+})
+
+const ALLOWED = ['Moradia', 'Servicos', 'Antiga']
+const draft = (patch = {}) => ({
+  name: 'Aluguel',
+  amount: '1.234,56',
+  day: '5',
+  category: 'Moradia',
+  ...patch,
+})
+
+test('validateBillDraft: rascunho valido devolve valor em centavos e dia inteiro', () => {
+  const r = validateBillDraft(draft(), ALLOWED)
+  assert.equal(r.ok, true)
+  assert.deepEqual(r.errors, {})
+  assert.equal(r.firstInvalid, null)
+  assert.deepEqual(r.value, { name: 'Aluguel', amountCents: 123456, day: 5, category: 'Moradia' })
+})
+
+test('validateBillDraft: nome vazio ou so espacos', () => {
+  for (const name of ['', '   ', '\t']) {
+    const r = validateBillDraft(draft({ name }), ALLOWED)
+    assert.equal(r.ok, false)
+    assert.equal(r.errors.name, 'Informe o nome da conta')
+    assert.equal(r.firstInvalid, 'name')
+    assert.equal(r.value, null)
+  }
+  assert.equal(validateBillDraft(draft({ name: '  Luz  ' }), ALLOWED).value.name, 'Luz')
+})
+
+test('validateBillDraft: valor nulo, zero ou ilegivel', () => {
+  for (const amount of ['', '0', '0,00', 'abc', '12,345', '-5', '1e3', '1.23', undefined]) {
+    const r = validateBillDraft(draft({ amount }), ALLOWED)
+    assert.equal(r.ok, false, `valor ${amount}`)
+    assert.equal(r.errors.amount, 'Informe um valor maior que zero', `valor ${amount}`)
+    assert.equal(r.firstInvalid, 'amount')
+  }
+  assert.equal(validateBillDraft(draft({ amount: '99,9' }), ALLOWED).value.amountCents, 9990)
+  assert.equal(validateBillDraft(draft({ amount: '1.200' }), ALLOWED).value.amountCents, 120000)
+})
+
+test('validateBillDraft: dia de 1 a 31, so digitos', () => {
+  for (const day of ['0', '32', '5a', '', ' ', '-1', '1.5', '100', undefined]) {
+    const r = validateBillDraft(draft({ day }), ALLOWED)
+    assert.equal(r.ok, false, `dia ${day}`)
+    assert.equal(r.errors.day, 'Informe um dia de 1 a 31', `dia ${day}`)
+    assert.equal(r.firstInvalid, 'day')
+  }
+  for (const day of ['1', '15', '31', ' 7 ', 7]) {
+    assert.equal(validateBillDraft(draft({ day }), ALLOWED).ok, true, `dia ${day}`)
+  }
+  assert.equal(validateBillDraft(draft({ day: ' 07 ' }), ALLOWED).value.day, 7)
+})
+
+test('validateBillDraft: categoria vazia ou fora das permitidas', () => {
+  for (const category of ['', '   ', 'Inexistente', undefined]) {
+    const r = validateBillDraft(draft({ category }), ALLOWED)
+    assert.equal(r.ok, false, `categoria ${category}`)
+    assert.equal(r.errors.category, 'Escolha uma categoria', `categoria ${category}`)
+    assert.equal(r.firstInvalid, 'category')
+  }
+})
+
+test('validateBillDraft: a categoria atual da conta vale mesmo arquivada, se permitida', () => {
+  // o chamador inclui a categoria arquivada da propria conta na lista permitida
+  const r = validateBillDraft(draft({ category: 'Antiga' }), ALLOWED)
+  assert.equal(r.ok, true)
+  assert.equal(r.value.category, 'Antiga')
+  assert.equal(validateBillDraft(draft({ category: 'Antiga' }), ['Moradia']).ok, false)
+})
+
+test('validateBillDraft: erros por campo e firstInvalid na ordem nome, valor, dia, categoria', () => {
+  const all = validateBillDraft({ name: '', amount: '', day: '', category: '' }, ALLOWED)
+  assert.deepEqual(Object.keys(all.errors), ['name', 'amount', 'day', 'category'])
+  assert.equal(all.firstInvalid, 'name')
+
+  const noName = validateBillDraft({ name: 'x', amount: '', day: '', category: '' }, ALLOWED)
+  assert.equal(noName.firstInvalid, 'amount')
+  assert.deepEqual(Object.keys(noName.errors), ['amount', 'day', 'category'])
+
+  const noDay = validateBillDraft({ name: 'x', amount: '10', day: '40', category: '' }, ALLOWED)
+  assert.equal(noDay.firstInvalid, 'day')
+
+  const onlyCat = validateBillDraft({ name: 'x', amount: '10', day: '4', category: '' }, ALLOWED)
+  assert.equal(onlyCat.firstInvalid, 'category')
+})
+
+test('validateBillDraft: rascunho ausente nao quebra', () => {
+  const r = validateBillDraft(/** @type {any} */ (null), ALLOWED)
+  assert.equal(r.ok, false)
+  assert.equal(r.firstInvalid, 'name')
 })

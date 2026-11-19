@@ -257,8 +257,53 @@ Plans:
   4. O usuário escolhe o tom do Vintém nas Configurações (suave, direto, sem filtro; padrão sem filtro, com bronca e xingamento permitidos) e o balão usa um banco de frases próprias com variantes para cada tom
   5. O desenho, o nome e todas as falas são originais: uma conferência dos textos contra os prints de referência não encontra personagem, nome, slogan nem frases copiados
 
-**Plans**: TBD
+**Plans**: 0/20 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Núcleo: molas, curva do piscar, acaso semeado e os sete estados com neutro assimétrico e triste corrigido (MASC-02, MASC-03)
+- [ ] 04-02-PLAN.md — Núcleo: humor e reação por função pura, com a precedência e as faixas de 75, 80 e 100% (MASC-02)
+- [ ] 04-03-PLAN.md — Núcleo: detector local de insights e contrato Insight v1, sem dado pessoal (MASC-04)
+- [ ] 04-04-PLAN.md — Núcleo: seletor de frases sem repetição, régua de conteúdo, agregador do banco e folha de revisão (MASC-04, MASC-07)
+- [ ] 04-10-PLAN.md — Configurações: cartão Vintém com o tom único do casal, padrão sem filtro (MASC-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-05-PLAN.md — Núcleo: modelo do Vintém com piscar, olhar, reações, giro e movimento reduzido, em relógio simulado (MASC-02, MASC-03)
+- [ ] 04-06-PLAN.md — Banco de frases: limites, delivery, loja que repete e categoria acima da média, nos três tons (MASC-04, MASC-07)
+- [ ] 04-07-PLAN.md — Banco de frases: gasto grande, lançamento, receita, Porquinho e meta batida, nos três tons (MASC-04, MASC-07)
+- [ ] 04-08-PLAN.md — Banco de frases: ritmo, dias sem lançar, dados velhos, abertura e toque, nos três tons (MASC-04, MASC-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-09-PLAN.md — Vintém em SVG: paleta no token de ação, desenhista, laço único, sete estados, moeda e giro em perfil (MASC-01, MASC-02, MASC-03, MASC-07)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-11-PLAN.md — Rota oculta /vintem-teste com controles, balão de fala e executor CDP (MASC-06, MASC-03, MASC-02)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 04-12-PLAN.md — Home: Vintém no arco, fala de entrada no tom do casal, balão e toque (MASC-01 a MASC-05)
+- [ ] 04-13-PLAN.md — Autoteste por pixels: distinção por pares, pontos fracos, giro sem vazamento e movimento reduzido (MASC-02, MASC-03, MASC-07)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 04-14-PLAN.md — Insights reais na Home: linha de base em cache, lançamento importado e falas de delivery (MASC-02, MASC-04)
+- [ ] 04-16-PLAN.md — Linha do Vintém em "Limites do mês", prévia do tom e peça de estados vazios (MASC-01, MASC-02, MASC-04, MASC-05)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 04-15-PLAN.md — Reação ao lançar gasto, receita, Porquinho e meta, na Home e no toast do Vintém (MASC-01 a MASC-04)
+- [ ] 04-17-PLAN.md — Vintém calado nos vazios e erros de Home, Transações, Calendário e Contas Fixas (MASC-01, MASC-02)
+- [ ] 04-20-PLAN.md — Vintém calado no sino, Casal, Porquinho, Relatórios e Configurações (MASC-01, MASC-02)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 04-18-PLAN.md — Persistência separável dos insights: serviço, regras, matriz e portão de publicação (MASC-04)
+- [ ] 04-19-PLAN.md — Portão final: régua sobre o banco inteiro, revisão e originalidade pelo dono, guarda e mapa de validação (MASC-04, MASC-07)
 
 ### Phase 5: Identidade Coinki, PWA e onboarding
 
@@ -340,7 +385,7 @@ Plans:
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
-| 4. Mascote Vintém | 0/TBD | Not started | - |
+| 4. Mascote Vintém | 0/20 | Not started | - |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |

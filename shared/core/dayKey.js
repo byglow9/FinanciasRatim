@@ -51,6 +51,16 @@ export function noonOfDay(dayOrKey) {
 }
 
 /**
+ * "19/11/2026" no dia de Sao Paulo do instante, qualquer que seja o fuso do aparelho (WR-06).
+ * @param {Date} instant
+ * @returns {string}
+ */
+export function formatDayBR(instant) {
+  const p = zonedParts(instant)
+  return `${pad(p.day, 2)}/${pad(p.month, 2)}/${pad(p.year, 4)}`
+}
+
+/**
  * "18 de novembro" no dia de Sao Paulo do instante.
  * @param {Date} instant
  * @returns {string}

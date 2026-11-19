@@ -58,3 +58,10 @@ test('WR-05: Calendario, NoteSheet e EventSheet usam o dia de Sao Paulo do nucle
   }
   assert.match(code('src/pages/CalendarPage.tsx'), /noonOfDay\(selectedKey\)/)
 })
+
+test('WR-06: formatDate do app formata pelo dia de Sao Paulo (formatDayBR), sem Intl no fuso do aparelho', () => {
+  const src = code('src/lib/utils.ts')
+  assert.match(src, /formatDayBR\(date\)/)
+  assert.doesNotMatch(src, /DateTimeFormat\('pt-BR'\)\.format/)
+  assert.match(src, /timeZone: 'America\/Sao_Paulo'/, 'formatDateTime sem fuso fixo')
+})

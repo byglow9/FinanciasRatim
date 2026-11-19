@@ -91,7 +91,7 @@ test('dayHeading: ontem atravessa mes e ano', () => {
 // WR-05: o dia gravado e lido em Sao Paulo, qualquer que seja o fuso do aparelho. Cada fuso roda num
 // processo proprio porque o fuso do Node so e lido na partida.
 import { spawnSync } from 'node:child_process'
-import { noonOfDay, dayLabelOf } from './dayKey.js'
+import { noonOfDay, dayLabelOf, formatDayBR } from './dayKey.js'
 
 test('noonOfDay e dayLabelOf: chave e rotulo voltam iguais em qualquer fuso do aparelho', () => {
   const script = `
@@ -120,4 +120,27 @@ test('noonOfDay aceita instante e normaliza para o meio-dia de Sao Paulo', () =>
   assert.equal(noonOfDay(new Date('2026-11-19T02:00:00Z')).toISOString(), '2026-11-18T15:00:00.000Z')
   assert.equal(noonOfDay('2026-11-19').toISOString(), '2026-11-19T15:00:00.000Z')
   assert.equal(dayLabelOf(new Date('2026-11-19T15:00:00Z')), '19 de novembro')
+})
+
+// WR-06: o prazo gravado como meio-dia de Sao Paulo aparece no mesmo dia em qualquer fuso do aparelho.
+test('formatDayBR: o prazo do meio-dia de Sao Paulo nao avanca para o dia seguinte em nenhum fuso', () => {
+  const script = `
+    import { formatDayBR } from ${JSON.stringify(new URL('./dayKey.js', import.meta.url).href)}
+    const instant = new Date('2026-11-19T15:00:00Z')
+    process.stdout.write(JSON.stringify({ br: formatDayBR(instant), legacy: new Intl.DateTimeFormat('pt-BR').format(instant) }))
+  `
+  for (const tz of ['UTC', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland']) {
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      env: { ...process.env, TZ: tz },
+      encoding: 'utf8',
+    })
+    assert.equal(r.status, 0, `${tz}: ${r.stderr}`)
+    assert.equal(JSON.parse(r.stdout).br, '19/11/2026', `${tz}: formatDayBR escorregou de dia`)
+  }
+})
+
+test('formatDayBR: virada do dia em Sao Paulo', () => {
+  assert.equal(formatDayBR(new Date('2026-11-19T02:59:00Z')), '18/11/2026')
+  assert.equal(formatDayBR(new Date('2026-11-19T03:00:00Z')), '19/11/2026')
+  assert.equal(formatDayBR(new Date('2026-01-05T12:00:00Z')), '05/01/2026')
 })

@@ -1,155 +1,122 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Pencil, Plus } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
-import { useCycleMonth } from '@/hooks/useCycleMonth'
 import { useCycle } from '@/contexts/CycleContext'
-import { useTransactions } from '@/hooks/useTransactions'
-import { TransactionForm } from '@/components/transactions/TransactionForm'
-import { TransactionList } from '@/components/transactions/TransactionList'
+import { useLaunch } from '@/contexts/LaunchContext'
+import { useCycleTransactions } from '@/hooks/useCycleTransactions'
+import { useReadOnly } from '@/hooks/useReadOnly'
+import { TransactionDayGroup } from '@/components/transactions/TransactionDayGroup'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, TrendingUp, TrendingDown, Wallet, Landmark } from 'lucide-react'
-import { formatCurrency, cn } from '@/lib/utils'
-import type { Transaction, PersonType } from '@/types'
+import { Notice } from '@/components/ui/notice'
+import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
+import { useToast } from '@/components/ui/toast'
+import type { PersonType, Transaction } from '@/types'
+import { categoryDisplayName } from '@shared/core/categories.js'
+import { dayKeyOf, transactionDayGroups } from '@shared/core/dayKey.js'
+import { dayMonth, formatMoney } from '@shared/core/format.js'
+import { toCents } from '@shared/core/ledger.js'
+import { zonedParts } from '@shared/core/time.js'
 
 export function TransactionsPage() {
-  const { currentArea } = useArea()
-  // WR-03: lancar, editar ou apagar aqui muda os totais; o avaliador de avisos precisa rodar de novo.
-  const { bumpData } = useCycle()
-  // Sem seletor de mês próprio: segue o ciclo escolhido no topo (mês em que o ciclo começa).
-  const selectedMonth = useCycleMonth()
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const { currentArea, categoryDefs } = useArea()
+  const { now, bumpData } = useCycle()
+  const { open: openLaunch } = useLaunch()
+  const { readOnly, guard } = useReadOnly()
+  const { show } = useToast()
 
-  const person = currentArea === 'porquinho' ? 'ele' : (currentArea as PersonType)
-  const { transactions, loading, add, update, remove, totals } = useTransactions(
-    person,
-    selectedMonth
-  )
+  const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
+  const { transactions, loading, error, remove, refetch } = useCycleTransactions(person)
 
-  const handleSubmit = async (data: Omit<Transaction, 'id' | 'createdAt'>) => {
-    if (editingTransaction) {
-      await update(editingTransaction.id, data)
-    } else {
-      await add(data)
-    }
+  // O Sheet de acoes fica montado enquanto a animacao de saida roda, entao a linha escolhida
+  // continua guardada mesmo depois de fechar.
+  const [selected, setSelected] = useState<Transaction | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const todayKey = dayKeyOf(now)
+  const groups = useMemo(() => transactionDayGroups(transactions), [transactions])
+
+  const select = (transaction: Transaction) => {
+    setSelected(transaction)
+    setSheetOpen(true)
+  }
+
+  const handleEdit = () => {
+    if (guard('editar')) return
+    // O Sheet de edicao entra na Task 3; por ora so fecha o de acoes.
+    setSheetOpen(false)
+  }
+
+  const handleDelete = async (transaction: Transaction) => {
+    if (guard('editar')) return
+    await remove(transaction.id)
+    // WR-03: o gatilho mora na pagina, nunca no hook, para os avisos de limite rodarem de novo.
     bumpData()
-    setEditingTransaction(null)
+    show('Transação apagada')
   }
 
-  const handleDelete = async (id: string) => {
-    await remove(id)
-    bumpData()
-  }
-
-  const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction)
-    setFormOpen(true)
-  }
-
-  const handleOpenChange = (open: boolean) => {
-    setFormOpen(open)
-    if (!open) {
-      setEditingTransaction(null)
-    }
-  }
+  const amountText = selected ? formatMoney(toCents(selected.amount), { decimals: 'always' }) : ''
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Transacoes</h1>
-          <p className="hidden text-muted-foreground sm:block">Gerencie suas entradas e saidas</p>
-        </div>
-        <Button size="sm" onClick={() => {
-          setEditingTransaction(null)
-          setFormOpen(true)
-        }} className="shrink-0">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline sm:ml-1">Nova</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[28px] font-bold leading-tight">Transações</h1>
+        <Button size="circle" aria-label="Nova transação" onClick={() => openLaunch('gasto')}>
+          <Plus className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Entradas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-green-600 dark:text-green-400">
-              {formatCurrency(totals.entradas)}
-            </div>
-          </CardContent>
-        </Card>
+      {error ? (
+        <Notice
+          tone="danger"
+          title="Não foi possível carregar as transações."
+          action={
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : loading ? (
+        <p className="text-xs font-normal text-muted-foreground">Carregando transações</p>
+      ) : groups.length === 0 ? (
+        <p className="text-base font-bold">Nenhuma transação neste ciclo</p>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <TransactionDayGroup
+              key={group.key}
+              dayKey={group.key}
+              todayKey={todayKey}
+              items={group.items}
+              netCents={group.netCents}
+              onSelect={select}
+            />
+          ))}
+        </div>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Saidas</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div className="text-sm sm:text-xl font-bold text-red-600 dark:text-red-400">
-              {formatCurrency(totals.saidas)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Saldo Mensal</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div
-              className={cn(
-                'text-sm sm:text-xl font-bold',
-                totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-              )}
-            >
-              {formatCurrency(totals.saldo)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-3 pt-3 pb-2 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-medium">Saldo Total</CardTitle>
-            <Landmark className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0 sm:px-6 sm:pb-6">
-            <div
-              className={cn(
-                'text-sm sm:text-xl font-bold',
-                totals.saldoAcumulado >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'
-              )}
-            >
-              {formatCurrency(totals.saldoAcumulado)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Historico</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TransactionList
-            transactions={transactions}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={loading}
-          />
-        </CardContent>
-      </Card>
-
-      <TransactionForm
-        key={editingTransaction?.id ?? 'new'}
-        open={formOpen}
-        onOpenChange={handleOpenChange}
-        onSubmit={handleSubmit}
-        person={person}
-        initialData={editingTransaction ?? undefined}
+      <RowActionsSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={selected?.description ?? ''}
+        subtitle={
+          selected
+            ? `${categoryDisplayName(selected, categoryDefs)} · ${dayMonth(zonedParts(selected.date))}`
+            : undefined
+        }
+        value={amountText}
+        readOnly={readOnly}
+        onBlocked={() => guard('editar')}
+        actions={[{ id: 'edit', label: 'Editar', icon: Pencil, onSelect: handleEdit }]}
+        deletion={
+          selected
+            ? {
+                question: `Apagar ${selected.description}, ${amountText}? Esta ação não pode ser desfeita.`,
+                onConfirm: () => handleDelete(selected),
+              }
+            : undefined
+        }
       />
     </div>
   )

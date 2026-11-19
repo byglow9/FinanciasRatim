@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Mascote Vintem
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-11-19T20:06:39.797Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-11-19T20:13:04.066Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 4 execution started
-state_head: ec5a2b2cc171eb05e856e653ff4798257a7c8ec9
+state_head: fd981d4a6df63e1bbf0ec61da3c0ae08111c3481
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 67
+  completed_plans: 69
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 4 (Mascote Vintem) — EXECUTING
-Plan: 3 of 20
+Plan: 4 of 20
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 4 execution started
 
@@ -119,6 +119,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03.1 P24 | 40 min | 3 tasks | 3 files |
 | Phase 04 P01 | 15min | 3 tasks | 4 files |
 | Phase 04 P02 | 25min | 3 tasks | 2 files |
+| Phase 04 P03 | 30min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -171,6 +172,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: [03.1-22] Calendario: agenda unico conteiner rolavel aprovado em 360x640 e 390x844; tela baixa abre com o mes recolhido (agenda < 96px)
 - [Phase 03.1]: [03.1-24] Guarda de confirmacao nativa varre todo src e fica vermelha por G-01 (BankConnections.tsx) em vez de ganhar excecao; nyquist_compliant falso ate decisao do dono
 - [Phase 4]: 04-01: STATE_PARAMS guarda so diferencas sobre STATE_DEFAULTS; consumidores mesclam
+- [Phase 4]: 04-03: gasto grande = 3x ticket medio da categoria (>=5 amostras), fallback 30% do limite; nomes de loja so do dicionario ou com token de estabelecimento
 
 ### Pending Todos
 
@@ -202,6 +204,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T20:06:39.697Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-11-19T20:13:03.977Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

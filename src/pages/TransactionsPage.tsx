@@ -5,6 +5,7 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useLaunch } from '@/contexts/LaunchContext'
 import { useCycleTransactions } from '@/hooks/useCycleTransactions'
 import { useReadOnly } from '@/hooks/useReadOnly'
+import { TransactionEditSheet, type TransactionEdit } from '@/components/transactions/TransactionEditSheet'
 import { TransactionDayGroup } from '@/components/transactions/TransactionDayGroup'
 import { TransactionFilters, type TypeFilter } from '@/components/transactions/TransactionFilters'
 import { TransactionTotals } from '@/components/transactions/TransactionTotals'
@@ -28,13 +29,15 @@ export function TransactionsPage() {
   const { show } = useToast()
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-  const { cycle, transactions, loading, error, remove, refetch, totalsCents, loadAccumulated } =
+  const { cycle, transactions, loading, error, update, remove, refetch, totalsCents, loadAccumulated } =
     useCycleTransactions(person)
 
   // O Sheet de acoes fica montado enquanto a animacao de saida roda, entao a linha escolhida
   // continua guardada mesmo depois de fechar.
   const [selected, setSelected] = useState<Transaction | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [editing, setEditing] = useState<Transaction | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   const [query, setQuery] = useState('')
   const [type, setType] = useState<TypeFilter>('all')
@@ -71,10 +74,18 @@ export function TransactionsPage() {
     setSheetOpen(true)
   }
 
-  const handleEdit = () => {
+  const handleEdit = (transaction: Transaction) => {
     if (guard('editar')) return
-    // O Sheet de edicao entra na Task 3; por ora so fecha o de acoes.
     setSheetOpen(false)
+    setEditing(transaction)
+    setEditOpen(true)
+  }
+
+  const handleSave = async (id: string, data: TransactionEdit) => {
+    await update(id, data)
+    // WR-03: o gatilho mora na pagina, nunca no hook.
+    bumpData()
+    show('Transação atualizada')
   }
 
   const handleDelete = async (transaction: Transaction) => {
@@ -129,9 +140,22 @@ export function TransactionsPage() {
           Confira a conexão e tente de novo.
         </Notice>
       ) : loading ? (
-        <p className="text-xs font-normal text-muted-foreground">Carregando transações</p>
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Carregando transações</span>
+          {[0, 1, 2].map((i) => (
+            <div key={i} aria-hidden="true" className="anim-pulse h-[68px] rounded-[22px] bg-card" />
+          ))}
+        </div>
       ) : transactions.length === 0 ? (
-        <p className="text-base font-bold">Nenhuma transação neste ciclo</p>
+        <div className="space-y-2">
+          <p className="text-base font-bold">Nenhuma transação neste ciclo</p>
+          <p className="text-xs font-normal text-muted-foreground">
+            Lance um gasto ou uma receita para ele aparecer aqui.
+          </p>
+          <Button type="button" variant="outline" onClick={() => openLaunch('gasto')}>
+            Novo lançamento
+          </Button>
+        </div>
       ) : groups.length === 0 ? (
         <div className="space-y-2">
           <p className="text-base font-bold">Nada encontrado</p>
@@ -155,6 +179,13 @@ export function TransactionsPage() {
         </div>
       )}
 
+      <TransactionEditSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        transaction={editing}
+        onSave={handleSave}
+      />
+
       <RowActionsSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -167,7 +198,7 @@ export function TransactionsPage() {
         value={amountText}
         readOnly={readOnly}
         onBlocked={() => guard('editar')}
-        actions={[{ id: 'edit', label: 'Editar', icon: Pencil, onSelect: handleEdit }]}
+        actions={[{ id: 'edit', label: 'Editar', icon: Pencil, onSelect: () => (selected ? handleEdit(selected) : undefined) }]}
         deletion={
           selected
             ? {

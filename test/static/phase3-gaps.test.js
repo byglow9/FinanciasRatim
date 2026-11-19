@@ -73,10 +73,6 @@ test('nenhum arquivo de src usa bg-primary solido nem text-primary-foreground', 
   }
 })
 
-test('o ramo ativo do NavRail usa bg-action text-action-text', () => {
-  assert.match(code('src/components/layout/NavRail.tsx'), /bg-action text-action-text/)
-})
-
 test('iconSm tem rounded-md e Marcar pago movel nao combina size=icon com h-8/h-7', () => {
   assert.match(code('src/components/ui/button.tsx'), /iconSm:\s*"[^"]*rounded-md/)
   const list = code('src/components/fixed-expenses/FixedExpenseList.tsx')

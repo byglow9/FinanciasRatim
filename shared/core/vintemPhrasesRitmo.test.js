@@ -6,7 +6,7 @@ import { checkBank } from './phraseRules.js'
 import { buildSlots, needsOf, pick, pushRecent, recentKey, recentLimit } from './phrasePicker.js'
 
 // Situacoes do grupo ritmo escritas ate aqui (cresce a cada tarefa do plano 04-08).
-const GROUP = ['sem-lancar']
+const GROUP = ['sem-lancar', 'ritmo-folgado', 'ritmo-atencao', 'ritmo-estourou']
 
 const BANK = /** @type {any} */ (PHRASES_RITMO)
 
@@ -22,6 +22,9 @@ function makeRand(seed) {
 // Casos de encaixes reais de buildSlots por situacao.
 const SLOT_CASES = {
   'sem-lancar': [buildSlots({ dias: 5 }), buildSlots({ dias: 1 })],
+  'ritmo-folgado': [buildSlots({ dias: 12, restanteCents: 120000 })],
+  'ritmo-atencao': [buildSlots({ dias: 12, restanteCents: 120000 })],
+  'ritmo-estourou': [buildSlots({ dias: 12 })],
 }
 
 test('o grupo ritmo passa na regua de conteudo (checkBank vazio)', () => {
@@ -77,5 +80,22 @@ test('sem-lancar concorda "1 dia" e "5 dias"', () => {
       if (five.text.includes('5 dias')) seen.add('cinco')
     }
     assert.ok(seen.has('um') && seen.has('cinco'), `${tone}: nao exercitou o encaixe`)
+  }
+})
+
+test('ritmo-estourou nunca usa restante nem valor (so dias)', () => {
+  for (const tone of TONES) {
+    for (const p of BANK['ritmo-estourou'][tone]) {
+      assert.ok(needsOf(p.t).every((n) => n === 'dias'), p.id)
+    }
+  }
+})
+
+test('cada situacao tem pelo menos 3 variantes por tom sem encaixe', () => {
+  for (const situation of GROUP) {
+    for (const tone of TONES) {
+      const bare = BANK[situation][tone].filter((p) => needsOf(p.t).length === 0)
+      assert.ok(bare.length >= 3, `${situation}/${tone}: ${bare.length} sem encaixe`)
+    }
   }
 })

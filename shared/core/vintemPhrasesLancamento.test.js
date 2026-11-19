@@ -8,6 +8,8 @@ import { PHRASES_LANCAMENTO } from './vintemPhrasesLancamento.js'
 // Situacoes do grupo ja escritas, com os encaixes reais usados na varredura de pick.
 const GROUP = {
   'gasto-grande': buildSlots({ categoria: 'Mercado', valorCents: 35000 }),
+  'lancamento-ok': buildSlots({ categoria: 'Lazer', valorCents: 4590 }),
+  receita: buildSlots({ categoria: 'Lazer', valorCents: 4590 }),
 }
 
 const profane = (t) => PROFANITY.some((re) => re.test(t))
@@ -48,6 +50,14 @@ test('palavrao so no sem-filtro, e ao menos 3 la', () => {
     }
     const sf = PHRASES_LANCAMENTO[situation]['sem-filtro'].filter((p) => profane(p.t))
     assert.ok(sf.length >= 3, `${situation}: ${sf.length}`)
+  }
+})
+
+test('receita nao afirma se a entrada era esperada ou nao', () => {
+  for (const tone of TONES) {
+    for (const p of PHRASES_LANCAMENTO.receita[tone]) {
+      assert.doesNotMatch(p.t, /esperad|previst/i, p.id)
+    }
   }
 })
 

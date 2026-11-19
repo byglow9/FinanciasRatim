@@ -57,7 +57,7 @@ test('HomeSections: Marcar pago manual, guarda de somente leitura, toast e sem l
     'refetch()',
     'bumpData()',
     'Marcado como pago',
-    'O Pode gastar não muda, porque as fixas já estão descontadas.',
+    'O Pode gastar não muda.',
     'fromCents(item.plannedCents)',
     'Não foi possível marcar como pago',
   ])

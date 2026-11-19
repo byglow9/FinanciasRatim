@@ -2,17 +2,20 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { X, type LucideIcon } from "lucide-react"
 
-const DEFAULT_DURATION_MS = 5000
+const DEFAULT_DURATION_MS = 3000
 const EXIT_MS = 200
 
 interface ToastOptions {
   icon?: LucideIcon
+  /** Apoio opcional, curto, numa segunda linha de 12px. */
+  detail?: string
   durationMs?: number
 }
 
 interface ToastItem {
   id: number
   message: string
+  detail?: string
   icon?: LucideIcon
   durationMs: number
 }
@@ -54,19 +57,22 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      className={`pointer-events-auto flex items-center gap-3 rounded-2xl bg-action py-3 pl-4 pr-1 text-action-text transition-opacity duration-200 anim-toast-in ${
+      className={`pointer-events-auto flex w-fit max-w-full items-center gap-2 rounded-2xl bg-action pl-3 text-action-text shadow-float transition-opacity duration-200 anim-toast-in ${
         leaving ? "opacity-0" : "opacity-100"
       }`}
     >
       {Icon ? <Icon className="h-5 w-5 shrink-0" aria-hidden="true" /> : null}
-      <p className="min-w-0 flex-1 text-base font-bold">{item.message}</p>
+      <div className="min-w-0 flex-1 py-1">
+        <p className="line-clamp-2 text-base font-bold leading-snug">{item.message}</p>
+        {item.detail ? <p className="line-clamp-2 text-xs font-normal">{item.detail}</p> : null}
+      </div>
       <button
         type="button"
         aria-label="Fechar aviso"
         onClick={onDismiss}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary-foreground"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full opacity-80 focus:outline-none focus:ring-2 focus:ring-primary-foreground"
       >
-        <X className="h-5 w-5" aria-hidden="true" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   )
@@ -86,6 +92,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         id,
         message,
         icon: options?.icon,
+        detail: options?.detail,
         durationMs: options?.durationMs ?? DEFAULT_DURATION_MS,
       },
     ])
@@ -115,10 +122,12 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed left-4 right-4 top-[calc(16px+env(safe-area-inset-top))] z-[10001] mx-auto max-w-md"
+          className="pointer-events-none fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-[10001] flex justify-center px-[5%]"
         >
           {current ? (
-            <ToastView key={current.id} item={current} leaving={leaving} onDismiss={dismiss} />
+            <div className="max-w-md">
+              <ToastView key={current.id} item={current} leaving={leaving} onDismiss={dismiss} />
+            </div>
           ) : null}
         </div>,
         document.body

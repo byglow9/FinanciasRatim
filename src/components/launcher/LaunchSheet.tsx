@@ -151,6 +151,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       const money = formatMoney(cents, { decimals: "always" })
       const typed = description.trim()
       let message: string
+      let detail: string | undefined
 
       if (tab === "porquinho") {
         const savingsId = (docIds.current.savings ??= newSavingsId())
@@ -167,10 +168,8 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
           ),
           SAVE_TIMEOUT_MS
         )
-        message =
-          piggyMode === "deposito"
-            ? `Guardado no Porquinho: ${money}. O Pode gastar não mudou.`
-            : `Retirado do Porquinho: ${money}. O Pode gastar não mudou.`
+        message = piggyMode === "deposito" ? `Guardado no Porquinho: ${money}` : `Retirado do Porquinho: ${money}`
+        detail = "O Pode gastar não mudou."
       } else if (category) {
         const typedNote = note.trim()
         const txId = (docIds.current.tx ??= newTransactionId())
@@ -199,12 +198,12 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       // Ciclo passado na tela: o lancamento entra com a data de hoje e o toast avisa (PR-12).
       if (!isCurrent && chosen === today) {
         const aviso = `Lançado em ${shortDate(nowParts)}, fora do ciclo que você está vendo`
-        message = `${message}${message.endsWith(".") ? " " : ". "}${aviso}`
+        detail = detail ? `${detail} ${aviso}` : aviso
       }
 
       bumpData()
       onClose()
-      toast.show(message, { icon: Check })
+      toast.show(message, { icon: Check, detail })
     } catch (err) {
       // Nada de valor ou descricao em log: so o aviso na tela, com os digitos preservados.
       setFailed(err instanceof Error && (err as Error & { code?: string }).code === "timeout" ? "timeout" : "erro")

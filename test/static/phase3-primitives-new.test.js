@@ -68,22 +68,25 @@ test('Sheet nao prende o usuario: Esc, escuro e Fechar chamam onClose (T-03-31)'
   assert.ok((src.match(/onClose\(\)/g) ?? []).length >= 2, 'escuro e botao Fechar precisam chamar onClose')
 })
 
-test('Toast: provider, fila de um por vez, 5000ms, status polite e camada 10001', () => {
+test('Toast: provider, fila de um por vez, 3000ms, status polite, camada 10001 e posicao acima da dock', () => {
   const src = code(`${UI}toast.tsx`)
   for (const needle of [
     'ToastProvider',
     'useToast',
     'role="status"',
     'aria-live="polite"',
-    '5000',
+    '3000',
+    'detail',
+    'w-fit',
     'z-[10001]',
     'anim-toast-in',
     'aria-label="Fechar aviso"',
     'h-11 w-11',
-    'safe-area-inset-top',
+    'safe-area-inset-bottom',
   ]) {
     has(src, needle, 'toast.tsx')
   }
+  assert.doesNotMatch(src, /safe-area-inset-top/, 'o aviso nao pode cobrir o cabecalho (sino e perfil)')
   assert.match(src, /onMouseEnter/, 'toast.tsx nao pausa em hover')
   assert.match(src, /onFocus/, 'toast.tsx nao pausa em foco')
   assert.match(src, /throw new Error\(/, 'useToast precisa lancar fora do provider')

@@ -54,7 +54,7 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
       await markAsPaid(item.billId, item.occurrence.month, item.occurrence.year, fromCents(item.plannedCents))
       await refetch()
       bumpData()
-      show(`Marcado como pago: ${item.name}. O Pode gastar não muda, porque as fixas já estão descontadas.`)
+      show(`Marcado como pago: ${item.name}`, { detail: 'O Pode gastar não muda.' })
     } catch {
       show('Não foi possível marcar como pago. Tente de novo.')
     } finally {

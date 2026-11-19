@@ -23,6 +23,7 @@ import type { PersonType, Transaction } from '@/types'
 import type { Cycle } from '@shared/core/cycle.js'
 import { billsSummary } from '@shared/core/billGroups.js'
 import { cycleLabel, shortRange } from '@shared/core/format.js'
+import { toCents } from '@shared/core/ledger.js'
 
 type ReportTab = 'visao-geral' | 'categorias' | 'evolucao' | 'comparacao'
 
@@ -107,7 +108,9 @@ interface OverviewTabProps {
 function OverviewTab({ person, personName, transactions, cycle, label, entradasCents, saidasCents, saldoCents, fixas }: OverviewTabProps) {
   const { settings } = useArea()
   const { series, loading, error, refetch } = useCycleSeries(person, 4)
-  const { balance: savingsBalance } = useSavings()
+  const savings = useSavings()
+  // Nulo enquanto carrega ou se falhou: nunca um R$ 0 falso (mesmo padrão do PiggyCard, WR-07).
+  const savingsCents = savings.loading || savings.error ? null : toCents(savings.balance)
 
   return (
     <>
@@ -115,7 +118,8 @@ function OverviewTab({ person, personName, transactions, cycle, label, entradasC
       <OverviewDashboard
         transactions={transactions}
         cycle={cycle}
-        savingsBalance={savingsBalance}
+        savingsCents={savingsCents}
+        savingsFailed={savings.error !== null}
         piggyName={settings.tabNames.piggy}
         series={series}
         seriesLoading={loading}

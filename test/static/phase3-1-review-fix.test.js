@@ -65,3 +65,13 @@ test('WR-06: formatDate do app formata pelo dia de Sao Paulo (formatDayBR), sem 
   assert.doesNotMatch(src, /DateTimeFormat\('pt-BR'\)\.format/)
   assert.match(src, /timeZone: 'America\/Sao_Paulo'/, 'formatDateTime sem fuso fixo')
 })
+
+test('WR-07: Relatorios nunca mostra R$ 0 falso do Porquinho (carregando ou falha)', () => {
+  const page = code('src/pages/ReportsPage.tsx')
+  assert.match(page, /savings\.loading \|\| savings\.error \? null/, 'saldo nao fica nulo enquanto carrega ou falha')
+  assert.doesNotMatch(page, /balance: savingsBalance/)
+  const dash = code('src/components/reports/OverviewDashboard.tsx')
+  assert.match(dash, /savingsCents: number \| null/)
+  assert.match(dash, /Saldo indisponível agora/)
+  assert.match(dash, /Carregando o saldo/)
+})

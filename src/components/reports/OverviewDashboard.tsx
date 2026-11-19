@@ -19,7 +19,9 @@ const OUT_COLOR = 'var(--color-warn)'
 interface OverviewDashboardProps {
   transactions: Transaction[]
   cycle: Cycle
-  savingsBalance: number
+  /** Saldo do Porquinho em centavos; nulo enquanto carrega ou quando falhou (nunca R$ 0 falso). */
+  savingsCents: number | null
+  savingsFailed: boolean
   piggyName: string
   // Série dos últimos ciclos (a página faz a consulta por janela larga com useCycleSeries).
   series: CyclePoint[]
@@ -39,7 +41,8 @@ function shortCycle(cycle: Cycle): string {
 export function OverviewDashboard({
   transactions,
   cycle,
-  savingsBalance,
+  savingsCents,
+  savingsFailed,
   piggyName,
   series,
   seriesLoading,
@@ -167,8 +170,19 @@ export function OverviewDashboard({
 
       <section className="rounded-[22px] bg-card p-4">
         <h2 className="font-display text-base font-bold">{piggyName}</h2>
-        <p className="font-display text-base font-bold">{formatMoney(toCents(savingsBalance), { decimals: 'always' })}</p>
-        <p className="text-xs font-normal text-muted-foreground">Saldo atual</p>
+        {savingsCents !== null ? (
+          <>
+            <p className="font-display text-base font-bold">{formatMoney(savingsCents, { decimals: 'always' })}</p>
+            <p className="text-xs font-normal text-muted-foreground">Saldo atual</p>
+          </>
+        ) : savingsFailed ? (
+          <p className="text-xs font-normal text-muted-foreground">Saldo indisponível agora</p>
+        ) : (
+          <div role="status">
+            <span className="sr-only">Carregando o saldo</span>
+            <div aria-hidden="true" className="anim-pulse mt-1 h-6 w-32 rounded-full bg-track" />
+          </div>
+        )}
       </section>
     </div>
   )

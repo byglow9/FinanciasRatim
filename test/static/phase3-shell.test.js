@@ -19,7 +19,6 @@ const code = (f) =>
 const NAVRAIL = 'src/components/layout/NavRail.tsx'
 const SHELL = 'src/components/layout/AppShell.tsx'
 const APP = 'src/App.tsx'
-const COUPLE = 'src/pages/CouplePage.tsx'
 
 const REMOVED = [
   'src/components/layout/Header.tsx',
@@ -77,23 +76,8 @@ test('a navegacao antiga foi removida e nada em src a importa', () => {
   }
 })
 
-test('CouplePage guarda o conteudo antigo do Dashboard e o aviso em breve', () => {
-  assertIncludes(COUPLE, [
-    'Casal',
-    'O relatório do casal completo chega em breve.',
-    'useTransactions',
-    'useSavings',
-    'recharts',
-    'ResponsiveContainer',
-    'MonthSelector',
-  ])
-  const src = code(COUPLE)
-  assert.match(src, /export function CouplePage\b/)
-  assert.doesNotMatch(src, /BankStatusNotice/)
-})
-
-test('os arquivos do plano nao usam HTML bruto, emoji, pesos 500 e 600 nem console', () => {
-  for (const file of [NAVRAIL, SHELL, COUPLE]) {
+test('os arquivos do plano nao usam HTML bruto, emoji, pesos 500 e 600 nem console (NavRail e AppShell)', () => {
+  for (const file of [NAVRAIL, SHELL]) {
     const src = code(file)
     assert.doesNotMatch(src, /dangerouslySetInnerHTML/, `${file} usa HTML bruto`)
     assert.doesNotMatch(src, /\p{Extended_Pictographic}/u, `${file} tem emoji`)

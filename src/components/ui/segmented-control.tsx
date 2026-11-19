@@ -14,6 +14,11 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentedOption<T>[]
   ariaLabel: string
   size?: "sm" | "md"
+  /**
+   * Em telas estreitas as abas inativas mostram so o icone (com aria-label e title), para a aba ativa
+   * manter o rotulo sem cortar nem vazar. Exige `icon` em todas as opcoes.
+   */
+  collapseInactive?: boolean
 }
 
 /**
@@ -26,6 +31,7 @@ export function SegmentedControl<T extends string>({
   options,
   ariaLabel,
   size = "md",
+  collapseInactive = false,
 }: SegmentedControlProps<T>) {
   const tabs = React.useRef<(HTMLButtonElement | null)[]>([])
   const found = options.findIndex((o) => o.value === value)
@@ -60,6 +66,7 @@ export function SegmentedControl<T extends string>({
       {options.map((option, index) => {
         const selected = index === activeIndex
         const Icon = option.icon
+        const iconOnly = collapseInactive && !selected && Icon !== undefined
         return (
           <button
             key={option.value}
@@ -70,17 +77,19 @@ export function SegmentedControl<T extends string>({
             role="tab"
             aria-selected={selected}
             tabIndex={selected ? 0 : -1}
+            aria-label={iconOnly ? option.label : undefined}
+            title={iconOnly ? option.label : undefined}
             onClick={() => onChange(option.value)}
             className={cn(
               "inline-flex h-11 items-center justify-center gap-2 rounded-full text-base font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              size === "sm" ? "px-3" : "flex-1 px-4",
+              iconOnly ? "w-11 shrink-0 px-0" : size === "sm" ? "px-3" : "flex-1 px-4",
               selected
                 ? "bg-surface-2 text-foreground shadow-[0_1px_4px_rgba(0,0,0,.08)]"
                 : "text-muted-foreground"
             )}
           >
             {Icon ? <Icon className="h-5 w-5 shrink-0" aria-hidden="true" /> : null}
-            {option.label}
+            {iconOnly ? null : option.label}
           </button>
         )
       })}

@@ -230,6 +230,7 @@ export function CalendarPage() {
           <div className="min-w-0 flex-1">
             <SegmentedControl<CalendarMode>
               ariaLabel="Modo do calendário"
+              collapseInactive
               value={mode}
               onChange={handleMode}
               options={[

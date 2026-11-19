@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Calendar,
@@ -42,17 +42,19 @@ function isActive(href: string, pathname: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-// Mascara de 24px so do lado que tem conteudo escondido.
-function fadeStyle(fade: { left: boolean; right: boolean }): CSSProperties | undefined {
-  if (!fade.left && !fade.right) return undefined
-  const start = fade.left ? 'transparent 0, #000 24px' : '#000 0'
-  const end = fade.right ? '#000 calc(100% - 24px), transparent 100%' : '#000 100%'
-  const mask = `linear-gradient(to right, ${start}, ${end})`
-  return { maskImage: mask, WebkitMaskImage: mask }
-}
-
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+// Portada de themes/dock.js (sketch 012): so rola se o item nao estiver inteiramente visivel e
+// alinha ao inicio (com 6px de folga), entao o item da esquerda nunca fica cortado.
+function center(nav: HTMLElement, el: HTMLElement, smooth: boolean): void {
+  const l = el.offsetLeft - 6
+  const r = el.offsetLeft + el.offsetWidth + 6
+  const v0 = nav.scrollLeft
+  const v1 = v0 + nav.clientWidth
+  if (l >= v0 && r <= v1) return
+  nav.scrollTo({ left: Math.max(0, l), behavior: smooth ? 'smooth' : 'auto' })
 }
 
 function LaunchFab() {
@@ -71,10 +73,10 @@ function LaunchFab() {
       className={cn(
         'flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-float transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        readOnly ? 'bg-track text-muted-foreground' : 'bg-brand text-white'
+        readOnly ? 'bg-track text-muted-foreground' : 'bg-action text-action-text'
       )}
     >
-      <Plus className="h-7 w-7" strokeWidth={2} aria-hidden="true" />
+      <Plus className="size-7" strokeWidth={2} aria-hidden="true" />
     </button>
   )
 }
@@ -83,9 +85,6 @@ export function NavRail() {
   const location = useLocation()
   const { currentArea, setCurrentArea, lastPerson } = useArea()
   const navRef = useRef<HTMLElement>(null)
-  // Sem JavaScript a mascara da direita fica ligada (como no mockup); o estado real vem do scroll.
-  const [fade, setFade] = useState({ left: false, right: true })
-
   // Porquinho derivado da rota: entrar em /porquinho liga a area, qualquer outra rota devolve o
   // ultimo perfil de pessoa (D-02: a Home nunca mostra Pode gastar no Porquinho).
   const pathname = location.pathname
@@ -97,34 +96,11 @@ export function NavRail() {
     }
   }, [pathname, currentArea, lastPerson, setCurrentArea])
 
-  // Fade de borda: scroll e resize passivos. A primeira medida entra por requestAnimationFrame
-  // para nao atualizar estado de forma sincrona dentro do efeito.
+  // A cada mudanca de rota (e ao montar) o item ativo e alinhado ao inicio, so se nao estiver visivel.
   useEffect(() => {
     const nav = navRef.current
-    if (!nav) return
-    const update = () => {
-      const left = nav.scrollLeft > 0
-      const right = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1
-      setFade((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
-    }
-    const frame = window.requestAnimationFrame(update)
-    nav.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update, { passive: true })
-    return () => {
-      window.cancelAnimationFrame(frame)
-      nav.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
-  }, [])
-
-  // A cada mudanca de rota o item ativo rola para o centro da pilula.
-  useEffect(() => {
-    const active = navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')
-    active?.scrollIntoView({
-      inline: 'center',
-      block: 'nearest',
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    })
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]')
+    if (nav && active) center(nav, active, !prefersReducedMotion())
   }, [pathname])
 
   return (
@@ -132,8 +108,7 @@ export function NavRail() {
       <nav
         ref={navRef}
         aria-label="Navegação principal"
-        style={fadeStyle(fade)}
-        className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-border bg-surface-2 p-2 shadow-float"
+        className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain rounded-full border border-border bg-surface-2 p-1.5 shadow-float snap-x snap-mandatory scroll-px-1.5"
       >
         {DESTINATIONS.map(({ href, label, icon: Icon }) => {
           const active = isActive(href, pathname)
@@ -145,10 +120,10 @@ export function NavRail() {
               title={label}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors duration-150',
+                'relative flex h-12 w-12 shrink-0 snap-start items-center justify-center rounded-full transition-colors duration-150',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 active
-                  ? 'bg-action text-action-text'
+                  ? "bg-action/10 text-action after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-action after:content-['']"
                   : 'text-muted-foreground hover:bg-card'
               )}
             >

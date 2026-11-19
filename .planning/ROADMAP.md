@@ -196,11 +196,50 @@ Plans:
   4. Relatórios, Metas, Porquinho e Login só são implementados depois de o dono escolher o layout em sketch
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
-**Plans:** 0 plans
+**Plans:** 24 plans
 
 Plans:
+**Wave 1**
 
-- [ ] TBD (run /gsd-plan-phase 03.1 to break down)
+- [ ] 03.1-01-PLAN.md — Guardas estáticas particionadas por tela e módulo de apoio (UX-08)
+- [ ] 03.1-02-PLAN.md — Núcleo A: chave de dia, grade do ciclo, ordem estável de categorias, valores e filtro de transações (UX-02, UX-03, UX-05, UX-09)
+- [ ] 03.1-04-PLAN.md — Auditoria de layout em Chrome a 360x640 e 390x844, sem dependência nova (UX-08)
+- [ ] 03.1-05-PLAN.md — Sketches 014 (Porquinho) e 015 (Metas) para o dono escolher (UX-07)
+- [ ] 03.1-06-PLAN.md — Sketches 016 (Relatórios) e 017 (Login) para o dono escolher (UX-07)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03.1-03-PLAN.md — Primitivos novos e tokens: SquareCheck, Popover, SearchField, RowActionsSheet, KpiTrio (UX-02, UX-03, UX-05, UX-06, UX-07, UX-08)
+- [ ] 03.1-07-PLAN.md — Núcleo B: contas por categoria em ordem fixa, resumo do casal e mapa de calor (UX-03, UX-05, UX-06)
+- [ ] 03.1-08-PLAN.md — Dock sem fade, uma cor de ação, scroll-snap e espiada medida a 360px (UX-01, UX-08)
+- [ ] 03.1-09-PLAN.md — Camada de dados por ciclo exato: janela estável, transações, contas por ocorrência e serviços de intervalo (UX-09)
+- [ ] 03.1-10-PLAN.md — Portão de decisões do dono: premissas P-01 a P-04 e layout de Porquinho, Metas, Relatórios e Login (UX-03, UX-06, UX-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03.1-11-PLAN.md — Transações: três números, Detalhes, busca e filtros fixos, lista por dia e Sheet de ações (UX-02, UX-08, UX-09)
+- [ ] 03.1-12-PLAN.md — Contas Fixas: grupos em ordem fixa, caixa quadrada de 44px, filtro e formulário por campo (UX-05, UX-08, UX-09)
+- [ ] 03.1-13-PLAN.md — Casal: Mistura A+B com alternador Ciclo e Mês (UX-06, UX-08, UX-09)
+- [ ] 03.1-14-PLAN.md — Calendário: modelo do dia, redutor de recolhimento e dados por ciclo (UX-03, UX-09)
+- [ ] 03.1-15-PLAN.md — Calendário: Sheets de post-it e de evento (UX-04, UX-08)
+- [ ] 03.1-16-PLAN.md — Porquinho conforme a variante escolhida (UX-07, UX-08)
+- [ ] 03.1-17-PLAN.md — Metas conforme a variante escolhida (UX-07, UX-08)
+- [ ] 03.1-18-PLAN.md — Relatórios: dados por ciclo, uma consulta por janela larga (UX-07, UX-09)
+- [ ] 03.1-19-PLAN.md — Login conforme a variante escolhida, sem mudar o fluxo (UX-07, UX-08)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03.1-20-PLAN.md — Calendário: cabeçalho, grade com calor e mini post-it, agenda e ligação dos Sheets (UX-03, UX-04, UX-08, UX-09)
+- [ ] 03.1-21-PLAN.md — Relatórios conforme a variante escolhida, por ciclo e com gráficos acessíveis (UX-07, UX-08, UX-09)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03.1-22-PLAN.md — Calendário: mês que recolhe, abertura em hoje, teclado e gesto, com cenário real em Chrome (UX-03, UX-08)
+- [ ] 03.1-23-PLAN.md — Remoção do legado de mês-calendário e guarda final do ciclo (UX-09, UX-08)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 03.1-24-PLAN.md — Fechamento: guarda transversal, suíte e auditoria verdes, mapa de validação e roteiro de UAT (UX-01 a UX-09)
 
 ### Phase 4: Mascote Vintém
 

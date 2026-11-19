@@ -1,9 +1,10 @@
 import type { ReactNode, Ref } from 'react'
 import { AgendaDay } from '@/components/calendar/AgendaDay'
+import { agendaDaysOrder } from '@shared/core/calendarModel.js'
 import type { CalendarMode, DayModel } from '@shared/core/calendarModel.js'
 
 interface AgendaListProps {
-  /** Modelos do ciclo em ordem de data; só os dias com itens aparecem. */
+  /** Modelos do ciclo em ordem de data; só os dias com itens aparecem, do mais recente ao mais antigo. */
   days: DayModel[]
   selectedKey: string
   mode: CalendarMode
@@ -15,14 +16,15 @@ interface AgendaListProps {
 }
 
 /**
- * Agenda corrida (UI-SPEC S3, D-08): lista só os dias com itens e é o ÚNICO contêiner rolável da tela do
+ * Agenda corrida (UI-SPEC S3, D-08): lista só os dias com itens, do mais recente ao mais antigo, e é o ÚNICO contêiner rolável da tela do
  * Calendário. O contêiner fica montado desde a primeira renderização, também carregando, para o listener
  * de rolagem do `useCollapseOnScroll` ser ligado uma vez, e é `relative` para o `offsetTop` dos dias valer
  * dentro dele. O miolo tem altura mínima de 100% mais 64px: sempre sobra rolagem acima do limiar de 24px
  * do redutor, então o navegador nunca devolve o `scrollTop` a 0 quando o mês recolhe e a agenda cresce.
  */
 export function AgendaList({ days, selectedKey, mode, state, containerRef, onOpenNote, onOpenEvent }: AgendaListProps) {
-  const withItems = days.filter((d) => d.items.length > 0)
+  // Do mais recente ao mais antigo: dias a vencer no topo e, rolando para baixo, o passado.
+  const withItems = agendaDaysOrder(days.filter((d) => d.items.length > 0))
   return (
     <div
       ref={containerRef}

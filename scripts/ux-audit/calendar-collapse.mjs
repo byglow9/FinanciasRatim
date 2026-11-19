@@ -231,19 +231,21 @@ async function runViewport(page, collected, viewport) {
   check('pagina-nao-rola-na-vertical', !geo.pageScrollable, { docHeight: geo.docHeight, innerHeight: geo.innerHeight })
   check('sem-rolagem-horizontal', geo.scrollWidth <= geo.clientWidth, { scrollWidth: geo.scrollWidth, clientWidth: geo.clientWidth })
 
-  // A agenda abre em hoje: o dia de hoje (ou o proximo com item) esta no topo da agenda ou a agenda esta no fim.
+  // A agenda abre em hoje: o dia de hoje (ou o dia com item imediatamente anterior) esta no topo da agenda ou a
+  // agenda esta no fim. A lista vai do dia mais recente ao mais antigo, entao a ordem no DOM e decrescente.
   const opened = await page.evaluate(`(() => {
     const el = ${AGENDA}
     const today = document.querySelector('[data-key][aria-current="date"]')?.getAttribute('data-key') ?? null
     const days = [...el.querySelectorAll('[data-day]')].map((d) => d.getAttribute('data-day'))
-    const target = days.find((k) => today !== null && k >= today) ?? days[days.length - 1] ?? null
+    const descending = days.every((k, i) => i === 0 || days[i - 1] > k)
+    const target = (descending ? days.find((k) => today !== null && k <= today) : null) ?? days[days.length - 1] ?? null
     const row = target ? el.querySelector('[data-day="' + target + '"]') : null
     const delta = row ? Math.round(row.getBoundingClientRect().top - el.getBoundingClientRect().top) : null
-    return { today, target, delta, top: Math.round(el.scrollTop), maxScroll: Math.round(el.scrollHeight - el.clientHeight) }
+    return { today, descending, target, delta, top: Math.round(el.scrollTop), maxScroll: Math.round(el.scrollHeight - el.clientHeight) }
   })()`)
   check(
     'agenda-abre-em-hoje',
-    opened.target !== null && opened.delta !== null && (Math.abs(opened.delta) <= 12 || opened.top >= opened.maxScroll - 2),
+    opened.descending !== false && opened.target !== null && opened.delta !== null && (Math.abs(opened.delta) <= 12 || opened.top >= opened.maxScroll - 2),
     opened,
   )
 

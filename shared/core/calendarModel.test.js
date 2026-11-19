@@ -6,6 +6,7 @@ import {
   buildDayModels,
   calendarSummary,
   agendaScrollTarget,
+  agendaDaysOrder,
   dayAriaLabel,
 } from './calendarModel.js'
 
@@ -400,17 +401,28 @@ test('calendarSummary: saidas do ciclo sem transferencia e planejado das contas 
   assert.deepEqual(calendarSummary({ transactions: [], billItems: [] }), { spentCents: 0, toPayCents: 0 })
 })
 
-test('agendaScrollTarget: primeiro dia com item >= desejado, senao o ultimo, senao null', () => {
+test('agendaScrollTarget: dia com item igual ou anterior ao desejado, senao o mais antigo, senao null', () => {
   const days = ['2026-11-05', '2026-11-18', '2026-11-25']
   assert.equal(agendaScrollTarget(days, '2026-11-18'), '2026-11-18')
-  assert.equal(agendaScrollTarget(days, '2026-11-20'), '2026-11-25')
-  assert.equal(agendaScrollTarget(days, '2026-11-01'), '2026-11-05')
+  assert.equal(agendaScrollTarget(days, '2026-11-20'), '2026-11-18')
   assert.equal(agendaScrollTarget(days, '2026-11-30'), '2026-11-25')
+  assert.equal(agendaScrollTarget(days, '2026-11-01'), '2026-11-05')
   assert.equal(agendaScrollTarget([], '2026-11-18'), null)
   // nao depende da ordem da entrada nem a muda
   const shuffled = ['2026-11-25', '2026-11-05', '2026-11-18']
-  assert.equal(agendaScrollTarget(shuffled, '2026-11-06'), '2026-11-18')
+  assert.equal(agendaScrollTarget(shuffled, '2026-11-24'), '2026-11-18')
   assert.deepEqual(shuffled, ['2026-11-25', '2026-11-05', '2026-11-18'])
+})
+
+test('agendaDaysOrder: do dia mais recente ao mais antigo, sem alterar a entrada', () => {
+  const models = [...build().values()]
+  const ordered = agendaDaysOrder(models)
+  assert.equal(ordered.length, 30)
+  assert.equal(ordered[0].key, '2026-11-30')
+  assert.equal(ordered[29].key, '2026-11-01')
+  assert.equal(models[0].key, '2026-11-01')
+  const keys = ordered.map((m) => m.key)
+  assert.deepEqual(keys, [...keys].sort().reverse())
 })
 
 test('dayAriaLabel: dia, hoje, itens e saldo, omitindo o que nao se aplica', () => {

@@ -485,9 +485,11 @@ export function calendarSummary({ transactions = [], billItems = [] }) {
 }
 
 /**
- * Para onde a agenda rola ao tocar num dia: o primeiro dia com item igual ou
- * posterior ao desejado; se nao ha, o ultimo; sem nenhum dia com item, null.
- * Nao altera nem depende da ordem da lista de entrada.
+ * Para onde a agenda rola ao tocar num dia. A agenda lista do dia mais recente
+ * ao mais antigo; o alvo e o dia com item igual ou imediatamente anterior ao
+ * desejado (o primeiro que aparece ao rolar do desejado para baixo); se todos
+ * os dias com item sao posteriores, o mais antigo (o mais proximo); sem nenhum
+ * dia com item, null. Nao altera nem depende da ordem da lista de entrada.
  * @param {string[]} daysWithItems chaves YYYY-MM-DD dos dias com item
  * @param {string} wantedKey chave YYYY-MM-DD desejada
  * @returns {string | null}
@@ -495,7 +497,19 @@ export function calendarSummary({ transactions = [], billItems = [] }) {
 export function agendaScrollTarget(daysWithItems, wantedKey) {
   if (!daysWithItems || daysWithItems.length === 0) return null
   const sorted = [...daysWithItems].sort()
-  return sorted.find((k) => k >= wantedKey) ?? sorted[sorted.length - 1]
+  const upTo = sorted.filter((k) => k <= wantedKey)
+  return upTo.length > 0 ? upTo[upTo.length - 1] : sorted[0]
+}
+
+/**
+ * Dias na ordem em que a agenda os mostra: do mais recente ao mais antigo
+ * (dias a vencer no topo). Nao altera a lista de entrada; os itens de cada dia
+ * mantem a ordem.
+ * @param {DayModel[]} days modelos em ordem de data
+ * @returns {DayModel[]}
+ */
+export function agendaDaysOrder(days) {
+  return [...days].sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0))
 }
 
 /**

@@ -196,6 +196,13 @@ test('Calendario: a agenda e o unico conteiner rolavel e recebe o scrollRef do h
   }
 })
 
+test('Calendario: a agenda lista do dia mais recente ao mais antigo (o passado fica para baixo)', () => {
+  assertIncludes('src/components/calendar/AgendaList.tsx', ['agendaDaysOrder('])
+  assertIncludes('shared/core/calendarModel.js', ['export function agendaDaysOrder'])
+  // a grade do mes continua em ordem crescente: so a agenda inverte
+  assert.doesNotMatch(code('src/components/calendar/MonthGrid.tsx'), /agendaDaysOrder|\.reverse\(/)
+})
+
 test('Calendario: scrollTop nunca e lido fora do hook e nao ha listener de scroll na pagina', () => {
   for (const f of CALENDAR_FILES) {
     const src = code(f)

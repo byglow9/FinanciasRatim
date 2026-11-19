@@ -71,22 +71,23 @@ export function CalendarPage() {
   const todayKey = dayKeyOf(now)
   const days = useMemo(() => Array.from(dayModels.values()), [dayModels])
 
-  // Dia selecionado: o escolhido, se ainda está no ciclo; senão hoje, se está; senão o primeiro dia.
+  // Dia selecionado: o escolhido, se ainda está no ciclo; senão hoje, se está; senão o último dia (o mais
+  // recente, que a agenda mostra no topo).
   const selectedKey =
     pickedKey !== null && dayModels.has(pickedKey)
       ? pickedKey
       : dayModels.has(todayKey)
         ? todayKey
-        : (days[0]?.key ?? todayKey)
+        : (days[days.length - 1]?.key ?? todayKey)
 
-  // Dias com item, em ordem: alvo da rolagem da agenda. Em ref para os callbacks da grade seguirem estáveis.
+  // Dias com item, em ordem de data: alvo da rolagem da agenda. Em ref para os callbacks da grade seguirem estáveis.
   const itemKeys = useMemo(() => days.filter((d) => d.items.length > 0).map((d) => d.key), [days])
   const itemKeysRef = useRef(itemKeys)
   useEffect(() => {
     itemKeysRef.current = itemKeys
   }, [itemKeys])
 
-  // Rolagem PROGRAMÁTICA da agenda ao dia pedido, ou ao próximo dia com item, ou ao último (D-08). Sempre
+  // Rolagem PROGRAMÁTICA da agenda ao dia pedido, ou ao dia com item igual ou anterior a ele, ou ao mais antigo (D-08). Sempre
   // liga `markProgrammatic()` antes de rolar: rolar por código nunca recolhe o mês. Sem ler scrollTop aqui.
   const scrollAgendaTo = useCallback(
     (wantedKey: string) => {
@@ -100,7 +101,7 @@ export function CalendarPage() {
     [scrollRef, markProgrammatic]
   )
 
-  // Abre a agenda em hoje (ou no primeiro dia do ciclo quando hoje não está nele) uma vez por ciclo e modo,
+  // Abre a agenda em hoje (ou no último dia do ciclo, o do topo, quando hoje não está nele) uma vez por ciclo e modo,
   // depois de carregar, e fecha o recolhimento (reset). Cobre também a troca de ciclo feita pelo topo.
   const openedRef = useRef<string | null>(null)
   const openKey = `${cycle.key}|${mode}`
@@ -112,7 +113,7 @@ export function CalendarPage() {
     const el = scrollRef.current
     const hiddenRows = document.querySelectorAll('[data-week-row][data-hidden]').length
     if (el !== null && el.clientHeight - hiddenRows * WEEK_ROW_PX < MIN_AGENDA_PX) toggle()
-    scrollAgendaTo(dayModels.has(todayKey) ? todayKey : (days[0]?.key ?? todayKey))
+    scrollAgendaTo(dayModels.has(todayKey) ? todayKey : (days[days.length - 1]?.key ?? todayKey))
   }, [loading, openKey, reset, toggle, scrollRef, scrollAgendaTo, dayModels, todayKey, days])
 
   const handleMode = (next: CalendarMode) => {

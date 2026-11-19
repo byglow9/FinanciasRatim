@@ -39,6 +39,7 @@ export function textLength(text) {
  * @returns {string[]}
  */
 export function needsOf(template) {
+  /** @type {string[]} */
   const found = []
   for (const m of String(template).toLowerCase().matchAll(SLOT_RE)) {
     if (!found.includes(m[1])) found.push(m[1])

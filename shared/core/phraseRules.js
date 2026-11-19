@@ -111,6 +111,7 @@ export const WORST_CASE_SLOTS = Object.freeze({
 })
 
 const EMOJI = /\p{Extended_Pictographic}/u
+/** @type {Readonly<Record<string, string>>} */
 const TONE_CODE = Object.freeze({ suave: 'su', direto: 'di', 'sem-filtro': 'sf' })
 
 /** @param {ReadonlyArray<RegExp>} list @param {string} text */
@@ -127,6 +128,7 @@ export function checkPhrase({ situation, tone, phrase, meta }) {
   /** @type {string[]} */
   const problems = []
   const where = `${situation}/${tone}/${phrase && phrase.id}`
+  /** @param {string} msg */
   const add = (msg) => problems.push(`${where}: ${msg}`)
   if (!phrase || typeof phrase.t !== 'string' || phrase.t.trim() === '') {
     add('texto vazio')

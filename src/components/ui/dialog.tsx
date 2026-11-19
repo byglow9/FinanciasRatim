@@ -129,7 +129,7 @@ const DialogContent = React.forwardRef<
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg rounded-2xl sm:rounded-xl dialog-content-animate focus:outline-none",
+          "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-popover p-4 sm:p-6 shadow-lg rounded-2xl sm:rounded-xl dialog-content-animate focus:outline-none",
           className
         )}
         {...props}

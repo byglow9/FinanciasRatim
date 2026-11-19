@@ -36,7 +36,7 @@ const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
           placeholder={placeholder}
           aria-label={ariaLabel}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 w-full rounded-full bg-card pl-12 pr-12 text-base text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-12 w-full rounded-full border border-input bg-inset pl-12 pr-12 text-base text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-search-cancel-button]:appearance-none"
         />
         {value ? (
           <button

@@ -16,13 +16,41 @@ test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
   assert.equal(t.dock, t.action, 'a dock e oliva')
 })
 
-test('superficies: o cartao e mais claro que o fundo e nenhuma superficie e branco puro', () => {
+test('hierarquia de superficies: pagina < cartao; item e campo nunca mais claros que o cartao; nenhuma e branco puro', () => {
   const t = tokens()
   const lum = (hex) => contrast(hex, '#000000')
+  const ratio = (a, b) => contrast(t[a], t[b])
   assert.ok(lum(t.card) > lum(t.background), 'cartao mais claro que o fundo')
-  assert.ok(lum(t['surface-2']) >= lum(t.card), 'superficie 2 nao e mais escura que o cartao')
-  for (const name of ['background', 'card', 'surface-2', 'popover']) {
+  assert.equal(t.popover, t.card, 'sheets e popovers usam o tom do cartao, separados por scrim, sombra e borda')
+  // Regra: um item dentro de um cartao nunca e mais claro que o cartao (exceto destaque intencional, que usa bg-card explicito).
+  assert.ok(lum(t['surface-2']) < lum(t.card), 'item (surface-2) mais escuro que o cartao')
+  assert.ok(lum(t.inset) < lum(t['surface-2']), 'campo (inset) mais escuro que o item')
+  // Niveis aninhados distinguiveis a olho (razao minima entre niveis vizinhos).
+  assert.ok(ratio('card', 'surface-2') >= 1.12, `cartao x item = ${ratio('card', 'surface-2').toFixed(3)}`)
+  assert.ok(ratio('surface-2', 'inset') >= 1.05, `item x campo = ${ratio('surface-2', 'inset').toFixed(3)}`)
+  assert.ok(ratio('card', 'inset') >= 1.2, `cartao x campo = ${ratio('card', 'inset').toFixed(3)}`)
+  assert.ok(ratio('background', 'card') >= 1.05, `pagina x cartao = ${ratio('background', 'card').toFixed(3)}`)
+  for (const name of ['background', 'card', 'surface-2', 'inset', 'popover']) {
     assert.notEqual(t[name], '#ffffff', `${name} e branco puro`)
+    assert.ok(lum(t[name]) < lum('#fdf9ee'), `${name} quase branco`)
+  }
+})
+
+test('componentes usam o nivel certo: campos em inset, sheets e paineis em popover, sem item mais claro que o cartao', () => {
+  for (const f of ['input', 'select', 'search-field', 'square-check']) {
+    assert.match(code(`src/components/ui/${f}.tsx`), /bg-inset\b/, `${f} sem bg-inset`)
+  }
+  for (const f of ['sheet', 'dialog']) assert.match(code(`src/components/ui/${f}.tsx`), /bg-popover\b/, `${f} sem bg-popover`)
+  for (const f of ['layout/ProfileSwitcher', 'layout/CycleSelector', 'layout/AlertsBell', 'ui/popover']) {
+    assert.match(code(`src/components/${f}.tsx`), /bg-popover\b/, `${f} sem painel bg-popover`)
+  }
+  // Itens dentro de sheets e cartoes usam surface-2 (mais escuro), nao bg-card.
+  for (const f of ['ui/row-actions-sheet', 'ui/money-keypad', 'launcher/CategoryPicker', 'settings/IconPicker', 'settings/DayPicker']) {
+    assert.match(code(`src/components/${f}.tsx`), /bg-surface-2\b/, `${f} sem item em surface-2`)
+  }
+  // Campos nunca em surface-2 (item) nem card.
+  for (const f of ['input', 'select', 'search-field']) {
+    assert.doesNotMatch(code(`src/components/ui/${f}.tsx`), /border-input bg-(surface-2|card)\b/, `${f} com fundo de item`)
   }
 })
 

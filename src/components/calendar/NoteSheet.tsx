@@ -245,7 +245,7 @@ export function NoteSheet({ open, onClose, note, date, onSave, onDelete, readOnl
                 setText(e.target.value)
                 clearFeedback()
               }}
-              className="mt-1 w-full resize-none rounded-btn border border-input bg-surface-2 px-3 py-2 text-base font-normal placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="mt-1 w-full resize-none rounded-btn border border-input bg-inset px-3 py-2 text-base font-normal placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
             {error ? (
               <p id="note-text-error" role="alert" className="mt-1 text-xs font-normal text-danger-ink">

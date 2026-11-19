@@ -79,7 +79,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <select
             className={cn(
-              "flex h-12 w-full appearance-none rounded-btn border border-input bg-surface-2 px-3 py-2 pr-10 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              "flex h-12 w-full appearance-none rounded-btn border border-input bg-inset px-3 py-2 pr-10 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
               className
             )}
             ref={selectRef}
@@ -110,7 +110,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            "flex h-12 w-full items-center justify-between rounded-btn border border-input bg-surface-2 px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full items-center justify-between rounded-btn border border-input bg-inset px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}
           disabled={props.disabled}
@@ -120,7 +120,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         </button>
 
         {isOpen && (
-          <div className="absolute z-[100] mt-1 w-full rounded-btn border bg-background shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95">
+          <div className="absolute z-[100] mt-1 w-full rounded-btn border bg-popover shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95">
             <div className="max-h-[200px] overflow-y-auto py-1">
               {options.map((option, index) => {
                 const optValue = String(option.props.value ?? '')
@@ -132,7 +132,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                     onClick={() => handleSelect(optValue)}
                     className={cn(
                       "flex min-h-11 w-full items-center justify-between px-3 py-2.5 text-base transition-colors",
-                      isSelected ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted"
+                      isSelected ? "bg-primary/10 text-primary font-bold" : "hover:bg-surface-2"
                     )}
                   >
                     {option.props.children}

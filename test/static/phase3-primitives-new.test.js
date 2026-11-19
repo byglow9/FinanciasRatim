@@ -114,7 +114,7 @@ test('Switch, Collapsible, Chip e Notice seguem o contrato do UI-SPEC', () => {
 
 test('SegmentedControl: tablist com setas, Home e End e sem reutilizar Tabs', () => {
   const src = code(`${UI}segmented-control.tsx`)
-  for (const n of ['role="tablist"', 'role="tab"', 'aria-selected', 'ArrowRight', 'ArrowLeft', 'Home', 'End', 'aria-label={ariaLabel}', 'bg-card', 'rounded-full', 'bg-surface-2', 'h-11', 'tabIndex', 'collapseInactive', 'title={iconOnly']) {
+  for (const n of ['role="tablist"', 'role="tab"', 'aria-selected', 'ArrowRight', 'ArrowLeft', 'Home', 'End', 'aria-label={ariaLabel}', 'bg-card', 'rounded-full', 'bg-inset', 'h-11', 'tabIndex', 'collapseInactive', 'title={iconOnly']) {
     has(src, n, 'segmented-control.tsx')
   }
   assert.doesNotMatch(src, /from ["']\.\/tabs["']/, 'SegmentedControl nao pode reutilizar Tabs')

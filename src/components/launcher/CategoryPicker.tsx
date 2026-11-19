@@ -66,7 +66,7 @@ export function CategoryPicker({ categories, value, onChange }: CategoryPickerPr
             <span
               className={cn(
                 "flex h-12 w-12 items-center justify-center rounded-full [@media(max-height:700px)]:h-11 [@media(max-height:700px)]:w-11",
-                selected ? "bg-action text-action-text" : "bg-card text-foreground"
+                selected ? "bg-action text-action-text" : "bg-surface-2 text-foreground"
               )}
             >
               <Icon className="h-[22px] w-[22px]" aria-hidden="true" />

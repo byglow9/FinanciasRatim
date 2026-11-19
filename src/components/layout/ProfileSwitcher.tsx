@@ -10,7 +10,7 @@ import type { PersonType } from '@/types'
 // claim de quem esta logado. O modo somente leitura e derivado no AreaContext.
 
 const ITEM =
-  'flex min-h-11 w-full items-center gap-3 rounded-[14px] px-3 py-1 text-left hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex min-h-11 w-full items-center gap-3 rounded-[14px] px-3 py-1 text-left hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 export function ProfileSwitcher() {
   const { user, signOut } = useAuth()
@@ -137,7 +137,7 @@ export function ProfileSwitcher() {
           role="menu"
           aria-label="Perfil"
           onKeyDown={onMenuKeyDown}
-          className="absolute right-0 top-full z-50 mt-2 w-60 rounded-[20px] border border-border bg-surface-2 p-2 shadow-float"
+          className="absolute right-0 top-full z-50 mt-2 w-60 rounded-[20px] border border-border bg-popover p-2 shadow-float"
         >
           <ProfileItem
             icon={User}

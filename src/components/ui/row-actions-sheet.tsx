@@ -38,7 +38,7 @@ interface RowActionsSheetProps {
 }
 
 const ROW =
-  "flex h-14 w-full items-center gap-3 rounded-2xl bg-card px-4 text-left text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+  "flex h-14 w-full items-center gap-3 rounded-2xl bg-surface-2 px-4 text-left text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 
 const DELETE_FAILED = "Não foi possível apagar. Confira a conexão e tente de novo."
 

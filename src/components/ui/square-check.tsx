@@ -41,7 +41,7 @@ export function SquareCheck({ checked, onChange, label, disabled, busy, classNam
           "flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-colors duration-150 ease-in-out",
           checked
             ? "border-action bg-action text-action-text"
-            : "border-input bg-surface-2 group-hover:border-action"
+            : "border-input bg-inset group-hover:border-action"
         )}
       >
         {checked ? <Check className="h-[18px] w-[18px]" strokeWidth={3} aria-hidden="true" /> : null}

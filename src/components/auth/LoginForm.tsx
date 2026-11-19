@@ -23,7 +23,7 @@ const AUTH_FAILED_MESSAGE = 'E-mail ou senha incorretos.'
 // Campo moderno: 56px, fundo preenchido, rotulo sempre visivel dentro do campo, icone a esquerda
 // e anel de foco na cor de acao (o foco e desenhado no contorno, nao no input).
 const fieldShell =
-  'relative h-14 rounded-btn border-2 border-transparent bg-surface-2 transition-colors focus-within:border-action focus-within:ring-4 focus-within:ring-action/20'
+  'relative h-14 rounded-btn border border-input bg-inset transition-colors focus-within:border-action focus-within:ring-4 focus-within:ring-action/20'
 const fieldInvalid = 'border-danger-ink focus-within:border-danger-ink focus-within:ring-danger-ink/20'
 const fieldLabel =
   'pointer-events-none absolute left-12 top-2 text-xs font-bold leading-none text-muted-foreground'

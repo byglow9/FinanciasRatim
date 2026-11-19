@@ -29,7 +29,7 @@ function Switch({ checked, onCheckedChange, id, disabled, ariaLabel }: SwitchPro
       >
         <span
           className={cn(
-            "inline-block h-5 w-5 rounded-full bg-surface-2 shadow transition-transform",
+            "inline-block h-5 w-5 rounded-full bg-card shadow transition-transform",
             checked ? "translate-x-[22px]" : "translate-x-0.5"
           )}
         />

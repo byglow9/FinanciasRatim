@@ -203,7 +203,7 @@ export function AlertsBell() {
           ref={panelRef}
           role="dialog"
           aria-label="Avisos"
-          className="absolute right-4 top-full z-50 mt-2 max-h-[70dvh] w-[min(360px,calc(100vw-32px))] overflow-y-auto rounded-[20px] border border-border bg-surface-2 p-2 shadow-float"
+          className="absolute right-4 top-full z-50 mt-2 max-h-[70dvh] w-[min(360px,calc(100vw-32px))] overflow-y-auto rounded-[20px] border border-border bg-popover p-2 shadow-float"
         >
           <div className="flex items-center justify-between gap-2 px-3 py-1">
             <h2 ref={titleRef} tabIndex={-1} className="text-base font-bold outline-none">
@@ -256,7 +256,7 @@ export function AlertsBell() {
 }
 
 const ROW =
-  'flex min-h-14 w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex min-h-14 w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 function LimitRow({
   alert,

@@ -61,7 +61,7 @@ function ReportTabs({ value, onChange }: { value: ReportTab; onChange: (tab: Rep
       role="tablist"
       aria-label="Seções do relatório"
       onKeyDown={onKeyDown}
-      className="flex gap-0.5 rounded-full bg-card p-0.5"
+      className="flex gap-0.5 rounded-full bg-inset p-0.5"
     >
       {TABS.map((tab, index) => {
         const selected = index === active
@@ -80,7 +80,7 @@ function ReportTabs({ value, onChange }: { value: ReportTab; onChange: (tab: Rep
             onClick={() => onChange(tab.value)}
             className={cn(
               'h-11 flex-auto whitespace-nowrap rounded-full px-1 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              selected ? 'bg-surface-2 text-foreground' : 'text-muted-foreground'
+              selected ? 'bg-card text-foreground' : 'text-muted-foreground'
             )}
           >
             {tab.label}

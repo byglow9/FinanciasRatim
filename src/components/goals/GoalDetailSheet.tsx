@@ -86,7 +86,7 @@ export function GoalDetailSheet({ open, onClose, goal }: GoalDetailSheetProps) {
               <div role="status" className="mt-2 space-y-2">
                 <span className="sr-only">Carregando os aportes</span>
                 {[0, 1].map((i) => (
-                  <div key={i} aria-hidden="true" className="anim-pulse h-12 rounded-2xl bg-card" />
+                  <div key={i} aria-hidden="true" className="anim-pulse h-12 rounded-2xl bg-surface-2" />
                 ))}
               </div>
             ) : recent.length === 0 ? (

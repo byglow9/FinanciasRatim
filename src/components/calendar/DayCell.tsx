@@ -8,7 +8,7 @@ import { MONTH_LONG } from '@shared/core/format.js'
 
 // Classes literais: o Tailwind só gera o que aparece escrito por inteiro no código.
 const HEAT_BG: Record<DayModel['heat'], string> = {
-  none: 'bg-surface-2',
+  none: 'bg-card',
   h1: 'bg-heat-1',
   h2: 'bg-heat-2',
   h3: 'bg-heat-3',
@@ -54,7 +54,7 @@ export const DayCell = memo(function DayCell({ parts, model, selected, focusable
         aria-disabled="true"
         tabIndex={-1}
         aria-label={`${parts.day} de ${MONTH_LONG[parts.month - 1].toLowerCase()}, fora do ciclo`}
-        className="flex h-12 flex-col items-center justify-center rounded-[14px] border border-border bg-surface-2 opacity-45"
+        className="flex h-12 flex-col items-center justify-center rounded-[14px] border border-border bg-card opacity-45"
       >
         <span className="flex size-6 items-center justify-center text-xs font-bold leading-none text-foreground">
           {parts.day}
@@ -74,7 +74,7 @@ export const DayCell = memo(function DayCell({ parts, model, selected, focusable
       onClick={() => onSelect(model.key)}
       className={cn(
         'relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-        mode === 'agenda' ? 'bg-surface-2' : HEAT_BG[model.heat],
+        mode === 'agenda' ? 'bg-card' : HEAT_BG[model.heat],
         selected ? 'border-2 border-action' : 'border border-border'
       )}
     >

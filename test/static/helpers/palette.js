@@ -36,7 +36,7 @@ export function contrast(a, b) {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-const SURFACES = ['background', 'card', 'surface-2']
+const SURFACES = ['background', 'card', 'surface-2', 'inset']
 
 /** Pares [papel, frente, fundo, minimo]: 4.5 para texto, 3 para elementos nao textuais. */
 export const PAIRS = [
@@ -54,6 +54,7 @@ export const PAIRS = [
     ['perigo (preenchimento)', 'danger', bg, 3],
   ]),
   ['texto secundario', 'muted-foreground', 'muted', 4.5],
+  ['campo: texto de apoio', 'muted-foreground', 'inset', 4.5],
   ['texto secundario', 'muted-foreground', 'accent', 4.5],
   ['texto secundario', 'muted-foreground', 'track', 4.5],
   ['texto', 'foreground', 'accent', 4.5],

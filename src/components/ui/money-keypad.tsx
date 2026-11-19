@@ -55,7 +55,7 @@ export function MoneyKeypad({ valueCents, onChange, enableHardwareKeys = false }
           type="button"
           aria-label={key === "backspace" ? "Apagar" : undefined}
           onClick={() => onChange(applyKeypad(valueCents, key))}
-          className="flex h-14 items-center justify-center rounded-2xl bg-card font-display text-[28px] font-bold leading-none transition-colors duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-track [@media(max-height:760px)_and_(min-height:701px)]:h-12 [@media(max-height:700px)]:h-11"
+          className="flex h-14 items-center justify-center rounded-2xl bg-surface-2 font-display text-[28px] font-bold leading-none transition-colors duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-track [@media(max-height:760px)_and_(min-height:701px)]:h-12 [@media(max-height:700px)]:h-11"
         >
           {key === "backspace" ? <Delete className="h-6 w-6" aria-hidden="true" /> : key}
         </button>

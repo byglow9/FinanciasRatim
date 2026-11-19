@@ -1,7 +1,7 @@
 /* Definitiva: creme, areia, salvia, oliva e quase-preto (imagem de referencia do dono).
    Espelho de src/index.css; medidas e razoes de contraste em .planning/PALETA.md. */
 :root{
---color-bg:#f5ecdb;--color-surface:#fbf6ea;--color-surface-2:#fffcf3;--color-border:#e3d6bc;
+--color-bg:#f5ecdb;--color-surface:#fbf6ea;--color-surface-2:#ede3cb;--color-inset:#e7dcc3;--color-border:#e3d6bc;
 --color-text:#1e1f19;--color-text-muted:#5c604a;--color-action:#4c513b;--color-action-text:#fbf6ea;
 --color-primary:#3f8a4a;--color-ok:#3f8a4a;--color-warn:#a8650a;--color-danger:#b3382c;
 --color-ok-ink:#2e6a34;--color-warn-ink:#7c4a12;--color-danger-ink:#9c2f23;

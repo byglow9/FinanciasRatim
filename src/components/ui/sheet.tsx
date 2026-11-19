@@ -119,7 +119,7 @@ function Sheet({ open, onClose, title, children, className }: SheetProps) {
           if (exiting && e.target === e.currentTarget) setMounted(false)
         }}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[10000] max-h-[92dvh] overflow-y-auto rounded-t-[28px] bg-background p-4 pb-[calc(16px+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,.25)] focus:outline-none md:mx-auto md:w-[min(480px,100%)]",
+          "fixed inset-x-0 bottom-0 z-[10000] max-h-[92dvh] overflow-y-auto rounded-t-[28px] bg-popover p-4 pb-[calc(16px+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,.25)] focus:outline-none md:mx-auto md:w-[min(480px,100%)]",
           exiting ? "anim-sheet-out" : "anim-sheet-in",
           className
         )}
@@ -132,7 +132,7 @@ function Sheet({ open, onClose, title, children, className }: SheetProps) {
             type="button"
             aria-label="Fechar"
             onClick={() => onClose()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>

@@ -21,7 +21,8 @@ A guarda `test/static/palette-contrast.test.js` mede todos os pares abaixo e fal
 |---|---|---|
 | `--background` | `#f5ecdb` | fundo da pagina |
 | `--card`, `--popover` | `#fbf6ea` | cartoes e paineis: mais claros que o fundo, nunca branco puro |
-| `--surface-2` | `#fffcf3` | superficie sobre o cartao (chips, linhas internas, pilula ativa dos segmentos) |
+| `--surface-2` | `#ede3cb` | item dentro de cartao ou sheet (nivel 2): linhas de lista, circulos de icone, teclas, chips, botao outline |
+| `--inset` | `#e7dcc3` | campo de entrada e trilha dos segmentos (nivel 3), sempre com borda `--input` |
 | `--foreground` | `#1e1f19` | texto |
 | `--muted-foreground` | `#5c604a` | texto secundario (salvia escurecida) |
 | `--muted`, `--secondary` | `#ece2cb` | regioes neutras |
@@ -47,6 +48,22 @@ A guarda `test/static/palette-contrast.test.js` mede todos os pares abaixo e fal
 
 O bloco `.dark` nao mudou (tema escuro e da Fase 5).
 
+## Hierarquia de superficies
+
+Regra: nenhuma superficie e branco puro (a mais clara e `#fbf6ea`); um item dentro de um cartao ou sheet nunca e mais claro que o
+cartao (so um destaque intencional, como a pilula ativa dos segmentos e o logo do banco, usa `bg-card` sobre um nivel mais escuro).
+Contraste entre niveis vizinhos (razao de luminancia): pagina x cartao 1.09, cartao x item 1.18, item x campo 1.07, cartao x campo 1.26. A guarda exige >= 1,05 a 1,2 entre niveis.
+
+| Nivel | Token | Hex | Uso | Onde aplica |
+|---|---|---|---|---|
+| 0 Pagina | `--background` | `#f5ecdb` | fundo do app | todas as telas, area atras dos cartoes |
+| 1 Cartao | `--card` | `#fbf6ea` | blocos sobre a pagina | cartoes das telas, linhas de transacao e agenda, botoes redondos do topo, chips de filtro ativos, celulas do calendario |
+| 2 Item | `--surface-2` | `#ede3cb` | o que fica dentro de um cartao ou sheet | linhas de Configuracoes e Categorias, circulos de icone, linhas de conta, teclado, acoes do sheet de linha, seletores de categoria/icone/dia, botao outline, itens em hover nos paineis |
+| 3 Campo | `--inset` | `#e7dcc3` | entrada de dados e trilhas | Input, Select, busca, campos de Login e dos sheets de evento e nota, caixa de selecao, trilha dos segmentos (a pilula ativa sobe para `--card`) |
+| 4 Sheet e painel | `--popover` | `#fbf6ea` | camadas flutuantes | Sheet, Dialog, menus (ciclo, perfil, alertas, ajuda), lista do Select; separados da pagina por scrim, sombra e borda; os itens dentro usam nivel 2 e 3 |
+
+Contrastes dos textos e das bordas de campo em cada nivel estao na tabela de pares abaixo (texto >= 4,5:1; borda de campo e marcas >= 3:1).
+
 ## Ajustes em relacao a proposta e por que
 
 1. **Cartao mais claro que o fundo.** O tema anterior tinha o cartao mais escuro que o fundo. Agora cartao `#fbf6ea` sobre fundo `#f5ecdb`; a separacao vem do tom e da sombra, nao de borda.
@@ -55,7 +72,7 @@ O bloco `.dark` nao mudou (tema escuro e da Fase 5).
 4. **Borda de campo `#7a7d66`.** A salvia pura da 2,98:1 sobre o fundo; escurecida passa de 3:1 em fundo, cartao e superficie 2.
 5. **Eixos dos graficos com a salvia pura `#888b76`.** Os eixos ficam sobre o cartao (3,24:1), entao a cor medida serve.
 6. **Verde, ambar e vermelho semanticos** reescritos em tons quentes (`#3f8a4a`, `#a8650a`, `#b3382c`; tintas `#2e6a34`, `#7c4a12`, `#9c2f23`) para harmonizar com o oliva e passar contraste. O verde de ok ficou distinto do oliva de acao: ok = verde-folha, acao = oliva escuro.
-7. **Superficie 2 `#fffcf3`** em vez de branco puro; o interruptor tambem deixou de usar `bg-white`.
+7. **Hierarquia de superficies em 4 niveis** (secao acima): o antigo `--surface-2` `#fffcf3` (quase branco, mais claro que o cartao) virou item mais escuro `#ede3cb`, e campos ganharam `--inset` `#e7dcc3`. O interruptor usa o cartao como botao.
 8. **Cores em hex literal nos componentes** (graficos, chips, alertas, Porquinho) migraram para tokens; as series dos graficos agora usam `var(--color-chart-N)`.
 
 ## Pares de contraste medidos
@@ -86,18 +103,30 @@ Coluna "min" e o limite da guarda (4,5 texto, 3 nao textual). Todos passam.
 | ok (preenchimento) | brand #3f8a4a | card #fbf6ea | 3.94 | 3 |
 | atencao (preenchimento) | warn #a8650a | card #fbf6ea | 4.30 | 3 |
 | perigo (preenchimento) | danger #b3382c | card #fbf6ea | 5.53 | 3 |
-| texto | foreground #1e1f19 | surface-2 #fffcf3 | 16.18 | 4.5 |
-| texto secundario | muted-foreground #5c604a | surface-2 #fffcf3 | 6.34 | 4.5 |
-| tinta ok | ok-ink #2e6a34 | surface-2 #fffcf3 | 6.34 | 4.5 |
-| tinta atencao | warn-ink #7c4a12 | surface-2 #fffcf3 | 7.19 | 4.5 |
-| tinta perigo | danger-ink #9c2f23 | surface-2 #fffcf3 | 7.20 | 4.5 |
-| acao (borda, foco, icone) | action #4c513b | surface-2 #fffcf3 | 8.04 | 3 |
-| campo (borda) | input #7a7d66 | surface-2 #fffcf3 | 4.13 | 3 |
-| foco | ring #4c513b | surface-2 #fffcf3 | 8.04 | 3 |
-| ok (preenchimento) | brand #3f8a4a | surface-2 #fffcf3 | 4.14 | 3 |
-| atencao (preenchimento) | warn #a8650a | surface-2 #fffcf3 | 4.52 | 3 |
-| perigo (preenchimento) | danger #b3382c | surface-2 #fffcf3 | 5.82 | 3 |
+| texto | foreground #1e1f19 | surface-2 #ede3cb | 13.00 | 4.5 |
+| texto secundario | muted-foreground #5c604a | surface-2 #ede3cb | 5.10 | 4.5 |
+| tinta ok | ok-ink #2e6a34 | surface-2 #ede3cb | 5.10 | 4.5 |
+| tinta atencao | warn-ink #7c4a12 | surface-2 #ede3cb | 5.78 | 4.5 |
+| tinta perigo | danger-ink #9c2f23 | surface-2 #ede3cb | 5.78 | 4.5 |
+| acao (borda, foco, icone) | action #4c513b | surface-2 #ede3cb | 6.46 | 3 |
+| campo (borda) | input #7a7d66 | surface-2 #ede3cb | 3.32 | 3 |
+| foco | ring #4c513b | surface-2 #ede3cb | 6.46 | 3 |
+| ok (preenchimento) | brand #3f8a4a | surface-2 #ede3cb | 3.33 | 3 |
+| atencao (preenchimento) | warn #a8650a | surface-2 #ede3cb | 3.63 | 3 |
+| perigo (preenchimento) | danger #b3382c | surface-2 #ede3cb | 4.68 | 3 |
+| texto | foreground #1e1f19 | inset #e7dcc3 | 12.19 | 4.5 |
+| texto secundario | muted-foreground #5c604a | inset #e7dcc3 | 4.78 | 4.5 |
+| tinta ok | ok-ink #2e6a34 | inset #e7dcc3 | 4.78 | 4.5 |
+| tinta atencao | warn-ink #7c4a12 | inset #e7dcc3 | 5.42 | 4.5 |
+| tinta perigo | danger-ink #9c2f23 | inset #e7dcc3 | 5.42 | 4.5 |
+| acao (borda, foco, icone) | action #4c513b | inset #e7dcc3 | 6.05 | 3 |
+| campo (borda) | input #7a7d66 | inset #e7dcc3 | 3.11 | 3 |
+| foco | ring #4c513b | inset #e7dcc3 | 6.05 | 3 |
+| ok (preenchimento) | brand #3f8a4a | inset #e7dcc3 | 3.12 | 3 |
+| atencao (preenchimento) | warn #a8650a | inset #e7dcc3 | 3.40 | 3 |
+| perigo (preenchimento) | danger #b3382c | inset #e7dcc3 | 4.38 | 3 |
 | texto secundario | muted-foreground #5c604a | muted #ece2cb | 5.05 | 4.5 |
+| campo: texto de apoio | muted-foreground #5c604a | inset #e7dcc3 | 4.78 | 4.5 |
 | texto secundario | muted-foreground #5c604a | accent #e6dcc4 | 4.77 | 4.5 |
 | texto secundario | muted-foreground #5c604a | track #e6dcc4 | 4.77 | 4.5 |
 | texto | foreground #1e1f19 | accent #e6dcc4 | 12.17 | 4.5 |

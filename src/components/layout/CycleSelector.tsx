@@ -142,7 +142,7 @@ export function CycleSelector() {
           role="listbox"
           aria-label="Ciclos"
           onKeyDown={onListKeyDown}
-          className="absolute left-0 top-full z-50 mt-2 max-h-[60dvh] w-[min(320px,calc(100vw-32px))] overflow-y-auto rounded-[22px] border border-border bg-surface-2 p-2 shadow-float"
+          className="absolute left-0 top-full z-50 mt-2 max-h-[60dvh] w-[min(320px,calc(100vw-32px))] overflow-y-auto rounded-[22px] border border-border bg-popover p-2 shadow-float"
         >
           {years.map((year) => (
             <div key={year} role="group" aria-label={String(year)}>
@@ -162,7 +162,7 @@ export function CycleSelector() {
                       onClick={() => choose(option.index)}
                       className={cn(
                         'flex h-12 w-full items-center gap-2 rounded-[14px] px-3 text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        selected ? 'bg-card font-bold' : 'font-normal hover:bg-card'
+                        selected ? 'bg-surface-2 font-bold' : 'font-normal hover:bg-surface-2'
                       )}
                     >
                       <span className="min-w-0 truncate">{option.label}</span>

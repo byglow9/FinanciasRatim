@@ -61,7 +61,7 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
-      className={cn("rounded-full bg-card p-1", size === "sm" ? "inline-flex" : "flex")}
+      className={cn("rounded-full bg-inset p-1", size === "sm" ? "inline-flex" : "flex")}
     >
       {options.map((option, index) => {
         const selected = index === activeIndex
@@ -84,7 +84,7 @@ export function SegmentedControl<T extends string>({
               "inline-flex h-11 items-center justify-center gap-2 rounded-full text-base font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               iconOnly ? "w-11 shrink-0 px-0" : size === "sm" ? "px-3" : "flex-1 px-4",
               selected
-                ? "bg-surface-2 text-foreground shadow-[0_1px_4px_rgba(0,0,0,.08)]"
+                ? "bg-card text-foreground shadow-[0_1px_4px_rgba(0,0,0,.08)]"
                 : "text-muted-foreground"
             )}
           >

@@ -198,7 +198,7 @@ export function EventSheet({
 
   const showConfirm = confirming && !!event
   const field =
-    'mt-1 w-full rounded-btn border border-input bg-surface-2 px-3 py-2 text-base font-normal placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+    'mt-1 w-full rounded-btn border border-input bg-inset px-3 py-2 text-base font-normal placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
   return (
     <Sheet open={open} onClose={onClose} title={event ? 'Editar evento' : 'Novo evento'}>

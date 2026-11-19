@@ -30,6 +30,7 @@
   --font-display: 'Bricolage Grotesque Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --color-surface-2: hsl(var(--surface-2));
+  --color-inset: hsl(var(--inset));
   --color-track: hsl(var(--track));
   --color-brand: hsl(var(--brand));
   --color-warn: hsl(var(--warn));
@@ -152,7 +153,9 @@
     --radius: 0.5rem;
 
     /* Tokens Moeda da Fase 3 (sem variante escura: IDEN-05, Fase 5) */
-    --surface-2: 45 100% 97.6%;  /* #fffcf3 */
+    /* Hierarquia de superficies (PALETA.md): pagina > cartao > item (surface-2) > campo (inset) */
+    --surface-2: 42.4 48.6% 86.3%;  /* #ede3cb item dentro de cartao ou sheet: mais escuro que o cartao */
+    --inset: 41.7 42.9% 83.5%;  /* #e7dcc3 campos de entrada e trilhas dos segmentos */
     --track: 42.4 40.5% 83.5%;  /* #e6dcc4 */
     --brand: 128.8 37.3% 39.4%;  /* #3f8a4a */
     --warn: 34.6 88.8% 34.9%;  /* #a8650a */

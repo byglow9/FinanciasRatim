@@ -73,7 +73,7 @@ function IncomeScopeRadios({ value, onChange, cycleText }: ScopeOptionsProps) {
             onClick={() => onChange(option.value)}
             className={cn(
               'flex min-h-11 w-full items-center rounded-2xl px-4 py-2 text-left text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              selected ? 'bg-action text-action-text' : 'bg-card text-foreground'
+              selected ? 'bg-action text-action-text' : 'bg-surface-2 text-foreground'
             )}
           >
             {option.label}

@@ -55,7 +55,7 @@ test('fundo de uma cor so: a tela inteira usa bg-background, sem faixas atras do
   assert.match(root, /min-h-dvh[^"]*bg-background/, 'a raiz nao cobre a tela com bg-background')
   // Fora do cartao e dos campos, nenhum outro fundo de bloco pode existir atras do cartao.
   const bgs = [...root.matchAll(/\bbg-[a-z0-9-]+/g)].map((m) => m[0])
-  const allowed = new Set(['bg-background', 'bg-card', 'bg-surface-2', 'bg-transparent', 'bg-action'])
+  const allowed = new Set(['bg-background', 'bg-card', 'bg-surface-2', 'bg-inset', 'bg-transparent', 'bg-action'])
   for (const bg of bgs) assert.ok(allowed.has(bg), `fundo inesperado: ${bg}`)
   assert.ok(!/\b(from|via|to)-/.test(root), 'degrade ou faixa de cor')
 })
@@ -65,7 +65,7 @@ test('campos modernos: 56px, rotulo visivel, icone no inicio, foco na cor de aca
   assert.match(src, /relative h-14 /, 'campo sem 56px')
   assert.ok(src.includes('focus-within:border-action') && src.includes('focus-within:ring-action'), 'sem anel de foco de acao')
   assert.ok(src.includes('rounded-btn'), 'sem cantos arredondados do token')
-  assert.ok(src.includes('bg-surface-2'), 'sem fundo preenchido')
+  assert.ok(src.includes('bg-inset'), 'sem fundo preenchido')
   assert.ok(src.includes('<Mail') && src.includes('<Lock'), 'sem icones no inicio dos campos')
   assert.ok(src.includes('htmlFor="email"') && src.includes('htmlFor="password"'), 'rotulo nao associado')
   assert.match(src, /size="icon"/, 'botao de mostrar senha sem size icon (44px)')

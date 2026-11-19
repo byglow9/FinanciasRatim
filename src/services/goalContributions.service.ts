@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase'
 import type { GoalContribution } from '@/types'
 import { MOCK, mList, mSave, mId } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
+import { addAmount } from '@shared/core/goals.js'
 
 type RawContribution = Omit<GoalContribution, 'date' | 'createdAt'> & {
   date: string
@@ -107,7 +108,7 @@ export async function addContribution(
     const goals = mList<{ id: string; currentAmount: number }>(GOALS_COL)
     const goalIdx = goals.findIndex((g) => g.id === goalId)
     if (goalIdx !== -1) {
-      goals[goalIdx].currentAmount = currentGoalAmount + amount
+      goals[goalIdx].currentAmount = addAmount(currentGoalAmount, amount)
       mSave(GOALS_COL, goals)
     }
 
@@ -124,7 +125,7 @@ export async function addContribution(
     }
 
     const currentAmount = goalDoc.data().currentAmount || 0
-    const newAmount = currentAmount + amount
+    const newAmount = addAmount(currentAmount, amount)
 
     // Atualizar meta
     transaction.update(goalRef, { currentAmount: newAmount })

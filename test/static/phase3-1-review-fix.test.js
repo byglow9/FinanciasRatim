@@ -35,3 +35,9 @@ test('WR-02: conclusao da meta decidida em centavos pelo nucleo, sem Math.round 
   }
   assert.doesNotMatch(code('src/pages/GoalsPage.tsx'), /currentAmount < current\.targetAmount/)
 })
+
+test('WR-03: aporte soma em centavos inteiros (addAmount) nos dois ramos do servico', () => {
+  const src = code('src/services/goalContributions.service.ts')
+  assert.equal((src.match(/addAmount\(/g) ?? []).length, 2, 'esperava addAmount no ramo MOCK e no Firestore')
+  assert.doesNotMatch(src, /currentAmount\s*\+\s*amount|currentGoalAmount\s*\+\s*amount/, 'soma crua em reais')
+})

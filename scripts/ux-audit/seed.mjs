@@ -225,7 +225,14 @@ function buildEvents(now) {
 }
 
 function buildSettings() {
-  const categoryDefs = DEFAULT_CATEGORY_DEFS.map((d) => ({ ...d }))
+  // Categorias criadas pelo dono sem icone salvo: o app sugere um icone pelo nome (categoryIcon).
+  const custom = [
+    ['assinaturas', 'Assinaturas'],
+    ['casa', 'Casa'],
+    ['pets', 'Pets'],
+    ['sona', 'Sona'],
+  ].map(([id, name]) => ({ id, name, color: '#64748b', kind: 'gasto' }))
+  const categoryDefs = [...DEFAULT_CATEGORY_DEFS.map((d) => ({ ...d })), ...custom]
   const limits = (entries) =>
     Object.fromEntries(entries.map(([id, cents]) => [id, [{ from: '2025-01', cents }]]))
   return {

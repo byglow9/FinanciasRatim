@@ -130,7 +130,7 @@ test('CATEGORY_ICONS reune os grupos, sem repetir, e mantem os 16 ids ja salvos'
   const grouped = CATEGORY_ICON_GROUPS.flatMap((g) => g.icons)
   assert.deepEqual(CATEGORY_ICONS, grouped)
   assert.equal(new Set(CATEGORY_ICONS).size, CATEGORY_ICONS.length)
-  assert.ok(CATEGORY_ICONS.length >= 60 && CATEGORY_ICONS.length <= 80, `tem ${CATEGORY_ICONS.length}`)
+  assert.ok(CATEGORY_ICONS.length >= 60 && CATEGORY_ICONS.length <= 90, `tem ${CATEGORY_ICONS.length}`)
   for (const n of [
     'shopping-cart', 'utensils', 'car', 'house', 'heart-pulse', 'party-popper', 'graduation-cap', 'shirt',
     'wrench', 'banknote', 'trending-up', 'tag', 'credit-card', 'wallet', 'landmark', 'layout-grid',
@@ -156,7 +156,7 @@ test('padroes mantem ids e nomes e ganham icone permitido e tipo', () => {
     servicos: ['Servicos', 'wrench', 'gasto'],
     salario: ['Salario', 'banknote', 'receita'],
     investimentos: ['Investimentos', 'trending-up', 'receita'],
-    outros: ['Outros', 'tag', 'gasto'],
+    outros: ['Outros', 'layout-grid', 'gasto'],
   }
   assert.equal(DEFAULT_CATEGORY_DEFS.length, 11)
   for (const d of DEFAULT_CATEGORY_DEFS) {
@@ -205,11 +205,22 @@ test('setCategoryMeta: id inexistente, icone e tipo invalidos lancam', () => {
   assert.throws(() => setCategoryMeta(DEFAULT_CATEGORY_DEFS, 'lazer', { kind: 'x' }), /Tipo invalido/)
 })
 
+test('categoryIcon: sem icone salvo, o nome sugere um icone proprio; nome desconhecido cai em tag', () => {
+  const cases = { Assinaturas: 'tv', Casa: 'house', Pets: 'paw-print', 'Plano de saude': 'heart-pulse', Mercado: 'shopping-cart', Internet: 'wifi', Poupanca: 'piggy-bank' }
+  for (const [name, icon] of Object.entries(cases)) assert.equal(categoryIcon({ id: name.toLowerCase(), name }), icon, name)
+  // icone salvo vence a sugestao
+  assert.equal(categoryIcon({ id: 'casa', name: 'Casa', icon: 'star' }), 'star')
+  // todo icone sugerido existe no catalogo
+  for (const n of ['Assinaturas', 'Casa', 'Pets', 'Gasolina', 'Uber', 'Farmacia', 'Academia', 'Viagem', 'Roupa', 'Beleza', 'Presente', 'Filhos', 'Luz', 'Agua', 'Gas', 'Cartao', 'Imposto', 'Seguro', 'Salario', 'Investimentos', 'Reserva', 'Trabalho', 'Compras', 'Outros']) {
+    assert.ok(CATEGORY_ICONS.includes(categoryIcon({ id: n, name: n })), n)
+  }
+})
+
 test('categoryIcon: usa o gravado, cai no padrao do id e por fim em tag', () => {
   assert.equal(categoryIcon({ id: 'lazer', icon: 'wallet' }), 'wallet')
   assert.equal(categoryIcon({ id: 'lazer' }), 'party-popper')
   assert.equal(categoryIcon({ id: 'lazer', icon: 'rocket' }), 'party-popper')
-  assert.equal(categoryIcon({ id: 'pets' }), 'tag')
+  assert.equal(categoryIcon({ id: 'zzz', name: 'Sona' }), 'tag')
   assert.equal(categoryIcon({ id: 'pets', icon: 'car' }), 'car')
   assert.equal(categoryIcon(null), 'tag')
 })

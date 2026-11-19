@@ -102,7 +102,7 @@ export const DEFAULT_CATEGORY_DEFS = [
   { id: 'servicos', name: 'Servicos', color: '#f59e0b', icon: 'wrench', kind: 'gasto' },
   { id: 'salario', name: 'Salario', color: '#10b981', icon: 'banknote', kind: 'receita' },
   { id: 'investimentos', name: 'Investimentos', color: '#6366f1', icon: 'trending-up', kind: 'receita' },
-  { id: 'outros', name: 'Outros', color: '#64748b', icon: 'tag', kind: 'gasto' },
+  { id: 'outros', name: 'Outros', color: '#64748b', icon: 'layout-grid', kind: 'gasto' },
 ]
 
 /**
@@ -245,14 +245,62 @@ export function setCategoryMeta(defs, id, patch) {
 }
 
 /**
- * Icone da categoria: o gravado quando valido; senao o padrao do id estavel
- * (documento antigo sem o campo); senao 'tag'.
- * @param {{ id?: string, icon?: string } | null | undefined} def
+ * Icone sugerido pelo nome para categorias sem icone salvo e fora dos padroes (dados antigos ou criadas
+ * sem escolher).
+ * Cada regra casa no comeco de uma palavra do nome (sem acento e em minusculas).
+ * @type {[string, RegExp][]}
+ */
+const NAME_ICON_RULES = [
+  ['house', /\b(casa|lar|moradia|aluguel|condominio|imovel|apartamento|reforma)/],
+  ['tv', /\b(assinatura|streaming|netflix|spotify|prime|disney|youtube|hbo)/],
+  ['shopping-cart', /\b(mercado|supermercado|feira|hortifruti|padaria|acougue)/],
+  ['utensils', /\b(alimenta|comida|restaurante|lanche|ifood|refeic|almoco|jantar)/],
+  ['car', /\b(carro|veiculo|moto|automovel|ipva|estacionamento)/],
+  ['fuel', /\b(combustivel|gasolina|etanol)/],
+  ['bus', /\b(transporte|onibus|metro|uber|taxi|passagem)/],
+  ['heart-pulse', /\b(saude|medic|plano de saude|hospital|dentista|terapia)/],
+  ['pill', /\b(farmacia|remedio)/],
+  ['dumbbell', /\b(academia|esporte|fitness|treino)/],
+  ['graduation-cap', /\b(educa|escola|faculdade|curso|estudo|mensalidade)/],
+  ['book-open', /\b(livro|leitura)/],
+  ['party-popper', /\b(lazer|diversao|festa|balada|passeio|entretenimento)/],
+  ['plane', /\b(viagem|viagens|ferias|hotel|turismo)/],
+  ['shirt', /\b(vestuario|roupa|roupas|moda|calcado)/],
+  ['sparkles', /\b(beleza|cabelo|estetica|salao|cosmetic)/],
+  ['gift', /\b(presente|doacao|doacoes)/],
+  ['baby', /\b(filho|filhos|crianca|bebe|escolinha|creche)/],
+  ['paw-print', /\b(pet|pets|animal|animais|veterinario|racao)/],
+  ['wrench', /\b(servico|servicos|manutencao|conserto)/],
+  ['zap', /\b(luz|energia|eletricidade)/],
+  ['droplets', /\b(agua|saneamento)/],
+  ['flame', /\b(gas)\b/],
+  ['wifi', /\b(internet|telefone|celular|wifi)/],
+  ['credit-card', /\b(cartao|fatura|credito)/],
+  ['landmark', /\b(imposto|impostos|taxa|taxas|tarifa|banco|financiamento|emprestimo|divida)/],
+  ['shield-check', /\b(seguro|seguros|previdencia)/],
+  ['banknote', /\b(salario|renda|pro labore|ordenado|bonus)/],
+  ['trending-up', /\b(invest|acoes|tesouro|cdb|rendimento|dividendo)/],
+  ['piggy-bank', /\b(poupanca|reserva|cofre|emergencia)/],
+  ['briefcase', /\b(trabalho|empresa|negocio|freela)/],
+  ['shopping-bag', /\b(compra|compras|shopping|loja)/],
+  ['layout-grid', /\b(outro|outros|diverso|diversos|geral)/],
+]
+
+/**
+ * Icone da categoria: o gravado quando valido; senao o do padrao do id; senao o sugerido pelo nome;
+ * senao 'tag'. Categorias com icone gravado nunca mudam.
+ * @param {{ id?: string, name?: string, icon?: string } | null | undefined} def
  * @returns {string}
  */
 export function categoryIcon(def) {
   if (def?.icon && CATEGORY_ICONS.includes(def.icon)) return def.icon
-  return DEFAULT_CATEGORY_DEFS.find((d) => d.id === def?.id)?.icon ?? 'tag'
+  const byId = DEFAULT_CATEGORY_DEFS.find((d) => d.id === def?.id)?.icon
+  if (byId) return byId
+  const label = normalize(String(def?.name ?? '') || String(def?.id ?? '').replace(/-/g, ' '))
+  if (label) {
+    for (const [icon, re] of NAME_ICON_RULES) if (re.test(label)) return icon
+  }
+  return 'tag'
 }
 
 /**

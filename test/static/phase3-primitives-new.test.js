@@ -101,7 +101,7 @@ test('Switch, Collapsible, Chip e Notice seguem o contrato do UI-SPEC', () => {
     has(co, n, 'collapsible.tsx')
   }
   const chip = code(`${UI}chip.tsx`)
-  for (const n of ['min-h-11', 'aria-disabled', 'rounded-chip', 'text-xs font-bold', 'export function Chip', 'bg-[#dcfce7]']) {
+  for (const n of ['min-h-11', 'aria-disabled', 'rounded-chip', 'text-xs font-bold', 'export function Chip', 'bg-ok-bg']) {
     has(chip, n, 'chip.tsx')
   }
   const notice = code(`${UI}notice.tsx`)

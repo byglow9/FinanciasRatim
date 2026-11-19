@@ -20,9 +20,9 @@ export function PiggyCard({ label, balanceCents, failed = false }: PiggyCardProp
     >
       <span
         aria-hidden="true"
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#fce7f3]"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pig-bg"
       >
-        <PiggyBank className="h-6 w-6 text-[#be185d]" aria-hidden="true" />
+        <PiggyBank className="h-6 w-6 text-pig-ink" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-bold text-muted-foreground" title={label}>

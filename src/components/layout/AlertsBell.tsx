@@ -186,7 +186,7 @@ export function AlertsBell() {
         {count > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-bold text-white"
+            className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-bold text-destructive-foreground"
           >
             {badgeText}
           </span>

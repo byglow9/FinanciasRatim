@@ -1,0 +1,16 @@
+/* Definitiva: creme, areia, salvia, oliva e quase-preto (imagem de referencia do dono).
+   Espelho de src/index.css; medidas e razoes de contraste em .planning/PALETA.md. */
+:root{
+--color-bg:#f5ecdb;--color-surface:#fbf6ea;--color-surface-2:#fffcf3;--color-border:#e3d6bc;
+--color-text:#1e1f19;--color-text-muted:#5c604a;--color-action:#4c513b;--color-action-text:#fbf6ea;
+--color-primary:#3f8a4a;--color-ok:#3f8a4a;--color-warn:#a8650a;--color-danger:#b3382c;
+--color-ok-ink:#2e6a34;--color-warn-ink:#7c4a12;--color-danger-ink:#9c2f23;
+--color-ok-bg:#dfe8c8;--color-warn-bg:#f6e3b4;--color-danger-bg:#f3d5cb;
+--color-input:#7a7d66;--color-track:#e6dcc4;
+--color-dock:#4c513b;--color-dock-fg:#f5ecdb;--color-dock-active:#f5ecdb;--color-dock-active-fg:#4c513b;
+--color-fab:#a27b55;--color-fab-fg:#1e1f19;--color-sand:#bb9a77;--color-sage:#888b76;
+--color-ele:#4c513b;--color-ela:#9a4a26;
+--shadow-nav:0 8px 30px rgba(40,30,0,.16);
+--font-sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+--radius-card:22px;--radius-btn:16px;--radius-chip:12px;
+}

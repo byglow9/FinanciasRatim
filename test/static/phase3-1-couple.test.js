@@ -76,12 +76,12 @@ test('as barras duplas usam os tons ele e ela na mesma escala do nucleo', () => 
 })
 
 test('Onde cada um mais gasta usa leadCategories e o empate vira quase empatado', () => {
-  assertIncludes(TOP, ['leadCategories', 'Onde cada um mais gasta', 'maior gasto de', 'quase empatado', 'min-h-14', 'bg-ele', 'bg-ela', 'text-white'])
+  assertIncludes(TOP, ['leadCategories', 'Onde cada um mais gasta', 'maior gasto de', 'quase empatado', 'min-h-14', 'bg-ele', 'bg-ela', 'text-action-text'])
   assertIncludes(COUPLE, ['TopCategoryRows'])
 })
 
 test('o cartao do Porquinho leva para /porquinho com alvo de 72px', () => {
-  assertIncludes(PIGGY, ['to="/porquinho"', 'min-h-[72px]', 'PiggyBank', 'ChevronRight', '#fce7f3', '#be185d'])
+  assertIncludes(PIGGY, ['to="/porquinho"', 'min-h-[72px]', 'PiggyBank', 'ChevronRight', 'bg-pig-bg', 'text-pig-ink'])
   assertIncludes(COUPLE, ['PiggyCard', 'useSavings', 'tabNames.piggy'])
 })
 

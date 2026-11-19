@@ -58,11 +58,12 @@ test('NavRail so tem icones (sem rotulo visivel) e a regra do Porquinho vem da r
   assert.match(src, /setCurrentArea\(lastPerson\)/)
 })
 
-test('o dock usa scroll-snap, o ativo em tinta suave e uma so cor de acao (D-01)', () => {
-  assertIncludes(NAVRAIL, ['snap-x', 'snap-mandatory', 'scroll-px-1.5', 'snap-start', 'bg-action/10'])
+test('o dock usa scroll-snap, o ativo em pilula creme sobre o dock oliva e o botao + em areia (paleta definitiva)', () => {
+  assertIncludes(NAVRAIL, ['snap-x', 'snap-mandatory', 'scroll-px-1.5', 'snap-start', 'bg-dock', 'bg-dock-active', 'text-dock-active-fg', 'text-dock-fg'])
   const src = code(NAVRAIL)
-  // O ramo ativo e o botao + dividem a mesma cor de acao; o botao + deixa de usar bg-brand.
-  assert.match(src, /bg-action text-action-text/, 'o botao + usa bg-action text-action-text')
+  // O dock deixa de ser branco: oliva com icones creme; o botao + usa os tokens fab e nunca bg-brand.
+  assert.match(src, /bg-fab text-fab-fg/, 'o botao + usa bg-fab text-fab-fg')
+  assert.doesNotMatch(src, /bg-(white|surface-2)\b/, 'o dock nao pode ser branco')
   assert.doesNotMatch(src, /bg-brand/, 'o dock nao usa bg-brand')
 })
 

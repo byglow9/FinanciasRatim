@@ -8,7 +8,7 @@ import { toCents } from '@shared/core/ledger.js'
 import { EmptyState } from './EmptyState'
 
 // Paleta Moeda para as fatias, na ordem da maior para a menor.
-const COLORS = ['#14532d', '#16a34a', '#d97706', '#0f766e', '#1b1b18', '#77746a', '#65a30d', '#c2410c']
+const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)', 'var(--color-chart-6)', 'var(--color-chart-7)', 'var(--color-chart-8)']
 
 interface CategoryPieChartProps {
   transactions: Transaction[]

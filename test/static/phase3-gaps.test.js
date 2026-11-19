@@ -46,7 +46,7 @@ test('tokens de acao em hex literal e sem divergir de --primary', () => {
   const text = css.match(/--color-action-text:\s*(#[0-9a-fA-F]{6})\s*;/)
   assert.ok(action, '--color-action precisa ser hex literal')
   assert.ok(text, '--color-action-text precisa ser hex literal')
-  assert.equal(text[1].toLowerCase(), '#ffffff')
+  assert.equal(text[1].toLowerCase(), '#fbf6ea')
 
   const primary = css.match(/--primary:\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*;/)
   assert.ok(primary, '--primary precisa seguir como triplete HSL')

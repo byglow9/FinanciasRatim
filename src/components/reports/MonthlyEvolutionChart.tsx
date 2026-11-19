@@ -10,9 +10,9 @@ import { MONTH_SHORT, formatMoney, shortDate } from '@shared/core/format.js'
 import { EmptyState } from './EmptyState'
 
 // Paleta Moeda: entradas no verde, saídas no âmbar.
-const IN_COLOR = '#16a34a'
-const OUT_COLOR = '#d97706'
-const TICK = { fontSize: 12, fill: '#77746a' }
+const IN_COLOR = 'var(--color-brand)'
+const OUT_COLOR = 'var(--color-warn)'
+const TICK = { fontSize: 12, fill: 'var(--color-muted-foreground)' }
 
 type Period = '3' | '6' | '12'
 const PERIODS: { value: Period; label: string }[] = [
@@ -116,8 +116,8 @@ export function MonthlyEvolutionChart({ person, personName }: MonthlyEvolutionCh
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} accessibilityLayer={false}>
-                <CartesianGrid stroke="#e6e0d1" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: '#b9b2a0' }} />
+                <CartesianGrid stroke="var(--color-chart-grid)" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: 'var(--color-chart-axis)' }} />
                 <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={axisMoney} />
                 <Bar dataKey="entradas" name="Entradas" fill={IN_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
                 <Bar dataKey="saidas" name="Saídas" fill={OUT_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />

@@ -46,7 +46,7 @@ function Row({ lead, name, firstName, secondName }: RowProps) {
       ) : (
         <span
           className={cn(
-            'shrink-0 rounded-full px-3 py-1 font-display text-base font-bold tabular-nums tracking-[-0.02em] text-white',
+            'shrink-0 rounded-full px-3 py-1 font-display text-base font-bold tabular-nums tracking-[-0.02em] text-action-text',
             firstLeads ? 'bg-ele' : 'bg-ela'
           )}
         >

@@ -9,9 +9,9 @@ import { MONTH_SHORT, formatMoney, shortDate } from '@shared/core/format.js'
 import { EmptyState } from './EmptyState'
 
 // Cores de cada pessoa (tokens --color-ele e --color-ela da paleta Moeda).
-const ELE_COLOR = '#14532d'
-const ELA_COLOR = '#c2410c'
-const TICK = { fontSize: 12, fill: '#77746a' }
+const ELE_COLOR = 'var(--color-ele)'
+const ELA_COLOR = 'var(--color-ela)'
+const TICK = { fontSize: 12, fill: 'var(--color-muted-foreground)' }
 
 type Kind = 'saidas' | 'entradas'
 const KINDS: { value: Kind; label: string }[] = [
@@ -130,8 +130,8 @@ export function ComparisonBarChart({ area1Name, area2Name }: ComparisonBarChartP
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} accessibilityLayer={false}>
-                <CartesianGrid stroke="#e6e0d1" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: '#b9b2a0' }} />
+                <CartesianGrid stroke="var(--color-chart-grid)" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: 'var(--color-chart-axis)' }} />
                 <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={axisMoney} />
                 <Bar dataKey="ele" name={area1Name} fill={ELE_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
                 <Bar dataKey="ela" name={area2Name} fill={ELA_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />

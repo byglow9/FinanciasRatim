@@ -37,7 +37,7 @@ function Avatar({ name, color }: AvatarProps) {
       <span
         aria-hidden="true"
         className={cn(
-          'flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full text-xs font-bold text-white',
+          'flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full text-xs font-bold text-action-text',
           color
         )}
       >

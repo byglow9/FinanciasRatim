@@ -160,8 +160,9 @@ for (const f of ['src/components/reports/MonthlyEvolutionChart.tsx', 'src/compon
 
 test('21: ComparisonBarChart usa as cores Ele e Ela da paleta Moeda e os nomes das configuracoes', () => {
   const src = code('src/components/reports/ComparisonBarChart.tsx')
-  assert.match(src, /#14532d/)
-  assert.match(src, /#c2410c/)
+  assert.match(src, /var\(--color-ele\)/)
+  assert.match(src, /var\(--color-ela\)/)
+  assert.doesNotMatch(src, /#[0-9a-fA-F]{6}/, 'cor literal no grafico: use os tokens')
   assert.match(src, /area1Name/)
   assert.match(src, /area2Name/)
   assert.doesNotMatch(src, /['">]Ele['"<]/)

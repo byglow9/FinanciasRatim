@@ -6,7 +6,7 @@ import { formatMoney } from '@shared/core/format.js'
 import { toCents } from '@shared/core/ledger.js'
 
 // Paleta Moeda das fontes de entrada.
-const COLORS = ['#14532d', '#65a30d', '#d97706', '#0f766e', '#77746a', '#16a34a', '#1b1b18', '#c2410c']
+const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-chart-4)', 'var(--color-chart-5)', 'var(--color-chart-6)', 'var(--color-chart-7)', 'var(--color-chart-8)']
 
 interface IncomeBreakdownProps {
   transactions: Transaction[]

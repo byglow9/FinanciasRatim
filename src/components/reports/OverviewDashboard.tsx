@@ -12,9 +12,9 @@ import { MONTH_SHORT, formatMoney, plural, shortDate } from '@shared/core/format
 import { toCents, weeklySpendForCycle } from '@shared/core/ledger.js'
 
 // Paleta Moeda: verde para saldo positivo, vermelho para negativo, barras de gasto em âmbar.
-const OK_COLOR = '#16a34a'
-const DANGER_COLOR = '#dc2626'
-const OUT_COLOR = '#d97706'
+const OK_COLOR = 'var(--color-brand)'
+const DANGER_COLOR = 'var(--color-danger)'
+const OUT_COLOR = 'var(--color-warn)'
 
 interface OverviewDashboardProps {
   transactions: Transaction[]

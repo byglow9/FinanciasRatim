@@ -73,7 +73,7 @@ function LaunchFab() {
       className={cn(
         'flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-float transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        readOnly ? 'bg-track text-muted-foreground' : 'bg-action text-action-text'
+        readOnly ? 'bg-track text-muted-foreground' : 'bg-fab text-fab-fg'
       )}
     >
       <Plus className="size-7" strokeWidth={2} aria-hidden="true" />
@@ -108,7 +108,7 @@ export function NavRail() {
       <nav
         ref={navRef}
         aria-label="Navegação principal"
-        className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain rounded-full border border-border bg-surface-2 p-1.5 shadow-float snap-x snap-mandatory scroll-px-1.5"
+        className="no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain rounded-full bg-dock p-1.5 shadow-float snap-x snap-mandatory scroll-px-1.5"
       >
         {DESTINATIONS.map(({ href, label, icon: Icon }) => {
           const active = isActive(href, pathname)
@@ -121,10 +121,10 @@ export function NavRail() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative flex h-12 w-12 shrink-0 snap-start items-center justify-center rounded-full transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dock-fg focus-visible:ring-offset-2 focus-visible:ring-offset-dock',
                 active
-                  ? "bg-action/10 text-action after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-action after:content-['']"
-                  : 'text-muted-foreground hover:bg-card'
+                  ? 'bg-dock-active text-dock-active-fg'
+                  : 'text-dock-fg hover:bg-dock-fg/15'
               )}
             >
               <Icon className="h-[22px] w-[22px]" strokeWidth={2} aria-hidden="true" />

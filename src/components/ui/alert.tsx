@@ -9,9 +9,9 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "text-foreground",
-        destructive: "bg-[#fee2e2] text-danger-ink [&>svg]:text-danger-ink",
-        warning: "bg-[#fef3c7] text-warn-ink [&>svg]:text-warn-ink",
-        success: "bg-[#dcfce7] text-ok-ink [&>svg]:text-ok-ink",
+        destructive: "bg-danger-bg text-danger-ink [&>svg]:text-danger-ink",
+        warning: "bg-warn-bg text-warn-ink [&>svg]:text-warn-ink",
+        success: "bg-ok-bg text-ok-ink [&>svg]:text-ok-ink",
       },
     },
     defaultVariants: {

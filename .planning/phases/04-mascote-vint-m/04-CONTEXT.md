@@ -1,7 +1,7 @@
 # Phase 4: Mascote Vintém - Context
 
 **Gathered:** 2026-11-19
-**Status:** Aguardando a escolha do estilo do desenho (sketch 018) antes do planejamento
+**Status:** Pronto para planejar (estilo do desenho escolhido: sketch 020, variante B)
 
 <domain>
 ## Phase Boundary
@@ -16,10 +16,15 @@ Requisitos: MASC-01 a MASC-07. Fora desta fase: comentários gerados por IA e pu
 ## Implementation Decisions
 
 ### Visual do Vintém
-- **D-01:** Corpo em **verde-moeda da paleta Moeda**. O contraste do verde contra o fundo do arco da Home foi medido no sketch 018 em 3,11:1 (mínimo de 3:1), então o Vintém fica dentro do arco, sem tocar a trilha cinza.
-- **D-02:** Personalidade no estado neutro: **esperta e debochada** (sobrancelha levantada, meio sorriso). Combina com o tom sem filtro padrão.
-- **D-03:** **Estilo do desenho em aberto.** O dono pediu um sketch para comparar; o sketch 018 (`.planning/sketches/018-vintem/index.html`, variantes `?v=a|b|c`) mostra A chapado geométrico, B contorno grosso de adesivo e C fofo com volume. A escolha é um portão antes do planejamento, gravada em `04-DECISIONS.md` na chave `estilo.vintem` (a, b ou c). O planejamento não começa sem ela.
-- **D-04:** O desenho é um porquinho-cofre com partes separadas em grupos SVG com id (olhos, pupilas, sobrancelhas, boca, orelhas, rabo, fenda, moeda, corpo, focinho, patas), como no sketch 018, para animar por partes. Sem emojis, e original: nada do app de referência.
+- **D-01:** Corpo **sempre** em **verde-moeda escuro da paleta Moeda** (`#14532d`, o token de ação), com olhos brancos. Sem variantes de cor (preto e creme foram descartados). Contrastes medidos no sketch 020: olho/corpo 9,1:1, corpo/fundo do arco 8,6:1.
+- **D-02:** Personalidade no estado neutro: **esperta e debochada** (sobrancelha levantada, meio sorriso, pálpebra mais baixa). **Atenção ao planejar:** no sketch 020 o neutro ficou simétrico e sério; a assimetria debochada (uma pálpebra mais baixa, uma sobrancelha mais alta) precisa ser restaurada na implementação.
+- **D-03:** **Estilo escolhido pelo dono: sketch 020, variante B (minimalista)** (`.planning/sketches/020-vintem-verde/index.html?v=b`): bolha sólida, orelhas na silhueta, focinho só como leve relevo, **sem boca desenhada e sem patas visíveis**, a emoção toda nos olhos, sobrancelhas, pálpebras e postura. Os sketches 018 (reprovado) e 019 (reprovado em partes) não valem. Referências de estilo do dono em `.planning/sketches/references/mascote/` (fora do git): direção de estilo apenas, nada copiado.
+- **D-04:** O desenho é um porquinho-cofre com partes separadas em grupos SVG com id (olhos, pupilas, pálpebras, sobrancelhas, orelhas, rabo, fenda, corpo, focinho, acessórios) para animar por partes. A **fenda** é só um corte fino e discreto no dorso; **não há moeda saindo do dorso**. A moeda só aparece na animação de lançar gasto (cai e some na fenda) e na festa. Sem emojis; original.
+- **D-05a:** **Feliz = opção 2 do sketch 020**: olhos em arco de sorriso, com um único brilho que pulsa e gira. As opções 1 e 3 foram descartadas.
+- **D-05b:** Os sete estados do sketch 020 valem: neutro, feliz, triste, bravo, sonolento, surpreso e **atento** (sétimo, usado entre 75% e 100% do limite, antes do estouro). Triste (baixo, achatado, orelhas caídas, lágrima) e atento (esticado, orelhas em pé, pupila pequena, gota de suor) são inconfundíveis por postura e silhueta, e o teste de distinção por pares do sketch (limiar de 12% de pixels, a 84px e a 48px) vira teste de regressão. **Pontos fracos conhecidos a melhorar:** o triste parece um disco achatado a 84px e as orelhas dele parecem asas; lágrima e suor não aparecem no perfil; o flip do giro tem um quadro muito fino no meio.
+- **D-05c:** **Giro de lado**: perfil de porquinho de verdade (corpo comprido, focinho à frente, uma orelha, um olho, duas patas, rabinho) por flip com leve squash, com tudo recortado pela silhueta do corpo (sem vazamento de orelha em nenhum ângulo).
+- **D-05d (animação):** Molas amortecidas em JavaScript (solver em `requestAnimationFrame`, delta limitado), uma mola por parâmetro, com hierarquia pai-filho (corpo, cabeça, orelhas e rabo) para ação sobreposta: orelhas e rabo seguem o corpo com atraso e assentam depois dele. **Piscar por pálpebra**, não por escala do olho: fecha em cerca de 80 ms, segura cerca de 40 ms e abre em cerca de 150 ms com leve overshoot, esperas aleatórias de 2 a 6 s, piscada dupla de vez em quando (cerca de 1 em 8), e também ao mudar de estado e em sacada grande. **Sacadas do olhar** a cada 200 a 600 ms (transição de 50 a 80 ms) com a pupila presa dentro do olho. Antecipação e squash and stretch com volume preservado (tolerância de 8%). Com reduzir movimento ligado, respiração, piscar, deriva e seguir o cursor param, mas as expressões continuam mudando em poses estáticas. Rive e Lottie foram avaliados e descartados (o arquivo `.riv` só se cria no editor; Lottie não reage ao estado).
+- **D-05e:** **Ícone de app não faz parte desta fase.** O dono mandou referências de ícones (em `references/mascote/ref-01-app-icons.png`) para serem usadas depois, na Fase 5 (identidade Coinki). Os quadrados de ícone dos sketches 018 e 019 foram reprovados.
 
 ### O que dispara cada estado
 - **D-05:** Fatos que mexem no humor: **ritmo do mês**, **% do limite de uma categoria** (limiares de 80% e 100%, os mesmos dos alertas), **lançamento que acabou de entrar** (manual ou importado do banco) e **meta ou Porquinho** (aporte, meta batida, dinheiro novo).
@@ -62,7 +67,9 @@ Requisitos: MASC-01 a MASC-07. Fora desta fase: comentários gerados por IA e pu
 - `.planning/PROJECT.md` — restrições de privacidade e originalidade, tom sem filtro
 
 ### Design
-- `.planning/sketches/018-vintem/index.html` — estilos do desenho (variantes a, b, c) e os seis estados
+- `.planning/sketches/020-vintem-verde/index.html` (variante `?v=b`) — **desenho aprovado**, sete estados, motor de molas, piscar, sacadas, giro e autoteste de distinção; é o ponto de partida da implementação
+- `.planning/sketches/references/mascote/README.md` e `ref-0*.png` — referências de estilo do dono (fora do git, só direção de estilo)
+- `.planning/sketches/019-vintem-fluido/index.html` — só o histórico; o motor de molas foi herdado dele
 - `.planning/sketches/themes/moeda.css` — paleta Moeda
 - `.planning/phases/03-limites-pode-gastar-e-central/03-UI-SPEC.md` — tokens, escala tipográfica (12/16/28/56) e primitivos herdados
 - `.planning/phases/03-limites-pode-gastar-e-central/03-CONTEXT.md` (D-17 a D-22) — paleta, sem emojis, Lucide, fontes

@@ -54,3 +54,14 @@ Estrutura do detector e formato dos insights, quantidade exata de frases, duraç
 ## Deferred Ideas
 
 IA na Fase 7, push na Fase 7, Vintém no onboarding e na tela de instalação (Fase 5).
+
+## Estilo do desenho (decisão posterior, 2026-11-19)
+
+| Etapa | Resultado |
+|-------|-----------|
+| Sketch 018 (chapado, adesivo, fofo) | Reprovado pelo dono ("horrível") |
+| Sketch 019 (silhueta com animação por mola; variantes de cor A preto, B verde, C creme) | Reprovado em partes: moeda no dorso, ícones de app, feliz estranho, atento parecido com triste, pontas das orelhas vazando no giro; cor tem de ser o verde |
+| Sketch 020 (verde; A refinado, B minimalista; três opções de feliz) | **Variante B aprovada ("ficou perfeita")**; feliz opção 2 escolhida |
+
+**Pesquisa feita:** Rive vs Lottie vs SVG com mola; squash and stretch; piscar (fecha rápido, abre devagar, esperas de 2 a 6 s, piscada dupla); sacadas do olhar; ação sobreposta nas orelhas e no rabo; legibilidade de emoção por sobrancelhas e pálpebras.
+**Notas do dono:** as imagens de referência (ícones de app, famílias de personagens pretos, cabeças em preto e branco, olhos de bolha, folha de emoções) são só referência de estilo, adaptadas ao porquinho esperto.

@@ -1,107 +1,99 @@
-import { Target, Pencil, Trash2, Calendar, PlusCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Check, CircleCheck, Plus, Target } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import type { Goal } from '@/types'
+import { formatMoney } from '@shared/core/format.js'
+import { toCents } from '@shared/core/ledger.js'
 
 interface GoalCardProps {
   goal: Goal
-  onEdit: (goal: Goal) => void
-  onDelete: (id: string) => void
+  /** Toque no topo do cartão: abre o Sheet de ações da meta. */
+  onOpen: (goal: Goal) => void
+  /** Botão Aportar do cartão (só aparece em meta não concluída). */
   onContribute: (goal: Goal) => void
-  onClick: (goal: Goal) => void
+  /** Perfil do parceiro: o Aportar fica aria-disabled e o toque chama onBlocked. */
+  readOnly?: boolean
+  onBlocked?: () => void
 }
 
-export function GoalCard({ goal, onEdit, onDelete, onContribute, onClick }: GoalCardProps) {
-  const percentage =
-    goal.targetAmount > 0
-      ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
-      : 0
+/** Percentual do alvo, de 0 a 100, a partir dos valores em reais da meta. */
+function goalPercentage(goal: Goal): number {
+  return goal.targetAmount > 0
+    ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
+    : 0
+}
 
+const money = (reais: number) => formatMoney(toCents(reais), { decimals: 'always' })
+
+/**
+ * Cartão da meta (sketch 015, variante A). O topo é um botão inteiro de 56px que abre as ações
+ * (aportar, editar, apagar); embaixo ficam a barra, os valores e o botão Aportar. Meta concluída
+ * mostra o texto "Concluída" além da cor. Todo texto entra como texto React, nome truncado com title.
+ */
+export function GoalCard({ goal, onOpen, onContribute, readOnly, onBlocked }: GoalCardProps) {
+  const percentage = goalPercentage(goal)
   const isComplete = percentage >= 100
-
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Evita abrir detalhes se clicou em um botao
-    if ((e.target as HTMLElement).closest('button')) return
-    onClick(goal)
-  }
+  const remainingCents = Math.max(0, toCents(goal.targetAmount) - toCents(goal.currentAmount))
+  const Icon = isComplete ? CircleCheck : Target
 
   return (
-    <Card
-      className="relative overflow-hidden cursor-pointer hover:bg-accent/50 transition-colors"
-      onClick={handleCardClick}
-    >
-      {isComplete && (
-        <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-green-500" />
-      )}
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary shrink-0" />
-            <h3 className="font-semibold text-base">{goal.name}</h3>
-          </div>
-          <div className="flex gap-1 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onEdit(goal)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(goal.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Progresso</span>
-            <span className="font-medium">{percentage}%</span>
-          </div>
-          <Progress value={percentage} className="h-2" />
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">
-            {formatCurrency(goal.currentAmount)} de {formatCurrency(goal.targetAmount)}
+    <article className="rounded-[22px] bg-card p-4">
+      <button
+        type="button"
+        onClick={() => onOpen(goal)}
+        aria-label={`Opções da meta ${goal.name}, ${percentage}%`}
+        className="flex min-h-14 w-full items-center gap-3 rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="block min-w-0 flex-1">
+          <span title={goal.name} className="block truncate text-base font-bold">
+            {goal.name}
           </span>
-          <span className="text-muted-foreground">
-            Faltam {formatCurrency(Math.max(0, goal.targetAmount - goal.currentAmount))}
+          <span className="block truncate text-xs font-normal text-muted-foreground">
+            {goal.deadline ? `Prazo ${formatDate(goal.deadline)}` : 'Sem prazo'}
           </span>
-        </div>
-        {goal.deadline && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span>Prazo: {formatDate(goal.deadline)}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {isComplete ? (
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-500/15 dark:text-green-400 dark:hover:bg-green-500/15">
-              Concluida!
-            </Badge>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => onContribute(goal)}
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Contribuir
-            </Button>
+        </span>
+        <span className="num-display shrink-0 text-base font-bold">{percentage}%</span>
+      </button>
+
+      <Progress
+        className="mt-3"
+        size="md"
+        tone="ok"
+        value={percentage}
+        label={`${goal.name}: ${percentage}% do alvo`}
+      />
+
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
+        <span className="num-display text-base font-bold">{money(goal.currentAmount)}</span>
+        <span className="text-xs font-normal text-muted-foreground">de {money(goal.targetAmount)}</span>
+        <span className="ml-auto text-xs font-normal text-muted-foreground">
+          {isComplete ? 'Meta atingida' : `Faltam ${formatMoney(remainingCents, { decimals: 'always' })}`}
+        </span>
+      </div>
+
+      {isComplete ? (
+        <p className="mt-3 flex min-h-12 items-center gap-1.5 text-base font-bold text-ok-ink">
+          <Check className="h-5 w-5" aria-hidden="true" />
+          Concluída
+        </p>
+      ) : (
+        <button
+          type="button"
+          aria-label={`Aportar em ${goal.name}`}
+          aria-disabled={readOnly ? true : undefined}
+          onClick={() => (readOnly ? onBlocked?.() : onContribute(goal))}
+          className={cn(
+            'mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-action text-base font-bold text-action-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            readOnly && 'cursor-not-allowed opacity-60'
           )}
-        </div>
-      </CardContent>
-    </Card>
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          Aportar
+        </button>
+      )}
+    </article>
   )
 }

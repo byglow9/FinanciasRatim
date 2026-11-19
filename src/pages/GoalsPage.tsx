@@ -1,92 +1,144 @@
 import { useState } from 'react'
-import { useGoals } from '@/hooks/useGoals'
+import { Pencil, PiggyBank, Plus, Target } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
+import { useGoals } from '@/hooks/useGoals'
+import { useReadOnly } from '@/hooks/useReadOnly'
 import { GoalCard } from '@/components/goals/GoalCard'
 import { GoalForm } from '@/components/goals/GoalForm'
-import { GoalDetailModal } from '@/components/goals/GoalDetailModal'
 import { ContributionForm } from '@/components/goals/ContributionForm'
 import { Button } from '@/components/ui/button'
-import { Loader2, Plus, Target } from 'lucide-react'
+import { Notice } from '@/components/ui/notice'
+import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
+import { useToast } from '@/components/ui/toast'
+import { cn } from '@/lib/utils'
 import type { Goal, PersonType } from '@/types'
+import { formatMoney } from '@shared/core/format.js'
+import { toCents } from '@shared/core/ledger.js'
 
 export function GoalsPage() {
   const { currentArea } = useArea()
-  // Porquinho nao deve acessar metas, mas por seguranca tratamos como 'ele'
+  const { readOnly, guard } = useReadOnly()
+  const { show } = useToast()
+
+  // Porquinho nao tem metas proprias: a tela mostra as de "ele".
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
+  const { goals, loading, error, add, update, remove, contribute, refetch } = useGoals(person)
 
-  const { goals, loading, add, update, remove, contribute } = useGoals(person)
+  // O Sheet de acoes fica montado enquanto a animacao de saida roda, entao a meta escolhida
+  // continua guardada (por id) depois de fechar.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
-  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
-  const [detailGoal, setDetailGoal] = useState<Goal | null>(null)
-  const [contributingGoal, setContributingGoal] = useState<Goal | null>(null)
+  const [editing, setEditing] = useState<Goal | null>(null)
+  const [contributingId, setContributingId] = useState<string | null>(null)
 
-  const handleSubmit = async (data: Omit<Goal, 'id' | 'createdAt'>) => {
-    if (editingGoal) {
-      await update(editingGoal.id, data)
-    } else {
-      await add(data)
-    }
-    setEditingGoal(null)
+  // Meta viva: depois de aportar ou editar, o Sheet que esta saindo ja mostra o valor novo.
+  const current = selectedId ? (goals.find((g) => g.id === selectedId) ?? null) : null
+  const contributing = contributingId ? (goals.find((g) => g.id === contributingId) ?? null) : null
+
+  const select = (goal: Goal) => {
+    setSelectedId(goal.id)
+    setSheetOpen(true)
   }
 
-  const handleEdit = (goal: Goal) => {
-    setEditingGoal(goal)
+  const openNew = () => {
+    if (guard('editar')) return
+    setEditing(null)
     setFormOpen(true)
   }
 
-  const handleOpenChange = (open: boolean) => {
+  const openContribution = (goal: Goal) => {
+    if (guard('editar')) return
+    setSheetOpen(false)
+    setContributingId(goal.id)
+  }
+
+  const openEdit = (goal: Goal) => {
+    if (guard('editar')) return
+    setSheetOpen(false)
+    setEditing(goal)
+    setFormOpen(true)
+  }
+
+  const handleSubmit = async (data: Omit<Goal, 'id' | 'createdAt'>) => {
+    if (editing) await update(editing.id, data)
+    else await add(data)
+  }
+
+  const handleFormOpenChange = (open: boolean) => {
     setFormOpen(open)
-    if (!open) setEditingGoal(null)
+    if (!open) setEditing(null)
   }
 
-  const handleContribute = async (goalId: string, amount: number, description?: string) => {
-    await contribute(goalId, amount, description)
+  const handleContribute = async (amount: number, description?: string) => {
+    if (!contributing) return
+    await contribute(contributing.id, amount, description)
   }
 
-  const handleContributeFromCard = (goal: Goal) => {
-    setContributingGoal(goal)
+  const handleDelete = async (goal: Goal) => {
+    if (guard('editar')) return
+    await remove(goal.id)
+    show('Meta apagada')
   }
 
-  const handleContributeSubmit = async (amount: number, description?: string) => {
-    if (!contributingGoal) return
-    await contribute(contributingGoal.id, amount, description)
-  }
+  const showLoading = loading && goals.length === 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="hidden sm:block">
-          <h1 className="text-2xl font-bold">Metas</h1>
-          <p className="text-muted-foreground">Acompanhe seus objetivos financeiros</p>
-        </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Meta
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[28px] font-bold leading-tight">Metas</h1>
+        <Button
+          type="button"
+          size="circle"
+          aria-label="Nova meta"
+          aria-disabled={readOnly ? true : undefined}
+          className={cn(readOnly && 'cursor-not-allowed opacity-60')}
+          onClick={openNew}
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      {error ? (
+        <Notice
+          tone="danger"
+          title="Não foi possível carregar as metas."
+          action={
+            <Button type="button" variant="outline" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : showLoading ? (
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Carregando as metas</span>
+          {[0, 1, 2].map((i) => (
+            <div key={i} aria-hidden="true" className="anim-pulse h-[140px] rounded-[22px] bg-card" />
+          ))}
         </div>
       ) : goals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
-          <Target className="h-12 w-12 opacity-30" />
-          <p>Nenhuma meta cadastrada</p>
-          <Button variant="outline" onClick={() => setFormOpen(true)}>
-            Criar primeira meta
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <Target className="size-7 text-muted-foreground" aria-hidden="true" />
+          <p className="text-base font-bold">Nenhuma meta ainda</p>
+          <p className="text-xs font-normal text-muted-foreground">
+            Crie uma meta e acompanhe os aportes do casal.
+          </p>
+          <Button type="button" onClick={openNew}>
+            Criar a primeira meta
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-3">
           {goals.map((goal) => (
             <GoalCard
               key={goal.id}
               goal={goal}
-              onEdit={handleEdit}
-              onDelete={remove}
-              onContribute={handleContributeFromCard}
-              onClick={setDetailGoal}
+              onOpen={select}
+              onContribute={openContribution}
+              readOnly={readOnly}
+              onBlocked={() => guard('editar')}
             />
           ))}
         </div>
@@ -94,28 +146,58 @@ export function GoalsPage() {
 
       <GoalForm
         open={formOpen}
-        onOpenChange={handleOpenChange}
+        onOpenChange={handleFormOpenChange}
         onSubmit={handleSubmit}
-        initialData={editingGoal || undefined}
+        initialData={editing || undefined}
         person={person}
       />
 
-      <GoalDetailModal
-        open={!!detailGoal}
-        onOpenChange={(open) => !open && setDetailGoal(null)}
-        goal={detailGoal}
-        onEdit={handleEdit}
-        onContribute={handleContribute}
-      />
-
-      {contributingGoal && (
+      {contributing ? (
         <ContributionForm
-          open={!!contributingGoal}
-          onOpenChange={(open) => !open && setContributingGoal(null)}
-          goal={contributingGoal}
-          onContribute={handleContributeSubmit}
+          open
+          onOpenChange={(open) => !open && setContributingId(null)}
+          goal={contributing}
+          onContribute={handleContribute}
         />
-      )}
+      ) : null}
+
+      <RowActionsSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={current?.name ?? ''}
+        subtitle={
+          current
+            ? `${formatMoney(toCents(current.currentAmount), { decimals: 'always' })} de ${formatMoney(toCents(current.targetAmount), { decimals: 'always' })}`
+            : undefined
+        }
+        readOnly={readOnly}
+        onBlocked={() => guard('editar')}
+        actions={
+          current
+            ? [
+                ...(current.currentAmount < current.targetAmount
+                  ? [
+                      {
+                        id: 'contribute',
+                        label: 'Aportar',
+                        icon: PiggyBank,
+                        onSelect: () => openContribution(current),
+                      },
+                    ]
+                  : []),
+                { id: 'edit', label: 'Editar', icon: Pencil, onSelect: () => openEdit(current) },
+              ]
+            : []
+        }
+        deletion={
+          current
+            ? {
+                question: `Apagar ${current.name}? Esta ação não pode ser desfeita.`,
+                onConfirm: () => handleDelete(current),
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }

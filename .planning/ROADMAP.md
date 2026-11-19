@@ -198,7 +198,7 @@ Plans:
   5. Em 360px nenhuma aba rola na horizontal e todo alvo tocável mede pelo menos 44px
   6. Transações, Calendário e Contas Fixas recortam exatamente pelo ciclo do topo, também com dia de salário diferente de 1
 
-**Plans:** 9/24 plans executed
+**Plans:** 11/24 plans executed
 
 Plans:
 **Wave 1**
@@ -215,11 +215,11 @@ Plans:
 - [x] 03.1-07-PLAN.md — Núcleo B: contas por categoria em ordem fixa, resumo do casal e mapa de calor (UX-03, UX-05, UX-06)
 - [x] 03.1-08-PLAN.md — Dock sem fade, uma cor de ação, scroll-snap e espiada medida a 360px (UX-01, UX-08)
 - [x] 03.1-09-PLAN.md — Camada de dados por ciclo exato: janela estável, transações, contas por ocorrência e serviços de intervalo (UX-09)
-- [ ] 03.1-10-PLAN.md — Portão de decisões do dono: premissas P-01 a P-04 e layout de Porquinho, Metas, Relatórios e Login (UX-03, UX-06, UX-07)
+- [x] 03.1-10-PLAN.md — Portão de decisões do dono: premissas P-01 a P-04 e layout de Porquinho, Metas, Relatórios e Login (UX-03, UX-06, UX-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03.1-11-PLAN.md — Transações: três números, Detalhes, busca e filtros fixos, lista por dia e Sheet de ações (UX-02, UX-08, UX-09)
+- [x] 03.1-11-PLAN.md — Transações: três números, Detalhes, busca e filtros fixos, lista por dia e Sheet de ações (UX-02, UX-08, UX-09)
 - [ ] 03.1-12-PLAN.md — Contas Fixas: grupos em ordem fixa, caixa quadrada de 44px, filtro e formulário por campo (UX-05, UX-08, UX-09)
 - [ ] 03.1-13-PLAN.md — Casal: Mistura A+B com alternador Ciclo e Mês (UX-06, UX-08, UX-09)
 - [ ] 03.1-14-PLAN.md — Calendário: modelo do dia, redutor de recolhimento e dados por ciclo (UX-03, UX-09)

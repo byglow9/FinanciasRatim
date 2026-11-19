@@ -4,7 +4,7 @@
 // tempo e `World.t` (relogio simulado) e o acaso entra por `rand` injetado.
 // O desenho (plano 04-09) so le `model.pose`.
 
-import { Spring, SPRING_PARAMS } from './vintemSpring.js'
+import { Spring, SPRING_PARAMS, BLINK, blinkEnv } from './vintemSpring.js'
 import { STATE_KEYS, STATE_DEFAULTS, STATE_PARAMS } from './vintemStates.js'
 
 /** Quadro maximo do relogio simulado: aba voltando do fundo nunca explode. */
@@ -13,6 +13,10 @@ const TAU = Math.PI * 2
 /** Tolerancias de "assentou": erro e velocidade despreziveis. */
 const SETTLE_ERR = 0.01
 const SETTLE_VEL = 0.05
+/** Ponteiro de toque ou caneta expira depois disto (D-18); o mouse mantem a posicao. */
+const TOUCH_TTL = 1.2
+/** Probabilidade de uma piscada agendada virar dupla (1 em 8). */
+const DOUBLE_BLINK_P = 1 / 8
 
 /** Acessorios da pose, cada um com uma mola de entrada e saida. */
 export const ACCESSORY_KEYS = Object.freeze(['tear', 'sweat', 'anger', 'spark', 'excl', 'z'])
@@ -223,6 +227,22 @@ export class VintemModel {
     this._bph = this.rand() * TAU
     this._turn = false
     this._pose = newPose()
+    // olhar: sacadas curtas na deriva, centro que muda a cada 1,1 a 3,3 s
+    this._gT = 0
+    this._gcT = 0
+    this._gcx = 0
+    this._gcy = 0
+    this._tx = 0
+    this._ty = 0
+    this._forceGaze = false
+    // sonolento e orelha
+    this._sleepT = 0
+    this._earT = 2.5 + this.rand() * 4
+    // piscar: agenda propria, independente da respiracao
+    this._bStart = -9
+    this._bNext = 0
+    this._dbl = false
+    this._scheduleBlink()
 
     const base = paramsFor(this.state)
     /** @type {Record<string, Spring>} */
@@ -273,7 +293,138 @@ export class VintemModel {
   setState(s) {
     if (this.dead || s === this.state || !STATE_PARAMS[/** @type {keyof typeof STATE_PARAMS} */ (s)]) return
     this.state = s
+    this._sleepT = 0
     this._retargetExpression()
+    this._blinkNow()
+  }
+
+  /**
+   * Avisa um observador externo (testes); em producao nao ha observador.
+   * @param {string} kind
+   * @param {any} [data]
+   */
+  _emit(kind, data) {
+    if (this._onEvent) this._onEvent(kind, this.world.t, data)
+  }
+
+  /** Agenda a proxima piscada normal: espera de 2 a 6 s. */
+  _scheduleBlink() {
+    const wait = 2 + this.rand() * 4
+    this._bNext = wait
+    this._emit('blink-schedule', { mode: 'normal', wait })
+  }
+
+  /** Inicia uma piscada agora, se nao houver uma em curso e o movimento permitir. */
+  _blinkNow() {
+    if (this._rm()) return
+    const t = this.world.t
+    if (t - this._bStart > BLINK.total) {
+      this._bStart = t
+      this._emit('blink', { phase: this._bph })
+    }
+  }
+
+  /**
+   * Ponteiro valido para seguir: o mouse mantem a ultima posicao; toque e caneta
+   * expiram em 1,2 s.
+   * @returns {Pointer | null}
+   */
+  _activePointer() {
+    if (!this._getPointer) return null
+    const p = this._getPointer()
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null
+    if (p.kind !== 'mouse' && p.ageSec > TOUCH_TTL) return null
+    return p
+  }
+
+  /**
+   * Olha para (x, y) normalizados (-1 a 1): fixa o centro do olhar e faz uma
+   * sacada no proximo quadro.
+   * @param {number} x
+   * @param {number} y
+   */
+  gazeTo(x, y) {
+    if (this.dead) return
+    this._gcx = clamp(num(x), -1, 1)
+    this._gcy = clamp(num(y), -1, 1)
+    this._gcT = 1.1 + this.rand() * 2.2
+    this._forceGaze = true
+    this._gT = 0
+  }
+
+  /**
+   * Uma sacada: novo alvo da pupila. Seguindo o ponteiro a cada 120 a 300 ms,
+   * na deriva a cada 200 a 600 ms. Sacada grande dispara uma piscada.
+   * @param {Pointer | null} ptr
+   */
+  _saccade(ptr) {
+    const rect = ptr && !this._forceGaze && this._hostRect ? this._hostRect() : null
+    let lx
+    let ly
+    let follow = false
+    if (ptr && rect) {
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      const rw = Math.max(rect.width, 90)
+      this._gcx = Math.tanh((ptr.x - cx) / (rw * 1.1))
+      this._gcy = Math.tanh((ptr.y - cy) / (rw * 1.1))
+      this._gT = 0.12 + this.rand() * 0.18
+      lx = this._gcx + (this.rand() - 0.5) * 0.08
+      ly = this._gcy + (this.rand() - 0.5) * 0.06
+      follow = true
+    } else {
+      this._gT = 0.2 + this.rand() * 0.4
+      lx = this._gcx + (this.rand() - 0.5) * 0.3
+      ly = this._gcy * 0.7 + (this.rand() - 0.5) * 0.2
+    }
+    this._forceGaze = false
+    const nx = clamp(lx, -1, 1)
+    const ny = clamp(ly, -1, 1)
+    if (Math.hypot(nx - this._tx, ny - this._ty) > 0.55 && this.world.t - this._bStart > 0.6) this._blinkNow()
+    this._tx = nx
+    this._ty = ny
+    this._emit('saccade', { x: nx, y: ny, follow })
+  }
+
+  /**
+   * Novo centro do olhar na deriva. No neutro ha vies de +0,15 em x.
+   * @param {string} eff
+   */
+  _newGazeCenter(eff) {
+    const bias = eff === 'neutro' ? 0.15 : 0
+    this._gcT = 1.1 + this.rand() * 2.2
+    this._gcx = bias + (this.rand() * 2 - 1) * (0.75 - bias)
+    this._gcy = (this.rand() * 2 - 1) * 0.5
+    this._emit('gaze-center', { x: this._gcx, y: this._gcy })
+  }
+
+  /**
+   * Reacao curta. Aqui so o despertar do sonolento (a piscada e a queda zerada);
+   * o roteiro completo das reacoes vem depois.
+   * @param {string} kind
+   */
+  react(kind) {
+    if (this.dead) return
+    if (kind === 'wake') {
+      this._sleepT = 0
+      this._s.droop.x = 0
+      this._s.droop.v = 0
+      this._blinkNow()
+    }
+  }
+
+  /**
+   * Toque no Vintem: desperta se estiver sonolento (devolve true), senao so pisca.
+   * @returns {boolean}
+   */
+  touch() {
+    if (this.dead) return false
+    if (this.state === 'sonolento' || this.effState() === 'sonolento') {
+      this.react('wake')
+      return true
+    }
+    this._blinkNow()
+    return false
   }
 
   /** Aponta as molas de expressao para o estado mostrado agora (sem avancar o tempo). */
@@ -307,9 +458,81 @@ export class VintemModel {
     s.sy.t = sy
     s.sx.t = 1 / sy
 
-    s.px.t = ov.px || 0
-    s.py.t = Z.py + (ov.py || 0)
-    s.rot.t = ov.rot || 0
+    // sonolento: a cabeca cai em 3 etapas (2,4 s cada) e volta com um tranco aos 9,4 s
+    const sleepy = eff === 'sonolento' && !rm
+    if (sleepy) {
+      if (dt > 0) this._sleepT += dt
+      const stg = Math.min(3, Math.floor(this._sleepT / 2.4))
+      const target = stg / 3
+      if (target !== s.droop.t) this._emit('droop', { stage: stg })
+      s.droop.t = target
+      if (this._sleepT > 9.4) {
+        this._sleepT = 0
+        s.droop.t = 0
+        s.droop.v = -1.4
+        s.wake.t = 1
+        s.wake.x = Math.max(s.wake.x, 0.4)
+        this.world.later(320, () => { s.wake.t = 0 }, this)
+        this._emit('jolt')
+        this._blinkNow()
+      }
+    } else {
+      if (eff !== 'sonolento') this._sleepT = 0
+      s.droop.t = 0
+    }
+
+    // olhar em sacadas; o centro do olhar muda sozinho na deriva
+    let lx = 0
+    let ly = 0
+    if (!rm) {
+      const ptr = this._activePointer()
+      if (dt > 0) {
+        this._gT -= dt
+        if (this._gT <= 0) this._saccade(ptr)
+        if (!ptr) {
+          this._gcT -= dt
+          if (this._gcT <= 0) this._newGazeCenter(eff)
+        }
+      }
+      lx = this._tx
+      ly = this._ty
+    } else {
+      this._tx = 0
+      this._ty = 0
+    }
+    if (ov.lx != null) lx = ov.lx
+    if (ov.ly != null) ly = ov.ly
+    if (sleepy) {
+      lx *= 0.4
+      ly = 0.2 + s.droop.x * 0.3
+    }
+    s.lx.t = clamp(lx, -1, 1)
+    s.ly.t = clamp(ly, -1, 1)
+
+    // cabeca segue o centro do olhar (nao a sacada), com atraso das molas
+    const gcx = rm ? 0 : this._gcx
+    s.rot.t = gcx * 3.2 + (ov.rot || 0)
+    s.head.t = sleepy ? s.droop.x * 10 : 0
+    s.px.t = gcx * 3 + (ov.px || 0)
+    s.py.t = Z.py + (ov.py || 0) + (sleepy ? s.droop.x * 5 : 0)
+
+    // piscar: espera de 2 a 6 s (so conta depois de a piscada anterior acabar), dupla em 1 de 8
+    if (!rm && dt > 0 && this._bNext > 0 && this.world.t - this._bStart > BLINK.total) {
+      this._bNext -= dt
+      if (this._bNext <= 0) {
+        this._blinkNow()
+        if (this._dbl) {
+          this._dbl = false
+          this._scheduleBlink()
+        } else if (this.rand() < DOUBLE_BLINK_P) {
+          this._dbl = true
+          this._bNext = 0.14 + this.rand() * 0.06
+          this._emit('blink-schedule', { mode: 'double', wait: this._bNext })
+        } else {
+          this._scheduleBlink()
+        }
+      }
+    }
 
     // uma mola por parametro de expressao
     for (const k of STATE_KEYS) this._p[k].t = Z[k]
@@ -319,6 +542,19 @@ export class VintemModel {
     const ear = rm ? 0 : clamp(bv, -24, 24)
     s.earL.t = ear
     s.earR.t = ear
+    if (!rm && dt > 0) {
+      this._earT -= dt
+      if (this._earT <= 0) {
+        this._earT = 2.5 + this.rand() * 4
+        const left = this.rand() < 0.5
+        ;(left ? s.earL : s.earR).v += 60
+        this._emit('ear-tic', { side: left ? 'L' : 'R' })
+      }
+    }
+
+    // rabo: balanca mais no feliz (so o perfil usa)
+    const wag = eff === 'feliz' ? 3.4 : 1.6
+    s.tail.t = rm ? 0 : Math.sin(this.world.t * wag * 2.2) * (eff === 'feliz' ? 14 : 6) + (ov.tail || 0) + clamp(-s.py.v * 0.05, -16, 16)
   }
 
   /** @param {(sp: Spring) => void} fn */
@@ -327,8 +563,11 @@ export class VintemModel {
     for (const sp of Object.values(this._s)) fn(sp)
   }
 
-  /** Escreve a pose a partir das molas. */
-  _writePose() {
+  /**
+   * Escreve a pose a partir das molas.
+   * @param {boolean} rm movimento reduzido
+   */
+  _writePose(rm) {
     const pose = this._pose
     const p = this._p
     const s = this._s
@@ -345,6 +584,19 @@ export class VintemModel {
     pose.earR = num(s.earR.x)
     pose.tail = num(s.tail.x)
     pose.turn = num(s.turn.x)
+    pose.blink = rm ? 0 : num(blinkEnv(this.world.t - this._bStart))
+    // pupila presa dentro do olho: norma eliptica menor ou igual a 1
+    let lx = s.lx.x
+    let ly = s.ly.x
+    const nn = Math.hypot(lx, ly)
+    if (nn > 1) {
+      lx /= nn
+      ly /= nn
+    }
+    pose.look.x = num(lx)
+    pose.look.y = num(ly)
+    pose.gaze.x = num(this._gcx)
+    pose.gaze.y = num(this._gcy)
     const lift = clamp(-pose.py / 50, 0, 1.2)
     pose.shadow.sx = 1 - 0.22 * lift
     pose.shadow.a = 0.12 * (1 - 0.45 * lift)
@@ -360,7 +612,7 @@ export class VintemModel {
     const rm = this._rm()
     this._targets(h, rm)
     this._eachSpring((sp) => sp.step(h, rm))
-    this._writePose()
+    this._writePose(rm)
   }
 
   /** Pula todas as molas para os alvos (entrada no viewport, testes). */
@@ -368,7 +620,7 @@ export class VintemModel {
     const rm = this._rm()
     this._targets(0, rm)
     this._eachSpring((sp) => sp.snap(sp.t))
-    this._writePose()
+    this._writePose(rm)
   }
 
   /**

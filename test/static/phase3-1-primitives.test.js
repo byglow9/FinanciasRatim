@@ -7,7 +7,13 @@ import { assertIncludes, code, read, scaleProblems, touchProblems } from './help
 const UI = 'src/components/ui/'
 
 // Arquivos novos deste plano que ja existem (cresce a cada tarefa).
-const NEW = [`${UI}square-check.tsx`]
+const NEW = [
+  `${UI}square-check.tsx`,
+  `${UI}popover.tsx`,
+  `${UI}search-field.tsx`,
+  `${UI}chip.tsx`,
+  `${UI}progress.tsx`,
+]
 
 const TOKENS = {
   'heat-1': '#fef2f2',
@@ -57,6 +63,22 @@ test('SquareCheck e quadrada, de 28px, em area de toque de 44px, com aria-presse
   const src = code(`${UI}square-check.tsx`)
   assert.ok(!/rounded-full/.test(src), 'a caixa de marcar nao pode ser circular')
   assert.ok(!/toast/i.test(src), 'marcar nao mostra toast (D-05)')
+})
+
+test('Popover tem gatilho de 44px, aria-expanded e fecha com Esc devolvendo o foco', () => {
+  assertIncludes(`${UI}popover.tsx`, ['export function Popover', 'aria-expanded', 'aria-controls', 'Escape', 'mousedown', 'h-11 w-11', 'rounded-full bg-card', 'z-30', 'min(272px,calc(100vw-32px))', 'triggerRef.current?.focus()'])
+})
+
+test('SearchField e pilula de 48px, type="search" e limpa com botao de 44px', () => {
+  assertIncludes(`${UI}search-field.tsx`, ['export { SearchField }', 'forwardRef', 'type="search"', 'h-12', 'rounded-full', 'Limpar busca', 'h-11 w-11'])
+})
+
+test('Chip repassa pressed como aria-pressed', () => {
+  assertIncludes(`${UI}chip.tsx`, ['pressed?: boolean', 'aria-pressed={pressed}'])
+})
+
+test('Progress aceita os tons ele e ela e o tamanho md sem perder o contrato', () => {
+  assertIncludes(`${UI}progress.tsx`, ['bg-ele', 'bg-ela', 'h-3', 'h-2', 'size?: ProgressSize', 'role="progressbar"', 'aria-label', 'duration-[400ms]'])
 })
 
 test('arquivos novos respeitam escala, pesos, emoji e HTML bruto', () => {

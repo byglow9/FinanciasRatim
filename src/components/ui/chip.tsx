@@ -9,6 +9,8 @@ interface ChipProps {
   icon?: LucideIcon
   onClick?: () => void
   disabled?: boolean
+  /** Estado de alternador (filtros): vira aria-pressed no ramo com onClick. */
+  pressed?: boolean
   children: React.ReactNode
   className?: string
 }
@@ -24,7 +26,7 @@ const TONE: Record<ChipTone, string> = {
  * Rotulo curto (12/700). Sem onClick e um span estatico; com onClick e um botao
  * com alvo de 44px e aria-disabled (continua focavel, mas nao dispara).
  */
-export function Chip({ tone = "neutral", icon: Icon, onClick, disabled, children, className }: ChipProps) {
+export function Chip({ tone = "neutral", icon: Icon, onClick, disabled, pressed, children, className }: ChipProps) {
   const base = cn(
     "inline-flex items-center gap-1 rounded-chip px-3 text-xs font-bold",
     TONE[tone],
@@ -44,6 +46,7 @@ export function Chip({ tone = "neutral", icon: Icon, onClick, disabled, children
   return (
     <button
       type="button"
+      aria-pressed={pressed}
       aria-disabled={disabled ? true : undefined}
       onClick={() => {
         if (!disabled) onClick()

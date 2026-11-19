@@ -1,12 +1,15 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-export type ProgressTone = "ok" | "warn" | "over" | "neutral"
+export type ProgressTone = "ok" | "warn" | "over" | "neutral" | "ele" | "ela"
+export type ProgressSize = "sm" | "md"
 
 interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   value?: number
   max?: number
   tone?: ProgressTone
+  /** Altura da barra: sm (8px, padrao) ou md (12px, Casal). */
+  size?: ProgressSize
   /** Nome acessível da barra (vira aria-label). */
   label?: string
 }
@@ -16,10 +19,17 @@ const FILL_BY_TONE: Record<ProgressTone, string> = {
   warn: "bg-warn",
   over: "bg-danger",
   neutral: "bg-muted-foreground",
+  ele: "bg-ele",
+  ela: "bg-ela",
+}
+
+const HEIGHT_BY_SIZE: Record<ProgressSize, string> = {
+  sm: "h-2",
+  md: "h-3",
 }
 
 const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-  ({ className, value = 0, max = 100, tone = "ok", label, ...props }, ref) => {
+  ({ className, value = 0, max = 100, tone = "ok", size = "sm", label, ...props }, ref) => {
     const safeMax = max > 0 ? max : 100
     const clamped = Math.min(Math.max(Number.isFinite(value) ? value : 0, 0), safeMax)
     const percentage = Math.min((clamped / safeMax) * 100, 100)
@@ -33,7 +43,8 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         aria-valuemax={safeMax}
         aria-label={label}
         className={cn(
-          "relative h-2 w-full overflow-hidden rounded-full bg-track",
+          "relative w-full overflow-hidden rounded-full bg-track",
+          HEIGHT_BY_SIZE[size],
           className
         )}
         {...props}

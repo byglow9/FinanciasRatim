@@ -257,7 +257,7 @@ Plans:
   4. O usuário escolhe o tom do Vintém nas Configurações (suave, direto, sem filtro; padrão sem filtro, com bronca e xingamento permitidos) e o balão usa um banco de frases próprias com variantes para cada tom
   5. O desenho, o nome e todas as falas são originais: uma conferência dos textos contra os prints de referência não encontra personagem, nome, slogan nem frases copiados
 
-**Plans**: 5/20 plans executed
+**Plans**: 9/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -271,10 +271,10 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-05-PLAN.md — Núcleo: modelo do Vintém com piscar, olhar, reações, giro e movimento reduzido, em relógio simulado (MASC-02, MASC-03)
-- [ ] 04-06-PLAN.md — Banco de frases: limites, delivery, loja que repete e categoria acima da média, nos três tons (MASC-04, MASC-07)
-- [ ] 04-07-PLAN.md — Banco de frases: gasto grande, lançamento, receita, Porquinho e meta batida, nos três tons (MASC-04, MASC-07)
-- [ ] 04-08-PLAN.md — Banco de frases: ritmo, dias sem lançar, dados velhos, abertura e toque, nos três tons (MASC-04, MASC-07)
+- [x] 04-05-PLAN.md — Núcleo: modelo do Vintém com piscar, olhar, reações, giro e movimento reduzido, em relógio simulado (MASC-02, MASC-03)
+- [x] 04-06-PLAN.md — Banco de frases: limites, delivery, loja que repete e categoria acima da média, nos três tons (MASC-04, MASC-07)
+- [x] 04-07-PLAN.md — Banco de frases: gasto grande, lançamento, receita, Porquinho e meta batida, nos três tons (MASC-04, MASC-07)
+- [x] 04-08-PLAN.md — Banco de frases: ritmo, dias sem lançar, dados velhos, abertura e toque, nos três tons (MASC-04, MASC-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -385,7 +385,7 @@ Plans:
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
-| 4. Mascote Vintém | 5/20 | In Progress|  |
+| 4. Mascote Vintém | 9/20 | In Progress|  |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |

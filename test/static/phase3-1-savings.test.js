@@ -109,3 +109,26 @@ test('textos do Porquinho com acento completo', () => {
     assert.doesNotMatch(src, /Movimentacao|Historico|[Pp]oupanca|Descricao|Responsavel|Deposito\b/, `${f} com texto sem acento`)
   }
 })
+
+test('estados de carregando, vazio e erro em portugues, com Tentar de novo', () => {
+  const page = code(PAGE)
+  assert.match(page, /Carregando o Porquinho/, 'sem o texto de carregamento')
+  assert.match(page, /anim-pulse/, 'carregando sem blocos neutros')
+  assert.match(page, /aria-hidden="true" className="anim-pulse/, 'blocos de carregamento sem aria-hidden')
+  assert.match(page, /Não foi possível carregar o Porquinho\./, 'sem a mensagem de erro')
+  assert.match(page, /Confira a conexão e tente de novo\./, 'erro sem a orientacao')
+  assert.match(page, /Tentar de novo/, 'erro sem o botao Tentar de novo')
+  assert.match(page, /refetch\(\)/, 'Tentar de novo nao usa o refetch do useSavings')
+  assert.match(page, /Nenhuma movimentação ainda\./, 'sem o estado vazio')
+  assert.match(page, /Guardar o primeiro valor/, 'vazio sem o botao que abre o Sheet')
+  assert.doesNotMatch(page, /error\.message|String\(error\)/, 'mensagem crua do servidor na tela')
+  assert.doesNotMatch(page, /R\$ 0\b/, 'R$ 0 como marcador de carregamento')
+})
+
+test('somente leitura: o botao + fica aria-disabled e as acoes do Sheet seguem o perfil', () => {
+  const page = code(PAGE)
+  assert.match(page, /useReadOnly\(\)/, 'pagina sem useReadOnly')
+  assert.match(page, /aria-disabled=\{readOnly \? true : undefined\}/, 'botao + sem aria-disabled')
+  assert.match(page, /readOnly=\{readOnly\}/, 'RowActionsSheet sem readOnly')
+  assert.match(page, /onBlocked=\{\(\) => guard\('editar'\)\}/, 'RowActionsSheet sem o aviso de bloqueio')
+})

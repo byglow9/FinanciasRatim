@@ -3,7 +3,7 @@ import { PiggyBank as PiggyIcon, Plus } from 'lucide-react'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { useSavings } from '@/hooks/useSavings'
 import { PiggyBank } from '@/components/savings/PiggyBank'
-import { SavingsForm } from '@/components/savings/SavingsForm'
+import { SavingsForm, type SavingsFormData } from '@/components/savings/SavingsForm'
 import { SavingsHistory } from '@/components/savings/SavingsHistory'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
@@ -62,7 +62,7 @@ export function SavingsPage() {
     setSheetOpen(true)
   }
 
-  const handleSubmit = async (data: Omit<SavingsTransaction, 'id' | 'createdAt'>) => {
+  const handleSave = async (data: SavingsFormData) => {
     await add(data)
     show('Movimentação salva')
   }
@@ -141,7 +141,7 @@ export function SavingsPage() {
         </>
       )}
 
-      <SavingsForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleSubmit} />
+      <SavingsForm open={formOpen} onClose={() => setFormOpen(false)} onSave={handleSave} />
 
       <RowActionsSheet
         open={sheetOpen}

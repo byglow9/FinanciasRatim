@@ -10,7 +10,7 @@ const HISTORY = 'src/components/savings/SavingsHistory.tsx'
 const FORM = 'src/components/savings/SavingsForm.tsx'
 const DECISIONS =
   '.planning/phases/03.1-redesign-das-abas-no-estilo-da-home-ux-mobile-transa-es-cale/03.1-DECISIONS.md'
-const FILES = [PAGE, BANK, HISTORY]
+const FILES = [PAGE, BANK, HISTORY, FORM]
 
 test('o layout implementado e o registrado em DECISIONS (layout.porquinho: b)', () => {
   const m = /^- layout\.porquinho:\s*(\w+)/m.exec(read(DECISIONS))
@@ -68,4 +68,44 @@ test('o Porquinho nao tem ciclo', () => {
 test('escala tipografica e alvos de toque limpos', () => {
   assert.deepEqual(scaleProblems(FILES), [])
   assert.deepEqual(touchProblems(FILES), [])
+})
+
+test('SavingsForm e um Sheet com parseBRL e validacao por campo, sem Dialog', () => {
+  const src = code(FORM)
+  assert.match(src, /<Sheet\b/, 'SavingsForm nao usa Sheet')
+  assert.match(src, /parseBRL/, 'SavingsForm sem parseBRL')
+  assert.match(src, /aria-invalid/, 'SavingsForm sem aria-invalid')
+  assert.match(src, /role="alert"/, 'mensagens de campo sem role="alert"')
+  assert.match(src, /\.focus\(\)/, 'SavingsForm sem foco no primeiro erro')
+  assert.match(src, /inputMode="decimal"/, 'valor sem inputMode decimal')
+  assert.match(src, /zonedTimeToInstant/, 'data sem zonedTimeToInstant')
+  assert.match(src, /dayKeyOf/, 'data inicial sem dayKeyOf')
+  assert.match(src, /SegmentedControl/, 'sem o seletor Guardar e Retirar')
+  assert.match(src, /'Guardar'/)
+  assert.match(src, /'Retirar'/)
+  assert.match(src, /Informe um valor maior que zero/, 'sem a mensagem do valor')
+  assert.match(src, /<Notice tone="danger">/, 'falha de gravacao sem Notice de perigo')
+  assert.match(src, /Não foi possível salvar\. Confira a conexão e tente de novo\./)
+  assert.match(src, /aria-busy/, 'CTA sem aria-busy')
+  assert.doesNotMatch(src, /\bDialog/, 'SavingsForm ainda usa Dialog')
+  assert.doesNotMatch(src, /type="number"/, 'valor ainda e type=number')
+})
+
+test('a pagina abre o Sheet depois de guard(editar) e mostra o aviso de salvo', () => {
+  const page = code(PAGE)
+  assert.match(page, /<SavingsForm/, 'pagina sem SavingsForm')
+  assert.match(page, /show\('Movimentação salva'\)/, 'sem o aviso "Movimentação salva"')
+  const start = page.indexOf('const openNew')
+  assert.ok(start >= 0, 'a pagina nao tem openNew')
+  const flow = page.slice(start, page.indexOf('\n  }\n', start))
+  assert.match(flow, /guard\('editar'\)/, 'openNew sem guard(editar)')
+  assert.match(page, /aria-label="Nova movimentação"/, 'botao sem o nome "Nova movimentação"')
+  assert.match(page, /size="circle"/, 'botao + nao e o redondo de 44px')
+})
+
+test('textos do Porquinho com acento completo', () => {
+  for (const f of [PAGE, BANK, HISTORY, FORM]) {
+    const src = code(f)
+    assert.doesNotMatch(src, /Movimentacao|Historico|[Pp]oupanca|Descricao|Responsavel|Deposito\b/, `${f} com texto sem acento`)
+  }
 })

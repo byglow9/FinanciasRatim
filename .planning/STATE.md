@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: "03.1"
 current_phase_name: redesign-das-abas
 status: executing
-stopped_at: Completed 03.1-02-PLAN.md
-last_updated: "2026-11-19T13:32:55.538Z"
+stopped_at: Completed 03.1-04-PLAN.md
+last_updated: "2026-11-19T13:39:24.245Z"
 last_activity: 2026-11-19
 last_activity_desc: Phase 03.1 execution started
-state_head: 6159ddc9d3dc3f8eba0c7bab302d53a13a2d11be
+state_head: d2ad78b2ec4f14562e204f44c7bbafc93a8b1e75
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 66
-  completed_plans: 44
+  completed_plans: 45
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 03.1 (redesign-das-abas) — EXECUTING
-Plan: 3 of 24
+Plan: 4 of 24
 Status: Ready to execute
 Last activity: 2026-11-19 — Phase 03.1 execution started
 
@@ -96,6 +96,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03 P23 | 25min | 3 tasks | 3 files |
 | Phase 03.1 P01 | 12 min | 3 tasks | 10 files |
 | Phase 03.1 P02 | 20 min | 3 tasks | 10 files |
+| Phase 03.1 P04 | 8 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,7 @@ Recent decisions affecting current work:
 - [Phase 3]: 03-23: CouplePage e dialog.tsx ficam fora da guarda de escala tipográfica (legado, IDEN-06); LIM-10 fechado, LIM-07 pendente até confirmar índice limitAlerts Habilitado e UAT
 - [Phase 03.1]: 03.1-01: guardas estaticas particionadas por tela (um arquivo phase3-1-*.test.js por tela) com helper compartilhado — Planos paralelos da mesma onda nao editam o mesmo arquivo de teste
 - [Phase 03.1]: 03.1-02: parseBRL devolve null acima de R$ 999.999,99 (teto do teclado) para nunca perder precisao
+- [Phase 03.1]: 03.1-04: auditoria de layout em Node puro (Chrome 152 + CDP + Vite MOCK) em scripts/ux-audit; violacao de rolagem horizontal ignora carrosseis auto/scroll e contêineres hidden/clip
 
 ### Pending Todos
 
@@ -164,6 +166,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T13:32:55.449Z
-Stopped at: Completed 03.1-02-PLAN.md
+Last session: 2026-11-19T13:39:24.139Z
+Stopped at: Completed 03.1-04-PLAN.md
 Resume file: None

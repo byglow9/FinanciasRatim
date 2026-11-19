@@ -1,0 +1,183 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link id="theme" rel="stylesheet" href="../themes/moeda.css">
+<title>018 Vintém</title>
+<style>
+/* Sketch 018: autossuficiente (sem fontes, scripts nem imagens externas). Só tamanhos 12, 16, 28 e 56 e pesos 400 e 700. Desenho original. */
+*{box-sizing:border-box;margin:0}
+body{background:#cfcfd4;font:400 16px/1.4 var(--font-sans);color:var(--color-text);min-height:100vh}
+button,select{font:inherit;color:inherit}
+#variant-nav{background:#fff;border-bottom:1px solid #ddd;padding:6px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font:400 12px var(--font-sans)}
+.variant-tab{height:44px;border:1px solid #ccc;background:#fff;border-radius:8px;padding:0 12px;cursor:pointer;font:400 12px var(--font-sans);color:#111}
+.variant-tab.active{background:#111;color:#fff;border-color:#111}
+#wrap{max-width:720px;margin:0 auto;padding:12px 16px 32px}
+.note{font:400 12px/1.4 var(--font-sans);color:#333;margin-bottom:12px}
+h1{font:700 28px/1.2 var(--font-sans);letter-spacing:-.02em}
+h2{font:700 16px var(--font-sans);margin-bottom:8px}
+.card{background:var(--color-bg);border-radius:22px;padding:16px;margin-top:12px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{height:44px;min-width:44px;padding:0 12px;border:1px solid var(--color-border);border-radius:999px;background:var(--color-surface-2);font:400 12px var(--font-sans);cursor:pointer}
+.seg button.on{background:#14532d;color:#fff;border-color:#14532d;font-weight:700}
+.btn{height:44px;padding:0 20px;border-radius:16px;border:0;background:#14532d;color:#fff;font:700 16px var(--font-sans);cursor:pointer}
+button:focus-visible{outline:2px solid #14532d;outline-offset:2px}
+.stage{display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;perspective:600px}
+.big{width:220px;height:187px;display:block}
+.flipbox{transition:transform .7s ease;transform-style:preserve-3d}
+.flipbox.giro{transform:rotateY(180deg)}
+.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.cell{width:92px;min-height:44px;border:0;background:none;padding:4px 0;cursor:pointer;border-radius:16px;display:grid;justify-items:center;gap:4px}
+.cell.on{background:var(--color-surface)}
+.cell span{font:400 12px var(--font-sans)}.cell.on span{font-weight:700}
+.sm{width:84px;height:71px;display:block}
+.vt{--corpo:var(--color-primary);--corpo2:#15803d;--focinho:#4ade80;--orelha:#15803d;--tinta:#1b1b18;--slot:#14532d;--moeda:#fbbf24;--moeda2:#d97706}
+.gauge{position:relative;width:260px;height:150px;background:var(--color-bg);flex:none}
+.gauge svg.arc{position:absolute;left:0;top:0}
+.gauge .pig{position:absolute;left:88px;top:58px}
+.bubble{position:relative;flex:1;min-width:180px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:22px;padding:12px 16px;font:400 16px/1.4 var(--font-sans)}
+.bubble svg{position:absolute;left:-10px;top:24px}
+.line{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.cap{font:400 12px var(--font-sans);color:var(--color-text-muted);margin-top:8px}
+#selftest{white-space:pre-wrap;font:400 12px monospace;margin-top:12px;color:#333}
+.sway{transform-origin:50% 95%;animation:sway 2.6s ease-in-out infinite}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 4s infinite}
+.wag{transform-origin:28px 100px;animation:wag 1.3s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes wag{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(12deg)}}
+@media (prefers-reduced-motion:reduce){.sway,.blink,.wag{animation:none}.flipbox{transition:none}.flipbox.giro{transform:scaleX(-1)}}
+</style></head><body>
+<div id="variant-nav">
+<button class="variant-tab" data-v="a">A: Chapado geométrico</button>
+<button class="variant-tab" data-v="b">B: Contorno de adesivo</button>
+<button class="variant-tab" data-v="c">C: Fofo com volume</button></div>
+<div id="wrap"><h1>Vintém</h1><div class="note" id="vnote"></div><div id="app"></div><div id="selftest"></div></div>
+<script>
+(function(){
+'use strict';
+var errors=[];window.addEventListener('error',function(e){errors.push(String(e.message))});
+function $(id){return document.getElementById(id)}
+var NOTES={a:'A: chapado geométrico. Formas simples, cores chapadas, sem contorno. Mais leve de desenhar e animar; depende só do contraste do verde com o fundo.',
+b:'B: contorno grosso escuro de adesivo. Mesmas formas, linha de 5 unidades. Lê melhor em 84px e em qualquer fundo, com cara de figurinha.',
+c:'C: fofo com volume. Gradientes leves, brilho no corpo e sombra no chão. Mais acolhedor e premium; os detalhes de volume somem em tamanhos pequenos.'};
+var NAMES={neutro:'Neutro',feliz:'Feliz',triste:'Triste',bravo:'Bravo',sonolento:'Sonolento',surpreso:'Surpreso'};
+var STATES=['neutro','feliz','triste','bravo','sonolento','surpreso'];
+/* ey = raio vertical do olho, rp = raio da pupila, px/py = deslocamento da pupila, lid = pálpebra (sonolento) */
+var ST={
+ neutro:{ey:8,rp:3.8,px:1.8,py:-.6,brow:['M112 63 Q121 54 132 59','M140 67 L158 67'],mouth:'M127 121 Q141 127 154 115',mf:0},
+ feliz:{happy:1,brow:['M112 60 Q121 52 132 58','M141 58 Q150 52 158 59'],mouth:'M126 114 Q141 140 156 112 Z',mf:1},
+ triste:{ey:8,rp:3.8,px:0,py:2.4,brow:['M112 67 L132 58','M140 58 L158 67'],mouth:'M127 127 Q141 114 155 127',mf:0},
+ bravo:{ey:5,rp:3.2,px:1.5,py:.8,brow:['M112 56 L132 65','M140 65 L158 56'],mouth:'M127 125 L134 119 L141 125 L148 119 L155 124',mf:0},
+ sonolento:{ey:7,rp:3.4,px:1,py:2,lid:1,brow:['M113 67 L131 68','M140 68 L158 67'],mouth:'M133 122 Q141 125 150 122',mf:0},
+ surpreso:{ey:10,rp:2.8,px:.5,py:0,brow:['M111 53 Q121 42 133 51','M139 51 Q150 42 160 53'],mouth:'M136 117 a5.5 8 0 1 0 11 0 a5.5 8 0 1 0 -11 0',mf:1}};
+var uid=0;
+/* Monta o Vintém. ids=true gera os ids dos grupos (só no exemplar grande); anim=true liga balanço, piscar e rabo. */
+function vintem(v,st,ids,anim){
+ var p='v'+(++uid),S=ST[st],B=v==='b',C=v==='c';
+ function id(n){return ids?' id="'+n+'"':' data-part="'+n+'"'}
+ function f(c,sw){return 'style="fill:var('+c+');'+(B?'stroke:var(--tinta);stroke-width:'+(sw||5)+';stroke-linejoin:round':'')+'"'}
+ function ln(w){return 'style="fill:none;stroke:var(--tinta);stroke-width:'+(B?w+1:w)+';stroke-linecap:round;stroke-linejoin:round"'}
+ var body=C?'style="fill:url(#'+p+'g)"':f('--corpo'),snout=C?'style="fill:url(#'+p+'s)"':f('--focinho'),coin=C?'style="fill:url(#'+p+'c)"':f('--moeda',4);
+ var o='<svg class="'+(anim?'sway ':'')+'vt" viewBox="0 0 200 170" role="img" aria-label="Vintém, porquinho-cofre, '+NAMES[st].toLowerCase()+'" focusable="false">';
+ o+='<defs><clipPath id="'+p+'k"><rect x="0" y="0" width="200" height="55"/></clipPath>';
+ if(C)o+='<radialGradient id="'+p+'g" cx=".35" cy=".25" r=".85"><stop offset="0" style="stop-color:#4ade80"/><stop offset=".5" style="stop-color:var(--corpo)"/><stop offset="1" style="stop-color:var(--corpo2)"/></radialGradient>'
+  +'<radialGradient id="'+p+'s" cx=".4" cy=".3" r=".8"><stop offset="0" style="stop-color:#bbf7d0"/><stop offset="1" style="stop-color:#4ade80"/></radialGradient>'
+  +'<radialGradient id="'+p+'c" cx=".35" cy=".3" r=".8"><stop offset="0" style="stop-color:#fde68a"/><stop offset="1" style="stop-color:var(--moeda)"/></radialGradient>'
+  +'<filter id="'+p+'b" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="4"/></filter>';
+ o+='</defs>';
+ if(C)o+='<ellipse cx="98" cy="165" rx="70" ry="6" style="fill:#1b1b18;opacity:.22" filter="url(#'+p+'b)"/>';
+ /* rabo em espiral (atrás do corpo) */
+ var tail='M30 104 C14 104 8 86 20 82 C31 79 35 92 26 93';
+ o+='<g'+id('rabo')+(anim?' class="wag"':'')+'>'+(B?'<path d="'+tail+'" style="fill:none;stroke:var(--tinta);stroke-width:12;stroke-linecap:round"/>':'')+'<path d="'+tail+'" style="fill:none;stroke:var(--corpo2);stroke-width:6;stroke-linecap:round"/></g>';
+ /* patas */
+ o+='<g'+id('patas')+'><rect x="76" y="132" width="24" height="32" rx="10" '+f('--orelha')+'/><rect x="140" y="132" width="24" height="32" rx="10" '+f('--orelha')+'/><rect x="42" y="132" width="26" height="33" rx="11" '+f('--corpo2')+'/><rect x="112" y="132" width="26" height="33" rx="11" '+f('--corpo2')+'/></g>';
+ /* orelhas (bases escondidas atrás do corpo) */
+ o+='<g'+id('orelhas')+'><path d="M146 70 Q154 38 170 36 Q174 58 164 84 Z" '+f('--orelha')+'/><path d="M106 66 Q104 32 122 24 Q140 28 146 64 Z" '+f('--corpo2')+'/><path d="M115 56 Q114 40 123 35 Q132 40 135 56 Z" style="fill:var(--focinho);opacity:.55"/></g>';
+ o+='<ellipse'+id('corpo')+' cx="98" cy="102" rx="72" ry="52" '+body+'/>';
+ if(C)o+='<ellipse cx="72" cy="68" rx="30" ry="11" transform="rotate(-18 72 68)" style="fill:#fff;opacity:.35"/>';
+ o+='<ellipse'+id('fenda')+' cx="88" cy="55" rx="22" ry="4.5" style="fill:var(--slot)"/>';
+ o+='<g'+id('moeda')+'><g clip-path="url(#'+p+'k)"><circle cx="88" cy="44" r="14" '+coin+'/><circle cx="88" cy="44" r="8" style="fill:none;stroke:var(--moeda2);stroke-width:3"/></g></g>';
+ o+='<g'+id('focinho')+'><ellipse cx="170" cy="106" rx="19" ry="15" '+snout+'/><ellipse cx="165" cy="106" rx="2.6" ry="4" style="fill:var(--slot)"/><ellipse cx="176" cy="106" rx="2.6" ry="4" style="fill:var(--slot)"/></g>';
+ /* olhos e pupilas */
+ var ex=[122,149],ey=[80,79],i,w='',pu='',lid='';
+ if(S.happy){for(i=0;i<2;i++)w+='<path d="M'+(ex[i]-8)+' '+(ey[i]+3)+' Q'+ex[i]+' '+(ey[i]-9)+' '+(ex[i]+8)+' '+(ey[i]+3)+'" '+ln(4)+'/>'}
+ else for(i=0;i<2;i++){var rx=S.ey>=10?9:8;
+  w+='<ellipse cx="'+ex[i]+'" cy="'+ey[i]+'" rx="'+rx+'" ry="'+S.ey+'" style="fill:#fff;'+(B?'stroke:var(--tinta);stroke-width:3.5':'')+'"/>';
+  pu+='<circle cx="'+(ex[i]+S.px)+'" cy="'+(ey[i]+S.py)+'" r="'+S.rp+'" style="fill:var(--tinta)"/>';
+  if(S.lid)lid+='<path d="M'+(ex[i]-9)+' '+(ey[i]-1)+' L'+(ex[i]+9)+' '+(ey[i]-1)+'" '+ln(3.5)+'/>'}
+ /* pálpebra do sonolento: cobre a metade de cima do olho com a cor do corpo */
+ if(S.lid){var lc='';for(i=0;i<2;i++)lc+='<rect x="'+(ex[i]-10)+'" y="'+(ey[i]-9)+'" width="20" height="8.5" style="fill:'+(C?'#1fb455':'var(--corpo)')+'"/>';w+=lc+lid}
+ o+='<g'+id('olhos')+(anim?' class="blink"':'')+'>'+w+'</g><g'+id('pupilas')+(anim?' class="blink"':'')+'>'+pu+'</g>';
+ o+='<g'+id('sobrancelhas')+'><path d="'+S.brow[0]+'" '+ln(4.5)+'/><path d="'+S.brow[1]+'" '+ln(4.5)+'/></g>';
+ o+='<g'+id('boca')+' transform="translate(-6 0)"><path d="'+S.mouth+'" style="fill:'+(S.mf?'var(--slot)':'none')+';stroke:var(--tinta);stroke-width:'+(B?5:4)+';stroke-linecap:round;stroke-linejoin:round"/></g>';
+ return o+'</svg>'}
+var S={v:'a',st:'neutro'};
+var ARC='M30 130 A100 100 0 0 1 230 130';
+function gauge(v,st){
+ return '<div class="gauge" id="gauge"><svg class="arc" width="260" height="150" viewBox="0 0 260 150" aria-hidden="true"><path d="'+ARC+'" style="fill:none;stroke:var(--color-track);stroke-width:14;stroke-linecap:round"/><path d="'+ARC+'" pathLength="100" style="fill:none;stroke:var(--color-primary);stroke-width:14;stroke-linecap:round;stroke-dasharray:72 100"/></svg><div class="pig vt" id="gpig">'+vintemSized(v,st,84)+'</div></div>'}
+function vintemSized(v,st,px){return vintem(v,st,false,false).replace('<svg class="','<svg width="'+px+'" height="'+Math.round(px*.85)+'" class="sm ')}
+function render(){
+ var v=S.v,h='';
+ document.querySelectorAll('.variant-tab').forEach(function(b){b.classList.toggle('active',b.dataset.v===v);b.setAttribute('aria-pressed',b.dataset.v===v)});
+ $('vnote').textContent=NOTES[v];
+ h+='<div class="card"><h2>Estado</h2><div class="seg" id="seg" role="group" aria-label="Estado do Vintém">'+STATES.map(function(s){return '<button data-st="'+s+'" aria-pressed="'+(S.st===s)+'" class="'+(S.st===s?'on':'')+'">'+NAMES[s]+'</button>'}).join('')+'</div></div>';
+ h+='<div class="card"><h2>Grande, 220px</h2><div class="stage"><div class="flipbox" id="flipbox">'+vintem(v,S.st,true,true).replace('<svg class="','<svg class="big ')+'</div><button class="btn" id="flip" aria-pressed="false">Girar de lado</button></div><div class="cap">Balança, pisca e balança o rabo. Com movimento reduzido ligado no sistema, fica parado.</div></div>';
+ h+='<div class="card"><h2>Os seis estados em 84px</h2><div class="row" id="row">'+STATES.map(function(s){return '<button class="cell'+(S.st===s?' on':'')+'" data-st="'+s+'" data-cell="'+s+'" aria-label="'+NAMES[s]+'">'+vintemSized(v,s,84)+'<span>'+NAMES[s]+'</span></button>'}).join('')+'</div></div>';
+ h+='<div class="card"><h2>No medidor e falando</h2><div class="line">'+gauge(v,S.st)+'<div class="bubble" id="bubble"><svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true"><path d="M12 0 L0 8 L12 16 Z" style="fill:var(--color-surface-2);stroke:var(--color-border);stroke-width:1"/></svg>Esse café de novo? Sua carteira pediu socorro.</div></div><div class="cap" id="ratio"></div></div>';
+ $('app').innerHTML=h;ratio()}
+/* contraste do corpo verde contra o fundo do arco */
+function lum(rgb){var c=rgb.map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function rgbOf(s){return s.match(/[\d.]+/g).slice(0,3).map(Number)}
+function ratios(){var g=$('gauge'),pr=document.createElement('i');pr.style.cssText='position:absolute;width:0;height:0;background:var(--corpo)';$('gpig').querySelector('svg').parentNode.appendChild(pr);
+ var cs=getComputedStyle(pr),body=rgbOf(cs.backgroundColor);pr.remove();
+ var bg=rgbOf(getComputedStyle(g).backgroundColor),tr=rgbOf(getComputedStyle(document.documentElement).getPropertyValue('--color-track').trim().length?(function(){var t=document.createElement('i');t.style.background='var(--color-track)';document.body.appendChild(t);var c=getComputedStyle(t).backgroundColor;t.remove();return c})():'rgb(0,0,0)');
+ function r(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+ return {bg:r(body,bg),track:r(body,tr)}}
+function ratio(){var r=ratios();$('ratio').textContent='Contraste do corpo verde contra o fundo do arco: '+r.bg.toFixed(2)+':1 (mínimo 3:1 para formas). Contra a trilha cinza do arco: '+r.track.toFixed(2)+':1; por isso o Vintém fica dentro do arco, sem tocar a trilha.'}
+document.querySelectorAll('.variant-tab').forEach(function(b){b.addEventListener('click',function(){S.v=b.dataset.v;render()})});
+$('app').addEventListener('click',function(e){var s=e.target.closest('[data-st]');if(s){S.st=s.dataset.st;render();return}
+ if(e.target.closest('#flip')){var fb=$('flipbox');var on=fb.classList.toggle('giro');e.target.closest('#flip').setAttribute('aria-pressed',on)}});
+var qs=location.search;if(/[?&]w=(\d+)/.test(qs))$('wrap').style.width=RegExp.$1+'px';
+if(/[?&]v=([abc])/.test(qs))S.v=RegExp.$1;if(/[?&]estado=(\w+)/.test(qs)&&ST[RegExp.$1])S.st=RegExp.$1;
+render();
+/* ---------- autoteste (?test) ---------- */
+if(/[?&]test/.test(qs)){var R=[];function ok(n,c,x){R.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ var IDS=['olhos','pupilas','sobrancelhas','boca','orelhas','rabo','fenda','moeda','corpo','focinho','patas'];
+ var wrap=$('wrap');
+ function typeScale(){var bad=[];document.querySelectorAll('body *').forEach(function(e){if(e.closest('svg')||e.closest('script')||e.closest('style')||e.id==='selftest')return;var own=[].some.call(e.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;var cs=getComputedStyle(e),fs=parseFloat(cs.fontSize),fw=cs.fontWeight;if([12,16,28,56].indexOf(fs)<0||(fw!=='400'&&fw!=='700'))bad.push(e.tagName.toLowerCase()+' '+fs+'/'+fw+' "'+e.textContent.trim().slice(0,14)+'"')});return bad}
+ function overflow(){var wr=wrap.getBoundingClientRect(),bad=[];wrap.querySelectorAll('*').forEach(function(e){if(e.closest('svg')&&e.tagName.toLowerCase()!=='svg')return;if(!e.getClientRects().length)return;var r=e.getBoundingClientRect();if(r.right>wr.right+.5||r.left<wr.left-.5)bad.push(e.tagName.toLowerCase()+' '+Math.round(r.right-wr.right))});return bad}
+ function targets(){var bad=[];document.querySelectorAll('button').forEach(function(e){var r=e.getBoundingClientRect();if(r.width<43.99||r.height<43.99)bad.push((e.textContent.trim()||e.getAttribute('aria-label')).slice(0,14)+' '+Math.round(r.width)+'x'+Math.round(r.height))});return bad}
+ var tabs=[].map.call(document.querySelectorAll('.variant-tab'),function(b){return b.dataset.v}).join('');
+ ok('três variantes (abas a, b, c)',tabs==='abc',tabs);
+ ['a','b','c'].forEach(function(v){try{var T='['+v+'] ';S.v=v;S.st='neutro';render();
+  ok(T+'aba ativa e nota exibida',document.querySelector('.variant-tab.active').dataset.v===v&&$('vnote').textContent.length>40);
+  var sigs={};
+  STATES.forEach(function(s){S.st=s;render();var big=$('flipbox').querySelector('svg'),miss=IDS.filter(function(n){return !document.getElementById(n)}),dup=IDS.filter(function(n){return document.querySelectorAll('[id="'+n+'"]').length!==1});
+   ok(T+s+': grande com os grupos com id (olhos, pupilas, sobrancelhas, boca, orelhas, rabo, fenda, moeda...)'+(miss.length?' faltam '+miss.join():''),!!big&&miss.length===0&&dup.length===0,miss.join()+' dup '+dup.join());
+   var bw=parseFloat(getComputedStyle(big).width);ok(T+s+': grande com cerca de 220px ('+Math.round(bw)+')',Math.abs(bw-220)<2,bw);
+   ok(T+s+': botão do seletor marcado',document.querySelector('#seg [data-st="'+s+'"]').getAttribute('aria-pressed')==='true');
+   var cell=document.querySelector('[data-cell="'+s+'"] svg'),cr=cell.getBoundingClientRect();sigs[s]=cell.innerHTML;
+   ok(T+s+': célula de 84px renderiza ('+Math.round(cr.width)+'px, '+cell.querySelectorAll('*').length+' nós) com legenda "'+NAMES[s]+'"',Math.abs(cr.width-84)<1&&cell.querySelectorAll('*').length>20&&document.querySelector('[data-cell="'+s+'"] span').textContent===NAMES[s]);
+   var gp=$('gpig').querySelector('svg').getBoundingClientRect();ok(T+s+': 84px dentro do arco do medidor',Math.abs(gp.width-84)<1&&gp.left>=$('gauge').getBoundingClientRect().left);});
+  var uniq=Object.keys(sigs).map(function(k){return sigs[k]}).filter(function(x,i,a){return a.indexOf(x)===i}).length;
+  ok(T+'os seis estados são desenhos diferentes ('+uniq+')',uniq===6,uniq);
+  ok(T+'seis células na fileira',document.querySelectorAll('#row .cell').length===6);
+  ok(T+'balão de fala com a frase',$('bubble').textContent.indexOf('Esse café de novo? Sua carteira pediu socorro.')>-1);
+  var ts=typeScale();ok(T+'só tamanhos 12, 16, 28 e 56 e pesos 400 e 700'+(ts.length?': '+ts.slice(0,4).join(', '):''),ts.length===0,ts.join(', '));
+  var tg=targets();ok(T+'alvos de toque >= 44px'+(tg.length?': '+tg.join(', '):''),tg.length===0,tg.join(', '));
+  var ov=overflow();ok(T+'sem rolagem horizontal na largura atual ('+Math.round(wrap.getBoundingClientRect().width)+'px)'+(ov.length?': '+ov.slice(0,3).join(', '):''),ov.length===0&&document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,ov.join(', ')+' '+document.documentElement.scrollWidth+'/'+document.documentElement.clientWidth);
+  var rt=ratios();ok(T+'contraste do corpo verde contra o fundo do arco = '+rt.bg.toFixed(2)+':1 (>= 3:1); contra a trilha = '+rt.track.toFixed(2)+':1 (informativo)',rt.bg>=3,rt.bg);
+  var fl=$('flip');fl.click();ok(T+'girar de lado alterna a classe e aria-pressed',$('flipbox').classList.contains('giro')&&fl.getAttribute('aria-pressed')==='true');fl.click();ok(T+'girar de novo volta',!$('flipbox').classList.contains('giro'));
+  ok(T+'animação nos grupos (balanço, piscar, rabo)',!!document.querySelector('#flipbox svg.sway')&&!!document.querySelector('#olhos.blink')&&!!document.querySelector('#pupilas.blink')&&!!document.querySelector('#rabo.wag'));
+  ok(T+'pequenos não usam id de grupo (sem duplicar)',document.querySelectorAll('#row [id="olhos"],#gauge [id="olhos"]').length===0);
+  S.st='neutro';render();
+ }catch(err){ok('['+v+'] EXCEÇÃO',false,err.message+' @ '+(err.stack||'').split('\n')[1])}});
+ var rules=[],kf=[],rm=false;[].forEach.call(document.styleSheets,function(sh){try{[].forEach.call(sh.cssRules,function(r){if(r.type===7)kf.push(r.name);if(r.type===4&&/prefers-reduced-motion:\s*reduce/.test(r.conditionText||r.media.mediaText)){rm=true;rules=[].map.call(r.cssRules,function(x){return x.cssText}).join(' ')}})}catch(e){}});
+ ok('keyframes de balanço, piscar e rabo existem ('+kf.join(',')+')',['sway','blink','wag'].every(function(k){return kf.indexOf(k)>-1}),kf.join());
+ ok('prefers-reduced-motion desliga as animações',rm&&/\.sway/.test(rules)&&/animation[^;]*\bnone\b/.test(rules),rules);
+ ok('sem emoji',!/\p{Extended_Pictographic}/u.test(document.documentElement.outerHTML));
+ ok('sem fontes, scripts nem imagens externas (offline)',!document.querySelector('script[src],link[href^="http"],link[href^="//"],img,iframe,object,embed,image')&&!/(https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}/i.test(document.documentElement.outerHTML.replace(/<!doctype[^>]*>/i,'')));
+ ok('sem importação de CSS nem endereço externo em url',!/@imp\u006frt|url\(\s*['"]?https?:/.test(document.documentElement.outerHTML));
+ ok('sem erros de JS',errors.length===0,errors.join('|'));
+ var f=R.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ $('selftest').textContent='TOTAL '+R.length+' | FALHAS '+f+'\n'+R.join('\n')}
+})();
+</script></body></html>

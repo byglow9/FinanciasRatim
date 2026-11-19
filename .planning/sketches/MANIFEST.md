@@ -18,3 +18,4 @@ Referência máxima: prints do app Skunk em `references/skunk/` (não versionado
 | 006 | navegacao-v2 | Como a pílula atende todas as nossas abas? | A 5 + Planejar + Mais, B pílula rolável, C 4 + grade | pendente |
 | 007 | home-v2 | A Home A funcionando (teclado, limites, alertas, ritmo, dados velhos, perfil do parceiro) | única | para aprovar |
 | 008 | home-v3 | Home com pílula rolável só de ícones + botão ＋, engrenagem no topo, atalhos claros (Novo gasto, Nova receita, Contas fixas, Limites) e lançamento com aba Porquinho | única | para aprovar |
+| 018 | vintem | Qual estilo visual do mascote Vintém (porquinho-cofre verde-moeda, esperto e debochado)? | A chapado geométrico, B contorno grosso de adesivo, C fofo com volume; seis estados (neutro, feliz, triste, bravo, sonolento, surpreso) em 220px e 84px, medidor, balão, balanço/piscar e girar de lado | pendente |

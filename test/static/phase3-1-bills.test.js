@@ -78,3 +78,31 @@ test('os arquivos da tela passam nas varreduras de escala e de alvo de toque', (
   assert.deepEqual(scaleProblems(files), [])
   assert.deepEqual(touchProblems(files), [])
 })
+
+test('a pagina tem os tres cartoes de total, o filtro e a apagar em duas etapas', () => {
+  const src = code(PAGE)
+  for (const needle of ['Total mensal', 'Pagas', 'Pendentes', 'Todas']) {
+    assert.ok(src.includes(needle), `FixedExpensesPage sem ${needle}`)
+  }
+  assert.match(src, /<KpiTrio[\s\S]{0,40}variant="cards"/, 'sem KpiTrio variant="cards"')
+  assert.match(src, /<SegmentedControl/, 'sem SegmentedControl')
+  assert.match(src, /billsSummary\(items\)/, 'cartoes nao vem de billsSummary sobre todos os itens')
+  assert.match(src, /groupBillsByCategory\(categorized, categoryDefs, filter\)/, 'filtro nao passa pelo nucleo')
+  assert.match(src, /compactMoney\(/, 'resumo compacto (P-04 truncado) ausente')
+  assert.match(src, /decimals: 'always'/, 'valor exato com centavos ausente')
+  assert.match(src, /Apagar \$\{current\.name\}\? Esta ação não pode ser desfeita\./)
+  assert.ok(src.includes('Conta apagada'))
+  assert.match(src, /readOnly=\{readOnly\}/)
+  assert.match(src, /onBlocked=/)
+  assert.ok(src.includes('Nenhuma conta pendente') && src.includes('Nenhuma conta paga ainda'))
+})
+
+test('BillRow calcula o estado por datas e tinge a linha, sem opacity', () => {
+  const src = code(ROW)
+  assert.match(src, /billStatus\(/)
+  assert.match(src, /billSupportText\(/)
+  assert.ok(src.includes('bg-bill-od-bg') && src.includes('bg-bill-soon-bg'))
+  for (const word of ['vencida', 'hoje', 'em breve', 'pago']) assert.ok(src.includes(word), `chip sem ${word}`)
+  assert.match(src, /line-through/)
+  assert.doesNotMatch(src, /opacity/, 'BillRow usa opacity')
+})

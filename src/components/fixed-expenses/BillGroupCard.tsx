@@ -6,10 +6,13 @@ import { iconComponent } from '@/lib/categoryIcons'
 import { BillRow } from '@/components/fixed-expenses/BillRow'
 import type { BillGroup, CategorizedBillItem } from '@shared/core/billGroups.js'
 import { categoryDisplayName, categoryIcon } from '@shared/core/categories.js'
+import type { DateParts } from '@shared/core/cycle.js'
 import { formatMoney } from '@shared/core/format.js'
 
 interface BillGroupCardProps {
   group: BillGroup
+  /** Hoje em São Paulo, para o estado de cada conta. */
+  todayParts: DateParts
   togglePaid: (item: CategorizedBillItem) => Promise<boolean>
   /** Chaves `billId-ano-mês` com gravação em andamento. */
   pendingKeys: ReadonlySet<string>
@@ -20,7 +23,7 @@ interface BillGroupCardProps {
  * Cartão de uma categoria: ícone, nome, "X de Y pagas", subtotal e barra de progresso, sempre sobre
  * TODOS os itens do grupo (o filtro só esconde linhas), e abaixo as linhas na ordem do núcleo.
  */
-export function BillGroupCard({ group, togglePaid, pendingKeys, onSelect }: BillGroupCardProps) {
+export function BillGroupCard({ group, todayParts, togglePaid, pendingKeys, onSelect }: BillGroupCardProps) {
   const { categoryDefs } = useArea()
   const titleId = useId()
 
@@ -57,6 +60,7 @@ export function BillGroupCard({ group, togglePaid, pendingKeys, onSelect }: Bill
             <BillRow
               key={key}
               item={item}
+              todayParts={todayParts}
               togglePaid={togglePaid}
               busy={pendingKeys.has(key)}
               onSelect={onSelect}

@@ -73,10 +73,10 @@ export async function addGoal(goal: Omit<Goal, 'id' | 'createdAt'>): Promise<str
   return docRef.id
 }
 
-export async function updateGoal(
-  id: string,
-  goal: Partial<Omit<Goal, 'id' | 'createdAt'>>
-): Promise<void> {
+/** Edição parcial; `deadline: null` apaga o prazo, `undefined` o mantém. */
+export type GoalUpdate = Partial<Omit<Goal, 'id' | 'createdAt' | 'deadline'>> & { deadline?: Date | null }
+
+export async function updateGoal(id: string, goal: GoalUpdate): Promise<void> {
   if (MOCK) {
     const all = mList<RawGoal>(COL)
     const idx = all.findIndex((g) => g.id === id)
@@ -94,7 +94,9 @@ export async function updateGoal(
   }
 
   const updateData: Record<string, unknown> = { ...goal }
-  if (goal.deadline) updateData.deadline = Timestamp.fromDate(goal.deadline)
+  if (goal.deadline !== undefined) {
+    updateData.deadline = goal.deadline ? Timestamp.fromDate(goal.deadline) : null
+  }
   await updateDoc(doc(db, COL, id), updateData)
 }
 

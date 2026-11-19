@@ -82,3 +82,11 @@ test('WR-09: o responsavel do Porquinho abre na pessoa logada, nao em "ele" fixo
   assert.doesNotMatch(src, /useState<PersonType>\('ele'\)|setPerson\('ele'\)/)
   assert.match(src, /setPerson\(defaultPerson\)/)
 })
+
+test('WR-11: limpar o prazo da meta na edicao envia deadline null e o servico apaga o campo', () => {
+  assert.match(code('src/components/goals/GoalForm.tsx'), /deadline: deadlineDate \?\? null/)
+  const svc = code('src/services/goals.service.ts')
+  assert.match(svc, /goal\.deadline !== undefined/, 'updateGoal ignora deadline null')
+  assert.match(svc, /updateData\.deadline = goal\.deadline \? Timestamp\.fromDate\(goal\.deadline\) : null/)
+  assert.match(code('src/pages/GoalsPage.tsx'), /deadline: data\.deadline \?\? undefined/, 'criar nao pode gravar null como Date')
+})

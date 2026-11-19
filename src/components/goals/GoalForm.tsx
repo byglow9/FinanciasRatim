@@ -17,7 +17,10 @@ const NAME_MAX = 40
  * `currentAmount` nunca sai daqui: só o aporte o altera, senão a edição apagaria aportes feitos
  * em paralelo no outro celular (CR-01).
  */
-export type GoalFormData = Omit<Goal, 'id' | 'createdAt' | 'currentAmount'>
+export type GoalFormData = Omit<Goal, 'id' | 'createdAt' | 'currentAmount' | 'deadline'> & {
+  /** Nulo quando o prazo foi limpo: na edição apaga o prazo antigo (WR-11). */
+  deadline: Date | null
+}
 
 interface GoalFormProps {
   open: boolean
@@ -122,7 +125,7 @@ export function GoalForm({ open, onClose, person, goal, onSave }: GoalFormProps)
     const data: GoalFormData = {
       name: cleanName,
       targetAmount: fromCents(cents),
-      ...(deadlineDate ? { deadline: deadlineDate } : {}),
+      deadline: deadlineDate ?? null,
       person: goal?.person ?? person,
     }
 

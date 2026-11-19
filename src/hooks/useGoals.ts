@@ -4,6 +4,7 @@ import {
   getGoals,
   addGoal,
   updateGoal,
+  type GoalUpdate,
   deleteGoal,
 } from '@/services/goals.service'
 import { addContribution } from '@/services/goalContributions.service'
@@ -35,7 +36,7 @@ export function useGoals(person?: PersonType) {
     await fetchGoals()
   }
 
-  const update = async (id: string, goal: Partial<Omit<Goal, 'id' | 'createdAt'>>) => {
+  const update = async (id: string, goal: GoalUpdate) => {
     await updateGoal(id, goal)
     await fetchGoals()
   }

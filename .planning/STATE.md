@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Mascote Vintém
 status: executing
-stopped_at: Completed 04-13-PLAN.md
-last_updated: "2026-11-23T12:57:53.826Z"
+stopped_at: Completed 04-14-PLAN.md
+last_updated: "2026-11-23T13:07:08.495Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 4 execution started
-state_head: c048c47d92724d68a8ebc3eb1980a68ebe0f7943
+state_head: 6217b409ad0b9fb796a22601af6d9edfd69d6f44
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 79
+  completed_plans: 80
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 4 (Mascote Vintém) — EXECUTING
-Plan: 4 of 20
+Plan: 5 of 20
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 4 execution started
 
@@ -123,6 +123,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 04 P11 | 35min | 3 tasks | 9 files |
 | Phase 04 P12 | 25min | 3 tasks | 11 files |
 | Phase 04 P13 | 50min | 3 tasks | 10 files |
+| Phase 04 P14 | 25min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -179,6 +180,7 @@ Recent decisions affecting current work:
 - [Phase 4]: [Phase 4] 04-11: grade de sete estados em 3 colunas (4 a partir de md) porque 4 de 84px nao cabem a 360px; onFrame no laco unico serve o pop do balao
 - [Phase 4]: 04-12: fala de entrada uma por visita (chave pessoa:ciclo) sem anuncio; fala por toque anunciada na regiao viva
 - [Phase 4]: 04-13: triste com sy 1.04 e neutro com cvL .48, cvR .02, ba -9 (criterios do autoteste mandam, P-14); patas do perfil terminam em y 172
+- [Phase 4]: [Phase 4] 04-14: fala de entrada espera a linha de base (ready); marco vintem:seen:v1 congelado em estado e gravado so no localStorage; reacao do banco observada pela moeda e regiao viva
 
 ### Pending Todos
 
@@ -210,6 +212,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T12:57:53.719Z
-Stopped at: Completed 04-13-PLAN.md
+Last session: 2026-11-23T13:07:08.394Z
+Stopped at: Completed 04-14-PLAN.md
 Resume file: None

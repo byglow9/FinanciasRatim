@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-07-PLAN.md
-last_updated: "2026-11-23T16:20:36.856Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-11-23T16:22:35.018Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: 9e56f9512c3ef0bcbe36e67b4b7ca678e16f28c8
+state_head: 7a28fb1b3260e209410ed15aa760bc997064a97a
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 93
+  completed_plans: 94
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 8 of 21
+Plan: 9 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -136,6 +136,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 05 P06 | 35min | 2 tasks | 12 files |
 | Phase 5 P01 | ~1h | 3 tasks | 3 files |
 | Phase 05 P07 | 20min | 2 tasks | 16 files |
+| Phase 5 P08 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -201,6 +202,7 @@ Recent decisions affecting current work:
 - [Phase 5]: [Phase 5] 05-05: sketch 021 com D (cofre) de lado e B de cabeca grande, pois de frente D x C media 2,1% e A x B 9% (minimo 12% a 60 px); escolha do icone fica no 05-13
 - [Phase 5]: 05-06: meta theme-color antes do script inline de tema; tema do aparelho nunca passa por AreaContext nem Firestore
 - [Phase 5]: [Phase 5 Plan 01]: ID do site de Hosting e coinc-financias (coinc reservado por outro projeto); alias do alvo segue coinc (D-03a)
+- [Phase 5]: [Phase 5] 05-08: hosting em array (coinc e legacy); so /assets/** imutavel, no-cache em sw.js, manifest, raiz e HTML; redirect do legacy 302 com destino fixo (301 so no 05-21)
 
 ### Pending Todos
 
@@ -232,6 +234,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T16:20:36.755Z
-Stopped at: Completed 05-07-PLAN.md
+Last session: 2026-11-23T16:22:34.916Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None

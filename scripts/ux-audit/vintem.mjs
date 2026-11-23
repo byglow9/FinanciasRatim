@@ -125,6 +125,74 @@ const WAIT_BLINK = (ms) => `new Promise((resolve) => {
   }, 25)
 })`
 
+
+/** Espera uma condicao dentro da pagina por ate `ms`; devolve { ok, ms }. */
+const WAIT_FOR = (cond, ms) => `new Promise((resolve) => {
+  const t0 = performance.now()
+  const timer = setInterval(() => {
+    let ok = false
+    try { ok = Boolean(${cond}) } catch { ok = false }
+    const spent = Math.round(performance.now() - t0)
+    if (ok) { clearInterval(timer); resolve({ ok: true, ms: spent }) }
+    else if (spent > ${ms}) { clearInterval(timer); resolve({ ok: false, ms: spent }) }
+  }, 50)
+})`
+
+/** Atributo `display` de um filho do palco por sufixo de id. */
+const DISPLAY_OF = (suffix) => `(() => {
+  const svg = ${STAGE_SVG}
+  const el = svg && svg.querySelector('[id$="-${suffix}"]')
+  return el ? el.getAttribute('display') : null
+})()`
+
+/** Escolhe uma opcao do Select (versao movel: botao e lista), clicando como o usuario. */
+const PICK_SELECT_OPTION = (selectId, label) => `(() => {
+  const hidden = document.getElementById(${JSON.stringify(selectId)})
+  const trigger = hidden && hidden.nextElementSibling
+  if (!trigger) return 'sem-gatilho'
+  trigger.click()
+  return 'aberto'
+})()`
+
+const CLICK_OPTION = (label) => `(() => {
+  const opts = [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === ${JSON.stringify(label)} && b.classList.contains('min-h-11'))
+  if (opts.length === 0) return false
+  opts[0].click()
+  return true
+})()`
+
+/** Move o controle de limite como o navegador faria (setter nativo e evento input). */
+const SET_RANGE = (value) => `(() => {
+  const el = document.getElementById('vt-pct')
+  if (!el) return false
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(String(value))})
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  return true
+})()`
+
+const CLICK_BY_ID = (id) => `(() => { const el = document.getElementById(${JSON.stringify(id)}); if (!el) return false; el.click(); return true })()`
+
+const CLICK_BY_TEXT = (text) => `(() => {
+  const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === ${JSON.stringify(text)})
+  if (!b) return false
+  b.click()
+  return true
+})()`
+
+/** Alvos de toque menores que 43,5 px entre os controles visiveis da pagina. */
+const SMALL_TARGETS = `(() => {
+  const out = []
+  for (const el of document.querySelectorAll('button, a[href], input, select, [role="switch"], [role="tab"]')) {
+    if (el.closest('[aria-hidden="true"], .sr-only')) continue
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) continue
+    if (r.width < 43.5 || r.height < 43.5) {
+      out.push({ tag: el.tagName.toLowerCase(), id: el.id || null, text: (el.textContent || '').trim().slice(0, 24), w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 })
+    }
+  }
+  return out
+})()`
+
 async function navigate(page, url) {
   // Passa por about:blank: sem isso a checagem de "pronto" podia ler o DOM do documento antigo.
   const blank = page.waitFor('Page.loadEventFired', 15000)
@@ -192,6 +260,53 @@ async function runChecks(page, collected) {
   // (4) Uma piscada observada em ate 9 s.
   const blink = await page.evaluate(WAIT_BLINK(9000))
   check('piscada-observada-em-9s', blink.changed, blink)
+
+  // (5) Estado pelo Select: "Triste" liga a lagrima.
+  await page.evaluate(PICK_SELECT_OPTION('vt-state', 'Triste'))
+  await sleep(150)
+  const clickedTriste = await page.evaluate(CLICK_OPTION('Triste'))
+  const tear = await page.evaluate(WAIT_FOR(`(() => { const e = document.querySelector('svg.vt [id$="-tear"]'); return e && e.getAttribute('display') === 'inline' })()`, 3000))
+  check('select-triste-liga-a-lagrima', clickedTriste && tear.ok, { clickedTriste, ...tear })
+
+  // (6) Controle de limite em 120 leva ao bravo (acessorio de raiva).
+  const moved = await page.evaluate(SET_RANGE(120))
+  const anger = await page.evaluate(WAIT_FOR(`(() => { const e = document.querySelector('svg.vt [id$="-anger"]'); return e && e.getAttribute('display') === 'inline' })()`, 3000))
+  const pctText = await page.evaluate(`document.querySelector('label[for="vt-pct"]')?.nextElementSibling?.textContent?.trim() ?? ''`)
+  check('limite-120-da-estado-bravo', moved && anger.ok && pctText === '120%', { moved, ...anger, pctText: pctText.slice(0, 40) })
+
+  // (7) Falar mostra um texto nao vazio.
+  const clickedFalar = await page.evaluate(CLICK_BY_TEXT('Falar'))
+  await sleep(200)
+  const speech = await page.evaluate(`document.getElementById('vt-speech')?.textContent?.trim() ?? ''`)
+  check('falar-mostra-texto', clickedFalar && speech.length > 0, { clickedFalar, speech: speech.slice(0, 80) })
+
+  // (8) Girar de lado: o perfil aparece em ate 2 s e a frente volta ao desligar.
+  await page.evaluate(CLICK_BY_ID('vt-turn'))
+  const profile = await page.evaluate(WAIT_FOR(`document.querySelector('svg.vt [id$="-side"]')?.getAttribute('display') === 'inline'`, 2000))
+  check('girar-de-lado-mostra-o-perfil-em-2s', profile.ok, profile)
+  await page.evaluate(CLICK_BY_ID('vt-turn'))
+  const front = await page.evaluate(WAIT_FOR(`document.querySelector('svg.vt [id$="-side"]')?.getAttribute('display') === 'none'`, 3000))
+  check('girar-de-lado-desligado-volta-a-frente', front.ok, front)
+
+  // (9) Layout: sem rolagem horizontal e nenhum alvo de toque menor que 43,5 px.
+  const scroll = await page.evaluate(`({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, bw: document.body.scrollWidth })`)
+  check('sem-rolagem-horizontal-a-360', scroll.sw <= scroll.cw && scroll.bw <= scroll.cw, scroll)
+  const small = await page.evaluate(SMALL_TARGETS)
+  check('nenhum-alvo-de-toque-menor-que-43-5', small.length === 0, { small })
+
+  // (10) Movimento reduzido: a cobertura da palpebra fica parada por 6 s.
+  await page.evaluate(CLICK_BY_ID('vt-reduced'))
+  await sleep(1200)
+  const lids = await page.evaluate(`new Promise((resolve) => {
+    const read = () => { const e = document.querySelector('svg.vt [id$="-eL"] [data-e="lb"]'); return e ? e.getAttribute('y') : null }
+    const seen = new Set([read()])
+    const t0 = performance.now()
+    const timer = setInterval(() => {
+      seen.add(read())
+      if (performance.now() - t0 >= 6000) { clearInterval(timer); resolve([...seen]) }
+    }, 50)
+  })`)
+  check('movimento-reduzido-segura-a-palpebra-por-6s', lids.length === 1, { values: lids })
 
   check('sem-excecoes-nem-console-error', collected.exceptions.length === 0 && collected.consoleErrors.length === 0, {
     exceptions: [...collected.exceptions],

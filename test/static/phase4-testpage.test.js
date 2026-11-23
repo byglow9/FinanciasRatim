@@ -41,3 +41,40 @@ test('a pagina usa a escala tipografica e alvos de toque do app', () => {
   assert.deepEqual(scaleProblems(FILES), [])
   assert.deepEqual(touchProblems(FILES), [])
 })
+
+test('a pagina tem todos os rotulos e botoes do contrato de controles', () => {
+  const src = code(PAGE)
+  for (const text of [
+    'Estado', 'Limite gasto', 'Tom', 'Seguir o cursor', 'Girar de lado', 'Movimento reduzido',
+    'Lançar gasto', 'Susto', 'Bronca', 'Festa', 'Falar',
+    'Neutro', 'Feliz', 'Triste', 'Bravo', 'Sonolento', 'Surpreso', 'Atento',
+    'Suave', 'Direto', 'Sem filtro',
+    'Vintém grande', 'Controles',
+  ]) {
+    assert.ok(src.includes(text), `pagina sem "${text}"`)
+  }
+})
+
+test('o limite gasto e um controle nativo de 0 a 160 que aplica stateFromPct', () => {
+  const src = code(PAGE)
+  assert.match(src, /type="range"/, 'sem input type=range')
+  assert.match(src, /min=\{0\}/, 'o controle nao comeca em 0')
+  assert.match(src, /max=\{160\}/, 'o controle nao vai a 160')
+  assert.match(src, /min-h-11/, 'o controle nao tem alvo de 44px')
+  assert.match(src, /stateFromPct/, 'a pagina nao usa stateFromPct')
+})
+
+test('Falar usa o seletor de frases com encaixes ficticios e historico local', () => {
+  const src = code(PAGE)
+  for (const needle of ['SAMPLE_SITUATION_BY_STATE', 'pick(', 'buildSlots', 'pushRecent', 'recentKey', 'recentLimit']) {
+    assert.ok(src.includes(needle), `pagina sem ${needle}`)
+  }
+})
+
+test('a pagina nao le nem grava dado do usuario: nenhum servico, hook de dados ou contexto', () => {
+  const src = code(PAGE)
+  assert.doesNotMatch(src, /from ['"]@\/services/, 'a pagina importa um servico')
+  assert.doesNotMatch(src, /from ['"]@\/hooks\/use(?!ReducedMotion)/, 'a pagina importa um hook de dados')
+  assert.doesNotMatch(src, /from ['"]@\/contexts/, 'a pagina importa um contexto de dados')
+  assert.doesNotMatch(src, /localStorage|sessionStorage|updateVintemTone|updateSettings/, 'a pagina grava algo')
+})

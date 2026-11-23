@@ -51,7 +51,8 @@ export async function snapshot({ page, navigate, route, ready }) {
   })`)
 }
 
-export async function run({ page, check, navigate }) {
+export async function run(ctx) {
+  const { page, check, navigate } = ctx
   // Home sem renda: o hero (neutro, sem segundo Vintem) mais o vazio de "Nenhum limite definido".
   const home = await snapshot({
     page,
@@ -71,4 +72,33 @@ export async function run({ page, check, navigate }) {
   const noIncome = await page.evaluate(`document.body.innerText.includes('Falta saber quanto entra')`)
   check('home-hero-sem-renda-mantem-o-texto', noIncome, { noIncome })
   check('home-sem-rolagem-horizontal', home.scroll.scrollWidth <= home.scroll.clientWidth, home.scroll)
+
+  await runSingles(ctx)
+}
+
+/** Telas com um unico vazio: uma peca neutra acima do texto, nenhum outro Vintem e sem rolagem lateral. */
+const SINGLE_EMPTIES = [
+  { label: 'transacoes', route: '/transacoes', text: 'Nenhuma transação neste ciclo' },
+  { label: 'calendario', route: '/calendario', text: 'Nada agendado neste ciclo' },
+  { label: 'contas-fixas', route: '/contas-fixas', text: 'Nenhuma conta fixa neste ciclo' },
+]
+
+export async function runSingles({ page, check, navigate }) {
+  for (const screen of SINGLE_EMPTIES) {
+    const snap = await snapshot({
+      page,
+      navigate,
+      route: screen.route,
+      ready: `document.body.innerText.includes(${JSON.stringify(screen.text)})`,
+    })
+    checkPieces(check, screen.label, snap.pieces, ['neutro'])
+    check(`${screen.label}-nenhum-vintem-alem-do-vazio`, snap.vintens === 1, { vintens: snap.vintens })
+    const textTop = await page.evaluate(topOfText(screen.text))
+    const pieceTop = snap.pieces[0]?.top ?? null
+    check(`${screen.label}-vintem-acima-do-texto`, textTop !== null && pieceTop !== null && pieceTop < textTop, {
+      pieceTop,
+      textTop,
+    })
+    check(`${screen.label}-sem-rolagem-horizontal`, snap.scroll.scrollWidth <= snap.scroll.clientWidth, snap.scroll)
+  }
 }

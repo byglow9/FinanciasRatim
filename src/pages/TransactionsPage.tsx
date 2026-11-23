@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
 import { useToast } from '@/components/ui/toast'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import type { PersonType, Transaction } from '@/types'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { dayKeyOf, transactionDayGroups } from '@shared/core/dayKey.js'
@@ -129,17 +130,20 @@ export function TransactionsPage() {
       ) : null}
 
       {error ? (
-        <Notice
-          tone="danger"
-          title="Não foi possível carregar as transações."
-          action={
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
-              Tentar de novo
-            </Button>
-          }
-        >
-          Confira a conexão e tente de novo.
-        </Notice>
+        <>
+          <VintemEmpty pose="surpreso" />
+          <Notice
+            tone="danger"
+            title="Não foi possível carregar as transações."
+            action={
+              <Button type="button" variant="outline" onClick={() => void refetch()}>
+                Tentar de novo
+              </Button>
+            }
+          >
+            Confira a conexão e tente de novo.
+          </Notice>
+        </>
       ) : loading ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Carregando transações</span>
@@ -149,6 +153,7 @@ export function TransactionsPage() {
         </div>
       ) : transactions.length === 0 ? (
         <div className="space-y-2">
+          <VintemEmpty pose="neutro" />
           <p className="text-base font-bold">Nenhuma transação neste ciclo</p>
           <p className="text-xs font-normal text-muted-foreground">
             Lance um gasto ou uma receita para ele aparecer aqui.
@@ -159,6 +164,7 @@ export function TransactionsPage() {
         </div>
       ) : groups.length === 0 ? (
         <div className="space-y-2">
+          <VintemEmpty pose="neutro" />
           <p className="text-base font-bold">Nada encontrado</p>
           <p className="text-xs font-normal text-muted-foreground">Tente outra palavra ou limpe os filtros.</p>
           <Button type="button" variant="outline" onClick={clearFilters}>

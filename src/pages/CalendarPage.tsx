@@ -14,6 +14,7 @@ import { AgendaList } from '@/components/calendar/AgendaList'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import type { AgendaEvent, Note, PersonType } from '@/types'
 import { agendaScrollTarget } from '@shared/core/calendarModel.js'
 import type { CalendarMode } from '@shared/core/calendarModel.js'
@@ -264,17 +265,20 @@ export function CalendarPage() {
         onOpenEvent={openEvent}
         state={
           error ? (
-            <Notice
-              tone="danger"
-              title="Não foi possível carregar o calendário."
-              action={
-                <Button type="button" variant="outline" onClick={() => void refetch()}>
-                  Tentar de novo
-                </Button>
-              }
-            >
-              Confira a conexão e tente de novo.
-            </Notice>
+            <>
+              <VintemEmpty pose="surpreso" />
+              <Notice
+                tone="danger"
+                title="Não foi possível carregar o calendário."
+                action={
+                  <Button type="button" variant="outline" onClick={() => void refetch()}>
+                    Tentar de novo
+                  </Button>
+                }
+              >
+                Confira a conexão e tente de novo.
+              </Notice>
+            </>
           ) : loading ? (
             <div role="status" className="space-y-2">
               <span className="sr-only">Carregando o calendário</span>
@@ -284,6 +288,7 @@ export function CalendarPage() {
             </div>
           ) : days.every((d) => d.items.length === 0) ? (
             <div className="space-y-2">
+              <VintemEmpty pose="neutro" />
               <p className="text-base font-bold">Nada agendado neste ciclo</p>
               <p className="text-xs font-normal text-muted-foreground">
                 Adicione um post-it ou um evento para ele aparecer aqui.

@@ -12,6 +12,7 @@ import { KpiTrio } from '@/components/ui/kpi-trio'
 import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useToast } from '@/components/ui/toast'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import type { FixedExpense, PersonType } from '@/types'
 import { billsSummary, groupBillsByCategory } from '@shared/core/billGroups.js'
 import type { BillFilter, CategorizedBillItem } from '@shared/core/billGroups.js'
@@ -164,17 +165,20 @@ export function FixedExpensesPage() {
       ) : null}
 
       {error ? (
-        <Notice
-          tone="danger"
-          title="Não foi possível carregar as contas fixas."
-          action={
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
-              Tentar de novo
-            </Button>
-          }
-        >
-          Confira a conexão e tente de novo.
-        </Notice>
+        <>
+          <VintemEmpty pose="surpreso" />
+          <Notice
+            tone="danger"
+            title="Não foi possível carregar as contas fixas."
+            action={
+              <Button type="button" variant="outline" onClick={() => void refetch()}>
+                Tentar de novo
+              </Button>
+            }
+          >
+            Confira a conexão e tente de novo.
+          </Notice>
+        </>
       ) : loading ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Carregando as contas fixas</span>
@@ -184,6 +188,7 @@ export function FixedExpensesPage() {
         </div>
       ) : summary.count === 0 ? (
         <div className="space-y-2">
+          <VintemEmpty pose="neutro" />
           <p className="text-base font-bold">Nenhuma conta fixa neste ciclo</p>
           <p className="text-xs font-normal text-muted-foreground">
             Cadastre aluguel, internet e outras contas que se repetem todo mês.

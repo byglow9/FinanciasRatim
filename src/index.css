@@ -482,6 +482,22 @@
   animation: pulse-soft 1.4s ease-in-out infinite;
 }
 
+/* Onboarding (Fase 5): o conteudo da tela entra com fade e deslocamento de 24px (sinal na variavel). */
+@keyframes onboarding-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--onboarding-shift, 24px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.anim-onboarding-in {
+  animation: onboarding-in 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -493,7 +509,8 @@
   }
 
   .anim-sheet-in,
-  .anim-toast-in {
+  .anim-toast-in,
+  .anim-onboarding-in {
     animation: fade-100 100ms ease-out !important;
   }
 

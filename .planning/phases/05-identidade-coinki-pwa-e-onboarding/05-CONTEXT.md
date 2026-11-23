@@ -104,6 +104,16 @@ Fora desta fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fase 8), 
 
 </specifics>
 
+
+### Redesenho da entrada (decidido em 2026-11-23, depois de ver o app no ar)
+O dono abriu o app publicado e não gostou da primeira versão do onboarding e do Login. Estas decisões **substituem** D-16, D-18 e D-19 onde houver conflito (o resto, como D-17, a primeira abertura por aparelho, continua).
+- **D-20:** O onboarding não tem cartões nem "seções": o **Vintém grande e centralizado** ocupa a tela, sobre o fundo do app, sem o painel escuro atrás dele. O texto vem **na fala do próprio Vintém** (balão) mais um título curto. Sem blocos empilhados.
+- **D-21:** O Vintém **faz mais coisas**: animação própria por tela (aparece, reage, aponta, comemora), usando o motor da Fase 4 (estados e reações). O que ele diz vira o conteúdo da tela.
+- **D-22:** As telas podem usar **prints reais do app** (Home, limites, lançar um gasto), em moldura de celular, e o passo de "Adicionar à tela inicial" ganha **ilustração em passos** (celular com marcador), no estilo das referências do dono, mas com visual e textos próprios.
+- **D-23:** O **Login** é refeito no visual do app: Vintém, nome Coinc com tipografia própria, campos arredondados, um botão principal grande, link secundário. Direção de estilo: as referências do dono (Skunk) e o resto do app; **nada copiado** (personagem, nome, frases e wordmark são próprios).
+- **D-24:** O **ícone/logo do app** sobe de nível: profundidade e acabamento (material, luz, reflexo suave) como nas referências de ícones do dono, sem perder o porquinho verde minimalista que ele escolheu (R1). A decisão sai de uma rodada de pesquisa e de sketches, com ferramentas à escolha (SVG avançado ou render 3D no Blender).
+- **Fluxo:** pesquisa e sketches primeiro; o dono escolhe; depois entram os planos de implementação.
+
 <deferred>
 ## Deferred Ideas
 

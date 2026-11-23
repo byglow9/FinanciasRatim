@@ -9,6 +9,7 @@ import { useHomeVintem } from '@/hooks/useHomeVintem'
 import { useHashReveal, useSectionReveal } from '@/hooks/useSectionReveal'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { VintemSlot } from '@/components/vintem/VintemSlot'
+import { VintemHomeBalloon } from '@/components/vintem/VintemHomeBalloon'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
 import { StaleNotice } from '@/components/dashboard/StaleNotice'
@@ -163,6 +164,7 @@ export function DashboardPage() {
                 <RhythmPill level={view.rhythmLevel} suppressed={suppressed} />
               </div>
             )}
+            <VintemHomeBalloon />
           </>
         )}
 

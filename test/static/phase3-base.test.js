@@ -103,6 +103,8 @@ test('index.css e o dono das classes de animacao e do movimento reduzido', () =>
   }
 })
 
-test('o bloco .dark segue intacto (IDEN-05 e da Fase 5)', () => {
-  assert.match(css(), /\.dark\s*\{[^}]*--background:\s*222\.2 24% 5%/)
+test('o bloco .dark e o verde bem escuro da Fase 5 (D-07), com color-scheme dark', () => {
+  assert.match(css(), /\.dark\s*\{[^}]*color-scheme:\s*dark/)
+  assert.match(css(), /\.dark\s*\{[^}]*--background:\s*152\.7 35\.5% 6\.1%/)
+  assert.doesNotMatch(css(), /--background:\s*222\.2 24% 5%/, 'o .dark azul-acinzentado herdado nao pode voltar')
 })

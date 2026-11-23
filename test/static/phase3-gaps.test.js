@@ -58,9 +58,14 @@ test('tokens de acao em hex literal e sem divergir de --primary', () => {
   }
 })
 
-test('tema claro unico: color-scheme only light no CSS e no HTML', () => {
-  assert.match(code('src/index.css'), /color-scheme:\s*only light/)
-  assert.match(read('index.html'), /<meta\s+name="color-scheme"\s+content="only light"/)
+test('tema claro e escuro: color-scheme light em :root, dark em .dark e meta "light dark" no HTML', () => {
+  const css = code('src/index.css')
+  assert.match(css, /:root\s*\{\s*color-scheme:\s*light\s*;/)
+  assert.match(css, /\.dark\s*\{\s*color-scheme:\s*dark\s*;/)
+  assert.doesNotMatch(css, /only light/)
+  const html = read('index.html')
+  assert.match(html, /<meta\s+name="color-scheme"\s+content="light dark"/)
+  assert.doesNotMatch(html, /only light/)
 })
 
 test('nenhum arquivo de src usa bg-primary solido nem text-primary-foreground', () => {

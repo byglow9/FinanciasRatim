@@ -48,15 +48,16 @@ test('index.css traz os 20 tokens da fase em hex literal', () => {
   }
 })
 
-test('os tokens da fase ficam no @theme static e sem variante escura', () => {
+test('os tokens da fase ficam no @theme static e o .dark redefine cada um', () => {
   const css = code('src/index.css')
   const themeStart = css.indexOf('@theme static')
   const themeEnd = css.indexOf('@layer base', themeStart)
   const theme = css.slice(themeStart, themeEnd)
-  const dark = css.slice(css.indexOf('.dark {'))
+  const darkStart = css.indexOf('.dark {')
+  const dark = css.slice(darkStart, css.indexOf('\n  }', darkStart))
   for (const name of Object.keys(TOKENS)) {
     assert.ok(theme.includes(`--color-${name}:`), `--color-${name} fora do @theme static`)
-    assert.ok(!dark.includes(`--color-${name}`), `--color-${name} com variante escura`)
+    assert.match(dark, new RegExp(`--color-${name}:\\s*#[0-9a-f]{6};`), `--color-${name} sem variante escura no .dark`)
   }
 })
 

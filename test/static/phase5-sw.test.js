@@ -65,3 +65,75 @@ test('installPrompt.ts nao importa React e guarda o evento no modulo', () => {
     assert.ok(new RegExp(`export (async )?function ${fn}\\(`).test(INSTALL), `sem export de ${fn}`)
   }
 })
+
+// Registro e atualizacao silenciosa (plano 05-10, D-14, IDEN-04).
+const REGISTER = code('src/lib/pwa/registerPwa.ts')
+const BUSY = code('src/lib/pwa/isBusy.ts')
+const MAIN = code('src/main.tsx')
+
+test('registerPwa.ts delega a decisao ao nucleo e nao reescreve a regra (D-14)', () => {
+  assert.ok(REGISTER.includes("'@shared/core/pwaUpdate.js'"), 'sem import de @shared/core/pwaUpdate.js')
+  for (const fn of ['decideUpdate', 'decideReload', 'decidePreloadError']) {
+    assert.ok(new RegExp(`\\b${fn}\\(`).test(REGISTER), `registerPwa.ts nao chama ${fn}`)
+  }
+  assert.ok(/\bSW_RELOAD_KEY\b/.test(REGISTER) && /\bPRELOAD_RELOAD_KEY\b/.test(REGISTER), 'chaves de sessao vem do nucleo')
+  assert.ok(!/\b3000\b|\b10000\b|\b3_000\b|\b10_000\b/.test(REGISTER), 'janela de tempo reescrita em vez de importada do nucleo')
+  assert.ok(!/coinc:/.test(REGISTER), 'chave de sessao escrita a mao')
+})
+
+test('registerPwa.ts so age em producao e liga visibilitychange e vite:preloadError', () => {
+  assert.ok(/if\s*\(\s*!import\.meta\.env\.PROD/.test(REGISTER), 'sem a guarda import.meta.env.PROD')
+  assert.ok(REGISTER.indexOf('import.meta.env.PROD') < REGISTER.indexOf('registerSW('), 'a guarda de producao vem antes do registro')
+  assert.ok(REGISTER.includes("'visibilitychange'"), 'sem visibilitychange')
+  assert.ok(REGISTER.includes("'vite:preloadError'"), 'sem vite:preloadError')
+  assert.ok(REGISTER.includes('preventDefault()'), 'vite:preloadError sem preventDefault')
+  assert.ok(REGISTER.includes("from 'virtual:pwa-register'") && REGISTER.includes('immediate: true'))
+  assert.ok(REGISTER.includes('onNeedReload'), 'a recarga passa por onNeedReload (protegida)')
+})
+
+test('registerPwa.ts: todo sessionStorage dentro de try e catch', () => {
+  const uses = [...REGISTER.matchAll(/sessionStorage\./g)]
+  assert.ok(uses.length >= 3, 'esperava leitura, escrita e limpeza')
+  for (const use of uses) {
+    const head = REGISTER.slice(0, use.index)
+    const tryAt = head.lastIndexOf('try {')
+    const closed = head.slice(tryAt).includes('} catch')
+    assert.ok(tryAt >= 0 && !closed, `sessionStorage fora de try na posicao ${use.index}`)
+  }
+})
+
+test('registerPwa.ts nao tem aviso, toast nem interface de atualizacao (D-14)', () => {
+  assert.ok(!/from\s+'(sonner|react|@\/components|@\/contexts)/.test(REGISTER), 'registro sem React, componente nem contexto')
+  assert.ok(!/\btoast\b|\bNotice\b|Vintem/i.test(REGISTER), 'sem toast, Notice nem Vintem no registro')
+  assert.ok(!/alert\(|confirm\(|prompt\(/.test(REGISTER), 'sem dialogo nativo')
+})
+
+test('registerPwa.ts nao recarrega fora de producao nem sem a guarda de 10 s', () => {
+  const reloads = [...REGISTER.matchAll(/location\.reload\(\)/g)]
+  assert.equal(reloads.length, 2, 'duas recargas: a do worker novo e a do erro de trecho')
+  for (const r of reloads) {
+    const head = REGISTER.slice(0, r.index)
+    const inGuarded = head.lastIndexOf('function guardedReload') > head.lastIndexOf('\n}\n')
+    const inPreload = head.lastIndexOf("'vite:preloadError'") > head.lastIndexOf('\n  })\n')
+    assert.ok(inGuarded || inPreload, 'recarga fora da funcao guardada e do tratador de preloadError')
+  }
+  const guarded = /function guardedReload\(\)[\s\S]*?\n\}\n/.exec(REGISTER)
+  assert.ok(guarded && /decideReload\(/.test(guarded[0]) && /writeSession\(SW_RELOAD_KEY/.test(guarded[0]), 'guardedReload sem decideReload e carimbo')
+})
+
+test('isBusy.ts consulta Sheet e Dialog modais e os tres campos de edicao', () => {
+  assert.ok(BUSY.includes('[role="dialog"][aria-modal="true"]'), 'sem a consulta de role=dialog com aria-modal')
+  for (const tag of ['INPUT', 'TEXTAREA', 'SELECT']) assert.ok(BUSY.includes(`'${tag}'`), `sem ${tag}`)
+  assert.ok(/isContentEditable|contentEditable/.test(BUSY), 'sem contentEditable')
+  assert.ok(/typeof document === 'undefined'/.test(BUSY), 'sem document devolve falso')
+  assert.ok(!/from\s+'(react|@\/contexts|@\/services)/.test(BUSY), 'isBusy sem React nem contexto')
+})
+
+test('main.tsx captura a instalacao e registra o worker; captura antes de createRoot', () => {
+  assert.ok(MAIN.includes("from '@/lib/pwa/installPrompt'") && MAIN.includes("from '@/lib/pwa/registerPwa'"))
+  const capture = MAIN.indexOf('captureInstallPrompt()')
+  assert.ok(capture > 0, 'main.tsx nao chama captureInstallPrompt()')
+  assert.ok(capture < MAIN.indexOf('createRoot('), 'captureInstallPrompt() antes do createRoot')
+  assert.ok(MAIN.indexOf('registerPwa(') > MAIN.indexOf('.render('), 'registerPwa depois de montar')
+  assert.ok(MAIN.indexOf("import './index.css'") < capture, 'a ordem de fontes e CSS vem antes')
+})

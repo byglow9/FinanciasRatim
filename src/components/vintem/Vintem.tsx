@@ -11,6 +11,7 @@ export const VINTEM_SIZES = {
   hero: { width: 84, height: 70 },
   inline: { width: 48, height: 40 },
   empty: { width: 120, height: 100 },
+  gauge: { width: 150, height: 125 },
   stage: { width: 240, height: 200 },
 } as const
 

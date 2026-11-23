@@ -3,7 +3,7 @@ import { Vintem, type VintemHandle, type VintemState } from '@/components/vintem
 import { useVintem } from '@/contexts/VintemContext'
 
 /**
- * Vintem do arco da Home (UI-SPEC S1): botao de 84 por 84 com a arte hero decorativa.
+ * Vintem do arco da Home (UI-SPEC S1): botao de 150 por 125 com a arte hero decorativa.
  * Registra o handle no provedor enquanto montado, para as reacoes chegarem a ele.
  */
 export function VintemSlot({
@@ -27,9 +27,9 @@ export function VintemSlot({
       onClick={() => onTap?.(handle.current)}
       aria-label="Vintém, toque para ouvir uma fala"
       data-vintem-state={state}
-      className="flex h-[84px] w-[84px] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="flex h-[125px] w-[150px] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      <Vintem ref={handle} size="hero" state={state} follow />
+      <Vintem ref={handle} size="gauge" state={state} follow />
     </button>
   )
 }

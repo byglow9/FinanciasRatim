@@ -301,7 +301,7 @@ export function VintemTestPage() {
           No medidor
         </h2>
         <ArcGauge restPct={Math.min(Math.max(100 - pct, 0), 100)} tone={ARC_TONE_BY_STATE[state]}>
-          <Vintem state={state} size="hero" follow={follow} reduced={reduced} />
+          <Vintem state={state} size="gauge" follow={follow} reduced={reduced} />
         </ArcGauge>
       </section>
 

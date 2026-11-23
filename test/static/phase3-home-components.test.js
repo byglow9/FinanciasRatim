@@ -46,7 +46,7 @@ test('ArcGauge: geometria do arco, acessibilidade e slot do mascote', () => {
     'stroke-dashoffset 500ms',
     'requestAnimationFrame',
     'anim-pulse',
-    'h-[84px] w-[84px]',
+    'h-[125px] w-[150px]',
   ]) {
     has(src, needle, ARC)
   }

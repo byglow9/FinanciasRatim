@@ -71,8 +71,8 @@ export function ArcGauge({ restPct, tone, loading, ariaLabel, children }: ArcGau
         )}
       </svg>
       <div
-        className="absolute left-1/2 flex h-[84px] w-[84px] -translate-x-1/2 items-center justify-center rounded-full bg-card"
-        style={{ top: 64 }}
+        className="absolute left-1/2 flex h-[125px] w-[150px] -translate-x-1/2 items-center justify-center"
+        style={{ top: 45 }}
       >
         {children ?? <PiggyBank className="h-[42px] w-[42px] text-brand" aria-hidden="true" />}
       </div>

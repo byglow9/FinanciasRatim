@@ -23,7 +23,7 @@ export async function run({ page, check, navigate, sleep }) {
   })()`)
   check('slot-existe-no-arco', slot !== null, { slot })
   if (slot === null) return
-  check('slot-mede-84-por-84', Math.abs(slot.width - 84) <= 0.5 && Math.abs(slot.height - 84) <= 0.5, {
+  check('slot-mede-150-por-125', Math.abs(slot.width - 150) <= 0.5 && Math.abs(slot.height - 125) <= 0.5, {
     width: slot.width,
     height: slot.height,
   })

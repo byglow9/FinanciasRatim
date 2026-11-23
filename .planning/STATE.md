@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-06-PLAN.md
-last_updated: "2026-11-23T16:12:37.022Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-11-23T16:17:14.694Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: 7d089b2f62b40dd75bab22ae76551b1c335c195b
+state_head: ab6d0e6258b474ce2f997bdab38d46aec1d5b663
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 91
+  completed_plans: 92
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 6 of 21
+Plan: 7 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -134,6 +134,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 05 P04 | 10min | 2 tasks | 6 files |
 | Phase 5 P05 | 25min | 2 tasks | 3 files |
 | Phase 05 P06 | 35min | 2 tasks | 12 files |
+| Phase 5 P01 | ~1h | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -198,6 +199,7 @@ Recent decisions affecting current work:
 - [Phase 5]: 05-03: dock #2c5a38 separada da acao #2f6f3e; P-01 (dock igual a acao) segue para o dono no plano 05-16
 - [Phase 5]: [Phase 5] 05-05: sketch 021 com D (cofre) de lado e B de cabeca grande, pois de frente D x C media 2,1% e A x B 9% (minimo 12% a 60 px); escolha do icone fica no 05-13
 - [Phase 5]: 05-06: meta theme-color antes do script inline de tema; tema do aparelho nunca passa por AreaContext nem Firestore
+- [Phase 5]: [Phase 5 Plan 01]: ID do site de Hosting e coinc-financias (coinc reservado por outro projeto); alias do alvo segue coinc (D-03a)
 
 ### Pending Todos
 
@@ -229,6 +231,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T16:12:36.895Z
-Stopped at: Completed 05-06-PLAN.md
+Last session: 2026-11-23T16:17:11.276Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None

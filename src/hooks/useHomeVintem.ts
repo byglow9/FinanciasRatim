@@ -126,7 +126,7 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak, slot } = useVintem()
+  const { tone, speak, slot, cheer } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson } = useCycle()
   const todayKey = dayKeyOf(now)
@@ -142,6 +142,10 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     enabled: enabled && !readOnly,
   })
 
+  // Comemoracao (meta batida ou Porquinho) vale por alguns minutos; so o tipo entra nos fatos, para
+  // eles nao mudarem a cada minuto do relogio. O nucleo faz um limite estourado vencer a festa.
+  const cheerKind = cheer !== null && now.getTime() < cheer.untilMs ? cheer.kind : null
+
   const facts = useMemo<MoodFacts>(
     () => ({
       loading: !enabled || view === null,
@@ -153,10 +157,10 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
       todayKey,
       rhythmLevel: view?.rhythmLevel ?? null,
       rows: view?.spend.rows ?? [],
-      cheer: null,
+      cheer: cheerKind,
       insights,
     }),
-    [enabled, view, readOnly, tone, todayKey, insights],
+    [enabled, view, readOnly, tone, todayKey, insights, cheerKind],
   )
 
   const mood = useMemo(() => {

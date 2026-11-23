@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { useLocation } from 'react-router-dom'
 import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
-import type { VintemHandle } from '@/components/vintem/Vintem'
+import type { VintemHandle, VintemReaction } from '@/components/vintem/Vintem'
 import { VintemToastBody } from '@/components/vintem/VintemToast'
 import { useToast } from '@/components/ui/toast'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
@@ -19,7 +19,7 @@ import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { isSpendSpike } from '@shared/core/insights.js'
 import { buildSlots, pick, pushRecent, recentKey, recentLimit } from '@shared/core/phrasePicker.js'
-import { launchRaw, reactionForLaunch } from '@shared/core/vintemMood.js'
+import { CHEER_MS, launchRaw, reactionForLaunch } from '@shared/core/vintemMood.js'
 import { PHRASES, SITUATION_META } from '@shared/core/vintemPhrases.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
 import { useArea } from './AreaContext'
@@ -64,6 +64,13 @@ export interface LaunchedArgs {
   person: PersonType
 }
 
+/** Comemoracao que mantem o humor de fundo feliz por alguns minutos (meta batida ou guardar no Porquinho). */
+export interface Cheer {
+  kind: 'meta-batida' | 'porquinho-guardou'
+  /** Instante (ms) em que a comemoracao termina. */
+  untilMs: number
+}
+
 export interface VintemContextType {
   tone: VintemTone
   /** Fala atual do balao da Home (nula sem fala). */
@@ -81,6 +88,10 @@ export interface VintemContextType {
    * Na Home roda no Vintem do arco e fala no balao; fora dela nao ha reacao visivel aqui.
    */
   onLaunched: (args: LaunchedArgs) => Promise<void>
+  /** Meta batida: festa e fala de meta (melhor esforco, igual a onLaunched). Aporte que nao fecha nao chama. */
+  onGoal: (args: { valorCents: number }) => void
+  /** Comemoracao ativa para o humor de fundo da Home; o nucleo garante que um estouro vence a festa. */
+  cheer: Cheer | null
 }
 
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
@@ -126,6 +137,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
 
   const [speech, setSpeech] = useState<Speech | null>(null)
   const [announced, setAnnounced] = useState('')
+  const [cheer, setCheer] = useState<Cheer | null>(null)
   const rand = useRef<(() => number) | null>(null)
   const popCounter = useRef(0)
 
@@ -181,9 +193,32 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     setAnnounced('')
   }, [])
 
+  // Entrega a reacao: na Home no Vintem do arco e no balao (anunciada); fora dela, no toast claro do
+  // Vintem, que entra na fila depois do toast de sucesso. Sem frase no banco nao ha toast.
+  const deliver = useCallback(
+    (reaction: VintemReaction, situation: string, raw: SlotsRaw) => {
+      const handle = slot.current
+      if (handle !== null) {
+        handle.react(reaction)
+        speak({ situation, raw, announce: true })
+        return
+      }
+      const chosen = draw({ situation, raw })
+      if (chosen !== null) {
+        toast.show('', {
+          custom: <VintemToastBody text={chosen.text} reaction={reaction} />,
+          durationMs: VINTEM_TOAST_MS,
+        })
+      }
+    },
+    [speak, draw, toast],
+  )
+
   const onLaunched = useCallback(
     async ({ kind, categoryId = null, cents, view, person }: LaunchedArgs): Promise<void> => {
       try {
+        // Guardar no Porquinho alegra o humor de fundo por alguns minutos, com ou sem a view pronta.
+        if (kind === 'porquinho-guardou') setCheer({ kind, untilMs: Date.now() + CHEER_MS })
         if (view === null || view.isPast) return
         // Gasto grande: linha de base do cache (uma consulta por ciclo); falha vale como sem linha de base.
         let bigSpend = false
@@ -209,32 +244,29 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         if (result.situation === 'limite-estourou' && core.excessCents !== undefined) {
           raw.valorCents = core.excessCents
         }
-        const handle = slot.current
-        if (handle !== null) {
-          // Na Home: reacao no Vintem do arco e fala no balao, anunciada na regiao viva.
-          handle.react(result.reaction)
-          speak({ situation: result.situation, raw, announce: true })
-        } else {
-          // Fora da Home: o toast de sucesso ja entrou na fila; o do Vintem vem em seguida (UI-SPEC S4).
-          // Sem frase no banco nao ha toast do Vintem.
-          const chosen = draw({ situation: result.situation, raw })
-          if (chosen !== null) {
-            toast.show('', {
-              custom: <VintemToastBody text={chosen.text} reaction={result.reaction} />,
-              durationMs: VINTEM_TOAST_MS,
-            })
-          }
-        }
+        deliver(result.reaction, result.situation, raw)
       } catch {
         // Melhor esforco: a reacao nunca atrapalha o lancamento e nada de valor ou nome vai a log.
       }
     },
-    [now, personConfigFor, categoryDefs, speak, draw, toast],
+    [now, personConfigFor, categoryDefs, deliver],
+  )
+
+  const onGoal = useCallback(
+    ({ valorCents }: { valorCents: number }): void => {
+      try {
+        deliver('festa', 'meta-batida', { valorCents })
+        setCheer({ kind: 'meta-batida', untilMs: Date.now() + CHEER_MS })
+      } catch {
+        // Melhor esforco: a festa nunca atrapalha o aporte e nada de valor ou nome vai a log.
+      }
+    },
+    [deliver],
   )
 
   const value = useMemo<VintemContextType>(
-    () => ({ tone, speech, speak, pickPhrase: draw, dismiss, slot, registerSlot, onLaunched }),
-    [tone, speech, speak, draw, dismiss, registerSlot, onLaunched],
+    () => ({ tone, speech, speak, pickPhrase: draw, dismiss, slot, registerSlot, onLaunched, onGoal, cheer }),
+    [tone, speech, speak, draw, dismiss, registerSlot, onLaunched, onGoal, cheer],
   )
 
   return (

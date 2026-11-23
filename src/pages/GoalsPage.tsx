@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { History, Pencil, PiggyBank, Plus, Target } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
+import { useVintem } from '@/contexts/VintemContext'
 import { useGoals } from '@/hooks/useGoals'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { GoalCard } from '@/components/goals/GoalCard'
 import { GoalDetailSheet } from '@/components/goals/GoalDetailSheet'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { GoalForm, type GoalFormData } from '@/components/goals/GoalForm'
 import { ContributionForm } from '@/components/goals/ContributionForm'
 import { Button } from '@/components/ui/button'
@@ -21,6 +23,7 @@ export function GoalsPage() {
   const { currentArea } = useArea()
   const { readOnly, guard } = useReadOnly()
   const { show } = useToast()
+  const vintem = useVintem()
 
   // Porquinho nao tem metas proprias: a tela mostra as de "ele".
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
@@ -83,6 +86,10 @@ export function GoalsPage() {
     if (!contributing) return
     await contribute(contributing.id, amount, description, id)
     show('Aporte salvo')
+    // So o aporte que fecha a meta dispara a festa do Vintem; os demais nao reagem. A comparacao e em
+    // centavos inteiros (currentAmount + amount >= targetAmount) para nao errar por ponto flutuante.
+    const closes = toCents(contributing.currentAmount) + toCents(amount) >= toCents(contributing.targetAmount)
+    if (closes) vintem.onGoal({ valorCents: toCents(amount) })
   }
 
   const handleDelete = async (goal: Goal) => {
@@ -110,17 +117,20 @@ export function GoalsPage() {
       </div>
 
       {error ? (
-        <Notice
-          tone="danger"
-          title="Não foi possível carregar as metas."
-          action={
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
-              Tentar de novo
-            </Button>
-          }
-        >
-          Confira a conexão e tente de novo.
-        </Notice>
+        <>
+          <VintemEmpty pose="surpreso" />
+          <Notice
+            tone="danger"
+            title="Não foi possível carregar as metas."
+            action={
+              <Button type="button" variant="outline" onClick={() => void refetch()}>
+                Tentar de novo
+              </Button>
+            }
+          >
+            Confira a conexão e tente de novo.
+          </Notice>
+        </>
       ) : showLoading ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Carregando as metas</span>

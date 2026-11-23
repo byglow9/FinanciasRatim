@@ -75,6 +75,7 @@ export async function run({ page, check, navigate, sleep }) {
   check('regiao-viva-recebeu-a-fala', seen.live.length > 0 && !/[{}]/.test(seen.live), { live: seen.live })
 
   await outsideHome({ page, check, navigate, sleep })
+  await goals({ page, check, navigate, sleep })
 }
 
 const TOAST_BOX = `document.querySelector('div[role="status"][aria-live="polite"]')`
@@ -136,4 +137,65 @@ async function outsideHome({ page, check, navigate, sleep }) {
   await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
   const closed = await waitFor(page, sleep, `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do Vint\u00e9m"]') == null`, 1500)
   check('esc-fecha-o-toast-do-vintem', closed)
+}
+
+const VINTEM_CLOSE_IN_TOAST = `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do Vint\u00e9m"]')`
+
+/** Aporta `value` (texto como digitado) na meta da semente e salva pelo sheet de aporte. */
+async function contribute({ page, sleep, value }) {
+  const opened = await page.evaluate(`(() => {
+    const b = document.querySelector('button[aria-label="Aportar em Viagem de fim de ano"]')
+    if (!b) return false
+    b.click()
+    return true
+  })()`)
+  if (!opened) return { ok: false, step: 'abrir' }
+  const ready = await waitFor(page, sleep, `document.querySelector('#contribution-amount')`, 4000)
+  if (!ready) return { ok: false, step: 'campo' }
+  await sleep(300)
+  const filled = await page.evaluate(`(() => {
+    const input = document.querySelector('#contribution-amount')
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    set.call(input, ${JSON.stringify(value)})
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    const save = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Salvar aporte')
+    if (!save) return false
+    save.click()
+    return true
+  })()`)
+  return { ok: filled, step: 'salvar' }
+}
+
+/** Meta batida mostra o toast do Vintem (Metas nao e a Home); aporte que nao fecha a meta nao reage. */
+async function goals({ page, check, navigate, sleep }) {
+  await navigate('/metas', `document.querySelector('button[aria-label^="Aportar em"]')`)
+  // A meta da semente tem R$ 1.750,00 de R$ 6.000,00: faltam R$ 4.250,00.
+  const closing = await contribute({ page, sleep, value: '4250,00' })
+  check('aporte-que-fecha-a-meta-salvo', closing.ok, closing)
+  if (closing.ok) {
+    const shown = await waitFor(page, sleep, VINTEM_CLOSE_IN_TOAST, 8000)
+    const text = await page.evaluate(`${VINTEM_CLOSE_IN_TOAST}?.parentElement.querySelector('p')?.textContent ?? ''`)
+    check('meta-batida-mostra-o-toast-do-vintem', shown && text.length > 0 && !/[{}]/.test(text), { text })
+
+    // De volta a Home sem recarregar (a festa vive na memoria): a semente tem Alimentacao estourada, e a
+    // festa nunca vence um limite estourado, entao o humor de fundo nao pode virar feliz.
+    const went = await page.evaluate(`(() => {
+      const a = [...document.querySelectorAll('a[href="/"]')][0]
+      if (!a) return false
+      a.click()
+      return true
+    })()`)
+    const home = went && (await waitFor(page, sleep, `document.querySelector('[data-vintem-state]')`, 6000))
+    const state = home ? await page.evaluate(`document.querySelector('[data-vintem-state]').getAttribute('data-vintem-state')`) : null
+    check('festa-nao-vence-limite-estourado-no-humor-de-fundo', home && state !== 'feliz', { went, state })
+  }
+
+  await navigate('/metas', `document.querySelector('button[aria-label^="Aportar em"]')`)
+  const small = await contribute({ page, sleep, value: '10,00' })
+  check('aporte-que-nao-fecha-a-meta-salvo', small.ok, small)
+  if (small.ok) {
+    const sawSuccess = await waitFor(page, sleep, `${TOAST_BOX}?.querySelector('button[aria-label="Fechar aviso"]')`, 3000)
+    const sawVintem = await waitFor(page, sleep, VINTEM_CLOSE_IN_TOAST, 6000)
+    check('aporte-que-nao-fecha-a-meta-nao-reage', sawSuccess && !sawVintem, { sawSuccess, sawVintem })
+  }
 }

@@ -1,6 +1,6 @@
 # Technology Stack (milestone additions)
 
-**Project:** Coinki (ex-Financias Ratimbum), a Brazilian personal-finance PWA
+**Project:** Coinc (ex-Financias Ratimbum), a Brazilian personal-finance PWA
 **Researched:** 2026-11-17
 **Scope:** Only what must be ADDED or CHANGED for the target features. React 19, Vite 7, Tailwind v4, Firebase/Firestore, Express 5 on Railway, Pluggy and date-fns 4 are already in place and not re-researched.
 **Overall confidence:** MEDIUM-HIGH. Versions and typings are HIGH (read from the npm registry and package tarballs on 2026-11-17). Free-tier quotas are MEDIUM (vendor pages, and they change often).
@@ -33,10 +33,10 @@ Confidence key used below:
 | workbox-window | ^7.4.1 | SW registration and update events in the page | Required peer of vite-plugin-pwa 2.0.0. | HIGH |
 | workbox-build | ^7.4.1 | Required peer of the plugin (manifest injection) | Required peer. | HIGH |
 | workbox-precaching | ^7.4.1 (dev) | `precacheAndRoute`, `cleanupOutdatedCaches` inside `src/sw.ts` | Official guide: call `cleanupOutdatedCaches()` before `precacheAndRoute(self.__WB_MANIFEST)`. | HIGH |
-| @vite-pwa/assets-generator | ^2.0.0 (dev) | Generate 192/512/maskable/apple-touch icons from one SVG | Plugin 2.0.0 allows the generator's `^2.0.0`. Node >= 20.19. Use the Coinki piggy SVG as the single source. | HIGH |
+| @vite-pwa/assets-generator | ^2.0.0 (dev) | Generate 192/512/maskable/apple-touch icons from one SVG | Plugin 2.0.0 allows the generator's `^2.0.0`. Node >= 20.19. Use the Coinc piggy SVG as the single source. | HIGH |
 
 Configuration choices:
-- `strategies: 'injectManifest'`, `srcDir: 'src'`, `filename: 'sw.ts'`, `registerType: 'prompt'`. Prompting gives a "new version available" toast so a financial app never silently swaps code mid-session.
+- `strategies: 'injectManifest'`, `srcDir: 'src'`, `filename: 'sw.ts'`, `registerType: 'prompt'`. The registration uses `prompt` without any UI; when to activate the new version is decided in `shared/core/pwaUpdate.js` (D-14: update on open, no toast, never in the middle of an entry).
 - Add `"WebWorker"` to `tsconfig` `lib` (or a separate `tsconfig.sw.json`) and `declare let self: ServiceWorkerGlobalScope` in the SW.
 - Manifest: `id`, `lang: 'pt-BR'`, `display: 'standalone'`, `start_url: '/'`, a 512 maskable icon, `theme_color` and `background_color` from the chosen palette. The "Instale no celular" screen is hand-written: capture `beforeinstallprompt` on Android/desktop Chrome, and show Share > "Add to Home Screen" instructions on iOS. No library is needed.
 - Cache strategy: precache the app shell only. Do NOT runtime-cache Firestore or `/api` calls in the SW; money data must not be stale-by-default.
@@ -117,14 +117,14 @@ Facts the credit-card phase must plan around (from Pluggy docs):
 
 Business-rule notes (from PROJECT.md decisions): fixed bills are excluded from the day-to-day limit; card purchases count against the limit by purchase date (not bill due date); show "what leaves in each bill" separately. Encode these as explicit, tested functions, because this feature is the stated Core Value.
 
-### Feature 6: New Hosting site `coinki.web.app` (same Firebase project)
+### Feature 6: New Hosting site `coinc.web.app` (same Firebase project)
 
 | Technology | Version | Purpose | Why | Confidence |
 |------------|---------|---------|-----|------------|
-| firebase-tools | ^15.36.0 (dev or global) | `hosting:sites:create`, deploy targets, emulators | Node >= 20. Run `firebase hosting:sites:create coinki`, `firebase target:apply hosting coinki coinki`, then deploy with `--only hosting:coinki`. | HIGH |
+| firebase-tools | ^15.36.0 (dev or global) | `hosting:sites:create`, deploy targets, emulators | Node >= 20. Run `firebase hosting:sites:create coinc`, `firebase target:apply hosting coinc coinc`, then deploy with `--only hosting:coinc`. | HIGH |
 
 Notes:
-- Multi-site is supported on Spark, max 36 sites per project. Site ID must be <= 30 chars and globally unique (availability of `coinki` is unchecked; have a fallback ID).
+- Multi-site is supported on Spark, max 36 sites per project. Site ID must be <= 30 chars and globally unique (availability of `coinc` is unchecked; if it is taken, stop and ask the owner, D-03, no automatic fallback ID).
 - Hosting quota (10 GB storage, 360 MB/day transfer) is shared across all sites in the project.
 - `firebase.json` `hosting` becomes an array of `{ target, public, ... }` entries, or keep the single object and just retarget; either way, keep the old site live until installed users have moved. A different origin means separate localStorage, IndexedDB, and Firebase Auth session, so existing logged-in users must sign in again on the new URL.
 - **Cache-header bug waiting to happen:** the current `firebase.json` marks `**/*.js` and `**/*.css` as `public, max-age=31536000, immutable`. That would also pin `/sw.js`, so SW updates would never reach users. Firebase documents that "matching rules are applied in the order they are defined" but does not document key-conflict resolution (MEDIUM/LOW). Fix: delete the `**/*.js` and `**/*.css` rules (hashed files already live under `/assets/**`, which keeps `immutable`), add explicit `no-cache` for `/sw.js` and `/manifest.webmanifest`, then verify with `curl -I` after deploy.
@@ -238,5 +238,5 @@ Runtime notes:
 - Re-read Cloudflare's data-usage page directly before shipping, and confirm current free-plan rate limits for the chosen model on the Workers AI limits page (not stated for the free plan).
 - Real-iPhone test of FID registration plus a notification-message push on an installed PWA.
 - Firebase Hosting header precedence for overlapping rules (undocumented); verify by deploy.
-- Whether `coinki` is available as a Hosting site ID and on the app stores.
+- Whether `coinc` is available as a Hosting site ID (if taken, stop and ask the owner, D-03). Store and INPI research was dropped (D-02).
 - Confirm Railway's Node default and set the engine pin; confirm Railway cost status (the PROJECT constraint says "free"; the Railway plan was not researched here).

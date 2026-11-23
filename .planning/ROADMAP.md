@@ -1,8 +1,8 @@
-# Roadmap: Coinki
+# Roadmap: Coinc
 
 ## Overview
 
-O Coinki é uma evolução de um app que já funciona (lançamentos, fixas, metas, calendário, sync bancária). O caminho segue a ordem de dependência: primeiro identidade e acesso reais (hoje as regras do Firestore estão abertas e o login é local), depois um ledger confiável (revisão de importações, fixas vinculadas, webhook), depois o Core Value ("Pode gastar" com limites por categoria), e só então o que decora ou entrega por cima: o mascote Vintém, a identidade Coinki com PWA, o cartão de crédito (condicionado a um teste com dados reais), push e IA, e por fim a visão do casal e o amigo com dados separados. Se o projeto parasse na Fase 3, o objetivo central já estaria entregue.
+O Coinc é uma evolução de um app que já funciona (lançamentos, fixas, metas, calendário, sync bancária). O caminho segue a ordem de dependência: primeiro identidade e acesso reais (hoje as regras do Firestore estão abertas e o login é local), depois um ledger confiável (revisão de importações, fixas vinculadas, webhook), depois o Core Value ("Pode gastar" com limites por categoria), e só então o que decora ou entrega por cima: o mascote Vintém, a identidade Coinc com PWA, o cartão de crédito (condicionado a um teste com dados reais), push e IA, e por fim a visão do casal e o amigo com dados separados. Se o projeto parasse na Fase 3, o objetivo central já estaria entregue.
 
 ## Phases
 
@@ -15,7 +15,7 @@ O Coinki é uma evolução de um app que já funciona (lançamentos, fixas, meta
 - [x] **Phase 2: Revisão de importações, contas fixas e webhook** - O ledger fica confiável: itens em revisão resolvidos, fixas vinculadas ao banco e dados chegando na hora (completed 2026-11-18)
 - [ ] **Phase 3: Limites, "Pode gastar" e Central** - Em segundos o usuário sabe quanto ainda pode gastar no mês, por categoria, com alertas
 - [ ] **Phase 4: Mascote Vintém** - O porquinho-cofre original reage ao ritmo e ao uso do limite, com falas próprias em tom ajustável
-- [ ] **Phase 5: Identidade Coinki, PWA e onboarding** - O app vira Coinki em coinki.web.app, instalável no celular, com tema e visual novos
+- [ ] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc.web.app, instalável no celular, com tema e visual novos
 - [ ] **Phase 6: Cartão de crédito** - Cartão como conta própria, com fatura, parcelas e limite, depois de um teste real do que o MeuPluggy entrega
 - [ ] **Phase 7: Push e Vintém com IA** - Avisos reais no celular e comentários do Vintém gerados por IA gratuita, com frases prontas de reserva
 - [ ] **Phase 8: Visão do casal e multiusuário** - Aba Casal somente leitura e o amigo usando o app com dados separados
@@ -305,20 +305,20 @@ Plans:
 - [x] 04-18-PLAN.md — Persistência separável dos insights: serviço, regras, matriz e portão de publicação (MASC-04)
 - [x] 04-19-PLAN.md — Portão final: régua sobre o banco inteiro, revisão e originalidade pelo dono, guarda e mapa de validação (MASC-04, MASC-07)
 
-### Phase 5: Identidade Coinki, PWA e onboarding
+### Phase 5: Identidade Coinc, PWA e onboarding
 
-**Goal:** O app passa a se chamar Coinki em coinki.web.app, instalável no celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding e login)
+**Goal:** O app passa a se chamar Coinc em coinc.web.app, adicionável à tela inicial do celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding de 3 telas e login)
 **Mode:** mvp
 **Depends on:** Phase 1, Phase 3 (paleta e navegação decididas nos mockups)
 **Requirements**: IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08
-**Notas de execução:** reservar cedo o ID do site `coinki` no Hosting (ter um nome reserva); pesquisar o nome "Coinki" em lojas e no INPI (classes 36 e 42) antes de gravar o nome em ícones e manifest; a troca de domínio é uma origem nova (login refeito uma vez, localStorage não migra, domínios autorizados do Auth e `ALLOWED_ORIGINS` precisam do novo); cabeçalhos do Hosting corrigidos para o service worker não ficar preso em cache.
+**Notas de execução:** o ID `coinc` é reservado cedo no Hosting e, se estiver ocupado, parar e perguntar ao dono (D-03), sem nome reserva automático; a pesquisa do nome em lojas e no INPI foi dispensada (D-02, "é app pessoal") e não é pré-requisito; a troca de domínio é uma origem nova (login refeito uma vez, localStorage não migra, D-05) e exige o domínio nos domínios autorizados do login e em `ALLOWED_ORIGINS` (D-06); cabeçalhos do Hosting corrigidos para o service worker não ficar preso em cache; ordem de produção obrigatória: origens da API, domínio do login, site novo e, por último, o redirect do site antigo, com 302 antes de qualquer 301.
 **Success Criteria** (what must be TRUE):
 
-  1. O usuário abre coinki.web.app, vê o nome Coinki em todas as telas e consegue entrar; o site antigo avisa ou redireciona para o novo endereço
-  2. O usuário instala o Coinki no celular a partir de uma tela com os passos para Android e iPhone, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
-  3. Depois de um novo deploy, o usuário recebe um aviso para atualizar, sem tela branca
-  4. O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
-  5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinki
+  1. O usuário abre coinc.web.app, vê o nome Coinc em todas as telas e consegue entrar; o site antigo redireciona direto para o novo, sem página de aviso (D-04)
+  2. O usuário adiciona o Coinc à tela inicial a partir dos passos para Android e iPhone, que ficam na terceira tela do onboarding e também em Ajustes, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
+  3. Depois de um novo deploy, o app atualiza sozinho ao abrir, sem aviso e sem tela branca, e nunca troca de versão no meio de um lançamento (D-14)
+  4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
+  5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinc
 
 **Plans**: 2/21 plans executed
 **UI hint**: yes
@@ -419,7 +419,7 @@ Plans:
 
 ### Phase 8: Visão do casal e multiusuário
 
-**Goal:** O casal vê os números somados de Ele e Ela em uma aba somente leitura, e o amigo usa o Coinki com os próprios dados, separados, depois de uma migração segura
+**Goal:** O casal vê os números somados de Ele e Ela em uma aba somente leitura, e o amigo usa o Coinc com os próprios dados, separados, depois de uma migração segura
 **Mode:** mvp
 **Depends on:** Phase 3, Phase 6, Phase 7 (e as costuras de `ownerId` da Fase 1)
 **Requirements**: CASAL-01, CASAL-02, MULTI-01, MULTI-02, MULTI-03
@@ -444,7 +444,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinki, PWA e onboarding | 2/21 | In Progress|  |
+| 5. Identidade Coinc, PWA e onboarding | 2/21 | In Progress|  |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

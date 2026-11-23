@@ -1,4 +1,4 @@
-# Requirements: Coinki
+# Requirements: Coinc
 
 **Defined:** 2026-11-17
 **Core Value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria), e o Vintém o ajuda a não estourar.
@@ -61,14 +61,14 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Identidade, PWA e onboarding (IDEN)
 
-- [ ] **IDEN-01**: O app se chama Coinki em todas as telas, e o endereço público é coinki.web.app, no mesmo projeto do Firebase
-- [ ] **IDEN-02**: O site antigo avisa ou redireciona para o novo endereço, e os domínios de login e as origens permitidas do servidor incluem o novo
-- [ ] **IDEN-03**: Usuário instala o Coinki como app no celular (manifest, ícones incluindo o maskable, service worker) e vê uma tela com os passos para Android e iPhone
-- [x] **IDEN-04**: Usuário recebe um aviso para atualizar quando há versão nova, sem tela branca depois de um deploy
-- [x] **IDEN-05**: O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
-- [x] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
+- [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc.web.app, no mesmo projeto do Firebase
+- [ ] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
+- [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na terceira tela do onboarding e em Ajustes
+- [x] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
+- [ ] **IDEN-05**: O tema é Automático (segue o celular), Claro ou Escuro, escolhido por aparelho nos Ajustes
+- [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
 - [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
-- [ ] **IDEN-08**: Usuário vê um onboarding curto de 3 telas e um login novo no visual do Coinki
+- [ ] **IDEN-08**: Usuário vê um onboarding curto de 3 telas e um login novo no visual do Coinc
 
 ### Redesign das abas e UX mobile (UX)
 
@@ -116,7 +116,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Multiusuário (MULTI)
 
-- [ ] **MULTI-01**: Uma segunda pessoa (o amigo) usa o Coinki com os próprios dados, separados, e o histórico e o login dele são migrados do projeto antigo sem colisão de identificadores
+- [ ] **MULTI-01**: Uma segunda pessoa (o amigo) usa o Coinc com os próprios dados, separados, e o histórico e o login dele são migrados do projeto antigo sem colisão de identificadores
 - [ ] **MULTI-02**: O dono cria as contas por convite, e o servidor sincroniza e recebe webhooks por dono
 - [ ] **MULTI-03**: A migração é repetível, com ensaio antes, relatório de conflitos e cópia de segurança dos dados
 
@@ -138,7 +138,7 @@ Reconhecidos, mas fora do roadmap atual.
 
 | Feature | Reason |
 |---------|--------|
-| Copiar o app de referência (personagem, nome, slogan, frases, código, layout 1:1) | É só inspiração; o Coinki tem identidade própria |
+| Copiar o app de referência (personagem, nome, slogan, frases, código, layout 1:1) | É só inspiração; o Coinc tem identidade própria |
 | Sequência de dias, XP e evolução do mascote | Descartado em favor de só comentar; pode distrair em vez de ajudar |
 | Método de envelopes (estilo YNAB) | Mais rígido e trabalhoso; o modelo é limite simples por categoria |
 | Criar lançamentos a partir de `financeCharges` da Pluggy | Juros e taxas costumam chegar também como lançamentos e contariam em dobro |
@@ -203,8 +203,8 @@ Preenchida na criação do roadmap.
 | IDEN-02 | Phase 5 | Pending |
 | IDEN-03 | Phase 5 | Pending |
 | IDEN-04 | Phase 5 | Complete |
-| IDEN-05 | Phase 5 | Complete |
-| IDEN-06 | Phase 5 | Complete |
+| IDEN-05 | Phase 5 | Pending |
+| IDEN-06 | Phase 5 | Pending |
 | IDEN-08 | Phase 5 | Pending |
 | CARD-01 | Phase 6 | Pending |
 | CARD-02 | Phase 6 | Pending |
@@ -240,4 +240,4 @@ Preenchida na criação do roadmap.
 
 ---
 *Requirements defined: 2026-11-17*
-*Last updated: 2026-11-18 after phase 3 discuss (LIM-01/03/04/07/09, CENT-02 reescritos; LIM-10 adicionado)*
+*Last updated: 2026-11-23 após decisões da fase 5 (nome Coinc e coinc.web.app, redirect direto do site antigo, atualização silenciosa, passos no onboarding e em Ajustes; IDEN-05 e IDEN-06 só fecham no plano 05-20)*

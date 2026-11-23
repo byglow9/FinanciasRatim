@@ -16,6 +16,7 @@ import { useLaunch, type LaunchTab } from "@/contexts/LaunchContext"
 import { useArea } from "@/contexts/AreaContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCycle } from "@/contexts/CycleContext"
+import { useVintem } from "@/contexts/VintemContext"
 import { useCycleBudget } from "@/hooks/useCycleBudget"
 import { addTransaction, newTransactionId } from "@/services/transactions.service"
 import { addSavingsTransaction, newSavingsId } from "@/services/savings.service"
@@ -84,6 +85,7 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
   const { categoryDefs } = useArea()
   const { bumpData, isCurrent } = useCycle()
   const toast = useToast()
+  const vintem = useVintem()
   const rootRef = useRef<HTMLDivElement>(null)
   const detailsId = useId()
   const descriptionId = useId()
@@ -204,6 +206,21 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       bumpData()
       onClose()
       toast.show(message, { icon: Check, detail })
+      // A view e a anterior ao lancamento (gasto ainda nao somado). Nao bloqueia: a reacao e melhor esforco.
+      void vintem.onLaunched({
+        kind:
+          tab === "gasto"
+            ? "gasto"
+            : tab === "receita"
+              ? "receita"
+              : piggyMode === "deposito"
+                ? "porquinho-guardou"
+                : "porquinho-retirou",
+        categoryId: tab === "porquinho" ? null : category?.id,
+        cents,
+        view,
+        person,
+      })
     } catch (err) {
       // Nada de valor ou descricao em log: so o aviso na tela, com os digitos preservados.
       setFailed(err instanceof Error && (err as Error & { code?: string }).code === "timeout" ? "timeout" : "erro")

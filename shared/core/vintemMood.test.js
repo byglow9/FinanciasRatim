@@ -9,6 +9,8 @@ import {
   REACTION_MS,
   reactionState,
   reactionForLaunch,
+  launchRaw,
+  CHEER_MS,
   SAMPLE_SITUATION_BY_STATE,
 } from './vintemMood.js'
 import { VINTEM_STATES } from './vintemStates.js'
@@ -411,4 +413,72 @@ test('inlineMood: o sujeito e a primeira linha da lista, sem tocar nas entradas'
   const copy = JSON.parse(JSON.stringify(rows))
   assert.equal(inlineMood({ rows, tone: 'sem-filtro' })?.subject.categoryId, 'mercado')
   assert.deepEqual(rows, copy)
+})
+
+// launchRaw: encaixes depois do lancamento. Limite de 10000 centavos, categoria alimentacao.
+const viewWith = (spentCents, limitCents = 10000) => ({ spend: { rows: [line(spentCents, limitCents)] } })
+
+test('launchRaw: fronteiras 7499, 7500, 8000, 10000 e 10001 de um limite de 10000', () => {
+  const at = (total) => launchRaw({ view: viewWith(0), kind: 'gasto', categoryId: 'alimentacao', cents: total })
+  assert.deepEqual(at(7499), {
+    valorCents: 7499,
+    categoryId: 'alimentacao',
+    pct: 74,
+    remainingCents: 2501,
+    excessCents: 0,
+  })
+  assert.equal(at(7500).pct, 75)
+  assert.equal(at(8000).pct, 80)
+  assert.equal(at(8000).remainingCents, 2000)
+  assert.equal(at(10000).pct, 100)
+  assert.equal(at(10000).remainingCents, 0)
+  assert.equal(at(10000).excessCents, 0)
+  const over = at(10001)
+  assert.equal(over.pct, 100)
+  assert.equal(over.remainingCents, 0)
+  assert.equal(over.excessCents, 1)
+})
+
+test('launchRaw: soma ao gasto da linha e nao satura o pct em 100', () => {
+  const raw = launchRaw({ view: viewWith(9000), kind: 'gasto', categoryId: 'alimentacao', cents: 6000 })
+  assert.equal(raw.pct, 150)
+  assert.equal(raw.excessCents, 5000)
+  assert.equal(raw.remainingCents, 0)
+  assert.equal(raw.valorCents, 6000)
+})
+
+test('launchRaw: counted verdadeiro nao soma de novo', () => {
+  const raw = launchRaw({ view: viewWith(8000), kind: 'gasto', categoryId: 'alimentacao', cents: 500, counted: true })
+  assert.equal(raw.pct, 80)
+  assert.equal(raw.remainingCents, 2000)
+  assert.equal(raw.valorCents, 500)
+})
+
+test('launchRaw: sem linha de limite, receita e Porquinho devolvem so o valor', () => {
+  assert.deepEqual(launchRaw({ view: viewWith(0), kind: 'gasto', categoryId: 'lazer', cents: 900 }), { valorCents: 900 })
+  assert.deepEqual(launchRaw({ view: viewWith(0), kind: 'gasto', categoryId: null, cents: 900 }), { valorCents: 900 })
+  assert.deepEqual(launchRaw({ view: viewWith(0), kind: 'receita', cents: 5000 }), { valorCents: 5000 })
+  assert.deepEqual(launchRaw({ view: viewWith(0), kind: 'porquinho-guardou', cents: 700 }), { valorCents: 700 })
+  assert.deepEqual(launchRaw({ view: {}, kind: 'gasto', categoryId: 'alimentacao', cents: 100 }), { valorCents: 100 })
+})
+
+test('launchRaw concorda com reactionForLaunch sobre o estouro', () => {
+  const view = { safeCents: 0, income: {}, ...viewWith(9500) }
+  const r = reactionForLaunch({ view, kind: 'gasto', categoryId: 'alimentacao', cents: 600 })
+  const raw = launchRaw({ view, kind: 'gasto', categoryId: 'alimentacao', cents: 600 })
+  assert.equal(r.situation, 'limite-estourou')
+  assert.equal(raw.excessCents, 100)
+})
+
+test('CHEER_MS sao dez minutos', () => {
+  assert.equal(CHEER_MS, 600000)
+})
+
+test('a festa nunca vence um limite estourado, mesmo com cheer ativo', () => {
+  const r = deriveVintemState(facts({ cheer: 'meta-batida', rows: [line(12000)] }), null, 0)
+  assert.equal(r.situation, 'limite-estourou')
+  assert.notEqual(r.state, 'feliz')
+  const ok = deriveVintemState(facts({ cheer: 'porquinho-guardou' }), null, 0)
+  assert.equal(ok.state, 'feliz')
+  assert.equal(ok.situation, 'porquinho-guardou')
 })

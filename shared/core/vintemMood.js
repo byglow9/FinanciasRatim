@@ -345,6 +345,43 @@ export function reactionForLaunch({ view, kind, categoryId = null, cents, bigSpe
 }
 
 /**
+ * Por quanto tempo a comemoracao (meta batida ou guardar no Porquinho) mantem o humor de fundo
+ * feliz, em ms: dez minutos. Um limite estourado continua vencendo a festa (D-06).
+ */
+export const CHEER_MS = 600000
+
+/**
+ * Encaixes crus de um lancamento, calculados DEPOIS dele: pct, restante e excesso da categoria com
+ * o gasto somado ao da linha (a menos que `counted` diga que a view ja o contem). `pct` e inteiro
+ * para baixo e nao satura em 100; o restante nunca e negativo e o excesso so existe acima do limite.
+ * Sem linha de limite da categoria, e para receita e Porquinho, so `valorCents`. So inteiros.
+ * @param {{
+ *   view: { spend?: { rows: MoodFacts['rows'] } },
+ *   kind: string,
+ *   categoryId?: string | null,
+ *   cents: number,
+ *   counted?: boolean,
+ * }} args
+ * @returns {{ valorCents: number, categoryId?: string, pct?: number, remainingCents?: number, excessCents?: number }}
+ */
+export function launchRaw({ view, kind, categoryId = null, cents, counted = false }) {
+  const valorCents = cents
+  if (kind !== 'gasto' || categoryId === null) return { valorCents }
+  const row = (view?.spend?.rows ?? []).find((r) => r.categoryId === categoryId)
+  if (!row || !isPositiveInt(row.limitCents)) return { valorCents }
+  const add = counted || !Number.isFinite(cents) || cents <= 0 ? 0 : cents
+  const spent = Math.max(row.spentCents + add, 0)
+  const limit = row.limitCents
+  return {
+    valorCents,
+    categoryId,
+    pct: Math.floor((spent * 100) / limit),
+    remainingCents: Math.max(limit - spent, 0),
+    excessCents: spent > limit ? spent - limit : 0,
+  }
+}
+
+/**
  * Uma situacao de exemplo por estado, para a pagina de teste do Vintem. As
  * chaves sao exatamente VINTEM_STATES.
  */

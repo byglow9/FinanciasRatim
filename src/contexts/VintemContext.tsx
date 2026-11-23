@@ -9,15 +9,21 @@ import {
   type RefObject,
 } from 'react'
 import { useLocation } from 'react-router-dom'
-import { vintemToneOf, type VintemTone } from '@/types'
+import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
 import type { VintemHandle } from '@/components/vintem/Vintem'
+import type { useCycleBudget } from '@/hooks/useCycleBudget'
+import { loadBaseline } from '@/lib/vintemBaseline'
+import { categoryDisplayName } from '@shared/core/categories.js'
+import { cycleOf } from '@shared/core/cycle.js'
+import { isSpendSpike } from '@shared/core/insights.js'
 import { buildSlots, pick, pushRecent, recentKey, recentLimit } from '@shared/core/phrasePicker.js'
+import { launchRaw, reactionForLaunch } from '@shared/core/vintemMood.js'
 import { PHRASES, SITUATION_META } from '@shared/core/vintemPhrases.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
 import { useArea } from './AreaContext'
 import { useCycle } from './CycleContext'
 
-// Provedor do Vintem: tom do casal, registro do slot do arco, fala e regiao viva.
+// Provedor do Vintem: tom do casal, registro do slot do arco, fala, regiao viva e reacao a lancamento.
 // Os fatos de humor entram por quem ja tem a BudgetView (a Home); o provedor nao refaz o ciclo.
 // Historico das ultimas frases fica no sessionStorage (so ids de frase, sempre em try e catch).
 // O acaso nasce dentro de speak, nunca durante a renderizacao.
@@ -44,6 +50,18 @@ export interface SpeakArgs extends PhraseArgs {
   announce?: boolean
 }
 
+/** Tipos de lancamento que o Vintem entende (a decisao e de reactionForLaunch, no nucleo). */
+export type LaunchedKind = 'gasto' | 'receita' | 'porquinho-guardou' | 'porquinho-retirou'
+
+export interface LaunchedArgs {
+  kind: LaunchedKind
+  categoryId?: string | null
+  cents: number
+  /** Visao do ciclo ANTERIOR ao lancamento (por isso o gasto ainda nao esta somado). */
+  view: NonNullable<ReturnType<typeof useCycleBudget>['view']> | null
+  person: PersonType
+}
+
 export interface VintemContextType {
   tone: VintemTone
   /** Fala atual do balao da Home (nula sem fala). */
@@ -56,6 +74,11 @@ export interface VintemContextType {
   /** Ref do handle do Vintem do arco (nulo fora da Home). */
   slot: RefObject<VintemHandle | null>
   registerSlot: (handle: VintemHandle | null) => void
+  /**
+   * Reacao a um lancamento ja gravado. Melhor esforco: nunca lanca e nunca registra valor nem nome.
+   * Na Home roda no Vintem do arco e fala no balao; fora dela nao ha reacao visivel aqui.
+   */
+  onLaunched: (args: LaunchedArgs) => Promise<void>
 }
 
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
@@ -89,8 +112,8 @@ function writeRecent(recent: Recent): void {
 }
 
 export function VintemProvider({ children }: { children: ReactNode }) {
-  const { settings } = useArea()
-  const { viewPerson } = useCycle()
+  const { settings, categoryDefs, personConfigFor } = useArea()
+  const { viewPerson, now } = useCycle()
   const { pathname } = useLocation()
   const tone = vintemToneOf(settings)
   const slot = useRef<VintemHandle | null>(null)
@@ -152,9 +175,49 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     setAnnounced('')
   }, [])
 
+  const onLaunched = useCallback(
+    async ({ kind, categoryId = null, cents, view, person }: LaunchedArgs): Promise<void> => {
+      try {
+        if (view === null || view.isPast) return
+        // Gasto grande: linha de base do cache (uma consulta por ciclo); falha vale como sem linha de base.
+        let bigSpend = false
+        if (kind === 'gasto') {
+          try {
+            const cycle = cycleOf(now, personConfigFor(person).salaryDay)
+            const baseline = await loadBaseline(person, cycle, categoryDefs)
+            const limitCents = view.spend.rows.find((r) => r.categoryId === categoryId)?.limitCents ?? null
+            bigSpend = isSpendSpike({ cents, categoryId, baseline, limitCents })
+          } catch {
+            bigSpend = false
+          }
+        }
+        const result = reactionForLaunch({ view, kind, categoryId, cents, bigSpend, counted: false })
+        if (result === null) return
+        const core = launchRaw({ view, kind, categoryId, cents, counted: false })
+        const raw: SlotsRaw = { valorCents: core.valorCents, dias: view.daysLeft }
+        if (kind === 'gasto' && categoryId !== null) {
+          raw.categoria = categoryDisplayName({ categoryId }, categoryDefs)
+        }
+        if (core.pct !== undefined) raw.pct = core.pct
+        if (core.remainingCents !== undefined) raw.restanteCents = core.remainingCents
+        if (result.situation === 'limite-estourou' && core.excessCents !== undefined) {
+          raw.valorCents = core.excessCents
+        }
+        const handle = slot.current
+        if (handle !== null) {
+          handle.react(result.reaction)
+          speak({ situation: result.situation, raw, announce: true })
+        }
+      } catch {
+        // Melhor esforco: a reacao nunca atrapalha o lancamento e nada de valor ou nome vai a log.
+      }
+    },
+    [now, personConfigFor, categoryDefs, speak],
+  )
+
   const value = useMemo<VintemContextType>(
-    () => ({ tone, speech, speak, pickPhrase: draw, dismiss, slot, registerSlot }),
-    [tone, speech, speak, draw, dismiss, registerSlot],
+    () => ({ tone, speech, speak, pickPhrase: draw, dismiss, slot, registerSlot, onLaunched }),
+    [tone, speech, speak, draw, dismiss, registerSlot, onLaunched],
   )
 
   return (

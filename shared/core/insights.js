@@ -247,6 +247,99 @@ export function toAiPayload(insight) {
   }
 }
 
+/** Tipos aceitos no documento guardado (mesma lista de InsightType). */
+const STORED_TYPES = Object.freeze([
+  'delivery-heavy',
+  'merchant-repeat',
+  'category-over-average',
+  'spend-spike',
+  'days-without-launch',
+  'limit-near',
+  'limit-over',
+  'rhythm',
+])
+
+/** Unicas chaves de metricas que vao ao armazenamento (todas numeros inteiros). */
+const STORED_METRIC_KEYS = Object.freeze([
+  'count',
+  'totalCents',
+  'avgCents',
+  'ratioPct',
+  'pct',
+  'limitCents',
+  'spentCents',
+  'days',
+  'windowDays',
+  'ordinal',
+  'level',
+])
+
+const STORED_SUBJECT_KINDS = Object.freeze(['merchant', 'merchant-group', 'category', 'cycle'])
+const STORED_MAX_TX_IDS = 20
+const STORED_MAX_DAYS = 14
+
+/**
+ * Documento guardado de um insight (D-15): lista fechada de campos, so ids, chaves de ciclo e de dia,
+ * tipo, severidade e numeros. O rotulo legivel do sujeito NUNCA vai: so a chave, que precisa ter o
+ * formato `[a-z0-9:_-]` e nenhuma sequencia de 6 digitos. A pessoa vem do prefixo do id (o contrato
+ * Insight v1 nao tem campo proprio). Qualquer campo fora do formato devolve null, e o chamador descarta.
+ * @param {Insight} insight
+ * @returns {{
+ *   id: string, v: 1, person: 'ele' | 'ela', type: InsightType, severity: 0 | 1 | 2 | 3,
+ *   cycleKey: string, day: string, subjectKind: Insight['subject']['kind'], subjectKey: string,
+ *   metrics: Record<string, number>, evidenceTxIds: string[], evidenceDays: string[],
+ * } | null}
+ */
+export function toStoredInsight(insight) {
+  try {
+    if (!insight || typeof insight !== 'object' || insight.v !== 1) return null
+    const { id, type, severity, cycleKey, day, subject, metrics, evidence } = insight
+    if (typeof id !== 'string' || !/^(ele|ela)__[A-Za-z0-9:_.-]{1,180}$/.test(id)) return null
+    const person = /** @type {'ele' | 'ela'} */ (id.slice(0, id.indexOf('__')))
+    if (!STORED_TYPES.includes(type)) return null
+    if (!Number.isInteger(severity) || severity < 0 || severity > 3) return null
+    if (typeof cycleKey !== 'string' || !/^\d{4}-\d{2}$/.test(cycleKey)) return null
+    if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+    if (!subject || typeof subject !== 'object' || !STORED_SUBJECT_KINDS.includes(subject.kind)) return null
+    const key = subject.key
+    if (typeof key !== 'string' || !/^[a-z0-9:_-]{1,40}$/.test(key) || /\d{6,}/.test(key)) return null
+
+    if (!metrics || typeof metrics !== 'object' || Array.isArray(metrics)) return null
+    /** @type {Record<string, number>} */
+    const outMetrics = {}
+    for (const k of Object.keys(metrics)) {
+      const value = /** @type {Record<string, unknown>} */ (metrics)[k]
+      if (!STORED_METRIC_KEYS.includes(k) || !Number.isSafeInteger(value)) return null
+      outMetrics[k] = /** @type {number} */ (value)
+    }
+
+    const txIds = evidence?.txIds
+    const dayKeys = evidence?.dayKeys
+    if (!Array.isArray(txIds) || !Array.isArray(dayKeys)) return null
+    const evidenceTxIds = txIds.slice(0, STORED_MAX_TX_IDS)
+    const evidenceDays = dayKeys.slice(0, STORED_MAX_DAYS)
+    if (!evidenceTxIds.every((t) => typeof t === 'string' && /^[A-Za-z0-9_-]{1,60}$/.test(t))) return null
+    if (!evidenceDays.every((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))) return null
+
+    return {
+      id,
+      v: 1,
+      person,
+      type,
+      severity: /** @type {0 | 1 | 2 | 3} */ (severity),
+      cycleKey,
+      day,
+      subjectKind: subject.kind,
+      subjectKey: key,
+      metrics: outMetrics,
+      evidenceTxIds: [...evidenceTxIds],
+      evidenceDays: [...evidenceDays],
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Severidade de 1 a 3 pela contagem: no minimo 1, uma a mais por compra acima do minimo.
  * @param {number} count

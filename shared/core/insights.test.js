@@ -10,6 +10,7 @@ import {
   insightId,
   merchantOf,
   toAiPayload,
+  toStoredInsight,
   INSIGHT_RULES,
   INSIGHT_VERSION,
 } from './insights.js'
@@ -577,4 +578,127 @@ test('buildInsights nao muta as entradas', () => {
   // buildBaseline tambem nao muta.
   const past = deepFreeze([{ cycle: oct, transactions: [lazer('a', '2026-10-10T15:00:00Z', 100)] }])
   assert.doesNotThrow(() => buildBaseline({ pastCycles: past, categoryDefs: DEFAULT_CATEGORY_DEFS }))
+})
+
+// ---- Plano 04-18: documento guardado (D-15) ----
+
+test('toStoredInsight guarda so ids, chaves, severidade e numeros do delivery, sem o rotulo', () => {
+  const list = [
+    food('t1', '2026-11-16T15:00:00Z'),
+    food('t2', '2026-11-17T15:00:00Z'),
+    food('t3', '2026-11-18T15:00:00Z'),
+    food('t4', '2026-11-19T12:00:00Z'),
+  ]
+  const [i] = run(list)
+  const stored = toStoredInsight(i)
+  assert.ok(stored)
+  assert.deepEqual(Object.keys(stored).sort(), [
+    'cycleKey', 'day', 'evidenceDays', 'evidenceTxIds', 'id', 'metrics', 'person', 'severity',
+    'subjectKey', 'subjectKind', 'type', 'v',
+  ])
+  assert.equal(stored.person, 'ele')
+  assert.equal(stored.type, 'delivery-heavy')
+  assert.equal(stored.subjectKind, 'merchant-group')
+  assert.equal(stored.subjectKey, 'delivery')
+  assert.equal(stored.severity, i.severity)
+  assert.deepEqual(stored.evidenceTxIds, ['t1', 't2', 't3', 't4'])
+  assert.equal(stored.metrics.count, 4)
+  // o rotulo legivel e a descricao nunca vao
+  const text = JSON.stringify(stored)
+  assert.doesNotMatch(text, /ifood|restaurante|label/i)
+})
+
+test('toStoredInsight: varredura de privacidade do resultado (sem nome, e-mail, 6 digitos nem rotulo)', () => {
+  const dates = ['2026-11-14T15:00:00Z', '2026-11-15T15:00:00Z', '2026-11-16T15:00:00Z', '2026-11-17T15:00:00Z']
+  const descriptions = [
+    'Pix para Maria Silva',
+    'Pix de Joao Souza',
+    'Pagamento CPF 123.456.789-01',
+    'maria@exemplo.com',
+    'Padaria Estrela Ltda',
+  ]
+  const list = []
+  for (const d of descriptions) {
+    dates.forEach((iso, k) => list.push(tx('saida', 80, iso, { id: `p${list.length}${k}`, description: d, categoryId: 'lazer' })))
+  }
+  const insights = run(list, { rows: [row('lazer', 90000, 100000)], rhythmLevel: 3 })
+  const stored = insights.map(toStoredInsight).filter((s) => s !== null)
+  assert.ok(stored.length > 0)
+  const text = strings(stored).join('\n')
+  assert.doesNotMatch(text, /Maria|Joao|Souza|Silva|exemplo/)
+  assert.doesNotMatch(text, /@/)
+  assert.doesNotMatch(text, /\d{6,}/)
+  assert.doesNotMatch(text, /padaria|estrela/i)
+  assert.doesNotMatch(text, /pix|transfer/i)
+})
+
+test('toStoredInsight devolve null quando qualquer campo foge do formato', () => {
+  const ok = () => ({
+    v: 1,
+    id: 'ele__2026-11__delivery-heavy__delivery__2026-11-19',
+    type: 'delivery-heavy',
+    subject: { kind: 'merchant-group', key: 'delivery', label: 'delivery' },
+    metrics: { count: 4, totalCents: 18750 },
+    severity: 2,
+    evidence: { txIds: ['a1', 'B-2_x'], dayKeys: ['2026-11-18'] },
+    cycleKey: '2026-11',
+    day: '2026-11-19',
+  })
+  assert.ok(toStoredInsight(ok()))
+  const mutate = (fn) => {
+    const v = ok()
+    fn(v)
+    return toStoredInsight(v)
+  }
+  assert.equal(mutate((v) => { v.subject.key = 'com espaco' }), null)
+  assert.equal(mutate((v) => { v.subject.key = 'a/b' }), null)
+  assert.equal(mutate((v) => { v.subject.key = 'Maiuscula' }), null)
+  assert.equal(mutate((v) => { v.subject.key = 'cartao-123456' }), null)
+  assert.equal(mutate((v) => { v.id = 'ele__a/b' }), null)
+  assert.equal(mutate((v) => { v.id = 'maria__2026-11__x' }), null)
+  assert.equal(mutate((v) => { v.severity = 4 }), null)
+  assert.equal(mutate((v) => { v.severity = -1 }), null)
+  assert.equal(mutate((v) => { v.severity = 1.5 }), null)
+  assert.equal(mutate((v) => { v.type = 'outro' }), null)
+  assert.equal(mutate((v) => { v.v = 2 }), null)
+  assert.equal(mutate((v) => { v.cycleKey = 'novembro' }), null)
+  assert.equal(mutate((v) => { v.day = '19/11/2026' }), null)
+  assert.equal(mutate((v) => { v.subject.kind = 'pessoa' }), null)
+  assert.equal(mutate((v) => { v.metrics.count = 1.5 }), null)
+  assert.equal(mutate((v) => { v.metrics.count = Number.NaN }), null)
+  assert.equal(mutate((v) => { v.metrics.count = '4' }), null)
+  assert.equal(mutate((v) => { v.metrics.descricao = 3 }), null)
+  assert.equal(mutate((v) => { v.evidence.txIds = ['tem espaco'] }), null)
+  assert.equal(mutate((v) => { v.evidence.txIds = ['a'.repeat(61)] }), null)
+  assert.equal(mutate((v) => { v.evidence.txIds = ['maria@x.com'] }), null)
+  assert.equal(mutate((v) => { v.evidence.dayKeys = ['ontem'] }), null)
+  assert.equal(toStoredInsight(null), null)
+  assert.equal(toStoredInsight(undefined), null)
+  assert.equal(toStoredInsight('texto'), null)
+})
+
+test('toStoredInsight limita a evidencia a 20 ids e 14 dias e nunca devolve o rotulo da loja', () => {
+  const v = {
+    v: 1,
+    id: 'ela__2026-11__merchant-repeat__h:abcdefgh__2026-11-19',
+    type: 'merchant-repeat',
+    subject: { kind: 'merchant', key: 'h:abcdefgh', label: 'Padaria Estrela Ltda' },
+    metrics: { count: 3, totalCents: 3600, windowDays: 7, ordinal: 3 },
+    severity: 1,
+    evidence: {
+      txIds: Array.from({ length: 30 }, (_, k) => `tx${k}`),
+      dayKeys: Array.from({ length: 20 }, (_, k) => `2026-11-${String(k + 1).padStart(2, '0')}`),
+    },
+    cycleKey: '2026-11',
+    day: '2026-11-19',
+  }
+  const s = toStoredInsight(v)
+  assert.ok(s)
+  assert.equal(s.person, 'ela')
+  assert.equal(s.evidenceTxIds.length, 20)
+  assert.equal(s.evidenceDays.length, 14)
+  assert.equal(s.subjectKey, 'h:abcdefgh')
+  assert.doesNotMatch(JSON.stringify(s), /padaria|estrela/i)
+  // a entrada nao e alterada
+  assert.equal(v.evidence.txIds.length, 30)
 })

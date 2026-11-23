@@ -3,6 +3,7 @@ import type { CategoryDef, PersonType, Transaction } from '@/types'
 import { useCycle } from '@/contexts/CycleContext'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { baselineKey, loadBaseline } from '@/lib/vintemBaseline'
+import { saveVintemInsights } from '@/services/vintemInsights.service'
 import { resolveCategoryId } from '@shared/core/categories.js'
 import { buildInsights, isSpendSpike } from '@shared/core/insights.js'
 import type { Baseline, Insight } from '@shared/core/insights.js'
@@ -12,7 +13,8 @@ import type { Cycle } from '@shared/core/cycle.js'
 // Insights do Vintem na Home (plano 04-14): alimenta o detector local com as transacoes que a Home ja
 // carregou e com a linha de base dos ciclos anteriores (uma consulta por ciclo e aparelho, depois cache).
 // Tambem reconhece lancamento importado do banco por pessoa, com um marco no localStorage que guarda so
-// um numero. Nada daqui le ou grava no Firestore alem da consulta da linha de base.
+// um numero. O unico acesso ao Firestore e a consulta da linha de base e, no plano 04-18, a gravacao
+// melhor esforco dos insights fortes (saveVintemInsights: idempotente, falha nunca aparece na tela).
 
 type View = NonNullable<ReturnType<typeof useCycleBudget>['view']>
 
@@ -120,6 +122,13 @@ export function useVintemInsights({
       rhythmLevel: view.rhythmLevel,
     })
   }, [active, view, transactions, now, person, cycle, categoryDefs, baseline])
+
+  // Guarda os insights fortes (severidade 2 ou 3) para a Fase 7: so com a linha de base resolvida, ciclo
+  // atual e fora do modo somente leitura (active ja os exige). Melhor esforco: nada muda na tela.
+  useEffect(() => {
+    if (!active || !ready || !insights.some((i) => i.severity >= 2)) return
+    void saveVintemInsights(person, cycle.key, insights)
+  }, [active, ready, insights, person, cycle.key])
 
   // Marco por pessoa lido uma vez (e de novo ao trocar de pessoa). Fica congelado durante a carga:
   // a gravacao do marco novo vai so ao localStorage, para a chegada de agora continuar visivel.

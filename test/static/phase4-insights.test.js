@@ -35,11 +35,18 @@ test('vintemBaseline: a leitura valida versao e formato e cache adulterado vale 
   assert.match(src, /cached !== null\) return Promise\.resolve\(cached\)/, 'cache invalido deve cair na consulta')
 })
 
-test('os hooks nao leem nem gravam no Firestore (so a linha de base consulta, por vintemBaseline)', () => {
+test('os hooks nao leem nem gravam no Firestore (so a linha de base consulta; so o servico vintemInsights grava, plano 04-18)', () => {
   for (const file of [INSIGHTS, HOME]) {
     const src = code(file)
     assert.doesNotMatch(src, /firebase\/firestore/, `${file} importa o Firestore`)
-    assert.doesNotMatch(src, /from '@\/services\//, `${file} importa um servico`)
+    // Unica excecao: useVintemInsights importa o servico de insights guardados (gravacao melhor esforco).
+    const allowed = file === INSIGHTS ? ['vintemInsights.service'] : []
+    const services = [...src.matchAll(/from '@\/services\/([\w.]+)'/g)].map((m) => m[1])
+    assert.deepEqual(
+      services.filter((s) => !allowed.includes(s)),
+      [],
+      `${file} importa um servico alem do permitido`
+    )
     assert.doesNotMatch(src, /getTransactionsInRange|getDocs|setDoc|addDoc|updateDoc/, `${file} le ou grava dado`)
   }
   assert.match(code(INSIGHTS), /from '@\/lib\/vintemBaseline'/, 'useVintemInsights deve usar vintemBaseline')

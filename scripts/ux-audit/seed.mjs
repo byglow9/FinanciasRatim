@@ -15,6 +15,7 @@ const COLLECTIONS = [
   'events',
   'eventCategories',
   'limitAlerts',
+  'vintemInsights',
 ]
 
 const catId = (name) => DEFAULT_CATEGORY_DEFS.find((d) => d.name === name)?.id ?? 'outros'

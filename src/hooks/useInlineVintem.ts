@@ -12,9 +12,6 @@ import { inlineMood } from '@shared/core/vintemMood.js'
 // linha nunca usa a regiao viva nem a fala da Home. Sem veredito com dado velho nem no perfil
 // do parceiro (T-04-16-02).
 
-/** Tamanho maximo da fala da situacao `central` (UI-SPEC S3, P-12). */
-const CENTRAL_MAX_LEN = 80
-
 export interface UseInlineVintemArgs {
   rows: BudgetRow[]
   /** Dado velho: sem elogio nem bronca, a linha some. */
@@ -58,7 +55,8 @@ export function useInlineVintem({ rows, neutralOk, categoryDefs }: UseInlineVint
     const chosen = pickPhrase({
       situation: 'central',
       raw: { categoria: topName, pct: topPct, restanteCents: topRemaining },
-      maxLen: CENTRAL_MAX_LEN,
+      // Tamanho maximo da fala da situacao `central` (UI-SPEC S3, P-12).
+      maxLen: 80,
     })
     setText(chosen === null ? null : chosen.text)
     setPopKey((k) => k + 1)

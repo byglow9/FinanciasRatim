@@ -149,7 +149,10 @@ test('SVGs de origem: viewBox 512, sem image, text, script, filter nem referenci
     for (const m of svg.matchAll(/(?:xlink:)?href\s*=\s*"([^"]*)"/g)) {
       assert.ok(m[1].startsWith('#'), `${arquivo}: href externo ${m[1]}`)
     }
-    assert.doesNotMatch(svg, /https?:\/\/|data:|url\(\s*["']?(?!#)/i, `${arquivo}: referencia externa`)
+    // o xmlns da raiz e obrigatorio para o SVG renderizar em <img src>; so ele e permitido
+    if (arquivo === FONTE_ANY) assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"[\s>]/, `${arquivo}: sem xmlns na raiz`)
+    const semXmlns = svg.replace('xmlns="http://www.w3.org/2000/svg"', '')
+    assert.doesNotMatch(semXmlns, /https?:\/\/|data:|url\(\s*["']?(?!#)/i, `${arquivo}: referencia externa`)
   }
 })
 

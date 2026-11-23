@@ -1,7 +1,7 @@
 // Suite dos estados vazios e de erro com o Vintem calado, parte 2 (D-16, UI-SPEC S5, P-02): sino sem
 // avisos (sonolento, so fora da Home) e Casal sem lancamentos (neutro). Na semente vazia, sem passar de
 // dois Vintens animados por tela, sem foco e sem rolagem horizontal a 360 px. So dados ficticios da semente.
-import { checkPieces } from './empties.mjs'
+import { checkPieces, snapshot } from './empties.mjs'
 
 export const name = 'empties-more'
 export const route = '/transacoes'
@@ -69,4 +69,25 @@ export async function run(ctx) {
   check('home-sino-mantem-o-texto', homeText, { homeText })
   const homeTotal = await page.evaluate(VISIBLE_VINTENS)
   check('home-no-maximo-dois-vintens', homeTotal <= 2, { vintens: homeTotal })
+
+  await runCouple(ctx)
+}
+
+/** Casal sem lancamentos: uma peca neutra acima do texto, nenhum outro Vintem e sem rolagem lateral. */
+export async function runCouple({ page, check, navigate }) {
+  const text = 'Sem lançamentos neste período'
+  const snap = await snapshot({
+    page,
+    navigate,
+    route: '/casal',
+    ready: `document.body.innerText.includes(${JSON.stringify(text)})`,
+  })
+  checkPieces(check, 'casal', snap.pieces, ['neutro'])
+  check('casal-nenhum-vintem-alem-do-vazio', snap.vintens === 1, { vintens: snap.vintens })
+  const textTop = await page.evaluate(topOfText(text))
+  const pieceTop = snap.pieces[0]?.top ?? null
+  check('casal-vintem-acima-do-texto', textTop !== null && pieceTop !== null && pieceTop < textTop, { pieceTop, textTop })
+  const legend = await page.evaluate(`document.body.innerText.includes('a comparação aparece aqui')`)
+  check('casal-mantem-a-legenda', legend, { legend })
+  check('casal-sem-rolagem-horizontal', snap.scroll.scrollWidth <= snap.scroll.clientWidth, snap.scroll)
 }

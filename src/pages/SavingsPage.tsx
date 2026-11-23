@@ -10,6 +10,7 @@ import { Notice } from '@/components/ui/notice'
 import { RowActionsSheet } from '@/components/ui/row-actions-sheet'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useToast } from '@/components/ui/toast'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import type { SavingsTransaction } from '@/types'
 import { dayMonth, formatMoney } from '@shared/core/format.js'
 import { toCents } from '@shared/core/ledger.js'
@@ -90,17 +91,20 @@ export function SavingsPage() {
       </div>
 
       {error ? (
-        <Notice
-          tone="danger"
-          title="Não foi possível carregar o Porquinho."
-          action={
-            <Button type="button" variant="outline" onClick={() => void refetch()}>
-              Tentar de novo
-            </Button>
-          }
-        >
-          Confira a conexão e tente de novo.
-        </Notice>
+        <>
+          <VintemEmpty pose="surpreso" />
+          <Notice
+            tone="danger"
+            title="Não foi possível carregar o Porquinho."
+            action={
+              <Button type="button" variant="outline" onClick={() => void refetch()}>
+                Tentar de novo
+              </Button>
+            }
+          >
+            Confira a conexão e tente de novo.
+          </Notice>
+        </>
       ) : showLoading ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Carregando o Porquinho</span>

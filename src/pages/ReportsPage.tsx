@@ -9,6 +9,7 @@ import { useSavings } from '@/hooks/useSavings'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { Notice } from '@/components/ui/notice'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import {
   SummaryCards,
   CategoryPieChart,
@@ -178,18 +179,21 @@ export function ReportsPage() {
 
         {(activeTab === 'visao-geral' || activeTab === 'categorias') &&
           (error ? (
-            <Notice
-              tone="danger"
-              icon={AlertCircle}
-              title="Não foi possível carregar os relatórios."
-              action={
-                <Button type="button" variant="outline" onClick={() => void refetch()}>
-                  Tentar de novo
-                </Button>
-              }
-            >
-              Confira a conexão e tente de novo.
-            </Notice>
+            <>
+              <VintemEmpty pose="surpreso" />
+              <Notice
+                tone="danger"
+                icon={AlertCircle}
+                title="Não foi possível carregar os relatórios."
+                action={
+                  <Button type="button" variant="outline" onClick={() => void refetch()}>
+                    Tentar de novo
+                  </Button>
+                }
+              >
+                Confira a conexão e tente de novo.
+              </Notice>
+            </>
           ) : loading ? (
             <div role="status" aria-busy="true" className="space-y-2">
               <span className="sr-only">Carregando os relatórios</span>

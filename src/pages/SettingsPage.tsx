@@ -15,6 +15,7 @@ import { NotificationsCard } from '@/components/settings/NotificationsCard'
 import { VintemToneCard } from '@/components/settings/VintemToneCard'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 
 /**
  * Configurações em cartões (UI-SPEC S5 e S6, D-15, CENT-05), com âncoras #ciclo, #categorias,
@@ -62,6 +63,7 @@ export function SettingsPage() {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
         {header}
+        <VintemEmpty pose="surpreso" />
         <Notice
           tone="danger"
           icon={CircleAlert}

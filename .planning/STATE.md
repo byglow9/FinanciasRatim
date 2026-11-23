@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-15-PLAN.md
-last_updated: "2026-11-23T17:11:01.878Z"
+stopped_at: Completed 05-16-PLAN.md
+last_updated: "2026-11-23T18:08:17.288Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: 30293d5694458cca25a81bffb84381634f91d4a6
+state_head: da949547c1d0b12b6f2f57fce0598e93bd56590d
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 100
+  completed_plans: 102
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 15 of 21
+Plan: 16 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -143,6 +143,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 5 P12 | 25min | 2 tasks | 8 files |
 | Phase 5 P14 | 25min | 2 tasks | 8 files |
 | Phase 5 P15 | 55min | 2 tasks | 4 files |
+| Phase 5 P16 | 75min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -214,6 +215,8 @@ Recent decisions affecting current work:
 - [Phase 5]: [Phase 5] 05-11: Adicionar agora so chama prompt() no toque; onDone so no aceito; standalone em CDP exige forcar a consulta display-mode na pagina (setEmulatedMedia nao aplica); IDEN-03 segue aberto ate o 05-20
 - [Phase 5]: [Phase 5] 05-12: marca do Login por img de /icons/icon.svg (CoincMark acompanha a troca do icone); ?origem so liga o aviso por igualdade estrita com antigo e a URL perde so esse parametro
 - [Phase 5]: [Phase 5] 05-15: auditor de tema deu FALHAS 0 em 72 combinacoes (18 telas x 2 temas x 2 tamanhos) com --selftest que planta defeitos; pizza separada por var(--color-card); excecoes so com motivo
+- [Phase 5]: [Phase 5] 05-16: dock do claro igual a acao (#2f6f3e) por decisao do dono (P-01); piso do par botao + / dock no claro 1,69 (razao medida 1,692), escuro segue 2,2
+- [Phase 5]: [Phase 5] 05-16: texto verde sobre painel escuro usa text-ok-ink; --overlays audita 14 sobreposicoes (56 combinacoes, FALHAS 0); Dialog sem consumidor e montado pelo modulo real
 
 ### Pending Todos
 
@@ -245,6 +248,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T17:11:01.765Z
-Stopped at: Completed 05-15-PLAN.md
+Last session: 2026-11-23T18:08:17.173Z
+Stopped at: Completed 05-16-PLAN.md
 Resume file: None

@@ -42,8 +42,8 @@ function printSrc(key){var p=PRINTS[key];return p?(p[THEME]||p.light):''}
 function phoneHTML(key,pw,cls){return '<div class="phone '+(cls||'')+'" style="width:'+pw+'px"><div class="glass" data-print><img alt="" decoding="sync" data-print-img="'+key+'" src="'+printSrc(key)+'"></div></div>'}
 function bubbleHTML(t){return '<div class="bubble say" data-text="'+t+'"><span class="on" aria-hidden="true"></span><span class="off" aria-hidden="true">'+t+'</span></div>'}
 function dots(n){var s='<div class="dots" aria-hidden="true">';for(var i=0;i<4;i++)s+='<span'+(i===n?' class="on"':'')+'></span>';return s+'</div>'}
-function fieldHTML(type,icon,ph,val,bad,id,extra){
- return '<div class="field'+(bad?' bad':'')+'" data-f="'+id+'">'+ic(icon,20)+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" aria-label="'+ph+'"'+(bad?' aria-invalid="true"':'')+'>'+(extra||'')+'</div>';
+function fieldHTML(type,icon,ph,val,bad,id,extra,warn){
+ return '<div class="field'+(bad?' bad':'')+(warn?' warn':'')+'" data-f="'+id+'">'+ic(icon,20)+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" aria-label="'+ph+'"'+(bad?' aria-invalid="true"':'')+'>'+(extra||'')+'</div>';
 }
 function vwrap(vw){return '<div class="vt-wrap" style="--vw:'+vw+'px">'+vtSVG()+'</div>'}
 function money(n){return 'R$ '+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
@@ -68,12 +68,12 @@ function buildInner(kind,w,h){
   s+='<div class="bot" style="margin-top:4px">'+dots(3)+'<button class="cta" type="button">Já adicionei</button></div>';
  }else{
   var err=kind==='le',off=kind==='lo';
-  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.64)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
+  var say=err?'Hmm, e-mail ou senha não batem. Confere aí?':(off?'Sem internet por aqui. Liga o Wi-Fi ou os dados e tenta de novo.':'');
+  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.64)+'px"><div class="halo" data-halo></div>'+vwrap(100)+
+   '<div class="vsay'+(off?' warn':'')+'" data-vsay role="status" aria-live="polite" aria-atomic="true">'+(say?'<span>'+say+'</span>':'')+'</div></div>'+wordmark()+
    '<div class="form">'+
-   fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID))+
-   fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>')+
-   (err?'<div class="note-box err" role="alert">'+ic('alert',20)+'<span>E-mail ou senha incorretos. Confira e tente de novo.</span></div>':'')+
-   (off?'<div class="note-box off" role="alert">'+ic('wifioff',20)+'<span>Sem conexão. Ligue a internet para entrar.</span></div>':'')+
+   fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID),'',off)+
+   fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>',off)+
    '<button class="cta" type="button">Entrar</button></div>'+
    '<span class="fgap"></span><button class="quiet" type="button">Esqueci minha senha</button><p class="help">Acesso só para quem foi convidado.</p></div>';
  }
@@ -324,6 +324,12 @@ function scriptLogin(S){
  st.style.height=Math.round(vw*200/240*.88+10)+'px';
  S.vwrap.style.top=(st.clientHeight-vw*200/240*.88-2)+'px';
  S.vw=vw;S.ppu=vw/240;S.halo.style.cssText='left:'+((sw-48-vw*1.6)/2)+'px;top:'+(st.clientHeight-vw*1.25)+'px;width:'+(vw*1.6)+'px;height:'+(vw*1.4)+'px';
+ var vs=S.sc.querySelector('[data-vsay]'),vsOn=!!vs.firstChild;
+ /* fala do Vintem: mola criticamente amortecida (sem pop), ancorada ao Vintem; some sozinha ou ao tocar/digitar */
+ S.spring('vsay',0,[170,26],function(v){var u=clamp(v,0,1);vs.style.opacity=u.toFixed(3);vs.style.transform='translateX(-50%) translateY('+((1-u)*8).toFixed(2)+'px) scale('+(.94+.06*u).toFixed(3)+')'});
+ S.sp.vsay.t=0;vs.style.opacity=0;
+ var hideSay=function(){S.sp.vsay.t=0};
+ S.sc.querySelectorAll('input,button,.field').forEach(function(e){['input','pointerdown','focusin'].forEach(function(ev){e.addEventListener(ev,hideSay)})});
  var fs=S.sc.querySelectorAll('.field'),sr=function(){return S.stage.getBoundingClientRect()};
  var gz=function(f){var a=sr(),k=a.width/st.offsetWidth||1,b=f.getBoundingClientRect(),cx=(a.left+a.right)/2,cy=a.top+(st.clientHeight-vw*200/240*.88+vw*200/240*.53)*k;return [clamp((b.left+b.width*.45-cx)/k/160,-1,1),clamp((b.top+b.height/2-cy)/k/170,-1,1)]};
  var foc=[0,1].map(function(i){return S.spring('f'+i,0,[160,18],function(v){fs[i].style.boxShadow='0 0 0 '+(3*clamp(v,0,1)).toFixed(2)+'px rgba(63,138,74,'+(.28*clamp(v,0,1)).toFixed(3)+')'})});
@@ -338,13 +344,13 @@ function scriptLogin(S){
   S.endT=6.4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('neutro');r.lookAt(0,.05)};
  }else if(k==='le'){
   r.setPose('neutro',true);
-  S.at(1.4,function(){r.setPose('triste');r.shake()});
+  S.at(1.4,function(){r.setPose('triste');r.shake()});S.at(1.7,function(){S.sp.vsay.t=1});S.at(8,hideSay);
   S.at(2.2,function(){var g=gz(fs[1]);r.lookAt(g[0],g[1]*.6)});
-  S.endT=4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('triste');r.lookAt(0,.2)};
+  S.endT=4;S.snapFinal=function(){S.sp.halo.t=1;S.sp.vsay.t=1;r.setPose('triste');r.lookAt(0,.2)};
  }else{
   r.setPose('neutro',true);
-  S.at(1.1,function(){r.setPose('sonolento')});S.at(2.1,function(){r.setPose('dormindo')});
-  S.endT=5;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('dormindo');r.lookAt(0,.1)};
+  S.at(1.1,function(){r.setPose('sonolento');S.sp.vsay.t=1});S.at(2.1,function(){r.setPose('dormindo')});S.at(8,hideSay);
+  S.endT=5;S.snapFinal=function(){S.sp.halo.t=1;S.sp.vsay.t=1;r.setPose('dormindo');r.lookAt(0,.1)};
  }
  r.home={x:0,y:.1};
 }

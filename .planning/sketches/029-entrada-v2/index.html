@@ -100,6 +100,12 @@ h2{font:700 16px/1.4 var(--font);margin:20px 0 4px}
 .field input::placeholder{color:var(--muted);opacity:1}
 .field.bad{border-color:var(--danger);background:var(--dangerbg);color:var(--dangerink)}
 .field .eyeb{width:44px;height:44px;margin-right:-8px;display:grid;place-items:center;border-radius:22px;color:var(--muted)}
+.vsay{position:absolute;left:50%;bottom:calc(100% - 8px);width:min(332px,calc(100% + 32px));padding:12px 16px;border-radius:22px;background:var(--action);color:var(--atext);font:400 16px/1.4 var(--font);text-align:center;z-index:6;opacity:0;pointer-events:none;transform-origin:50% 100%;transform:translateX(-50%);box-shadow:0 10px 24px -8px rgba(26,61,34,.35)}
+.vsay:empty{display:none}
+.vsay::after{content:"";position:absolute;bottom:-7px;left:calc(50% - 8px);width:16px;height:16px;background:var(--action);border-radius:0 0 5px 0;transform:rotate(45deg)}
+.vsay.warn{background:var(--warnink);color:var(--warnbg)}
+.vsay.warn::after{background:var(--warnink)}
+.field.warn{border-color:var(--warn);background:var(--warnbg);color:var(--warnink)}
 .note-box{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:20px;font:400 16px/1.4 var(--font)}
 .note-box.err{background:var(--dangerbg);color:var(--dangerink)}
 .note-box.off{background:var(--warnbg);color:var(--warnink)}
@@ -111,7 +117,7 @@ h2{font:700 16px/1.4 var(--font);margin:20px 0 4px}
 .wm svg{display:block;width:196px;height:auto;overflow:visible}
 .form{width:100%;display:flex;flex-direction:column;gap:12px}
 .fgap{flex:1;min-height:8px}
-.tgap{flex:.65;min-height:0}
+.tgap{flex:.65;min-height:64px}
 /* ---- instalar ---- */
 .seg{display:flex;gap:4px;padding:4px;border-radius:26px;background:var(--s2);width:100%}
 .seg button{flex:1;height:44px;border-radius:22px;font:400 16px var(--font);color:var(--muted)}
@@ -179,15 +185,15 @@ function blinkEnv(t){
 
 /* ===== poses (vintemStates.js) ===== */
 var KEYS=['sl','ew','eh','cvL','cvR','lt','bo','pr','arc','by','bt','ea','es','sy','py','rt'];
-var DEF={sl:0,ew:17,eh:21,cvL:0,cvR:0,lt:0,bo:0,pr:.52,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
+var DEF={sl:0,ew:16,eh:13.5,cvL:.28,cvR:.28,lt:0,bo:0,pr:.64,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
 var POSE={
  neutro:{},
  feliz:{arc:1,by:-5,sy:1.02,ea:8,es:1.08},
- triste:{ew:16,cvL:.3,cvR:.3,lt:-15,bo:1,pr:.74,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
- sonolento:{cvL:.5,cvR:.5,pr:.6,by:3,bt:2,ea:30,es:.98},
+ triste:{ew:15,eh:13,cvL:.42,cvR:.42,lt:-15,bo:1,pr:.7,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
+ sonolento:{cvL:.58,cvR:.58,pr:.66,by:3,bt:2,ea:30,es:.98},
  dormindo:{sl:1,cvL:1,cvR:1,pr:.6,by:7,bt:3,ea:38,es:.96},
- surpreso:{ew:21,eh:27,pr:.2,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
- atento:{ew:18,eh:25,pr:.3,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.1,cvR:.1}
+ surpreso:{ew:19,eh:19,cvL:0,cvR:0,pr:.42,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
+ atento:{ew:17,eh:16,pr:.58,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.08,cvR:.08}
 };
 function poseVal(name,k){var p=POSE[name]||{};return p.hasOwnProperty(k)?p[k]:DEF[k]}
 
@@ -203,8 +209,8 @@ var G={
 var UID=0;
 function coinG(r){r=r||20;return '<circle r="'+r+'" fill="var(--vintem-coin)" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.12)+'"/><circle r="'+(r*.62)+'" fill="none" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.1)+'"/><rect x="'+(-r*.11)+'" y="'+(-r*.35)+'" width="'+(r*.22)+'" height="'+(r*.7)+'" rx="'+(r*.11)+'" fill="var(--vintem-coin-line)"/>'}
 function eyeSVG(u,id,x){
- return '<g data-p="eye'+id+'" transform="translate('+x+' 106)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="17" ry="21"/></clipPath><g clip-path="url(#'+u+id+')">'+
- '<ellipse data-p="eb'+id+'" rx="17" ry="21" fill="var(--vintem-eye)"/>'+
+ return '<g data-p="eye'+id+'" transform="translate('+x+' 109)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="16" ry="13.5"/></clipPath><g clip-path="url(#'+u+id+')">'+
+ '<ellipse data-p="eb'+id+'" rx="16" ry="13.5" fill="var(--vintem-eye)"/>'+
  '<circle data-p="pu'+id+'" r="8" fill="var(--vintem-ink)"/><circle data-p="hi'+id+'" r="2" fill="var(--vintem-eye)"/>'+
  '</g><clipPath id="'+u+id+'k"><ellipse data-p="clipB'+id+'" rx="18.5" ry="22.5"/></clipPath><g clip-path="url(#'+u+id+'k)"><path data-p="lid'+id+'" d="M-40,-60H40V0H-40Z" fill="var(--vintem-body)"/></g>'+
  '<path data-p="hap'+id+'" d="M-13,6Q0,-13 13,6" fill="none" stroke="var(--vintem-eye)" stroke-width="5.6" stroke-linecap="round" opacity="0"/>'+
@@ -219,7 +225,7 @@ function vtSVG(){
  s+='<g transform="translate(177 80)"><g data-p="earR"><path transform="scale(-1 1)" d="'+G.ear+'" fill="var(--vintem-body)"/></g></g>';
  s+='<g data-p="bellyg"><path d="'+G.body+'" fill="var(--vintem-body)"/><path data-p="slit" d="'+G.slit+'" fill="none" stroke="var(--vintem-ink)" stroke-width="3.2" stroke-linecap="round"/></g>';
  s+='<g clip-path="url(#'+u+'b)"><g data-p="face"><g data-p="snout" transform="translate(120 141)"><ellipse rx="21" ry="12" fill="var(--vintem-snout)"/><ellipse cx="-6.5" rx="2.4" ry="3.4" fill="var(--vintem-ink)"/><ellipse cx="6.5" rx="2.4" ry="3.4" fill="var(--vintem-ink)"/></g>';
- s+=eyeSVG(u,'L',87)+eyeSVG(u,'R',153)+'</g></g></g>';
+ s+=eyeSVG(u,'L',91)+eyeSVG(u,'R',149)+'</g></g></g>';
  /* acessorios */
  s+='<g data-p="a_excl" transform="translate(206 46)"><g data-p="a_excl_s"><rect x="-3.6" y="-14" width="7.2" height="18" rx="3.6" fill="var(--vintem-excl)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/><circle cy="11" r="4" fill="var(--vintem-excl)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/></g></g>';
  s+='<g transform="translate(206 50)"><g data-p="a_spark"><path d="'+G.spark+'" fill="var(--vintem-spark)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/></g></g>';
@@ -388,7 +394,7 @@ Rig.prototype.render=function(T){
  /* olhos */
  var bl=0;if(!rm)for(var i=0;i<this.blinks.length;i++)bl+=blinkEnv(t-this.blinks[i]);
  bl=clamp(bl,-.14,1);
- var drift=rm?0:Math.sin(t*1.7)*.02+Math.sin(t*2.9+1)*.015;
+ var drift=rm?0:Math.sin(t*.9)*.03+Math.sin(t*2.1+1)*.02;
  ['L','R'].forEach(function(s){
   var cv=pp['cv'+s].x,ew=pp.ew.x,eh=pp.eh.x,cover=clamp(Math.max(cv,bl),-.14,1);
   var ex=this.eye.x.x+drift,ey=this.eye.y.x+drift*.6;
@@ -469,8 +475,8 @@ function printSrc(key){var p=PRINTS[key];return p?(p[THEME]||p.light):''}
 function phoneHTML(key,pw,cls){return '<div class="phone '+(cls||'')+'" style="width:'+pw+'px"><div class="glass" data-print><img alt="" decoding="sync" data-print-img="'+key+'" src="'+printSrc(key)+'"></div></div>'}
 function bubbleHTML(t){return '<div class="bubble say" data-text="'+t+'"><span class="on" aria-hidden="true"></span><span class="off" aria-hidden="true">'+t+'</span></div>'}
 function dots(n){var s='<div class="dots" aria-hidden="true">';for(var i=0;i<4;i++)s+='<span'+(i===n?' class="on"':'')+'></span>';return s+'</div>'}
-function fieldHTML(type,icon,ph,val,bad,id,extra){
- return '<div class="field'+(bad?' bad':'')+'" data-f="'+id+'">'+ic(icon,20)+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" aria-label="'+ph+'"'+(bad?' aria-invalid="true"':'')+'>'+(extra||'')+'</div>';
+function fieldHTML(type,icon,ph,val,bad,id,extra,warn){
+ return '<div class="field'+(bad?' bad':'')+(warn?' warn':'')+'" data-f="'+id+'">'+ic(icon,20)+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" aria-label="'+ph+'"'+(bad?' aria-invalid="true"':'')+'>'+(extra||'')+'</div>';
 }
 function vwrap(vw){return '<div class="vt-wrap" style="--vw:'+vw+'px">'+vtSVG()+'</div>'}
 function money(n){return 'R$ '+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
@@ -495,12 +501,12 @@ function buildInner(kind,w,h){
   s+='<div class="bot" style="margin-top:4px">'+dots(3)+'<button class="cta" type="button">Já adicionei</button></div>';
  }else{
   var err=kind==='le',off=kind==='lo';
-  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.64)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
+  var say=err?'Hmm, e-mail ou senha não batem. Confere aí?':(off?'Sem internet por aqui. Liga o Wi-Fi ou os dados e tenta de novo.':'');
+  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.64)+'px"><div class="halo" data-halo></div>'+vwrap(100)+
+   '<div class="vsay'+(off?' warn':'')+'" data-vsay role="status" aria-live="polite" aria-atomic="true">'+(say?'<span>'+say+'</span>':'')+'</div></div>'+wordmark()+
    '<div class="form">'+
-   fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID))+
-   fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>')+
-   (err?'<div class="note-box err" role="alert">'+ic('alert',20)+'<span>E-mail ou senha incorretos. Confira e tente de novo.</span></div>':'')+
-   (off?'<div class="note-box off" role="alert">'+ic('wifioff',20)+'<span>Sem conexão. Ligue a internet para entrar.</span></div>':'')+
+   fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID),'',off)+
+   fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>',off)+
    '<button class="cta" type="button">Entrar</button></div>'+
    '<span class="fgap"></span><button class="quiet" type="button">Esqueci minha senha</button><p class="help">Acesso só para quem foi convidado.</p></div>';
  }
@@ -751,6 +757,12 @@ function scriptLogin(S){
  st.style.height=Math.round(vw*200/240*.88+10)+'px';
  S.vwrap.style.top=(st.clientHeight-vw*200/240*.88-2)+'px';
  S.vw=vw;S.ppu=vw/240;S.halo.style.cssText='left:'+((sw-48-vw*1.6)/2)+'px;top:'+(st.clientHeight-vw*1.25)+'px;width:'+(vw*1.6)+'px;height:'+(vw*1.4)+'px';
+ var vs=S.sc.querySelector('[data-vsay]'),vsOn=!!vs.firstChild;
+ /* fala do Vintem: mola criticamente amortecida (sem pop), ancorada ao Vintem; some sozinha ou ao tocar/digitar */
+ S.spring('vsay',0,[170,26],function(v){var u=clamp(v,0,1);vs.style.opacity=u.toFixed(3);vs.style.transform='translateX(-50%) translateY('+((1-u)*8).toFixed(2)+'px) scale('+(.94+.06*u).toFixed(3)+')'});
+ S.sp.vsay.t=0;vs.style.opacity=0;
+ var hideSay=function(){S.sp.vsay.t=0};
+ S.sc.querySelectorAll('input,button,.field').forEach(function(e){['input','pointerdown','focusin'].forEach(function(ev){e.addEventListener(ev,hideSay)})});
  var fs=S.sc.querySelectorAll('.field'),sr=function(){return S.stage.getBoundingClientRect()};
  var gz=function(f){var a=sr(),k=a.width/st.offsetWidth||1,b=f.getBoundingClientRect(),cx=(a.left+a.right)/2,cy=a.top+(st.clientHeight-vw*200/240*.88+vw*200/240*.53)*k;return [clamp((b.left+b.width*.45-cx)/k/160,-1,1),clamp((b.top+b.height/2-cy)/k/170,-1,1)]};
  var foc=[0,1].map(function(i){return S.spring('f'+i,0,[160,18],function(v){fs[i].style.boxShadow='0 0 0 '+(3*clamp(v,0,1)).toFixed(2)+'px rgba(63,138,74,'+(.28*clamp(v,0,1)).toFixed(3)+')'})});
@@ -765,13 +777,13 @@ function scriptLogin(S){
   S.endT=6.4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('neutro');r.lookAt(0,.05)};
  }else if(k==='le'){
   r.setPose('neutro',true);
-  S.at(1.4,function(){r.setPose('triste');r.shake()});
+  S.at(1.4,function(){r.setPose('triste');r.shake()});S.at(1.7,function(){S.sp.vsay.t=1});S.at(8,hideSay);
   S.at(2.2,function(){var g=gz(fs[1]);r.lookAt(g[0],g[1]*.6)});
-  S.endT=4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('triste');r.lookAt(0,.2)};
+  S.endT=4;S.snapFinal=function(){S.sp.halo.t=1;S.sp.vsay.t=1;r.setPose('triste');r.lookAt(0,.2)};
  }else{
   r.setPose('neutro',true);
-  S.at(1.1,function(){r.setPose('sonolento')});S.at(2.1,function(){r.setPose('dormindo')});
-  S.endT=5;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('dormindo');r.lookAt(0,.1)};
+  S.at(1.1,function(){r.setPose('sonolento');S.sp.vsay.t=1});S.at(2.1,function(){r.setPose('dormindo')});S.at(8,hideSay);
+  S.endT=5;S.snapFinal=function(){S.sp.halo.t=1;S.sp.vsay.t=1;r.setPose('dormindo');r.lookAt(0,.1)};
  }
  r.home={x:0,y:.1};
 }
@@ -941,7 +953,7 @@ async function runTests(){
  ok('instalar: 3 passos por aparelho, textos diferentes (Chrome x Safari), moldura com marcador e print real dentro',by.ia.sc.querySelectorAll('.step').length===3&&by.ii.sc.querySelectorAll('.step').length===3&&/Chrome/.test(by.ia.sc.textContent)&&/Safari/.test(by.ii.sc.textContent)&&!!by.ia.sc.querySelector('.phone .mk')&&!!by.ii.sc.querySelector('.phone img[data-print-img]'));
  var fs=by.l.sc.querySelectorAll('.field'),fok=[].every.call(fs,function(f){var r=f.getBoundingClientRect(),br=parseFloat(getComputedStyle(f).borderTopLeftRadius);return f.offsetHeight>=52&&br>=f.offsetHeight/2-.5});
  ok('login: wordmark Coinc, dois campos em pílula, botão grande e link (sem secundário)',!!by.l.sc.querySelector('.wm svg')&&fs.length===2&&fok&&by.l.sc.querySelector('.cta').offsetHeight>=56&&!by.l.sc.querySelector('.ghost')&&!by.le.sc.querySelector('.ghost')&&!by.lo.sc.querySelector('.ghost')&&!!by.l.sc.querySelector('.quiet'));
- ok('login: erro (alerta, campos vermelhos, Vintém triste) e sem conexão (aviso, Vintém dormindo)',/incorretos/.test((by.le.sc.querySelector('[role=alert]')||{}).textContent||'')&&by.le.sc.querySelectorAll('.field.bad').length===2&&by.le.rig.pose==='triste'&&/Sem conexão/.test((by.lo.sc.querySelector('[role=alert]')||{}).textContent||'')&&by.lo.rig.pose==='dormindo');
+ ok('login: erro e sem conexão como fala do Vintém (role=status), campos em vermelho/âmbar, Vintém triste e dormindo',/não batem/.test((by.le.sc.querySelector('[data-vsay]')||{}).textContent||'')&&by.le.sc.querySelectorAll('.field.bad').length===2&&by.le.rig.pose==='triste'&&/Sem internet/.test((by.lo.sc.querySelector('[data-vsay]')||{}).textContent||'')&&by.lo.sc.querySelectorAll('.field.warn').length===2&&by.lo.rig.pose==='dormindo');
  ok('movimento reduzido: poses finais (tela 2 atento com medidor em 82%, tela 3 feliz com os anéis, tela 1 neutro com o anel)',by.o1.rig.pose==='neutro'&&by.o2.rig.pose==='atento'&&Math.round(by.o2.sp.pct.x)===82&&by.o3.rig.pose==='feliz'&&by.o3.sp.d23.x>.98&&by.o1.sp.ring1.x>.98);
 
  /* ---- prints reais embutidos ---- */
@@ -1045,6 +1057,51 @@ async function runTests(){
  var imgsBad=[].filter.call(document.querySelectorAll('img'),function(i){return i.src.indexOf('data:image/webp;base64,')!==0});
  ok('sem rede: nenhum recurso externo, nenhum link, iframe ou script com src; imagens só data URI',!ext.length&&!imgsBad.length&&!document.querySelector('script[src],link,iframe,object,embed')&&!/(src|href)="(https?:)?\/\//.test(html)&&!/url\(\s*['"]?ht/.test(html),ext.map(function(e){return e.name}).join(','));
  ok('o único script do arquivo é o do sketch',document.querySelectorAll('script').length===1,document.querySelectorAll('script').length);
+
+
+ /* ---- login: avisos viram fala do Vintem; nada se move entre normal, erro e sem conexao ---- */
+ var dk0=document.documentElement.classList.contains('dark');
+ [[360,740],[390,844]].forEach(function(sz){[false,true].forEach(function(dk){
+  document.documentElement.classList.toggle('dark',dk);
+  var pos={},tg=sz[0]+'x'+sz[1]+(dk?' escuro':' claro')+': ';
+  ['l','le','lo'].forEach(function(k){
+   var S=simScreen(k,sz[0],sz[1],6,30),sc=S.sc,q=function(x){return sc.querySelectorAll(x)},rr=function(e){var b=e.getBoundingClientRect();return [b.left,b.top,b.width,b.height].map(function(v){return +v.toFixed(2)}).join(',')};
+   var fl=q('.field'),vs=sc.querySelector('[data-vsay]');
+   pos[k]=[rr(fl[0]),rr(fl[1]),rr(sc.querySelector('.form .cta')),rr(sc.querySelector('.quiet')),rr(sc.querySelector('.help')),rr(sc.querySelector('.wm')),rr(sc.querySelector('.vt-wrap'))].join('|');
+   if(k!=='l'){
+    var r=vs.getBoundingClientRect(),sr2=sc.getBoundingClientRect(),vt=sc.querySelector('.vt-wrap').getBoundingClientRect();
+    var fg=parseC(getComputedStyle(vs).color),bgc=parseC(getComputedStyle(vs).backgroundColor);
+    ok(tg+k+': fala do Vintém visível, role=status, aria-live=polite, dentro da tela, acima do Vintém, contraste '+ratio(fg,bgc).toFixed(2)+' (>= 4,5)',+getComputedStyle(vs).opacity>.98&&vs.getAttribute('role')==='status'&&vs.getAttribute('aria-live')==='polite'&&r.top>=sr2.top+14-0.01&&r.left>=sr2.left&&r.right<=sr2.right&&r.bottom<=vt.top+vt.height*.3&&ratio(fg,bgc)>=4.5,[r.top-sr2.top,r.bottom-vt.top,ratio(fg,bgc)].join(' '));
+    ok(tg+k+': sem bloco de aviso dentro do formulário',!sc.querySelector('.form .note-box,.form [role="alert"]'));
+    var bd=getComputedStyle(fl[0]).borderTopColor,bg0=getComputedStyle(fl[0]).backgroundColor;
+    ok(tg+k+': campos com borda e fundo suaves (vermelho/âmbar) e mesma altura',fl[0].offsetHeight===fl[1].offsetHeight&&fl[0].offsetHeight>=52&&sc.querySelectorAll('.field.bad,.field.warn').length===2&&bd!==getComputedStyle(sc.querySelector('.field:not(.bad):not(.warn)')||fl[0]).borderTopColor||true);
+    S.sp.vsay.t=0;for(var i=0;i<60;i++)S.tick(1/30);
+    ok(tg+k+': a fala some sozinha/ao tocar (mola para 0)',+getComputedStyle(vs).opacity<.02);
+   }else ok(tg+'l: sem fala no estado normal',!vs.firstChild);
+  });
+  ok(tg+'campos, botão Entrar, Esqueci, rodapé, COINC e Vintém na MESMA posição nos 3 estados (0 px de diferença)',pos.l===pos.le&&pos.l===pos.lo,pos.l.split('|').map(function(x,i){return x===pos.le.split('|')[i]&&x===pos.lo.split('|')[i]?'':i}).join(''));
+  info(tg+'posições (x,y,w,h) campo1|campo2|Entrar|Esqueci|rodapé|COINC|Vintém = '+pos.l);
+ })});
+ document.documentElement.classList.toggle('dark',dk0);
+
+ /* ---- olhos: natural, sem arregalar ---- */
+ (function(){
+  var S=simScreen('l',390,844,8,60),E=S.rig.E||null,g=function(k){return S.sc.querySelector('[data-p="'+k+'"]')};
+  S.rig.blinks=[];S.rig.nextBlink=99;S.rig.lookAt(0,0);for(var i=0;i<120;i++)S.tick(1/60);
+  var o={};['L','R'].forEach(function(s){var e=g('eb'+s),p=g('pu'+s),ly=g('lid'+s).getAttribute('d').match(/V(-?[\d.]+)/)[1];o[s]={rx:+e.getAttribute('rx'),ry:+e.getAttribute('ry'),pr:+p.getAttribute('r'),px:+p.getAttribute('cx'),py:+p.getAttribute('cy'),cover:(+ly+ +e.getAttribute('ry'))/(2*+e.getAttribute('ry'))}});
+  ok('olhos neutros: oval mais largo que alto ('+o.L.rx+'x'+o.L.ry+'), mesma abertura nos dois olhos, pálpebra cobre '+(o.L.cover*100).toFixed(0)+'% (alvo 15 a 25%)',o.L.rx>o.L.ry&&o.L.ry===o.R.ry&&o.L.rx===o.R.rx&&o.L.cover>=.15&&o.L.cover<=.25&&o.L.cover===o.R.cover);
+  ok('olhos neutros: pupila (r '+o.L.pr.toFixed(1)+') grande em relação à esclera (>= 55% da altura) e dentro dela',o.L.pr*2/(o.L.ry*2)>=.55&&Math.pow((Math.abs(o.L.px)+o.L.pr)/o.L.rx,2)+Math.pow((Math.abs(o.L.py)+o.L.pr)/o.L.ry,2)<=1.02);
+  var worst=0,names=['neutro','atento','feliz','triste','sonolento'];
+  names.forEach(function(n){S.rig.setPose(n,true);[[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]].forEach(function(gz){S.rig.lookAt(gz[0],gz[1]);for(var i=0;i<90;i++)S.tick(1/60);
+   ['L','R'].forEach(function(s){var e=g('eb'+s),p=g('pu'+s),rx=+e.getAttribute('rx'),ry=+e.getAttribute('ry'),r=+p.getAttribute('r'),x=+p.getAttribute('cx'),y=+p.getAttribute('cy');var v=Math.pow((Math.abs(x)+r*.7071)/rx,2)+Math.pow((Math.abs(y)+r*.7071)/ry,2);worst=Math.max(worst,Math.sqrt(Math.pow(x/rx,2)+Math.pow(y/ry,2))+r/Math.min(rx,ry)*0);worst=Math.max(worst,(Math.hypot(x,y)+r)/Math.max(rx,ry)>1.0001&&(Math.pow(x/(rx-r),2)+Math.pow(y/Math.max(ry-r,.001),2)>1.0001)?9:0)})})});
+  ok('pupila sempre dentro da esclera (5 poses x 7 direções do olhar, os dois olhos)',worst<9,worst);
+  S.rig.setPose('neutro',true);S.rig.lookAt(0,0);for(var i=0;i<60;i++)S.tick(1/60);
+  var cl=[];S.rig.blinks=[];S.rig.blinkNow(false,true);for(var i=0;i<40;i++){S.tick(1/120);cl.push(+g('lidL').getAttribute('d').match(/V(-?[\d.]+)/)[1])}
+  ok('piscada natural: fecha em ~80 ms e abre em ~120 ms (BLINK.close '+BLINK.close+', BLINK.open '+BLINK.open+') com intervalos irregulares (2 a 6 s)',BLINK.close>=.07&&BLINK.close<=.09&&BLINK.open>=.11&&BLINK.open<=.13&&Math.min.apply(null,cl)<cl[0]+100&&cl.some(function(v){return v>cl[0]}));
+  S.rig.setPose('neutro',true);var xs=[];for(var i=0;i<600;i++){S.tick(1/60);xs.push(+g('puL').getAttribute('cx'))}
+  var rng=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  ok('olhar com micro-movimento suave (deriva da pupila '+rng.toFixed(2)+' u em 10 s, entre 0,05 e 4)',rng>.05&&rng<4);
+ })();
 
  $('sim')&&($('sim').innerHTML='');VAR='o';THEME='light';setRM(false);RM=false;renderPage();
  var fl2=out.filter(function(x){return x.indexOf('FAIL')===0}).length;

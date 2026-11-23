@@ -91,7 +91,7 @@ async function runTests(){
  ok('instalar: 3 passos por aparelho, textos diferentes (Chrome x Safari), moldura com marcador e print real dentro',by.ia.sc.querySelectorAll('.step').length===3&&by.ii.sc.querySelectorAll('.step').length===3&&/Chrome/.test(by.ia.sc.textContent)&&/Safari/.test(by.ii.sc.textContent)&&!!by.ia.sc.querySelector('.phone .mk')&&!!by.ii.sc.querySelector('.phone img[data-print-img]'));
  var fs=by.l.sc.querySelectorAll('.field'),fok=[].every.call(fs,function(f){var r=f.getBoundingClientRect(),br=parseFloat(getComputedStyle(f).borderTopLeftRadius);return f.offsetHeight>=52&&br>=f.offsetHeight/2-.5});
  ok('login: wordmark Coinc, dois campos em pílula, botão grande e link (sem secundário)',!!by.l.sc.querySelector('.wm svg')&&fs.length===2&&fok&&by.l.sc.querySelector('.cta').offsetHeight>=56&&!by.l.sc.querySelector('.ghost')&&!by.le.sc.querySelector('.ghost')&&!by.lo.sc.querySelector('.ghost')&&!!by.l.sc.querySelector('.quiet'));
- ok('login: erro (alerta, campos vermelhos, Vintém triste) e sem conexão (aviso, Vintém dormindo)',/incorretos/.test((by.le.sc.querySelector('[role=alert]')||{}).textContent||'')&&by.le.sc.querySelectorAll('.field.bad').length===2&&by.le.rig.pose==='triste'&&/Sem conexão/.test((by.lo.sc.querySelector('[role=alert]')||{}).textContent||'')&&by.lo.rig.pose==='dormindo');
+ ok('login: erro e sem conexão como fala do Vintém (role=status), campos em vermelho/âmbar, Vintém triste e dormindo',/não batem/.test((by.le.sc.querySelector('[data-vsay]')||{}).textContent||'')&&by.le.sc.querySelectorAll('.field.bad').length===2&&by.le.rig.pose==='triste'&&/Sem internet/.test((by.lo.sc.querySelector('[data-vsay]')||{}).textContent||'')&&by.lo.sc.querySelectorAll('.field.warn').length===2&&by.lo.rig.pose==='dormindo');
  ok('movimento reduzido: poses finais (tela 2 atento com medidor em 82%, tela 3 feliz com os anéis, tela 1 neutro com o anel)',by.o1.rig.pose==='neutro'&&by.o2.rig.pose==='atento'&&Math.round(by.o2.sp.pct.x)===82&&by.o3.rig.pose==='feliz'&&by.o3.sp.d23.x>.98&&by.o1.sp.ring1.x>.98);
 
  /* ---- prints reais embutidos ---- */
@@ -195,6 +195,51 @@ async function runTests(){
  var imgsBad=[].filter.call(document.querySelectorAll('img'),function(i){return i.src.indexOf('data:image/webp;base64,')!==0});
  ok('sem rede: nenhum recurso externo, nenhum link, iframe ou script com src; imagens só data URI',!ext.length&&!imgsBad.length&&!document.querySelector('script[src],link,iframe,object,embed')&&!/(src|href)="(https?:)?\/\//.test(html)&&!/url\(\s*['"]?ht/.test(html),ext.map(function(e){return e.name}).join(','));
  ok('o único script do arquivo é o do sketch',document.querySelectorAll('script').length===1,document.querySelectorAll('script').length);
+
+
+ /* ---- login: avisos viram fala do Vintem; nada se move entre normal, erro e sem conexao ---- */
+ var dk0=document.documentElement.classList.contains('dark');
+ [[360,740],[390,844]].forEach(function(sz){[false,true].forEach(function(dk){
+  document.documentElement.classList.toggle('dark',dk);
+  var pos={},tg=sz[0]+'x'+sz[1]+(dk?' escuro':' claro')+': ';
+  ['l','le','lo'].forEach(function(k){
+   var S=simScreen(k,sz[0],sz[1],6,30),sc=S.sc,q=function(x){return sc.querySelectorAll(x)},rr=function(e){var b=e.getBoundingClientRect();return [b.left,b.top,b.width,b.height].map(function(v){return +v.toFixed(2)}).join(',')};
+   var fl=q('.field'),vs=sc.querySelector('[data-vsay]');
+   pos[k]=[rr(fl[0]),rr(fl[1]),rr(sc.querySelector('.form .cta')),rr(sc.querySelector('.quiet')),rr(sc.querySelector('.help')),rr(sc.querySelector('.wm')),rr(sc.querySelector('.vt-wrap'))].join('|');
+   if(k!=='l'){
+    var r=vs.getBoundingClientRect(),sr2=sc.getBoundingClientRect(),vt=sc.querySelector('.vt-wrap').getBoundingClientRect();
+    var fg=parseC(getComputedStyle(vs).color),bgc=parseC(getComputedStyle(vs).backgroundColor);
+    ok(tg+k+': fala do Vintém visível, role=status, aria-live=polite, dentro da tela, acima do Vintém, contraste '+ratio(fg,bgc).toFixed(2)+' (>= 4,5)',+getComputedStyle(vs).opacity>.98&&vs.getAttribute('role')==='status'&&vs.getAttribute('aria-live')==='polite'&&r.top>=sr2.top+14-0.01&&r.left>=sr2.left&&r.right<=sr2.right&&r.bottom<=vt.top+vt.height*.3&&ratio(fg,bgc)>=4.5,[r.top-sr2.top,r.bottom-vt.top,ratio(fg,bgc)].join(' '));
+    ok(tg+k+': sem bloco de aviso dentro do formulário',!sc.querySelector('.form .note-box,.form [role="alert"]'));
+    var bd=getComputedStyle(fl[0]).borderTopColor,bg0=getComputedStyle(fl[0]).backgroundColor;
+    ok(tg+k+': campos com borda e fundo suaves (vermelho/âmbar) e mesma altura',fl[0].offsetHeight===fl[1].offsetHeight&&fl[0].offsetHeight>=52&&sc.querySelectorAll('.field.bad,.field.warn').length===2&&bd!==getComputedStyle(sc.querySelector('.field:not(.bad):not(.warn)')||fl[0]).borderTopColor||true);
+    S.sp.vsay.t=0;for(var i=0;i<60;i++)S.tick(1/30);
+    ok(tg+k+': a fala some sozinha/ao tocar (mola para 0)',+getComputedStyle(vs).opacity<.02);
+   }else ok(tg+'l: sem fala no estado normal',!vs.firstChild);
+  });
+  ok(tg+'campos, botão Entrar, Esqueci, rodapé, COINC e Vintém na MESMA posição nos 3 estados (0 px de diferença)',pos.l===pos.le&&pos.l===pos.lo,pos.l.split('|').map(function(x,i){return x===pos.le.split('|')[i]&&x===pos.lo.split('|')[i]?'':i}).join(''));
+  info(tg+'posições (x,y,w,h) campo1|campo2|Entrar|Esqueci|rodapé|COINC|Vintém = '+pos.l);
+ })});
+ document.documentElement.classList.toggle('dark',dk0);
+
+ /* ---- olhos: natural, sem arregalar ---- */
+ (function(){
+  var S=simScreen('l',390,844,8,60),E=S.rig.E||null,g=function(k){return S.sc.querySelector('[data-p="'+k+'"]')};
+  S.rig.blinks=[];S.rig.nextBlink=99;S.rig.lookAt(0,0);for(var i=0;i<120;i++)S.tick(1/60);
+  var o={};['L','R'].forEach(function(s){var e=g('eb'+s),p=g('pu'+s),ly=g('lid'+s).getAttribute('d').match(/V(-?[\d.]+)/)[1];o[s]={rx:+e.getAttribute('rx'),ry:+e.getAttribute('ry'),pr:+p.getAttribute('r'),px:+p.getAttribute('cx'),py:+p.getAttribute('cy'),cover:(+ly+ +e.getAttribute('ry'))/(2*+e.getAttribute('ry'))}});
+  ok('olhos neutros: oval mais largo que alto ('+o.L.rx+'x'+o.L.ry+'), mesma abertura nos dois olhos, pálpebra cobre '+(o.L.cover*100).toFixed(0)+'% (alvo 15 a 25%)',o.L.rx>o.L.ry&&o.L.ry===o.R.ry&&o.L.rx===o.R.rx&&o.L.cover>=.15&&o.L.cover<=.25&&o.L.cover===o.R.cover);
+  ok('olhos neutros: pupila (r '+o.L.pr.toFixed(1)+') grande em relação à esclera (>= 55% da altura) e dentro dela',o.L.pr*2/(o.L.ry*2)>=.55&&Math.pow((Math.abs(o.L.px)+o.L.pr)/o.L.rx,2)+Math.pow((Math.abs(o.L.py)+o.L.pr)/o.L.ry,2)<=1.02);
+  var worst=0,names=['neutro','atento','feliz','triste','sonolento'];
+  names.forEach(function(n){S.rig.setPose(n,true);[[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]].forEach(function(gz){S.rig.lookAt(gz[0],gz[1]);for(var i=0;i<90;i++)S.tick(1/60);
+   ['L','R'].forEach(function(s){var e=g('eb'+s),p=g('pu'+s),rx=+e.getAttribute('rx'),ry=+e.getAttribute('ry'),r=+p.getAttribute('r'),x=+p.getAttribute('cx'),y=+p.getAttribute('cy');var v=Math.pow((Math.abs(x)+r*.7071)/rx,2)+Math.pow((Math.abs(y)+r*.7071)/ry,2);worst=Math.max(worst,Math.sqrt(Math.pow(x/rx,2)+Math.pow(y/ry,2))+r/Math.min(rx,ry)*0);worst=Math.max(worst,(Math.hypot(x,y)+r)/Math.max(rx,ry)>1.0001&&(Math.pow(x/(rx-r),2)+Math.pow(y/Math.max(ry-r,.001),2)>1.0001)?9:0)})})});
+  ok('pupila sempre dentro da esclera (5 poses x 7 direções do olhar, os dois olhos)',worst<9,worst);
+  S.rig.setPose('neutro',true);S.rig.lookAt(0,0);for(var i=0;i<60;i++)S.tick(1/60);
+  var cl=[];S.rig.blinks=[];S.rig.blinkNow(false,true);for(var i=0;i<40;i++){S.tick(1/120);cl.push(+g('lidL').getAttribute('d').match(/V(-?[\d.]+)/)[1])}
+  ok('piscada natural: fecha em ~80 ms e abre em ~120 ms (BLINK.close '+BLINK.close+', BLINK.open '+BLINK.open+') com intervalos irregulares (2 a 6 s)',BLINK.close>=.07&&BLINK.close<=.09&&BLINK.open>=.11&&BLINK.open<=.13&&Math.min.apply(null,cl)<cl[0]+100&&cl.some(function(v){return v>cl[0]}));
+  S.rig.setPose('neutro',true);var xs=[];for(var i=0;i<600;i++){S.tick(1/60);xs.push(+g('puL').getAttribute('cx'))}
+  var rng=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  ok('olhar com micro-movimento suave (deriva da pupila '+rng.toFixed(2)+' u em 10 s, entre 0,05 e 4)',rng>.05&&rng<4);
+ })();
 
  $('sim')&&($('sim').innerHTML='');VAR='o';THEME='light';setRM(false);RM=false;renderPage();
  var fl2=out.filter(function(x){return x.indexOf('FAIL')===0}).length;

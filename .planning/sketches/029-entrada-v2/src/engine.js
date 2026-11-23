@@ -36,15 +36,15 @@ function blinkEnv(t){
 
 /* ===== poses (vintemStates.js) ===== */
 var KEYS=['sl','ew','eh','cvL','cvR','lt','bo','pr','arc','by','bt','ea','es','sy','py','rt'];
-var DEF={sl:0,ew:17,eh:21,cvL:0,cvR:0,lt:0,bo:0,pr:.52,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
+var DEF={sl:0,ew:16,eh:13.5,cvL:.28,cvR:.28,lt:0,bo:0,pr:.64,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
 var POSE={
  neutro:{},
  feliz:{arc:1,by:-5,sy:1.02,ea:8,es:1.08},
- triste:{ew:16,cvL:.3,cvR:.3,lt:-15,bo:1,pr:.74,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
- sonolento:{cvL:.5,cvR:.5,pr:.6,by:3,bt:2,ea:30,es:.98},
+ triste:{ew:15,eh:13,cvL:.42,cvR:.42,lt:-15,bo:1,pr:.7,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
+ sonolento:{cvL:.58,cvR:.58,pr:.66,by:3,bt:2,ea:30,es:.98},
  dormindo:{sl:1,cvL:1,cvR:1,pr:.6,by:7,bt:3,ea:38,es:.96},
- surpreso:{ew:21,eh:27,pr:.2,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
- atento:{ew:18,eh:25,pr:.3,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.1,cvR:.1}
+ surpreso:{ew:19,eh:19,cvL:0,cvR:0,pr:.42,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
+ atento:{ew:17,eh:16,pr:.58,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.08,cvR:.08}
 };
 function poseVal(name,k){var p=POSE[name]||{};return p.hasOwnProperty(k)?p[k]:DEF[k]}
 
@@ -60,8 +60,8 @@ var G={
 var UID=0;
 function coinG(r){r=r||20;return '<circle r="'+r+'" fill="var(--vintem-coin)" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.12)+'"/><circle r="'+(r*.62)+'" fill="none" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.1)+'"/><rect x="'+(-r*.11)+'" y="'+(-r*.35)+'" width="'+(r*.22)+'" height="'+(r*.7)+'" rx="'+(r*.11)+'" fill="var(--vintem-coin-line)"/>'}
 function eyeSVG(u,id,x){
- return '<g data-p="eye'+id+'" transform="translate('+x+' 106)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="17" ry="21"/></clipPath><g clip-path="url(#'+u+id+')">'+
- '<ellipse data-p="eb'+id+'" rx="17" ry="21" fill="var(--vintem-eye)"/>'+
+ return '<g data-p="eye'+id+'" transform="translate('+x+' 109)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="16" ry="13.5"/></clipPath><g clip-path="url(#'+u+id+')">'+
+ '<ellipse data-p="eb'+id+'" rx="16" ry="13.5" fill="var(--vintem-eye)"/>'+
  '<circle data-p="pu'+id+'" r="8" fill="var(--vintem-ink)"/><circle data-p="hi'+id+'" r="2" fill="var(--vintem-eye)"/>'+
  '</g><clipPath id="'+u+id+'k"><ellipse data-p="clipB'+id+'" rx="18.5" ry="22.5"/></clipPath><g clip-path="url(#'+u+id+'k)"><path data-p="lid'+id+'" d="M-40,-60H40V0H-40Z" fill="var(--vintem-body)"/></g>'+
  '<path data-p="hap'+id+'" d="M-13,6Q0,-13 13,6" fill="none" stroke="var(--vintem-eye)" stroke-width="5.6" stroke-linecap="round" opacity="0"/>'+
@@ -76,7 +76,7 @@ function vtSVG(){
  s+='<g transform="translate(177 80)"><g data-p="earR"><path transform="scale(-1 1)" d="'+G.ear+'" fill="var(--vintem-body)"/></g></g>';
  s+='<g data-p="bellyg"><path d="'+G.body+'" fill="var(--vintem-body)"/><path data-p="slit" d="'+G.slit+'" fill="none" stroke="var(--vintem-ink)" stroke-width="3.2" stroke-linecap="round"/></g>';
  s+='<g clip-path="url(#'+u+'b)"><g data-p="face"><g data-p="snout" transform="translate(120 141)"><ellipse rx="21" ry="12" fill="var(--vintem-snout)"/><ellipse cx="-6.5" rx="2.4" ry="3.4" fill="var(--vintem-ink)"/><ellipse cx="6.5" rx="2.4" ry="3.4" fill="var(--vintem-ink)"/></g>';
- s+=eyeSVG(u,'L',87)+eyeSVG(u,'R',153)+'</g></g></g>';
+ s+=eyeSVG(u,'L',91)+eyeSVG(u,'R',149)+'</g></g></g>';
  /* acessorios */
  s+='<g data-p="a_excl" transform="translate(206 46)"><g data-p="a_excl_s"><rect x="-3.6" y="-14" width="7.2" height="18" rx="3.6" fill="var(--vintem-excl)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/><circle cy="11" r="4" fill="var(--vintem-excl)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/></g></g>';
  s+='<g transform="translate(206 50)"><g data-p="a_spark"><path d="'+G.spark+'" fill="var(--vintem-spark)" stroke="var(--vintem-accent-line)" stroke-width="1.5"/></g></g>';
@@ -245,7 +245,7 @@ Rig.prototype.render=function(T){
  /* olhos */
  var bl=0;if(!rm)for(var i=0;i<this.blinks.length;i++)bl+=blinkEnv(t-this.blinks[i]);
  bl=clamp(bl,-.14,1);
- var drift=rm?0:Math.sin(t*1.7)*.02+Math.sin(t*2.9+1)*.015;
+ var drift=rm?0:Math.sin(t*.9)*.03+Math.sin(t*2.1+1)*.02;
  ['L','R'].forEach(function(s){
   var cv=pp['cv'+s].x,ew=pp.ew.x,eh=pp.eh.x,cover=clamp(Math.max(cv,bl),-.14,1);
   var ex=this.eye.x.x+drift,ey=this.eye.y.x+drift*.6;

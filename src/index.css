@@ -62,11 +62,12 @@
   --color-pig-bg: #f4dfe3;
   --color-pig-ink: #9a2e5a;
 
-  /* Dock flutuante: oliva escuro com icones creme; item ativo em pilula creme; botao + em verde-folha */
-  --color-dock: #2c5a38;
+  /* Dock flutuante: verde da acao com icones creme; item ativo em pilula creme; botao + em verde-folha.
+     P-01 (plano 05-16): dock igual a acao por decisao do dono; razao botao + / dock 1,692 no claro (piso 1,69). */
+  --color-dock: #2f6f3e;
   --color-dock-fg: #f5ecdb;
   --color-dock-active: #f5ecdb;
-  --color-dock-active-fg: #2c5a38;
+  --color-dock-active-fg: #2f6f3e;
   --color-fab: #788f56;
   --color-fab-fg: #1e1f19;
 

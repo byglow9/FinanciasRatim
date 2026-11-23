@@ -126,3 +126,12 @@ test('o corpo do Vintem segue a acao e o balao deriva de foreground e background
   assert.ok(contrast(dark.foreground, dark.background) >= 4.5, 'texto do balao sobre o balao no escuro')
   assert.ok(contrast(dark.foreground, dark.card) >= 3, 'balao claro destacado do cartao escuro')
 })
+
+test('P-01: a dock do claro acompanha a acao e a do escuro ja era a acao; o par botao + / dock mantem 2,2 no escuro', () => {
+  const light = tokens('light')
+  const dark = tokens('dark')
+  assert.equal(light.dock, light.action, 'dock do claro igual a acao (decisao do dono, plano 05-16)')
+  assert.equal(light['dock-active-fg'], light.action)
+  assert.equal(dark.dock, dark.action, 'dock do escuro igual a acao')
+  assert.ok(contrast(dark.fab, dark.dock) >= 2.2, `par botao + / dock no escuro ${contrast(dark.fab, dark.dock).toFixed(2)}`)
+})

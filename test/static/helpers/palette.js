@@ -78,7 +78,9 @@ export function contrast(a, b) {
 
 const SURFACES = ['background', 'card', 'surface-2', 'inset']
 
-/** Pares [papel, frente, fundo, minimo]: 4.5 para texto, 3 para elementos nao textuais. */
+/** Pares [papel, frente, fundo, minimo]: 4.5 para texto, 3 para elementos nao textuais. O minimo pode ser { light, dark }. */
+export const floorOf = (min, theme) => (typeof min === 'number' ? min : min[theme === 'dark' ? 'dark' : 'light'])
+
 export const PAIRS = [
   ...SURFACES.flatMap((bg) => [
     ['texto', 'foreground', bg, 4.5],
@@ -106,8 +108,10 @@ export const PAIRS = [
   ['dock sobre o fundo', 'dock', 'background', 3],
   ['botao +: icone', 'fab-fg', 'fab', 4.5],
   ['botao + sobre o fundo', 'fab', 'background', 3],
-  // 3:1 contra o creme e contra o oliva ao mesmo tempo e impossivel; 2.2 trava a separacao possivel
-  ['botao + ao lado da dock', 'fab', 'dock', 2.2],
+  // 3:1 contra o creme e contra o oliva ao mesmo tempo e impossivel; 2.2 trava a separacao possivel.
+  // P-01 (plano 05-16, decisao do dono "igualar"): no TEMA CLARO a dock e igual a acao (#2f6f3e) e a razao medida e 1,692,
+  // entao o piso desse unico par no claro e 1,69 (o "1,7" do UI-SPEC e o arredondamento; 1,692 < 1,7). O escuro continua em 2,2 (o par mede 3,15). Nenhum outro piso muda.
+  ['botao + ao lado da dock', 'fab', 'dock', { light: 1.69, dark: 2.2 }],
   ['ok: texto no fundo suave', 'ok-ink', 'ok-bg', 4.5],
   ['atencao: texto no fundo suave', 'warn-ink', 'warn-bg', 4.5],
   ['perigo: texto no fundo suave', 'danger-ink', 'danger-bg', 4.5],

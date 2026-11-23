@@ -3,8 +3,11 @@
 // Rodar: node --test test/static/palette-contrast.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { contrast, luminance, PAIRS, tokens } from './helpers/palette.js'
+import { contrast, floorOf, PAIRS, tokens } from './helpers/palette.js'
 import { code, listSrc } from './helpers/phase3-1.js'
+
+// Decisao P-01 da dock: 'manter' (#2c5a38, mais escura que a acao, piso 2,2) ou 'igualar' (dock = acao, piso do claro 1,69; o 1,7 do UI-SPEC e arredondado e a razao medida e 1,692).
+const P01_DECISION = 'igualar'
 
 test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
   const t = tokens()
@@ -13,9 +16,10 @@ test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
   assert.equal(t.sage, '#888b76', 'salvia')
   assert.equal(t.action, '#2f6f3e', 'verde de acao (D-07, mais claro que o oliva antigo)')
   assert.equal(t.foreground, '#1e1f19', 'quase-preto e o texto')
-  assert.equal(t.dock, '#2c5a38', 'a dock e verde mais escuro que a acao (P-01)')
-  assert.notEqual(t.dock, t.action, 'a dock deixa de ser igual a acao')
-  assert.ok(luminance(t.dock) < luminance(t.action), 'a dock e mais escura que a acao')
+  // P-01 (plano 05-16): decisao do dono, "quero o verde mais claro mesmo" -> igualar. Mudar aqui so junto com index.css e o piso do par.
+  assert.equal(P01_DECISION, 'igualar')
+  assert.equal(t.dock, t.action, 'a dock e igual a acao no tema claro (P-01, igualar)')
+  assert.equal(t['dock-active-fg'], t.action, 'o texto do item ativo da dock acompanha a acao')
 })
 
 for (const theme of ['light', 'dark']) {
@@ -81,16 +85,25 @@ for (const theme of ['light', 'dark']) {
       assert.ok(t[fg], `token ${fg} ausente no tema ${theme}`)
       assert.ok(t[bg], `token ${bg} ausente no tema ${theme}`)
       const ratio = contrast(t[fg], t[bg])
-      if (ratio < min) failures.push(`[${theme}] ${role}: ${fg} ${t[fg]} sobre ${bg} ${t[bg]} = ${ratio.toFixed(2)} (minimo ${min})`)
+      const floor = floorOf(min, theme)
+      if (ratio < floor) failures.push(`[${theme}] ${role}: ${fg} ${t[fg]} sobre ${bg} ${t[bg]} = ${ratio.toFixed(2)} (minimo ${floor})`)
     }
     assert.deepEqual(failures, [])
   })
 }
 
-test('PAIRS cobre os pares da paleta (100 hoje) e o piso do botao + ao lado da dock segue em 2.2', () => {
+test('PAIRS cobre os pares da paleta (100 hoje) e so o piso do botao + ao lado da dock no claro baixou (P-01)', () => {
   assert.ok(PAIRS.length >= 100, `PAIRS encolheu para ${PAIRS.length}`)
   const fab = PAIRS.find(([role]) => role === 'botao + ao lado da dock')
-  assert.equal(fab[3], 2.2, 'o piso nao pode ser afrouxado (P-01 so por decisao do dono, plano 05-16)')
+  assert.equal(floorOf(fab[3], 'dark'), 2.2, 'o piso do escuro nao pode ser afrouxado')
+  assert.equal(floorOf(fab[3], 'light'), P01_DECISION === 'igualar' ? 1.69 : 2.2, 'piso do claro so cai com a decisao P-01 do dono (plano 05-16)')
+  if (P01_DECISION === 'igualar') {
+    const ratio = contrast(tokens('light').fab, tokens('light').dock)
+    assert.ok(ratio >= 1.69 && ratio < 1.7, `razao medida do par no claro ${ratio.toFixed(3)} (registrada: 1,692)`)
+  }
+  // Nenhum outro par tem piso por tema: a excecao e unica.
+  const perTheme = PAIRS.filter(([, , , min]) => typeof min !== 'number').map(([role]) => role)
+  assert.deepEqual(perTheme, ['botao + ao lado da dock'])
 })
 
 test('componentes nao espalham cor em hex literal nem branco/preto puro: tudo vem dos tokens', () => {

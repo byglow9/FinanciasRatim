@@ -320,7 +320,7 @@ Plans:
   4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinc
 
-**Plans**: 16/21 plans executed
+**Plans**: 16/22 plans executed
 **UI hint**: yes
 
 Plans:
@@ -371,13 +371,17 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 05-19-PLAN.md — Produção 3: redirect 302 do site antigo, por último (IDEN-02, IDEN-01)
+- [ ] 05-22-PLAN.md — Login novo do sketch 029: Vintém de entrada, wordmark COINC, avisos como fala do Vintém e deploy do site coinc antes do redirect (IDEN-08, IDEN-01, IDEN-06)
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 05-20-PLAN.md — Fechamento: guarda transversal, suíte e executores, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+- [ ] 05-19-PLAN.md — Produção 3: redirect 302 do site antigo, por último (IDEN-02, IDEN-01)
 
 **Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 05-20-PLAN.md — Fechamento: guarda transversal, suíte e executores, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+
+**Wave 13** *(blocked on Wave 12 completion)*
 
 - [ ] 05-21-PLAN.md — Decisão opcional do redirect permanente 301, depois do uso real do endereço novo (IDEN-02)
 
@@ -444,7 +448,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinc, PWA e onboarding | 16/21 | In Progress|  |
+| 5. Identidade Coinc, PWA e onboarding | 16/22 | In Progress|  |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

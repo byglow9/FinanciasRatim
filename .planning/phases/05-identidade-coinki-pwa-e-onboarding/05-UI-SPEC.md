@@ -10,7 +10,7 @@ created: "2026-11-23"
 
 # Phase 5 — UI Design Contract
 
-> Contrato visual e de interação da Fase 5 (Identidade Coinc, PWA e onboarding). Gerado por gsd-ui-researcher, a ser verificado por gsd-ui-checker. Herda de `03-UI-SPEC.md`, `03.1-UI-SPEC.md` e `04-UI-SPEC.md` (escala tipográfica 12/16/28/56, pesos 400/700, primitivos, Vintém) e só declara o que é novo ou muda. Decisões travadas: `05-CONTEXT.md` D-01 a D-19. **O nome é Coinc** (não Coinki) e o endereço é `coinc.web.app` (D-01); onde documentos antigos dizem "Coinki", vale este contrato.
+> Contrato visual e de interação da Fase 5 (Identidade Coinc, PWA e onboarding). Gerado por gsd-ui-researcher, a ser verificado por gsd-ui-checker. Herda de `03-UI-SPEC.md`, `03.1-UI-SPEC.md` e `04-UI-SPEC.md` (escala tipográfica 12/16/28/56, pesos 400/700, primitivos, Vintém) e só declara o que é novo ou muda. Decisões travadas: `05-CONTEXT.md` D-01 a D-19. **O nome é Coinc** (não Coinki) e o endereço é `coinc-financias.web.app` (D-01); onde documentos antigos dizem "Coinki", vale este contrato.
 
 ## Como ler este contrato
 
@@ -24,7 +24,7 @@ created: "2026-11-23"
 
 | Documento | Mudança |
 |-----------|---------|
-| ROADMAP (Fase 5), REQUIREMENTS IDEN-01 e IDEN-02, PROJECT.md | "Coinki" e `coinki.web.app` viram **Coinc** e `coinc.web.app`; o site antigo **redireciona direto**, sem aviso (D-04) |
+| ROADMAP (Fase 5), REQUIREMENTS IDEN-01 e IDEN-02, PROJECT.md | "Coinki" e `coinki.web.app` viram **Coinc** e `coinc-financias.web.app`; o site antigo **redireciona direto**, sem aviso (D-04) |
 | ROADMAP critério 3 e REQUIREMENTS IDEN-04 | De "recebe um aviso para atualizar" para "atualiza sozinho ao abrir, sem aviso e sem tela branca" (D-14) |
 | ROADMAP critério 2 e IDEN-03 | A tela com os passos é a 3ª do onboarding **e** a folha "Adicionar à tela inicial" em Ajustes (P-02) |
 | REQUIREMENTS IDEN-05 | Três opções: Automático (padrão), Claro, Escuro, por aparelho (D-08, D-09) |
@@ -47,7 +47,7 @@ created: "2026-11-23"
 
 | Decisão | O que fixa neste contrato |
 |---------|---------------------------|
-| D-01, D-02, D-03 | Nome **Coinc**, site `coinc.web.app`, mesmo projeto Firebase; sem pesquisa de loja/INPI; ID `coinc` ocupado = parar e perguntar ao dono |
+| D-01, D-02, D-03 | Nome **Coinc**, site `coinc-financias.web.app`, mesmo projeto Firebase; sem pesquisa de loja/INPI; ID `coinc` ocupado = parar e perguntar ao dono |
 | D-04, D-05 | Site antigo redireciona direto; login refeito uma vez; aviso curto **na tela de login** é aceito (S2), página de aviso não |
 | D-06 | Domínio novo em Auth e `ALLOWED_ORIGINS`; cabeçalhos do Hosting sem cache imutável em `/sw.js` (infra, ver "Atualização") |
 | D-07 | Verde do tema claro **mais claro** e tema escuro em **verde bem escuro**, sem rosa (Color) |
@@ -407,7 +407,7 @@ O fluxo de autenticação **não muda** (guarda `phase3-1-login.test.js`: `useAu
 
 - **Marca:** o círculo com `PiggyBank` Lucide dá lugar a `CoincMark` (56x56, `rounded-2xl`, a arte do ícone escolhido). **H1: "Coinc"** (Bricolage 28/700, 1.2). Subtítulo mantém "Entre para gerenciar suas finanças" (a guarda exige a palavra "finanças").
 - **Tema:** só tokens; nenhum hex, nenhum `gradient` no arquivo; funciona nos dois temas (`bg-inset` do campo no escuro é o tom afundado `#0b1811`, com borda `--input`).
-- **Aviso de endereço novo (D-04, D-05).** O site antigo redireciona para `https://coinc.web.app/?origem=antigo`. No boot, se a URL tem `origem=antigo`, o app guarda `coinc:origem-antiga` em `sessionStorage`, remove o parâmetro da URL (`history.replaceState`) e o `LoginForm` mostra, **acima do formulário**, um `Notice tone="info"` com ícone `info`: título "O Coinc mudou de endereço." e texto "Entre de novo por aqui. Seus dados continuam salvos." O aviso some quando o login dá certo e **não** aparece em abertura normal. Vale também depois do onboarding (a chave de sessão sobrevive às 3 telas).
+- **Aviso de endereço novo (D-04, D-05).** O site antigo redireciona para `https://coinc-financias.web.app/?origem=antigo`. No boot, se a URL tem `origem=antigo`, o app guarda `coinc:origem-antiga` em `sessionStorage`, remove o parâmetro da URL (`history.replaceState`) e o `LoginForm` mostra, **acima do formulário**, um `Notice tone="info"` com ícone `info`: título "O Coinc mudou de endereço." e texto "Entre de novo por aqui. Seus dados continuam salvos." O aviso some quando o login dá certo e **não** aparece em abertura normal. Vale também depois do onboarding (a chave de sessão sobrevive às 3 telas).
 - **Sem conexão.** Se `navigator.onLine === false` ao enviar, o app **não** chama o `signIn` e mostra `Notice tone="danger"` com ícone `circle-alert`: "Sem conexão. Conecte-se à internet para entrar." (hoje a falha de rede mostraria "E-mail ou senha incorretos.", que engana). A mensagem de credencial errada continua fixa e genérica; o texto cru do provedor nunca aparece.
 
 ### S3. Ajustes: Tema e Aplicativo (IDEN-05, IDEN-03)
@@ -457,7 +457,7 @@ Usado na tela 3 do onboarding (dentro de `rounded-card bg-card p-4`) e na `Sheet
 
 **`BootError`** (tela cheia, `min-h-dvh bg-background`, coluna `max-w-md`, centralizada): `VintemEmpty pose="surpreso"` (nunca triste, regra da Fase 4), H1 28 "Não foi possível abrir o Coinc", corpo 16 "Pode ser a conexão ou uma atualização em andamento. Tente de novo." e botão `h-14 w-full` "Tentar de novo" (`refresh-cw`, recarrega a página).
 
-**Infra que muda o que o usuário vê (D-06, referência para o plano):** `firebase.json` sem as regras `**/*.js` e `**/*.css` imutáveis (só `/assets/**` fica `immutable`); `no-cache` explícito em `/sw.js`, `/manifest.webmanifest` e HTML; `redirects` do site antigo para `https://coinc.web.app/?origem=antigo`; verificar com `curl -I` após o deploy.
+**Infra que muda o que o usuário vê (D-06, referência para o plano):** `firebase.json` sem as regras `**/*.js` e `**/*.css` imutáveis (só `/assets/**` fica `immutable`); `no-cache` explícito em `/sw.js`, `/manifest.webmanifest` e HTML; `redirects` do site antigo para `https://coinc-financias.web.app/?origem=antigo`; verificar com `curl -I` após o deploy.
 
 ### S6. Revisão de todas as telas no escuro (D-10, IDEN-06)
 

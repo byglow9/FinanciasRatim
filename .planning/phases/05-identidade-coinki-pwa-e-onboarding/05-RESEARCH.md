@@ -8,9 +8,9 @@
 ## User Constraints (de 05-CONTEXT.md)
 
 ### Decisões travadas
-- **D-01:** O nome do app é **Coinc** e o site é **coinc.web.app**, no mesmo projeto Firebase (`financias-ratimbum`). Decidido pelo dono após dúvida explícita ("Coinc" escrito duas vezes). Reversibility: costly.
+- **D-01:** O nome do app é **Coinc** e o site é **coinc-financias.web.app**, no mesmo projeto Firebase (`financias-ratimbum`). Decidido pelo dono após dúvida explícita ("Coinc" escrito duas vezes). Reversibility: costly.
 - **D-02:** Pesquisa do nome em lojas e INPI **dispensada** ("é app pessoal"). Não trava a fase.
-- **D-03:** Se o ID de site `coinc` estiver ocupado no Hosting, **parar e perguntar ao dono** antes de reservar outro (sem nome reserva automático).
+- **D-03:** Se o ID de site `coinc-financias` estiver ocupado no Hosting, **parar e perguntar ao dono** antes de reservar outro (sem nome reserva automático).
 - **D-04:** O site antigo (financias-ratimbum.web.app) **redireciona direto** para o novo, **sem página de aviso**.
 - **D-05:** O login é refeito uma vez no novo endereço (origem nova: sessão e localStorage não migram). Dados no Firestore não se perdem. Sem migração de preferências locais por link.
 - **D-06:** Domínio novo entra nos domínios autorizados do Auth e em `ALLOWED_ORIGINS` do servidor; cabeçalhos do Hosting corrigidos para o service worker não ficar preso em cache (`firebase.json`: regras `**/*.js` e `**/*.css` imutáveis pinariam `/sw.js`).
@@ -42,7 +42,7 @@ Nenhuma. Fora da fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fas
 
 | ID | Descrição (com a redação nova que o planejador deve gravar) | Suporte da pesquisa |
 |----|-------------------------------------------------------------|---------------------|
-| IDEN-01 | O app se chama **Coinc** em todas as telas e o endereço público é **coinc.web.app**, no mesmo projeto Firebase | Seção Hosting: `hosting:sites:create coinc`, targets, guarda de nome (grep nas ocorrências reais listadas) |
+| IDEN-01 | O app se chama **Coinc** em todas as telas e o endereço público é **coinc-financias.web.app**, no mesmo projeto Firebase | Seção Hosting: `hosting:sites:create coinc`, targets, guarda de nome (grep nas ocorrências reais listadas) |
 | IDEN-02 | O site antigo **redireciona direto** para o novo, e Auth e `ALLOWED_ORIGINS` incluem o novo | Seção Hosting: segundo alvo com `redirects`; ordem de implantação; origem do servidor |
 | IDEN-03 | Usuário adiciona o Coinc à tela inicial (manifest, ícones com maskable, service worker) e vê os passos Android/iPhone | Seções PWA e Ícones; tela 3 do onboarding e folha em Ajustes (UI-SPEC P-02) |
 | IDEN-04 | O app **atualiza sozinho ao abrir**, sem aviso e sem tela branca depois de um deploy | Seção Atualização silenciosa (ciclo de vida do SW, decisão pura, recarga protegida) |
@@ -55,7 +55,7 @@ Nenhuma. Fora da fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fas
 
 A fase é majoritariamente **integração e infraestrutura**, não bibliotecas novas. Cinco achados mudam o plano em relação ao que o UI-SPEC e o STACK assumiam. (1) O app **já usa `var(--color-*)` em todo o Recharts** e não usa `Tooltip` nem `Legend` do Recharts (a legenda é um `<ul>` próprio), então o escuro dos gráficos vem de graça quando os tokens trocam. (2) Em Tailwind 4, tokens em hex dentro de `@theme inline` viram **literal nas utilitárias** e a classe `.dark` **não consegue** reescrevê-los (comprovado por experimento): é obrigatório mover os hex para `@theme` sem `inline`. (3) O `registerType: 'autoUpdate'` do plugin recarrega **todas** as janelas na hora (inclusive no meio de um lançamento), o que contradiz D-14; o desenho correto é `registerType: 'prompt'` **sem interface**, com a decisão de quando ativar em uma função pura. (4) O `index-*.js` atual tem **1,82 MB** e o limite padrão de pré-cache é **2 MiB**; desde o plugin 0.20.2 estourar o limite **quebra o build**, então o limite precisa subir já na primeira tarefa. (5) `firebase.json` virando array exige `.firebaserc` com `targets`, e existe um segundo projeto (`amigo`, `financias-xrd`) que não terá esses alvos.
 
-**Recomendação principal:** `vite-plugin-pwa` 2.0.0 com `strategies: 'injectManifest'`, `registerType: 'prompt'` sem UI, `src/sw.ts` só com pré-cache da casca e `NavigationRoute`; ativação do SW decidida por `shared/core/pwaUpdate.js` (testável com `node --test`); tema por script inline + `@theme` sem `inline` + classe `dark` em `<html>`; `firebase.json` em array com alvo `coinc` (cabeçalhos corrigidos) e alvo `legacy` (redirect para `https://coinc.web.app/?origem=antigo`); **ordem de implantação: origem no Railway primeiro, site novo depois, redirect por último.**
+**Recomendação principal:** `vite-plugin-pwa` 2.0.0 com `strategies: 'injectManifest'`, `registerType: 'prompt'` sem UI, `src/sw.ts` só com pré-cache da casca e `NavigationRoute`; ativação do SW decidida por `shared/core/pwaUpdate.js` (testável com `node --test`); tema por script inline + `@theme` sem `inline` + classe `dark` em `<html>`; `firebase.json` em array com alvo `coinc` (cabeçalhos corrigidos) e alvo `legacy` (redirect para `https://coinc-financias.web.app/?origem=antigo`); **ordem de implantação: origem no Railway primeiro, site novo depois, redirect por último.**
 
 ## Mapa de responsabilidade por camada
 
@@ -147,7 +147,7 @@ App -> ProtectedRoute
    |-- sem sessão e chave presente ............ LoginForm (+ aviso se origem=antigo em sessionStorage)
    '-- com sessão ............................. app (grava a chave em silêncio)
 
-Site antigo financias-ratimbum.web.app --redirect--> https://coinc.web.app/?origem=antigo
+Site antigo financias-ratimbum.web.app --redirect--> https://coinc-financias.web.app/?origem=antigo
 Dados: Firestore e API (Railway) sempre pela rede; SW só serve casca (precache) e navegação -> /index.html
 Falha de import() / chunk antigo --> vite:preloadError --> 1 recarga (sessionStorage) --> BootError
 ```
@@ -325,11 +325,11 @@ Regras de implementação:
 
 ### Padrão 5: Hosting multi-site e redirecionamento (IDEN-01/02, D-03 a D-06)
 
-Estado atual: o projeto tem **um só site**, `financias-ratimbum` [VERIFIED: `firebase hosting:sites:list --project financias-ratimbum` em 2026-11-23]. `https://coinc.web.app` responde **404 "Site Not Found"** [VERIFIED: curl -I]; isso é compatível com "livre", mas **não prova** disponibilidade (site criado e nunca publicado responde igual). A prova é o próprio `firebase hosting:sites:create coinc`; se falhar por ID em uso, D-03 manda parar e perguntar. Regras de ID: rótulo de hostname válido, <= 30 caracteres, único globalmente; o site padrão não pode ser apagado [CITED: firebase.google.com/docs/hosting/multisites].
+Estado atual: o projeto tem **um só site**, `financias-ratimbum` [VERIFIED: `firebase hosting:sites:list --project financias-ratimbum` em 2026-11-23]. `https://coinc-financias.web.app` responde **404 "Site Not Found"** [VERIFIED: curl -I]; isso é compatível com "livre", mas **não prova** disponibilidade (site criado e nunca publicado responde igual). A prova é o próprio `firebase hosting:sites:create coinc`; se falhar por ID em uso, D-03 manda parar e perguntar. Regras de ID: rótulo de hostname válido, <= 30 caracteres, único globalmente; o site padrão não pode ser apagado [CITED: firebase.google.com/docs/hosting/multisites].
 
 Comandos (CLI global 15.9.1 já autenticado):
 ```bash
-firebase hosting:sites:create coinc --project financias-ratimbum
+firebase hosting:sites:create coinc-financias --project financias-ratimbum
 firebase target:apply hosting coinc coinc --project financias-ratimbum
 firebase target:apply hosting legacy financias-ratimbum --project financias-ratimbum
 firebase deploy --only hosting:coinc --project financias-ratimbum
@@ -355,7 +355,7 @@ firebase deploy --only hosting:coinc --project financias-ratimbum
   {
     "target": "legacy",
     "public": "hosting-legacy",
-    "redirects": [{ "source": "**", "destination": "https://coinc.web.app/?origem=antigo", "type": 302 }]
+    "redirects": [{ "source": "**", "destination": "https://coinc-financias.web.app/?origem=antigo", "type": 302 }]
   }
 ]
 ```
@@ -369,9 +369,9 @@ firebase deploy --only hosting:coinc --project financias-ratimbum
 - Teste antes de apontar o dono: `firebase hosting:channel:deploy preview --only coinc` gera URL temporária para conferir `curl -I` de `/sw.js`, `/manifest.webmanifest` e HTML sem tocar o site vivo [ASSUMED: canais de preview disponíveis no plano Spark].
 
 **Ordem de implantação obrigatória (D-06 + risco de 403):**
-1. Adicionar `https://coinc.web.app` a `ALLOWED_ORIGINS` no Railway (lista separada por vírgula; manter a origem antiga até o redirect valer). Sem isso a API responde `403 Origem nao autorizada` [VERIFIED: server/src/auth.js:12-15 `if (origin !== undefined && !origins.includes(origin)) { return res.status(403).json({ error: 'Origem nao autorizada' }) }`; `app.use(cors({ origin: origins }))` em server/src/app.js:34; `app.use('/api', originGuard(origins), requireOwner(verifyToken))` em app.js:77]. A variável é lida só na inicialização (`server/src/index.js:23`), então **a mudança exige reinício** do serviço no Railway [VERIFIED: leitura em tempo de boot, index.js:23].
+1. Adicionar `https://coinc-financias.web.app` a `ALLOWED_ORIGINS` no Railway (lista separada por vírgula; manter a origem antiga até o redirect valer). Sem isso a API responde `403 Origem nao autorizada` [VERIFIED: server/src/auth.js:12-15 `if (origin !== undefined && !origins.includes(origin)) { return res.status(403).json({ error: 'Origem nao autorizada' }) }`; `app.use(cors({ origin: origins }))` em server/src/app.js:34; `app.use('/api', originGuard(origins), requireOwner(verifyToken))` em app.js:77]. A variável é lida só na inicialização (`server/src/index.js:23`), então **a mudança exige reinício** do serviço no Railway [VERIFIED: leitura em tempo de boot, index.js:23].
 2. Domínios autorizados do Auth e restrição da chave de API (ver Pegadinhas), ambos no Console.
-3. Deploy do site `coinc` e conferência.
+3. Deploy do site `coinc-financias` e conferência.
 4. Só então ativar o redirect do site `legacy`.
 
 ### Padrão 6: Onboarding e portão (IDEN-08, D-16 a D-19)
@@ -424,7 +424,7 @@ Gerador (v2.0.0): saída vai **na mesma pasta da imagem de origem**; preset `min
 **O que dá errado:** o SW nunca atualiza; o usuário fica numa versão antiga por até um ano.
 **Causa:** `firebase.json` atual tem `**/*.js` e `**/*.css` com `immutable` (linhas 44-58).
 **Como evitar:** apagar as duas regras; `no-cache` explícito em `/sw.js` e `/manifest.webmanifest`; só `/assets/**` imutável.
-**Sinais:** `curl -I https://coinc.web.app/sw.js` mostrando `max-age=31536000` ou `max-age=3600`.
+**Sinais:** `curl -I https://coinc-financias.web.app/sw.js` mostrando `max-age=31536000` ou `max-age=3600`.
 
 ### Armadilha 2: build quebra por limite de pré-cache
 **O que dá errado:** `vite build` falha com aviso de `maximumFileSizeToCacheInBytes` (vira erro desde 0.20.2).
@@ -439,10 +439,10 @@ Gerador (v2.0.0): saída vai **na mesma pasta da imagem de origem**; preset `min
 **Como evitar:** ativação só pela decisão pura; recarga imediata no `controlling` com guarda contra laço; `vite:preloadError` com uma recarga; opcional o aviso estático se `#root` ficar vazio. **Teste manual de UAT:** publicar versão A, abrir e deixar em segundo plano, publicar B (esperar >1 min), reabrir.
 
 ### Armadilha 5: 403 da API no domínio novo
-**Causa:** `ALLOWED_ORIGINS` sem `https://coinc.web.app` (lido só no boot do servidor). **Evitar:** passo 1 da ordem de implantação + reinício. **Sinal:** requisições de `VITE_BANK_API_URL` com `403 {"error":"Origem nao autorizada"}` no Console do navegador. Não imprimir todas as variáveis do Railway (têm segredos): editar só `ALLOWED_ORIGINS` pelo painel, ou `railway variables` filtrando, e nunca colar saída bruta.
+**Causa:** `ALLOWED_ORIGINS` sem `https://coinc-financias.web.app` (lido só no boot do servidor). **Evitar:** passo 1 da ordem de implantação + reinício. **Sinal:** requisições de `VITE_BANK_API_URL` com `403 {"error":"Origem nao autorizada"}` no Console do navegador. Não imprimir todas as variáveis do Railway (têm segredos): editar só `ALLOWED_ORIGINS` pelo painel, ou `railway variables` filtrando, e nunca colar saída bruta.
 
 ### Armadilha 6: login falha no domínio novo por restrição da chave de API
-**Causa:** se a chave do navegador (`VITE_FIREBASE_API_KEY`) tem restrição de referenciador HTTP no Google Cloud, `coinc.web.app/*` precisa constar [ASSUMED: não verificável sem acesso ao Console; chaves criadas automaticamente pelo Firebase costumam vir sem restrição]. Domínios autorizados do Auth: `signInWithEmailAndPassword` em si não consulta a lista (ela vale para popup/redirect OAuth, links por e-mail e URLs de continuação de redefinição de senha) [ASSUMED: inferência a partir de documentação de fluxos de redirect/e-mail-link; não há página oficial que afirme isso para e-mail e senha]. Mesmo assim D-06 manda incluir: é um clique e evita surpresa quando a redefinição de senha for usada.
+**Causa:** se a chave do navegador (`VITE_FIREBASE_API_KEY`) tem restrição de referenciador HTTP no Google Cloud, `coinc-financias.web.app/*` precisa constar [ASSUMED: não verificável sem acesso ao Console; chaves criadas automaticamente pelo Firebase costumam vir sem restrição]. Domínios autorizados do Auth: `signInWithEmailAndPassword` em si não consulta a lista (ela vale para popup/redirect OAuth, links por e-mail e URLs de continuação de redefinição de senha) [ASSUMED: inferência a partir de documentação de fluxos de redirect/e-mail-link; não há página oficial que afirme isso para e-mail e senha]. Mesmo assim D-06 manda incluir: é um clique e evita surpresa quando a redefinição de senha for usada.
 
 ### Armadilha 7: splash e barra de status no iPhone
 O manifest `background_color` **não** define a tela de abertura no iOS; sem `apple-touch-startup-image` por tamanho de aparelho a abertura aparece em branco até a página pintar, e imagens de abertura por data/blob URL pararam de renderizar a partir do iOS 17.5.1 [CITED: web.dev/learn/pwa/enhancements; bugs.webkit.org/show_bug.cgi?id=280262]. Recomendação: **aceitar a abertura simples** (o script de tema e o CSS pintam rápido) e não gerar splash por aparelho; o UI-SPEC já aceita (P-04). `apple-mobile-web-app-status-bar-style` = `default` (UI-SPEC) mantém a barra opaca; `black-translucent` exigiria `viewport-fit=cover`. O `viewport` atual é `width=device-width, initial-scale=1.0` e o app já usa `env(safe-area-inset-*)` em TopBar, NavRail, Sheet e Toast; sem `viewport-fit=cover` esses insets valem 0. Decisão para o dono olhar no aparelho (UAT), padrão: não adicionar.
@@ -547,8 +547,8 @@ O plugin injeta o `<link rel="manifest">` no build.
 
 ## Perguntas em aberto
 
-1. **O ID `coinc` está livre?**
-   - Sabemos: `https://coinc.web.app` dá 404 "Site Not Found" e o projeto só tem o site padrão.
+1. **O ID `coinc-financias` está livre?**
+   - Sabemos: `https://coinc-financias.web.app` dá 404 "Site Not Found" e o projeto só tem o site padrão.
    - Falta: só `hosting:sites:create` confirma.
    - Recomendação: primeira tarefa de infraestrutura; se falhar, **parar e perguntar ao dono** (D-03).
 2. **Como o amigo publica hoje (`financias-xrd`)?**
@@ -592,15 +592,15 @@ Vitest **não está instalado** no projeto (o STACK o planeja para outras fases)
 | Req | Comportamento | Tipo | Comando automatizado | Arquivo existe? |
 |-----|---------------|------|----------------------|-----------------|
 | IDEN-01 | Nenhum `Ratimbum`/`Financias`/`Coinki` em interface; título e manifest "Coinc" | estático | `node --test test/static/phase5-identity.test.js` | ❌ Wave 0 |
-| IDEN-01 | Site `coinc` existe e responde com a casca | manual/curl | `firebase hosting:sites:list` + `curl -I https://coinc.web.app` | manual |
-| IDEN-02 | `firebase.json` com alvo `legacy` e redirect para `https://coinc.web.app/?origem=antigo`; targets no `.firebaserc` | estático | `node --test test/static/phase5-hosting.test.js` | ❌ Wave 0 |
+| IDEN-01 | Site `coinc` existe e responde com a casca | manual/curl | `firebase hosting:sites:list` + `curl -I https://coinc-financias.web.app` | manual |
+| IDEN-02 | `firebase.json` com alvo `legacy` e redirect para `https://coinc-financias.web.app/?origem=antigo`; targets no `.firebaserc` | estático | `node --test test/static/phase5-hosting.test.js` | ❌ Wave 0 |
 | IDEN-02 | Redirecionamento real e `ALLOWED_ORIGINS` | manual/curl | `curl -sI https://financias-ratimbum.web.app/` (esperar `location:`); chamada à API do domínio novo sem 403 | manual |
 | IDEN-03 | Manifest gerado: nome, `lang`, `display`, 192/512 `any` e 512 `maskable` separados; arquivos existem com as dimensões declaradas; apple-touch opaco | estático sobre `dist/` | `npm run build && node --test test/static/phase5-manifest.test.js` | ❌ Wave 0 |
 | IDEN-03 | Tela com passos e folha em Ajustes | estático + CDP | `node --test test/static/phase5-onboarding.test.js`; `node scripts/ux-audit/audit.mjs --route /configuracoes` | ❌ Wave 0 |
 | IDEN-03 | Instalar e abrir em tela cheia com ícone próprio | manual (UAT) | Android Chrome real e iPhone Safari real | manual |
 | IDEN-04 | `decideUpdate` (abertura <= 3 s sem uso ativa; em uso espera; `hidden` ativa; sem `waiting` não faz nada) e `decidePreloadError` (1 recarga, depois erro) | unitário | `node --test shared/core/pwaUpdate.test.js` | ❌ Wave 0 |
 | IDEN-04 | `sw.ts` sem `skipWaiting` automático, com `SKIP_WAITING`, sem `registerRoute` de dados; `registerType: 'prompt'`; limite de pré-cache | estático | `node --test test/static/phase5-sw.test.js` | ❌ Wave 0 |
-| IDEN-04 | Cabeçalhos: `/assets/**` imutável; `/sw.js`, `/manifest.webmanifest`, HTML `no-cache`; sem regra `**/*.js` nem `**/*.css` imutável | estático + curl | `phase5-hosting.test.js`; após deploy `curl -sI https://coinc.web.app/sw.js` | ❌ Wave 0 |
+| IDEN-04 | Cabeçalhos: `/assets/**` imutável; `/sw.js`, `/manifest.webmanifest`, HTML `no-cache`; sem regra `**/*.js` nem `**/*.css` imutável | estático + curl | `phase5-hosting.test.js`; após deploy `curl -sI https://coinc-financias.web.app/sw.js` | ❌ Wave 0 |
 | IDEN-04 | Deploy A -> B sem tela branca e sem trocar no meio de um lançamento | manual (UAT) | procedimento da Armadilha 4 | manual |
 | IDEN-05 | `resolveTheme(pref, systemDark)`; script inline aplicado com `localStorage` semeado (executar o script do `index.html` em `node:vm` com `localStorage`/`matchMedia` falsos) | unitário | `node --test shared/core/theme.test.js test/static/phase5-theme.test.js` | ❌ Wave 0 |
 | IDEN-05 | `index.html` sem `only light`, com `color-scheme` `light dark`, script antes do bundle, um só `theme-color` | estático | `phase5-theme.test.js`; atualizar `phase3-gaps.test.js:61-64` | ⚠ atualizar |

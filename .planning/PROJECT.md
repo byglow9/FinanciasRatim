@@ -19,11 +19,11 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 - ✓ Relatórios e dashboard por pessoa, incluindo gasto semanal máximo — existente
 - ✓ Modo escuro, nomes de aba configuráveis, categorias editáveis — existente
 - ✓ Sincronização bancária via MeuPluggy: importação automática, classificação, detecção de duplicados, nomes de lançamentos limpos (servidor no Railway) — existente
-- ✓ Publicado no Firebase Hosting (financias-ratimbum.web.app) — existente; o endereço antigo passa a redirecionar direto para o novo (coinc.web.app), sem página de aviso
+- ✓ Publicado no Firebase Hosting (financias-ratimbum.web.app) — existente; o endereço antigo passa a redirecionar direto para o novo (coinc-financias.web.app), sem página de aviso
 
 ### Active
 
-- [ ] **Identidade Coinc**: renomear o app, novo endereço coinc.web.app (o antigo redireciona direto), PWA adicionável à tela inicial (manifest, ícones, service worker, passos para Android e iPhone no onboarding e em Ajustes), atualização silenciosa ao abrir, novos tokens visuais. A paleta de cores é decidida por mockups (2 ou 3 propostas) antes de aplicar.
+- [ ] **Identidade Coinc**: renomear o app, novo endereço coinc-financias.web.app (o antigo redireciona direto), PWA adicionável à tela inicial (manifest, ícones, service worker, passos para Android e iPhone no onboarding e em Ajustes), atualização silenciosa ao abrir, novos tokens visuais. A paleta de cores é decidida por mockups (2 ou 3 propostas) antes de aplicar.
 - [ ] **Tema**: Automático (segue o celular), com Claro e Escuro nas Configurações, escolhido por aparelho.
 - [ ] **Mascote Vintém**: porquinho-cofre original em SVG animado (movimento lateral fluido, piscar, olhar que segue o cursor, girar de lado), com estados neutro, feliz, triste, bravo, sonolento e surpreso, balão de fala e página de teste com controles.
 - [ ] **Home "Pode gastar"**: valor grande com arco de medidor ao redor do Vintém, status de ritmo ("No ritmo"), atalhos (Gasto, Receita, Fixos, Limites), "O mês em uma conta" (Entra, Fixos, Dia a dia, Sobra, com projeção) e resumo de fixos. A Home é individual por pessoa.
@@ -37,7 +37,7 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 - [ ] **Vintém com IA gratuita**: comentários customizados sobre os gastos (elogio, bronca, alerta) gerados por um modelo gratuito chamado pelo servidor, com cache e frases prontas como reserva. **Tom sem filtro:** o Vintém pode dar bronca pesada, xingar e constranger (app pessoal, escolha do dono), além de elogiar; o nível do tom fica ajustável nas Configurações. **Dados enviados à IA:** totais por categoria e também **nomes de lojas/estabelecimentos** (decisão do dono); continuam fora CPF, números de conta/cartão e nomes de pessoas físicas de Pix. O provedor é escolhido nessa fase, atrás de uma camada trocável: candidatos Cloudflare Workers AI (grátis, sem treino segundo a documentação), Groq (reserva) e **Grok (xAI)**, que o dono quer testar por ser menos filtrado (o grátis dele não está confirmado e os créditos "grátis" citados exigem aceitar treino com os prompts).
 - [ ] **Push no celular**: notificações reais (ex.: "chegou a 80% do limite de Lazer"), com ressalva de que no iPhone só funcionam com o app instalado na tela inicial.
 - [ ] **Visão do casal**: Home continua individual; uma aba/modo "Casal" reúne totais, limites e gastos de Ele + Ela. O formato exato ainda está em aberto.
-- [ ] **Onboarding e login novos** no visual do Coinc, em coinc.web.app (3 telas de boas-vindas, a terceira com os passos de adicionar à tela inicial; login mais limpo).
+- [ ] **Onboarding e login novos** no visual do Coinc, em coinc-financias.web.app (3 telas de boas-vindas, a terceira com os passos de adicionar à tela inicial; login mais limpo).
 - [ ] **Multiusuário (amigo com contas separadas)**: `ownerId` em todos os dados, filtro por usuário, regras do Firestore, migração do histórico e do login dele (projeto `financias-xrd`).
 
 ### Out of Scope
@@ -80,7 +80,7 @@ Em segundos o usuário sabe **quanto ainda pode gastar no mês** (com base em li
 | Marcar fixa como paga não gera lançamento; lançamento do banco se vincula à fixa | Evita contar o mesmo dinheiro duas vezes (fixos fora do Dia a dia) | — Pending |
 | Contas Fixas mantém página própria | Mais separado, prático e intuitivo, com resumo na Home | — Pending |
 | Home individual + visão/aba "Casal" | Formato exato em aberto | — Pending |
-| Endereço coinc.web.app no mesmo projeto Firebase | Muda a URL sem mexer nos dados | — Pending |
+| Endereço coinc-financias.web.app no mesmo projeto Firebase | Muda a URL sem mexer nos dados | — Pending |
 | Site antigo redireciona direto, sem página de aviso (D-04) | Mais simples que avisar; o login é refeito uma vez na origem nova (D-05) | — Pending |
 | App atualiza sozinho ao abrir, sem aviso (D-14) | Sem tela branca e sem trocar de versão no meio de um lançamento | — Pending |
 | IA gratuita via servidor, com nomes de lojas e tom sem filtro (bronca, xingamento) | App pessoal; o dono autorizou os dois. Continuam fora CPF, contas e nomes de pessoas | — Pending |

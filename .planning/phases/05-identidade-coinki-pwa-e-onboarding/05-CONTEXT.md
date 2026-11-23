@@ -8,7 +8,7 @@
 
 O app passa a ter nome novo, endereço novo, instalação no celular (adicionar à tela inicial), tema que segue o aparelho (claro, escuro ou forçado), visual novo conferido em todas as telas e uma entrada nova (onboarding de 3 telas antes do login, mais o login já refeito na Fase 3.1).
 
-**Mudança de nome decidida nesta conversa:** o nome do app passa a ser **Coinc** e o endereço **coinc.web.app** (antes "Coinki" / coinki.web.app em ROADMAP, REQUIREMENTS e PROJECT.md). O planejador deve atualizar esses três documentos e o texto de IDEN-01 e IDEN-02. O ID `coinki` do Hosting e o nome Vintém não mudam por causa disso.
+**Mudança de nome decidida nesta conversa:** o nome do app passa a ser **Coinc** e o endereço **coinc-financias.web.app** (antes "Coinki" / coinki.web.app em ROADMAP, REQUIREMENTS e PROJECT.md). O planejador deve atualizar esses três documentos e o texto de IDEN-01 e IDEN-02. O ID `coinki` do Hosting e o nome Vintém não mudam por causa disso.
 
 Fora desta fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fase 8), IA do Vintém (Fase 7).
 
@@ -18,9 +18,10 @@ Fora desta fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fase 8), 
 ## Implementation Decisions
 
 ### Nome e migração de endereço
-- **D-01:** O nome do app é **Coinc** e o site é **coinc.web.app**, no mesmo projeto Firebase (`financias-ratimbum`). Decidido pelo dono após dúvida explícita ("Coinc" escrito duas vezes). — **Reversibility:** costly — o nome vai para manifest, ícones, título, ID do site no Hosting e domínios autorizados.
+- **D-01:** O nome do app é **Coinc** e o site é **coinc-financias.web.app**, no mesmo projeto Firebase (`financias-ratimbum`). Decidido pelo dono após dúvida explícita ("Coinc" escrito duas vezes). — **Reversibility:** costly — o nome vai para manifest, ícones, título, ID do site no Hosting e domínios autorizados.
 - **D-02:** Pesquisa do nome em lojas e INPI **dispensada** ("é app pessoal"). Não trava a fase.
 - **D-03:** Se o ID de site `coinc` estiver ocupado no Hosting, **parar e perguntar ao dono** antes de reservar outro (sem nome reserva automático).
+- **D-03a (decidido em 2026-11-23):** o ID `coinc` estava reservado por outro projeto no Firebase. O dono escolheu o ID **`coinc-financias`**: o site é `coinc-financias` e o endereço é **https://coinc-financias.web.app** (já criado, vazio). O nome do app continua **Coinc**. O alias do alvo no `firebase.json` e no `.firebaserc` segue `coinc` e aponta para o site `coinc-financias`.
 - **D-04:** O site antigo (financias-ratimbum.web.app) **redireciona direto** para o novo, **sem página de aviso** (decisão do dono, mais simples que o roadmap).
 - **D-05:** O login é refeito uma vez no novo endereço (origem nova: sessão e localStorage não migram). Os dados estão no Firestore e não se perdem. Sem migração de preferências locais por link.
 - **D-06:** Domínio novo entra nos domínios autorizados do Auth e em `ALLOWED_ORIGINS` do servidor; cabeçalhos do Hosting corrigidos para o service worker não ficar preso em cache (ver `firebase.json`: regras `**/*.js` e `**/*.css` imutáveis pinariam `/sw.js`).

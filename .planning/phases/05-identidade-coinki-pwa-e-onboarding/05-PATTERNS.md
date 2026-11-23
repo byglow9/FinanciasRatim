@@ -4,7 +4,7 @@
 **Arquivos analisados:** 52 (novos e modificados, fora documentos de planejamento)
 **Análogos encontrados:** 45 / 52 (7 sem análogo no código; usar RESEARCH.md)
 
-Todos os caminhos de análogo abaixo foram conferidos como **rastreados pelo git** (`git ls-files`). Nenhum é espelho gitignorado. O mapa foi montado a partir de `05-CONTEXT.md`, `05-RESEARCH.md` e `05-UI-SPEC.md`. O nome do app é **Coinc** (não Coinki) e o site é `coinc.web.app`.
+Todos os caminhos de análogo abaixo foram conferidos como **rastreados pelo git** (`git ls-files`). Nenhum é espelho gitignorado. O mapa foi montado a partir de `05-CONTEXT.md`, `05-RESEARCH.md` e `05-UI-SPEC.md`. O nome do app é **Coinc** (não Coinki) e o site é `coinc-financias.web.app`.
 
 ## Classificação dos arquivos
 
@@ -475,7 +475,7 @@ Acrescentar `VitePWA({...})` ao array `plugins` com os valores de RESEARCH Padr�
 
 **Estado atual de `hosting`** (`firebase.json` linhas 5-52): um objeto único com `public: "dist"`, `rewrites`, e `headers` para `**/*.html`, `/`, `/assets/**`, **`**/*.js` e `**/*.css` imutáveis** (as duas últimas regras são as que pinariam `/sw.js`).
 
-Converter `hosting` em **array** com `target: "coinc"` (cabeçalhos corrigidos) e `target: "legacy"` (`public: "hosting-legacy"`, `redirects` para `https://coinc.web.app/?origem=antigo`, tipo `302`), exatamente como em RESEARCH Padrão 5. Manter `firestore` e `emulators` **intactos**: `test/static/firestore-config.test.js` linha 82 compara `rollback.emulators` com `readJson('firebase.json').emulators`.
+Converter `hosting` em **array** com `target: "coinc"` (cabeçalhos corrigidos) e `target: "legacy"` (`public: "hosting-legacy"`, `redirects` para `https://coinc-financias.web.app/?origem=antigo`, tipo `302`), exatamente como em RESEARCH Padrão 5. Manter `firestore` e `emulators` **intactos**: `test/static/firestore-config.test.js` linha 82 compara `rollback.emulators` com `readJson('firebase.json').emulators`.
 
 `.firebaserc` atual:
 ```json
@@ -557,7 +557,7 @@ const FILE = 'src/components/onboarding/Onboarding.tsx'
 ```
 **Estilo de asserção** (de `phase3-1-login.test.js` e `phase4-settings.test.js`): `assert.match(src, /regex/, 'mensagem em português')`, `assert.ok(src.includes('texto'), 'sem ...')`, `assert.deepEqual(scaleProblems([FILE]), [])`. Teste de ordem por `indexOf` em `phase4-settings.test.js` linhas 12-27 serve para a ordem dos cartões de Ajustes.
 
-**Hosting** (`firestore-config.test.js` linhas 9-12): `ROOT`, `read`, `readJson` locais; ler `firebase.json` e `.firebaserc` por `JSON.parse`. O teste novo deve exigir: `hosting` é array com `target` `coinc` e `legacy`; `/assets/**` imutável; `/sw.js`, `/manifest.webmanifest`, `/` e `**/*.html` com `no-cache`; **nenhuma** regra `**/*.js` ou `**/*.css` imutável; `redirects` do `legacy` para `https://coinc.web.app/?origem=antigo`; `emulators` e `firestore` preservados. O UI-SPEC cita um "`firebase-config.test.js`" que **não existe**; criar este.
+**Hosting** (`firestore-config.test.js` linhas 9-12): `ROOT`, `read`, `readJson` locais; ler `firebase.json` e `.firebaserc` por `JSON.parse`. O teste novo deve exigir: `hosting` é array com `target` `coinc` e `legacy`; `/assets/**` imutável; `/sw.js`, `/manifest.webmanifest`, `/` e `**/*.html` com `no-cache`; **nenhuma** regra `**/*.js` ou `**/*.css` imutável; `redirects` do `legacy` para `https://coinc-financias.web.app/?origem=antigo`; `emulators` e `firestore` preservados. O UI-SPEC cita um "`firebase-config.test.js`" que **não existe**; criar este.
 
 **Manifest** (`phase5-manifest.test.js`): lê `dist/manifest.webmanifest` (exige `npm run build` antes). Sem análogo para ler `dist/`; seguir o estilo do `firestore-config.test.js` e pular com `{ skip }` se `dist/` não existir, para `npm run test:static` não depender de build.
 
@@ -614,7 +614,7 @@ Regra: `try/catch` em toda leitura e gravação; falha = valor padrão (`auto`, 
 
 ### Origem autorizada no servidor
 **Fonte:** `server/src/auth.js` linhas 12-15 e `server/src/app.js` linhas 34 e 77; leitura única na inicialização em `server/src/index.js` (`parseOrigins(required('ALLOWED_ORIGINS'))`).
-**Aplicar a:** passo de implantação, **sem código novo**. Incluir `https://coinc.web.app` em `ALLOWED_ORIGINS` no Railway e **reiniciar** o serviço antes de ativar o redirect; sem isso a API responde `403 {"error":"Origem nao autorizada"}`. Não imprimir as variáveis do Railway (têm segredo).
+**Aplicar a:** passo de implantação, **sem código novo**. Incluir `https://coinc-financias.web.app` em `ALLOWED_ORIGINS` no Railway e **reiniciar** o serviço antes de ativar o redirect; sem isso a API responde `403 {"error":"Origem nao autorizada"}`. Não imprimir as variáveis do Railway (têm segredo).
 
 ### Testes do núcleo e estáticos
 **Fonte:** `package.json` scripts `test:core` (`node --test "shared/**/*.test.js"`) e `test:static` (`node --test "test/static/*.test.js"`).
@@ -640,8 +640,8 @@ Usar RESEARCH.md/UI-SPEC.md como fonte:
 
 ## Observações para o planejador
 
-1. **Documentos a reescrever** (CONTEXT): ROADMAP (Fase 5, critérios 1 a 3), REQUIREMENTS (IDEN-01 a 05 e 08), PROJECT.md e `.claude/CLAUDE.md` ("Coinki" vira "Coinc", `coinc.web.app`, atualização silenciosa em lugar de aviso, site antigo redireciona direto). Não mudar `demo-coinki` em `package.json` (ID de emulador).
-2. **Ordem de onda sugerida pelas dependências:** (a) `npm install` aprovado + `maximumFileSizeToCacheInBytes` (senão o build quebra com o bundle de 1,82 MB); (b) `shared/core/{pwaUpdate,theme}.js` e testes; (c) tokens em `index.css` + `palette.js` + testes de paleta/gaps (quebra intencional, mesma tarefa); (d) `index.html`, `useTheme`, `ThemeGroup`; (e) sketch 021 como `checkpoint:human-verify` com ícones provisórios para não bloquear (RESEARCH Padrão 7); (f) `Onboarding`, `ProtectedRoute`, `LoginForm`; (g) `sw.ts`, `registerPwa`, `vite.config.ts`; (h) `firebase.json`, `.firebaserc`, `ALLOWED_ORIGINS`, deploy do site `coinc`, redirect por último.
+1. **Documentos a reescrever** (CONTEXT): ROADMAP (Fase 5, critérios 1 a 3), REQUIREMENTS (IDEN-01 a 05 e 08), PROJECT.md e `.claude/CLAUDE.md` ("Coinki" vira "Coinc", `coinc-financias.web.app`, atualização silenciosa em lugar de aviso, site antigo redireciona direto). Não mudar `demo-coinki` em `package.json` (ID de emulador).
+2. **Ordem de onda sugerida pelas dependências:** (a) `npm install` aprovado + `maximumFileSizeToCacheInBytes` (senão o build quebra com o bundle de 1,82 MB); (b) `shared/core/{pwaUpdate,theme}.js` e testes; (c) tokens em `index.css` + `palette.js` + testes de paleta/gaps (quebra intencional, mesma tarefa); (d) `index.html`, `useTheme`, `ThemeGroup`; (e) sketch 021 como `checkpoint:human-verify` com ícones provisórios para não bloquear (RESEARCH Padrão 7); (f) `Onboarding`, `ProtectedRoute`, `LoginForm`; (g) `sw.ts`, `registerPwa`, `vite.config.ts`; (h) `firebase.json`, `.firebaserc`, `ALLOWED_ORIGINS`, deploy do site `coinc-financias`, redirect por último.
 3. **Pontos que o código atual não cobre e o plano precisa decidir:** onde fica o armazenamento do evento `beforeinstallprompt` (módulo em `src/lib/pwa/`); extração opcional de `FOCUSABLE`/`focusableIn` do `sheet.tsx`; extração opcional de `RadioRow`.
 4. **Pontos sensíveis nas guardas:** `LoginForm.tsx` sem `gradient` e só com os seis fundos permitidos; `ProtectedRoute.tsx` com `<LoginForm />` literal; ordem dos cartões de Ajustes; nenhum hex em `src/**` fora de `index.css`; `emulators` de `firebase.json` intactos.
 

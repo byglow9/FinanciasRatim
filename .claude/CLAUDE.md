@@ -116,7 +116,7 @@ Coinc (hoje "Financias Ratimbum") é um app web de finanças pessoais em portugu
 | @date-fns/tz | ^1.5.0 | Month and day boundaries in `America/Sao_Paulo` | Railway runs in UTC. Without an explicit zone, "today" and "month start" are wrong for about 3 hours every night, which shifts limit totals and threshold pushes. Works with date-fns ^4 (`in:` option). | HIGH (version), MEDIUM (usage pattern) |
 | vitest | ^5.1.0 (dev) | Unit tests for limits math, state machine, FID/ownerId logic | Peer range lists Vite `^6.4 || ^7 || ^8`. Node `^22.12 || ^24 || >=26` (local Node 22.17.1 is fine). The server keeps using `node --test`. | HIGH |
 
-### Feature 6: New Hosting site `coinc.web.app` (same Firebase project)
+### Feature 6: New Hosting site `coinc-financias.web.app` (same Firebase project)
 
 | Technology | Version | Purpose | Why | Confidence |
 |------------|---------|---------|-----|------------|

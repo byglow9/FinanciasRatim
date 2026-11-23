@@ -15,7 +15,7 @@ O Coinc é uma evolução de um app que já funciona (lançamentos, fixas, metas
 - [x] **Phase 2: Revisão de importações, contas fixas e webhook** - O ledger fica confiável: itens em revisão resolvidos, fixas vinculadas ao banco e dados chegando na hora (completed 2026-11-18)
 - [ ] **Phase 3: Limites, "Pode gastar" e Central** - Em segundos o usuário sabe quanto ainda pode gastar no mês, por categoria, com alertas
 - [ ] **Phase 4: Mascote Vintém** - O porquinho-cofre original reage ao ritmo e ao uso do limite, com falas próprias em tom ajustável
-- [ ] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc.web.app, instalável no celular, com tema e visual novos
+- [ ] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc-financias.web.app, instalável no celular, com tema e visual novos
 - [ ] **Phase 6: Cartão de crédito** - Cartão como conta própria, com fatura, parcelas e limite, depois de um teste real do que o MeuPluggy entrega
 - [ ] **Phase 7: Push e Vintém com IA** - Avisos reais no celular e comentários do Vintém gerados por IA gratuita, com frases prontas de reserva
 - [ ] **Phase 8: Visão do casal e multiusuário** - Aba Casal somente leitura e o amigo usando o app com dados separados
@@ -307,14 +307,14 @@ Plans:
 
 ### Phase 5: Identidade Coinc, PWA e onboarding
 
-**Goal:** O app passa a se chamar Coinc em coinc.web.app, adicionável à tela inicial do celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding de 3 telas e login)
+**Goal:** O app passa a se chamar Coinc em coinc-financias.web.app, adicionável à tela inicial do celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding de 3 telas e login)
 **Mode:** mvp
 **Depends on:** Phase 1, Phase 3 (paleta e navegação decididas nos mockups)
 **Requirements**: IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08
 **Notas de execução:** o ID `coinc` é reservado cedo no Hosting e, se estiver ocupado, parar e perguntar ao dono (D-03), sem nome reserva automático; a pesquisa do nome em lojas e no INPI foi dispensada (D-02, "é app pessoal") e não é pré-requisito; a troca de domínio é uma origem nova (login refeito uma vez, localStorage não migra, D-05) e exige o domínio nos domínios autorizados do login e em `ALLOWED_ORIGINS` (D-06); cabeçalhos do Hosting corrigidos para o service worker não ficar preso em cache; ordem de produção obrigatória: origens da API, domínio do login, site novo e, por último, o redirect do site antigo, com 302 antes de qualquer 301.
 **Success Criteria** (what must be TRUE):
 
-  1. O usuário abre coinc.web.app, vê o nome Coinc em todas as telas e consegue entrar; o site antigo redireciona direto para o novo, sem página de aviso (D-04)
+  1. O usuário abre coinc-financias.web.app, vê o nome Coinc em todas as telas e consegue entrar; o site antigo redireciona direto para o novo, sem página de aviso (D-04)
   2. O usuário adiciona o Coinc à tela inicial a partir dos passos para Android e iPhone, que ficam na terceira tela do onboarding e também em Ajustes, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
   3. Depois de um novo deploy, o app atualiza sozinho ao abrir, sem aviso e sem tela branca, e nunca troca de versão no meio de um lançamento (D-14)
   4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
@@ -329,7 +329,7 @@ Plans:
 - [ ] 05-01-PLAN.md — Gates humanos: pacotes do PWA (versão exata, aprovação do dono) e reserva do ID de site coinc (IDEN-01, IDEN-03)
 - [x] 05-02-PLAN.md — Núcleo: política de atualização silenciosa e resolução do tema, funções puras testadas (IDEN-04, IDEN-05)
 - [x] 05-03-PLAN.md — Tokens: verde claro novo, @theme static, tema escuro e paleta medida nos dois temas, com as guardas legadas atualizadas (IDEN-05, IDEN-06)
-- [x] 05-04-PLAN.md — Documentos: nome Coinc, coinc.web.app, redirect direto e atualização silenciosa (IDEN-01, IDEN-02, IDEN-04)
+- [x] 05-04-PLAN.md — Documentos: nome Coinc, coinc-financias.web.app, redirect direto e atualização silenciosa (IDEN-01, IDEN-02, IDEN-04)
 - [x] 05-05-PLAN.md — Sketch 021 do ícone: cinco versões com autoteste (IDEN-03)
 
 **Wave 2** *(blocked on Wave 1 completion)*

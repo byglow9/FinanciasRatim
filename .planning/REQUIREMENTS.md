@@ -61,7 +61,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Identidade, PWA e onboarding (IDEN)
 
-- [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc.web.app, no mesmo projeto do Firebase
+- [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc-financias.web.app, no mesmo projeto do Firebase
 - [ ] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
 - [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na terceira tela do onboarding e em Ajustes
 - [ ] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
@@ -240,4 +240,4 @@ Preenchida na criação do roadmap.
 
 ---
 *Requirements defined: 2026-11-17*
-*Last updated: 2026-11-23 após decisões da fase 5 (nome Coinc e coinc.web.app, redirect direto do site antigo, atualização silenciosa, passos no onboarding e em Ajustes; IDEN-05 e IDEN-06 só fecham no plano 05-20)*
+*Last updated: 2026-11-23 após decisões da fase 5 (nome Coinc e coinc-financias.web.app, redirect direto do site antigo, atualização silenciosa, passos no onboarding e em Ajustes; IDEN-05 e IDEN-06 só fecham no plano 05-20)*

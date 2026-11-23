@@ -117,7 +117,7 @@ Facts the credit-card phase must plan around (from Pluggy docs):
 
 Business-rule notes (from PROJECT.md decisions): fixed bills are excluded from the day-to-day limit; card purchases count against the limit by purchase date (not bill due date); show "what leaves in each bill" separately. Encode these as explicit, tested functions, because this feature is the stated Core Value.
 
-### Feature 6: New Hosting site `coinc.web.app` (same Firebase project)
+### Feature 6: New Hosting site `coinc-financias.web.app` (same Firebase project)
 
 | Technology | Version | Purpose | Why | Confidence |
 |------------|---------|---------|-----|------------|

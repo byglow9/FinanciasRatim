@@ -63,8 +63,8 @@ var ER=16,ERY=20;
 var R=116,CIRC=204.8;
 /* cada versao: nome, degrade (2 cores, direcao), cor da silhueta, dos olhos e desenho em coordenadas 240x200 */
 var VERS={
- f:{name:'F. Verde do app',origin:'Silhueta como o C',stops:['#f5ecdb','#d9c398'],dir:'d',sil:'#2f6f3e',eye:'#fbf6ea',snout:'#6aa377',nost:'#14301e'},
- g:{name:'G. Verde claro, cabeça inclinada',origin:'Silhueta como o B',stops:['#f5ecdb','#ece2cb'],dir:'d',sil:'#3b8447',eye:'#ffffff',snout:'#78b184',nost:'#14301e'},
+ f:{name:'F. Verde do app',origin:'Silhueta como o C',stops:['#fff4d6','#f1c987'],dir:'d',sil:'#2f6f3e',eye:'#fbf6ea',snout:'#6aa377',nost:'#14301e'},
+ g:{name:'G. Verde claro, cabeça inclinada',origin:'Silhueta como o B',stops:['#fffaf0','#f4dfb4'],dir:'d',sil:'#3b8447',eye:'#ffffff',snout:'#78b184',nost:'#14301e'},
  h:{name:'H. Verde claro sobre verde escuro',origin:'Silhueta como o C',stops:['#1f4d2b','#0f2a1a'],dir:'d',sil:'#7bc48a',eye:'#0f2a1a',snout:'#b4e3be',nost:'#0f2a1a'},
  i:{name:'I. Verde escuro sobre verde menta',origin:'Silhueta como o C',stops:['#8fd29c','#5fb36f'],dir:'d',sil:'#14301e',eye:'#8fd29c',snout:'#3f7d50',nost:'#0a1a10'}
 };
@@ -77,6 +77,14 @@ function eyeEl(v,x,y,s){
 }
 function earEl(fill,tf,dp){return '<path data-role="sil" d="'+(dp||G.ear)+'" transform="'+tf+'" fill="'+fill+'"/>'}
 /* devolve {inner,tf,s} : desenho em 240x200 e a transformacao que o leva ao quadro 512 */
+function sparkEl(v,x,y,k){
+ /* brilho de quatro pontas, como nos icones de referencia (so forma, sem texto) */
+ return '<path data-role="detail" d="M0,-14C1.5,-5 5,-1.5 14,0C5,1.5 1.5,5 0,14C-1.5,5 -5,1.5 -14,0C-5,-1.5 -1.5,-5 0,-14Z" transform="translate('+x+' '+y+') scale('+k+')" fill="'+VERS[v].sil+'"/>';
+}
+function pigEar(fill,x,y,rot,k,flip){
+ /* orelha de porco: mais curta e inclinada para fora */
+ return earEl(fill,'translate('+x+' '+y+')'+(flip?' scale(-1 1)':'')+' rotate('+rot+') scale('+k+')');
+}
 function snoutEl(v,cx,cy,k){
  /* focinho do Vintem de frente: oval mais clara que o corpo e duas narinas escuras */
  var d=VERS[v],n=G.snout,rx=n.rx*k,ry=n.ry*k,dx=G.nostrilDx*k;
@@ -88,14 +96,15 @@ function art(v){
  var d=VERS[v],sil=d.sil,s,tf,inner;
  if(v==='g'){
   s=1.6;
-  inner=earEl(sil,'translate(28 86) rotate(-172) scale(1.3)')+earEl(sil,'translate(212 86) scale(-1 1) rotate(-172) scale(1.3)')+
+  inner=pigEar(sil,28,92,-160,1.15,false)+pigEar(sil,212,92,-160,1.15,true)+
    '<path data-role="sil" d="'+G.body+'" transform="translate(120 111) scale(1.155 1.74) translate(-120 -111)" fill="'+sil+'"/>'+
-   eyeEl(v,84,116,s)+eyeEl(v,156,116,s)+snoutEl(v,120,160,1.3);
+   eyeEl(v,84,116,s)+eyeEl(v,156,116,s)+snoutEl(v,120,162,1.55)+sparkEl(v,214,52,0.55);
   tf='translate(256 256) rotate(8) scale('+s+') translate(-120 -111)';
  }else{
   s=1.9;
-  inner=earEl(sil,'translate(63 80)')+earEl(sil,'translate(177 80) scale(-1 1)')+
-   '<path data-role="sil" d="'+G.body+'" fill="'+sil+'"/>'+eyeEl(v,87,106,s)+eyeEl(v,153,106,s)+snoutEl(v,120,141,1);
+  inner=pigEar(sil,66,84,-28,0.9,false)+pigEar(sil,174,84,-28,0.9,true)+
+   '<path data-role="sil" d="'+G.body+'" fill="'+sil+'"/>'+eyeEl(v,87,104,s)+eyeEl(v,153,104,s)+snoutEl(v,120,143,1.3)+
+   (v==='f'?sparkEl(v,198,62,0.5):'');
   tf='translate(256 238) scale('+s+') translate(-120 -104)';
  }
  return {inner:inner,tf:tf,s:s};

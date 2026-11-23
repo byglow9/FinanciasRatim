@@ -320,7 +320,7 @@ Plans:
   4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinc
 
-**Plans**: 13/21 plans executed
+**Plans**: 14/21 plans executed
 **UI hint**: yes
 
 Plans:
@@ -355,7 +355,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 05-15-PLAN.md — Auditoria do escuro: rotas e telas de entrada em dois temas e dois tamanhos (IDEN-06)
+- [x] 05-15-PLAN.md — Auditoria do escuro: rotas e telas de entrada em dois temas e dois tamanhos (IDEN-06)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -444,7 +444,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinc, PWA e onboarding | 13/21 | In Progress|  |
+| 5. Identidade Coinc, PWA e onboarding | 14/21 | In Progress|  |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

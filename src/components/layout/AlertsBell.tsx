@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Bell, CalendarDays, CircleAlert, TriangleAlert } from 'lucide-react'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useLimitAlerts } from '@/contexts/LimitAlertsContext'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { limitHref } from '@/lib/limitHash'
 import { getFixedExpenses, getPaymentsForMonths } from '@/services/fixedExpenses.service'
 import type { LimitAlert } from '@/types'
@@ -63,6 +64,7 @@ async function loadDue(now: Date, daysBefore: number): Promise<DueItem[]> {
 
 export function AlertsBell() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { settings, categoryDefs } = useArea()
   const { now, dataVersion } = useCycle()
   const { visible, unread, markRead, markAllRead } = useLimitAlerts()
@@ -222,6 +224,8 @@ export function AlertsBell() {
 
           {items.length === 0 ? (
             <div className="px-3 py-4">
+              {/* Na Home o hero e o vazio de limites ja ocupam os dois Vintens permitidos */}
+              {pathname !== '/' && <VintemEmpty pose="sonolento" />}
               <p className="text-base font-bold">Sem avisos por enquanto</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Você será avisado ao chegar a 80% e ao passar de 100% de um limite.

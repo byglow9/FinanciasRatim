@@ -49,8 +49,8 @@ export function SettingsPage() {
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
         {header}
         <div className="space-y-4" aria-hidden="true">
-          {[144, 224, 112, 144].map((h) => (
-            <div key={h} className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
+          {[144, 224, 112, 144].map((h, i) => (
+            <div key={`${i}-${h}`} className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
           ))}
         </div>
         <span className="sr-only">Carregando suas configurações</span>

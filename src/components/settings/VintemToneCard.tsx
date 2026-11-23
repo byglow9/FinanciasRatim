@@ -3,6 +3,7 @@ import { Check, MessageCircle } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { Chip } from '@/components/ui/chip'
 import { Notice } from '@/components/ui/notice'
+import { VintemInlineRow } from '@/components/vintem/VintemInlineRow'
 import { useToast } from '@/components/ui/toast'
 import { SettingsCard } from '@/components/settings/SettingsCard'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,17 @@ const OPTIONS: ToneOption[] = [
   },
 ]
 
+// Exemplos aprovados do UI-SPEC (S6): textos fixos, sem sorteio e sem dado do usuario. A previa nunca
+// consulta o banco de frases.
+const TONE_EXAMPLES: Record<VintemTone, string> = {
+  suave: 'Está perto do limite de Lazer, vale segurar.',
+  direto: 'Lazer chegou a 82% do limite. Restam R$ 90.',
+  'sem-filtro': 'Quarto delivery da semana, caralho. Seu fogão é enfeite?',
+}
+
+// A previa nao e uma fala de verdade: dispensar nao faz nada.
+const keepPreview = () => {}
+
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
 const SAVE_FAILED = 'Não foi possível salvar o tom. Confira a conexão e tente de novo.'
 
@@ -40,9 +52,12 @@ export function VintemToneCard() {
   const [selected, setSelected] = useState<VintemTone>(stored)
   // Ressincroniza quando o documento chega depois da montagem (comparação na renderização).
   const [source, setSource] = useState<VintemTone>(stored)
+  // Muda a cada troca do tom exibido: o balao da previa ganha um novo pop.
+  const [pop, setPop] = useState(0)
   if (source !== stored) {
     setSource(stored)
     setSelected(stored)
+    setPop((n) => n + 1)
   }
 
   const [failed, setFailed] = useState(false)
@@ -54,6 +69,7 @@ export function VintemToneCard() {
     if (!option || readOnly || saving || option.value === selected) return
     const previous = selected
     setSelected(option.value)
+    setPop((n) => n + 1)
     setFailed(false)
     setSaving(true)
     try {
@@ -61,6 +77,7 @@ export function VintemToneCard() {
       show(`Tom do Vintém: ${option.name}`)
     } catch {
       setSelected(previous)
+      setPop((n) => n + 1)
       setFailed(true)
     } finally {
       setSaving(false)
@@ -139,6 +156,13 @@ export function VintemToneCard() {
           )
         })}
       </div>
+      <p className="text-xs font-bold text-muted-foreground">Exemplo</p>
+      <VintemInlineRow
+        state="neutro"
+        text={TONE_EXAMPLES[selected]}
+        popKey={pop}
+        onDismiss={keepPreview}
+      />
       {readOnly ? <p className="text-xs font-normal text-muted-foreground">{READ_ONLY_HINT}</p> : null}
       {failed ? <Notice tone="danger">{SAVE_FAILED}</Notice> : null}
     </SettingsCard>

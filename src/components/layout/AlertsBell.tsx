@@ -215,7 +215,7 @@ export function AlertsBell() {
               <button
                 type="button"
                 onClick={() => void markAllRead()}
-                className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-xs font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-xs font-bold text-ok-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Marcar todos como lidos
               </button>

@@ -106,3 +106,91 @@ test('a pizza separa as fatias pela cor do cartao e nenhum componente de relator
   assert.ok(files.length >= 3, 'componentes de relatorio nao encontrados')
   for (const f of files) assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(code(f)), `hex literal em ${f}`)
 })
+
+// ---------------------------------------------------------------------------------------------------------
+// Plano 05-16 (D-10, IDEN-06): sobreposicoes de interface abertas nos dois temas.
+// A execucao em Chrome e `node scripts/ux-audit/theme.mjs --overlays`.
+// ---------------------------------------------------------------------------------------------------------
+
+const OVERLAY_IDS = [
+  'lancador-com-teclado',
+  'acoes-da-linha',
+  'confirmacao-de-apagar',
+  'select-aberto',
+  'folha-de-evento',
+  'folha-de-nota',
+  'editor-de-categoria',
+  'seletor-de-icone',
+  'dialogo',
+  'painel-do-sino',
+  'painel-do-ciclo',
+  'menu-de-perfil',
+  'toast',
+  'toast-do-vintem',
+]
+
+const overlayBlock = () => audit.slice(audit.indexOf('const OVERLAY_LIST = ['), audit.indexOf('async function runOverlays('))
+
+test('o auditor tem o modo --overlays e a lista nomeada de sobreposicoes', () => {
+  assert.ok(audit.includes("'--overlays'"), 'flag --overlays ausente')
+  assert.ok(audit.includes('const OVERLAY_LIST = ['), 'constante OVERLAY_LIST ausente')
+  assert.ok(audit.includes('async function runOverlays('), 'runOverlays ausente')
+  assert.match(audit, /opts\.overlays\)\s*\{\s*auditFailures = await/, 'main nao despacha o modo --overlays')
+})
+
+test('a lista cobre toda sobreposicao do UI-SPEC S6', () => {
+  const block = overlayBlock()
+  const ids = [...block.matchAll(/^\s{4}id: '([a-z0-9-]+)'/gm)].map((m) => m[1])
+  for (const id of OVERLAY_IDS) assert.ok(ids.includes(id), `sobreposicao ${id} fora da lista`)
+  assert.equal(new Set(ids).size, ids.length, 'id repetido na lista')
+  assert.ok(block.includes("aria-label=\"Novo lançamento\"") || audit.includes('button[aria-label="Novo lançamento"]'), 'lancador sem o botao de novo lancamento')
+  assert.ok(block.includes('Avisos') && block.includes('Ciclos') && block.includes('Perfil'), 'paineis do sino, do ciclo e do perfil')
+  assert.ok(block.includes('Fechar aviso') && block.includes('Dispensar fala do Vintém'), 'toast comum e toast do Vintem')
+})
+
+test('cada sobreposicao declara a raiz medida e a veladura quando existe', () => {
+  const block = overlayBlock()
+  const roots = [...block.matchAll(/^\s{4}root: /gm)].length
+  const veils = [...block.matchAll(/^\s{4}veil: /gm)].length
+  const opens = [...block.matchAll(/^\s{4}open: async/gm)].length
+  assert.equal(roots, OVERLAY_IDS.length, 'toda sobreposicao precisa de root')
+  assert.equal(veils, OVERLAY_IDS.length, 'toda sobreposicao precisa declarar veil (ou null)')
+  assert.equal(opens, OVERLAY_IDS.length, 'toda sobreposicao precisa de open')
+})
+
+test('as sobreposicoes rodam nos dois temas e tamanhos com as cinco verificacoes mais a veladura preta', () => {
+  const run = audit.slice(audit.indexOf('async function runOverlays('), audit.indexOf('function withTimeout('))
+  assert.ok(run.includes('AUDIT_THEMES') && run.includes('AUDIT_VIEWPORTS'), 'dois temas e dois tamanhos')
+  assert.ok(run.includes('pageAudit.toString()'), 'mesmas verificacoes de pagina das telas')
+  assert.ok(run.includes('runHexGuard()'), 'guarda de hex literal')
+  assert.ok(run.includes('veilBad'), 'veladura conferida')
+  assert.ok(run.includes('`sobreposicao-${overlay.id}-${theme}.png`'), 'uma captura por sobreposicao e tema')
+  assert.ok(audit.includes('veilSel') && /c\.r <= 8 && c\.g <= 8 && c\.b <= 8 && c\.a >= 0\.2/.test(audit), 'veladura preta e translucida')
+  assert.ok(audit.includes('rootExpr'), 'escopo da medicao na sobreposicao')
+})
+
+test('o Dialog sem consumidor no app e montado a partir do modulo real, nao de uma copia', () => {
+  assert.ok(audit.includes('async function mountDialogHarness('), 'montagem do Dialog ausente')
+  assert.ok(audit.includes("import('/src/components/ui/dialog.tsx')"), 'o Dialog vem do modulo do app')
+  assert.ok(audit.includes("import('/src/components/ui/button.tsx')"), 'os botoes do Dialog vem do Button do app')
+})
+
+test('a veladura do Dialog e dos Sheets continua preta nos dois temas (UI-SPEC S6, P-09)', () => {
+  const dialog = code('src/components/ui/dialog.tsx')
+  const sheet = code('src/components/ui/sheet.tsx')
+  assert.match(dialog, /bg-black\/80/, 'veladura do dialog')
+  assert.match(sheet, /bg-\[rgba\(0,0,0,\.35\)\]/, 'veladura do sheet')
+  for (const [name, src] of [['dialog', dialog], ['sheet', sheet]]) {
+    assert.ok(!/\bdark:/.test(src), `${name} usa prefixo dark:`)
+    assert.ok(!/bg-white\b/.test(src), `${name} com bg-white`)
+    assert.ok(/bg-popover/.test(src), `${name} sem bg-popover no painel`)
+  }
+})
+
+test('o texto de acao verde em painel escuro usa token de tinta, nao o verde de superficie', () => {
+  // --primary no escuro (#2c7f4b) e superficie de botao; como texto sobre bg-popover nao chega a 4,5. A tinta ok-ink chega.
+  assert.ok(!/text-primary\b/.test(code('src/components/ui/select.tsx')), 'opcao marcada do Select com text-primary')
+  assert.ok(!/text-primary\b/.test(code('src/components/layout/AlertsBell.tsx')), 'Marcar todos como lidos com text-primary')
+  assert.match(code('src/components/ui/select.tsx'), /text-ok-ink/)
+  assert.match(code('src/components/layout/AlertsBell.tsx'), /text-ok-ink/)
+})

@@ -132,7 +132,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                     onClick={() => handleSelect(optValue)}
                     className={cn(
                       "flex min-h-11 w-full items-center justify-between px-3 py-2.5 text-base transition-colors",
-                      isSelected ? "bg-primary/10 text-primary font-bold" : "hover:bg-surface-2"
+                      isSelected ? "bg-primary/10 text-ok-ink font-bold" : "hover:bg-surface-2"
                     )}
                   >
                     {option.props.children}

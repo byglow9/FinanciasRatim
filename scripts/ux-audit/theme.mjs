@@ -8,6 +8,9 @@
 //            cinco verificacoes (rolagem horizontal, contraste, bloco claro no escuro, hex em src, alvo de toque)
 //            e uma captura por tela e tema. Filtros: --route R, --theme claro|escuro, --viewport LxA,
 //            --report-only (lista violacoes e sai com 0).
+//   --overlays (plano 05-16, D-10, IDEN-06) abre cada sobreposicao de OVERLAY_LIST por interacao real em MOCK, nos
+//            dois temas e nos dois tamanhos, e roda nelas as mesmas cinco verificacoes mais a da veladura preta.
+//            Filtros: --route ID (id da sobreposicao), --theme, --viewport, --report-only.
 //   --selftest  prova que o auditor enxerga defeitos: injeta um bloco claro, texto sem contraste, alvo pequeno e
 //            estouro de largura no escuro e exige que as quatro verificacoes de pagina os acusem.
 // Saida: uma linha por verificacao e a linha final `FALHAS n`. Codigos: 0 sem falha, 1 alguma falha,
@@ -29,11 +32,12 @@ const TOTAL_TIMEOUT_MS = 180000
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function parseArgs(argv) {
-  const opts = { smoke: false, audit: false, selftest: false, reportOnly: false, route: null, theme: null, viewport: null }
+  const opts = { smoke: false, audit: false, overlays: false, selftest: false, reportOnly: false, route: null, theme: null, viewport: null }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--smoke') opts.smoke = true
     else if (arg === '--audit') opts.audit = true
+    else if (arg === '--overlays') opts.overlays = true
     else if (arg === '--selftest') opts.selftest = true
     else if (arg === '--report-only') opts.reportOnly = true
     else if (arg === '--route' || arg === '--theme' || arg === '--viewport') {
@@ -541,6 +545,15 @@ function pageAudit(cfg) {
 
   const result = { overflowers: [], contrast: [], lightBlocks: [], smallTargets: [], notes: { onImage: 0, measured: 0 } }
 
+  // Escopo (plano 05-16): sem rootExpr mede a pagina inteira; com rootExpr mede so a sobreposicao aberta.
+  const scope = cfg.rootExpr ? new Function(`return (${cfg.rootExpr})`)() : document.body
+  if (!scope) {
+    result.rootMissing = true
+    return result
+  }
+  const everyEl = cfg.rootExpr ? [scope, ...scope.querySelectorAll('*')] : [...document.body.querySelectorAll('*')]
+  const qsa = (selector) => (cfg.rootExpr ? [...(scope.matches(selector) ? [scope] : []), ...scope.querySelectorAll(selector)] : [...document.querySelectorAll(selector)])
+
   // (a) Rolagem horizontal, no criterio do auditor da 3.1.
   result.overflowX = doc.scrollWidth > doc.clientWidth
   result.scrollWidth = doc.scrollWidth
@@ -552,7 +565,7 @@ function pageAudit(cfg) {
     }
     return false
   }
-  for (const el of document.body.querySelectorAll('*')) {
+  for (const el of everyEl) {
     if (!isVisible(el) || inAriaHidden(el)) continue
     const r = el.getBoundingClientRect()
     if (r.right <= window.innerWidth + 0.5) continue
@@ -579,7 +592,7 @@ function pageAudit(cfg) {
     seen.add(key)
     result.contrast.push({ kind, sel: selectorOf(el), text: label.slice(0, 28), fg: hex(fg), bg: hex(bd.color), ratio: round(ratio), min })
   }
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT)
   const textOwners = new Set()
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const parent = n.parentElement
@@ -600,7 +613,7 @@ function pageAudit(cfg) {
     const own = [...el.childNodes].filter((c) => c.nodeType === 3).map((c) => c.nodeValue.trim()).join(' ')
     checkPair(el, fgCss, own, size >= 28 ? 3 : 4.5, 'texto')
   }
-  for (const svg of document.querySelectorAll('svg[class*="lucide"]')) {
+  for (const svg of qsa('svg[class*="lucide"]')) {
     if (!isVisible(svg)) continue
     if (excepted(svg, 'contraste')) continue
     const cs = getComputedStyle(svg)
@@ -613,7 +626,7 @@ function pageAudit(cfg) {
 
   // (c) No escuro, bloco de 64x64 ou mais com fundo claro (luminancia acima de 0,5).
   if (cfg.theme === 'escuro') {
-    for (const el of document.body.querySelectorAll('*')) {
+    for (const el of everyEl) {
       if (el instanceof SVGElement) continue
       if (!isVisible(el)) continue
       const r = el.getBoundingClientRect()
@@ -631,7 +644,7 @@ function pageAudit(cfg) {
 
   // (e) Alvo de toque menor que 43,5 px em elemento interativo.
   const targetSel = 'button, a[href], [role="button"], [role="tab"], [role="radio"], [role="switch"], [role="checkbox"], input, select, textarea'
-  for (const el of document.querySelectorAll(targetSel)) {
+  for (const el of qsa(targetSel)) {
     if (el instanceof HTMLInputElement && el.type === 'hidden') continue
     if (!isVisible(el) || inAriaHidden(el)) continue
     const r = el.getBoundingClientRect()
@@ -640,10 +653,20 @@ function pageAudit(cfg) {
   }
   result.smallTargets = cap(result.smallTargets)
 
+  // Veladura (plano 05-16, UI-SPEC S6): continua preta e translucida nos dois temas.
+  if (cfg.veilSel) {
+    const veil = document.querySelector(cfg.veilSel)
+    if (!veil) result.veil = { missing: true }
+    else {
+      const c = parse(getComputedStyle(veil).backgroundColor)
+      result.veil = { r: c.r, g: c.g, b: c.b, a: round(c.a), ok: c.r <= 8 && c.g <= 8 && c.b <= 8 && c.a >= 0.2 }
+    }
+  }
+
   result.notes.exceptions = exceptionHits
   result.h1 = document.querySelector('h1')?.textContent.trim() ?? null
   result.temaAplicado = doc.classList.contains('dark') ? 'escuro' : 'claro'
-  result.interativos = document.querySelectorAll(targetSel).length
+  result.interativos = qsa(targetSel).length
   return result
 }
 
@@ -793,6 +816,310 @@ async function runAudit(page, opts, collected) {
   return failures
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// Modo --overlays (plano 05-16, D-10, IDEN-06): sobreposicoes abertas por interacao real, nos dois temas.
+// ---------------------------------------------------------------------------------------------------------
+
+const LAST_DIALOG = `[...document.querySelectorAll('[role="dialog"]')].at(-1)`
+const SHEET_VEIL = 'body > div[aria-hidden="true"].fixed'
+const DIALOG_VEIL = 'body > div.dialog-overlay-animate'
+const TOAST_BOX = `document.querySelector('div[role="status"][aria-live="polite"]')`
+const FAB = `document.querySelector('button[aria-label="Novo lançamento"]')`
+const TX_ROW = `[...document.querySelectorAll('button')].find((b) => b.className.includes('min-h-14') && b.querySelector('.num-display'))`
+const byText = (text, within = 'document') =>
+  `[...${within}.querySelectorAll('button')].find((b) => b.textContent.trim().startsWith(${JSON.stringify(text)}))`
+
+/** Clica no elemento da expressao; falha com mensagem clara se ele nao existir. */
+async function clickExpr(page, expr, what) {
+  if (!(await waitUntil(page, expr))) throw new Error(`${what} nao achado`)
+  const ok = await page.evaluate(`(() => { const el = ${expr}; if (!el) return false; el.click(); return true })()`)
+  if (!ok) throw new Error(`${what} nao clicado`)
+  await sleep(250)
+}
+
+/** Lanca um gasto pelo teclado de tela (mesmo caminho da Fase 4) para provocar os toasts. */
+async function launchSpend(page) {
+  await clickExpr(page, FAB, 'botao de novo lancamento')
+  if (!(await waitUntil(page, `${LAST_DIALOG}?.querySelector('[role="radio"]')`))) throw new Error('lancador nao abriu')
+  await sleep(300)
+  await clickExpr(page, `[...${LAST_DIALOG}.querySelectorAll('button[role="radio"]')].find((b) => b.textContent.trim().startsWith('Lazer'))`, 'categoria Lazer')
+  for (const d of ['5', '00']) await clickExpr(page, byText(d, LAST_DIALOG), `tecla ${d}`)
+  await clickExpr(page, byText('Lançar gasto', LAST_DIALOG), 'botao Lançar gasto')
+}
+
+/**
+ * Monta o Dialog de ui/dialog.tsx numa pagina de DEV. Nenhuma tela do app usa esse primitivo hoje, entao nao
+ * existe gatilho real em MOCK: o auditor importa o modulo do proprio Vite e o React ja carregado pela pagina.
+ */
+async function mountDialogHarness(page) {
+  const out = await page.evaluate(`(async () => {
+    const urls = performance.getEntriesByType('resource').map((e) => e.name)
+    const reactUrl = urls.find((u) => /\\/deps\\/react\\.js/.test(u))
+    const domUrl = urls.find((u) => /\\/deps\\/react-dom_client\\.js/.test(u))
+    if (!reactUrl || !domUrl) return 'react nao achado nos recursos da pagina'
+    const ReactMod = await import(reactUrl)
+    const DomMod = await import(domUrl)
+    const dlg = await import('/src/components/ui/dialog.tsx')
+    const btn = await import('/src/components/ui/button.tsx')
+    const h = (ReactMod.default ?? ReactMod).createElement
+    const createRoot = DomMod.createRoot ?? DomMod.default.createRoot
+    const host = document.createElement('div')
+    host.id = '__dialog_host'
+    document.body.appendChild(host)
+    createRoot(host).render(
+      h(dlg.Dialog, { open: true, onOpenChange() {} },
+        h(dlg.DialogContent, null,
+          h(dlg.DialogHeader, null,
+            h(dlg.DialogTitle, null, 'Apagar o lançamento?'),
+            h(dlg.DialogDescription, null, 'Esta ação não pode ser desfeita.')),
+          h(dlg.DialogFooter, null,
+            h(btn.Button, { variant: 'outline' }, 'Manter'),
+            h(btn.Button, { variant: 'destructive' }, 'Apagar')))))
+    return 'ok'
+  })()`)
+  if (out !== 'ok') throw new Error(`dialogo nao montou: ${out}`)
+}
+
+/**
+ * Lista fechada de sobreposicoes do UI-SPEC S6 (D-10). `root` e a expressao do elemento medido, `veil` o seletor da
+ * veladura quando existe. Todas abrem por clique real, exceto o Dialog, sem consumidor no app (mountDialogHarness).
+ */
+const OVERLAY_LIST = [
+  {
+    id: 'lancador-com-teclado',
+    path: '/',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, FAB, 'botao de novo lancamento')
+      await waitUntil(page, `${LAST_DIALOG}?.querySelector('[role="radio"]')`)
+      await sleep(300)
+      await clickExpr(page, `[...${LAST_DIALOG}.querySelectorAll('button[role="radio"]')].find((b) => b.textContent.trim().startsWith('Lazer'))`, 'categoria Lazer')
+      await clickExpr(page, byText('5', LAST_DIALOG), 'tecla 5')
+    },
+  },
+  {
+    id: 'acoes-da-linha',
+    path: '/transacoes',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, TX_ROW, 'linha de transacao')
+    },
+  },
+  {
+    id: 'confirmacao-de-apagar',
+    path: '/transacoes',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, TX_ROW, 'linha de transacao')
+      await sleep(400)
+      await clickExpr(page, byText('Apagar', LAST_DIALOG), 'acao Apagar')
+    },
+  },
+  {
+    id: 'select-aberto',
+    path: '/transacoes',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, TX_ROW, 'linha de transacao')
+      await sleep(400)
+      await clickExpr(page, byText('Editar', LAST_DIALOG), 'acao Editar')
+      await waitUntil(page, `document.querySelectorAll('[role="dialog"]').length === 1 && ${LAST_DIALOG}.querySelector('select.sr-only')`)
+      await sleep(400)
+      await clickExpr(page, `${LAST_DIALOG}.querySelector('select.sr-only')?.nextElementSibling`, 'gatilho do Select')
+    },
+  },
+  {
+    id: 'folha-de-evento',
+    path: '/calendario',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, `[...document.querySelectorAll('[role="radio"], [role="tab"], button')].find((b) => (b.getAttribute('aria-label') || b.textContent).trim().startsWith('Agenda'))`, 'modo Agenda')
+      await sleep(500)
+      await clickExpr(page, `document.querySelector('button[aria-label="Novo evento"]')`, 'botao Novo evento')
+    },
+  },
+  {
+    id: 'folha-de-nota',
+    path: '/calendario',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, `[...document.querySelectorAll('[role="radio"], [role="tab"], button')].find((b) => (b.getAttribute('aria-label') || b.textContent).trim().startsWith('Financeiro'))`, 'modo Financeiro')
+      await sleep(500)
+      await clickExpr(page, `document.querySelector('button[aria-label="Nova nota"]')`, 'botao Nova nota')
+    },
+  },
+  {
+    id: 'editor-de-categoria',
+    path: '/configuracoes',
+    root: LAST_DIALOG,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, byText('+ Nova'), 'botao + Nova')
+    },
+  },
+  {
+    id: 'seletor-de-icone',
+    path: '/configuracoes',
+    root: `${LAST_DIALOG}?.querySelector('[role="radiogroup"][aria-label="Ícone"]')`,
+    veil: SHEET_VEIL,
+    open: async (page) => {
+      await clickExpr(page, byText('+ Nova'), 'botao + Nova')
+      await waitUntil(page, `${LAST_DIALOG}?.querySelector('[role="radiogroup"][aria-label="Ícone"]')`)
+      await sleep(300)
+      await clickExpr(page, `${LAST_DIALOG}.querySelector('[role="radiogroup"][aria-label="Ícone"] [role="radio"]')`, 'primeiro icone')
+    },
+  },
+  {
+    id: 'dialogo',
+    path: '/configuracoes',
+    root: LAST_DIALOG,
+    veil: DIALOG_VEIL,
+    open: async (page) => {
+      await waitUntil(page, `document.querySelector('h1')`)
+      await mountDialogHarness(page)
+    },
+  },
+  {
+    id: 'painel-do-sino',
+    path: '/',
+    root: `document.querySelector('[role="dialog"][aria-label="Avisos"]')`,
+    veil: null,
+    open: async (page) => {
+      await clickExpr(page, `document.querySelector('button[aria-label="Avisos"]')`, 'sino de avisos')
+    },
+  },
+  {
+    id: 'painel-do-ciclo',
+    path: '/',
+    root: `document.querySelector('[role="listbox"][aria-label="Ciclos"]')`,
+    veil: null,
+    open: async (page) => {
+      await clickExpr(page, `document.querySelector('button[aria-haspopup="listbox"]')`, 'seletor de ciclo')
+    },
+  },
+  {
+    id: 'menu-de-perfil',
+    path: '/',
+    root: `document.querySelector('[role="menu"][aria-label="Perfil"]')`,
+    veil: null,
+    open: async (page) => {
+      await clickExpr(page, `document.querySelector('button[aria-haspopup="menu"]')`, 'menu de perfil')
+    },
+  },
+  {
+    id: 'toast',
+    path: '/transacoes',
+    root: TOAST_BOX,
+    veil: null,
+    open: async (page) => {
+      await launchSpend(page)
+      if (!(await waitUntil(page, `${TOAST_BOX}?.querySelector('button[aria-label="Fechar aviso"]')`, 6000))) throw new Error('toast comum nao apareceu')
+    },
+  },
+  {
+    id: 'toast-do-vintem',
+    path: '/transacoes',
+    root: TOAST_BOX,
+    veil: null,
+    open: async (page) => {
+      await launchSpend(page)
+      if (!(await waitUntil(page, `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do Vintém"]')`, 12000))) throw new Error('toast do Vintem nao apareceu')
+    },
+  },
+]
+
+async function runOverlays(page, opts, collected) {
+  const overlays = OVERLAY_LIST.filter((o) => opts.route === null || o.id === opts.route)
+  if (overlays.length === 0) throw new Error(`--route sem sobreposicao: ${opts.route}`)
+  const themes = AUDIT_THEMES.filter((t) => opts.theme === null || t === opts.theme)
+  const viewports = AUDIT_VIEWPORTS.filter((v) => opts.viewport === null || `${v.width}x${v.height}` === opts.viewport)
+  if (viewports.length === 0) throw new Error(`--viewport desconhecido: ${opts.viewport} (use 360x640 ou 390x844)`)
+  fs.mkdirSync(CAPTURES_DIR, { recursive: true })
+  await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+
+  let total = 0
+  let failures = 0
+  const failed = []
+  for (const theme of themes) {
+    const boot = await page.send('Page.addScriptToEvaluateOnNewDocument', { source: auditBootSource(theme) })
+    for (const viewport of viewports) {
+      await page.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 2, mobile: true })
+      const vp = `${viewport.width}x${viewport.height}`
+      for (const overlay of overlays) {
+        const run = async () => {
+          collected.exceptions.length = 0
+          collected.consoleErrors.length = 0
+          await navigate(page, `${ORIGIN}${overlay.path}`)
+          await waitLoaded(page, { id: overlay.path === '/' ? 'home' : overlay.id })
+          await overlay.open(page)
+          if (!(await waitUntil(page, overlay.root, 6000))) throw new Error(`sobreposicao ${overlay.id} nao abriu`)
+          await sleep(900)
+          const cfg = { theme, minTarget: MIN_TARGET, minBlock: MIN_BLOCK, exceptions: AUDIT_EXCEPTIONS, rootExpr: overlay.root, veilSel: overlay.veil }
+          const r = await page.evaluate(`(${pageAudit.toString()})(${JSON.stringify(cfg)})`)
+          if (r.rootMissing) throw new Error(`sobreposicao ${overlay.id} sumiu antes da medicao`)
+          if (vp === CAPTURE_VIEWPORT) {
+            const shot = await page.send('Page.captureScreenshot', { format: 'png' })
+            fs.writeFileSync(path.join(CAPTURES_DIR, `sobreposicao-${overlay.id}-${theme}.png`), Buffer.from(shot.data, 'base64'))
+          }
+          return r
+        }
+        let r
+        try {
+          // Uma nova tentativa: a abertura por clique pode perder a corrida com a carga dos dados do mock.
+          try {
+            r = await withTimeout(run(), AUDIT_COMBO_TIMEOUT_MS, `${overlay.id} ${theme} ${vp}`)
+          } catch {
+            r = await withTimeout(run(), AUDIT_COMBO_TIMEOUT_MS, `${overlay.id} ${theme} ${vp} (2a tentativa)`)
+          }
+        } catch (err) {
+          // Sobreposicao que nao abre e falha do auditor contra o app: conta como violacao, nao como erro do script.
+          total++
+          failures++
+          failed.push(`${overlay.id} ${theme} ${vp}`)
+          console.log(JSON.stringify({ overlay: overlay.id, theme, viewport: vp, violacoes: 1, naoAbriu: String(err.message).slice(0, 200) }))
+          continue
+        }
+        const temaErrado = r.temaAplicado !== theme
+        const veilBad = overlay.veil !== null && (!r.veil || r.veil.missing || r.veil.ok === false)
+        const found = (temaErrado ? 1 : 0) + (r.overflowX || r.overflowers.length > 0 ? 1 : 0) + r.contrast.length + r.lightBlocks.length + r.smallTargets.length + (veilBad ? 1 : 0)
+        total++
+        failures += found
+        if (found > 0) failed.push(`${overlay.id} ${theme} ${vp}`)
+        console.log(
+          JSON.stringify({
+            overlay: overlay.id,
+            theme,
+            viewport: vp,
+            violacoes: found,
+            temaErrado: temaErrado ? `pedido ${theme}, aplicado ${r.temaAplicado}` : null,
+            interativos: r.interativos,
+            rolagemHorizontal: r.overflowX || r.overflowers.length > 0 ? { scrollWidth: r.scrollWidth, clientWidth: r.clientWidth, overflowers: r.overflowers.slice(0, 8) } : null,
+            contraste: r.contrast,
+            blocoClaro: r.lightBlocks,
+            alvoPequeno: r.smallTargets,
+            veladura: r.veil ?? null,
+            notas: r.notes,
+            erros: [...collected.exceptions, ...collected.consoleErrors].slice(0, 3),
+          }),
+        )
+      }
+    }
+    await page.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier })
+  }
+  const hex = runHexGuard()
+  console.log(JSON.stringify({ verificacao: 'hex-literal-em-src', ok: hex.ok, detalhe: hex.detail }))
+  if (!hex.ok) failures++
+  console.log(JSON.stringify({ resumo: true, sobreposicoes: overlays.length, combinacoes: total, comViolacao: failed, capturas: path.relative(ROOT_DIR, CAPTURES_DIR) }))
+  return failures
+}
+
 function withTimeout(promise, ms, label) {
   let timer
   const limit = new Promise((_, reject) => {
@@ -815,7 +1142,7 @@ async function main() {
     page = await connect(chrome.wsUrl)
     await page.send('Page.enable')
     await page.send('Runtime.enable')
-    if (!opts.audit && !opts.selftest) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: bootSource('escuro') })
+    if (!opts.audit && !opts.overlays && !opts.selftest) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: bootSource('escuro') })
 
     const collected = { exceptions: [], consoleErrors: [] }
     page.on('Runtime.exceptionThrown', (p) => {
@@ -830,6 +1157,8 @@ async function main() {
 
     if (opts.selftest) {
       await withTimeout(runSelftest(page, collected), 60000, 'selftest do auditor')
+    } else if (opts.overlays) {
+      auditFailures = await withTimeout(runOverlays(page, opts, collected), AUDIT_TOTAL_TIMEOUT_MS, 'auditoria de sobreposicoes')
     } else if (opts.audit) {
       const failures = await withTimeout(runAudit(page, opts, collected), AUDIT_TOTAL_TIMEOUT_MS, 'auditoria de tema')
       auditFailures = failures
@@ -851,7 +1180,7 @@ async function main() {
   }
   const failures = auditFailures ?? results.filter((r) => !r.ok).length
   console.log(`FALHAS ${failures}`)
-  if (opts.audit && opts.reportOnly) return 0
+  if ((opts.audit || opts.overlays) && opts.reportOnly) return 0
   return failures > 0 ? 1 : 0
 }
 

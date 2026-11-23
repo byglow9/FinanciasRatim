@@ -81,8 +81,9 @@ export function CategoryPieChart({
               cy="50%"
               innerRadius="72%"
               outerRadius="100%"
-              paddingAngle={slices.length > 1 ? 2 : 0}
-              stroke="none"
+              paddingAngle={0}
+              stroke="var(--color-card)"
+              strokeWidth={2}
               isAnimationActive={false}
             >
               {slices.map((s, index) => (

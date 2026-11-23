@@ -4,7 +4,7 @@
 // Rodar: node --test test/static/phase5-darkaudit.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { read } from './helpers/phase3-1.js'
+import { code, listSrc, read } from './helpers/phase3-1.js'
 
 const audit = read('scripts/ux-audit/theme.mjs')
 
@@ -96,4 +96,13 @@ test('as capturas ficam fora do git', () => {
   assert.ok(audit.includes('captures'), 'diretorio de capturas')
   const ignore = read('.gitignore')
   assert.ok(ignore.split('\n').some((l) => l.trim() === '.planning/phases/05-identidade-coinki-pwa-e-onboarding/captures/'), '.gitignore sem o diretorio de capturas')
+})
+
+test('a pizza separa as fatias pela cor do cartao e nenhum componente de relatorio tem hex literal', () => {
+  const pie = code('src/components/reports/CategoryPieChart.tsx')
+  assert.ok(pie.includes('stroke="var(--color-card)"'), 'fatias sem o traco do cartao')
+  assert.ok(!/stroke="none"/.test(pie) && !/stroke="transparent"/.test(pie), 'traco transparente nas fatias')
+  const files = listSrc('src/components/reports')
+  assert.ok(files.length >= 3, 'componentes de relatorio nao encontrados')
+  for (const f of files) assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(code(f)), `hex literal em ${f}`)
 })

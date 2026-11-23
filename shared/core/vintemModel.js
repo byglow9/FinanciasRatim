@@ -234,6 +234,10 @@ export class VintemModel {
     this._hostRect = o.hostRect || null
     this._onEvent = o.onEvent || null
     this.dead = false
+    /** Pose de teste congelada (`freezeAt`): nada avanca e o movimento e tratado como reduzido. */
+    this._frozen = false
+    /** @type {number | null} */
+    this._frozenTurn = null
     /** Estado de fundo. */
     this.state = STATE_PARAMS[/** @type {keyof typeof STATE_PARAMS} */ (o.state || 'neutro')] ? o.state || 'neutro' : 'neutro'
     /** Overrides das reacoes (vazio em repouso). */
@@ -302,7 +306,7 @@ export class VintemModel {
 
   /** @returns {boolean} */
   _rm() {
-    return this._reduced ? !!this._reduced() : false
+    return this._frozen || (this._reduced ? !!this._reduced() : false)
   }
 
   /**
@@ -742,9 +746,10 @@ export class VintemModel {
     const wag = eff === 'feliz' ? 3.4 : 1.6
     s.tail.t = rm ? 0 : Math.sin(this.world.t * wag * 2.2) * (eff === 'feliz' ? 14 : 6) + (ov.tail || 0) + clamp(-s.py.v * 0.05, -16, 16)
 
-    // giro de lado: com movimento reduzido vira troca instantanea de pose
-    if (rm) s.turn.snap(this._turn ? 1 : 0)
-    else s.turn.t = this._turn ? 1 : 0
+    // giro de lado: com movimento reduzido vira troca instantanea de pose; congelado fixa o angulo
+    const turnTo = this._frozenTurn != null ? this._frozenTurn : this._turn ? 1 : 0
+    if (rm) s.turn.snap(turnTo)
+    else s.turn.t = turnTo
 
     // acessorios: entram com pop elastico (popIn) e saem sem excesso (popOut)
     const stateAcc = ACCESSORY_BY_STATE[/** @type {keyof typeof ACCESSORY_BY_STATE} */ (eff)]
@@ -860,7 +865,7 @@ export class VintemModel {
    * @param {number} dt
    */
   update(dt) {
-    if (this.dead) return
+    if (this.dead || this._frozen) return
     const h = Math.min(Math.max(Number.isFinite(dt) ? dt : 0, 0), MAX_DT)
     const rm = this._rm()
     this._targets(h, rm)
@@ -875,6 +880,47 @@ export class VintemModel {
     this._targets(0, rm)
     this._eachSpring((sp) => sp.snap(sp.t))
     this._writePose(rm)
+  }
+
+  /**
+   * Pose de teste: pula as molas ao alvo do estado atual, fixa o giro em `turn` (0 a 1) e
+   * congela tudo (respiracao, piscar, deriva e reacoes). Depois disto `update` nao faz nada e a
+   * pose nao muda mais. Os campos opcionais sobrescrevem so a pose ja escrita (variantes de teste
+   * sem criar estado novo no produto): `expr` (chaves de expressao), `look` e `acc`.
+   * @param {{
+   *   turn?: number,
+   *   expr?: Record<string, number>,
+   *   look?: { x: number, y: number },
+   *   acc?: Record<string, number>,
+   * }} [o]
+   */
+  freezeAt(o = {}) {
+    if (this.dead) return
+    this._react++
+    this._reacting = false
+    this._clearOv()
+    this._flash = null
+    this._flashUntil = 0
+    this._frozen = true
+    this._frozenTurn = clamp(num(o.turn ?? 0), 0, 1)
+    this.snapPose()
+    const pose = this._pose
+    if (o.expr) {
+      for (const k of STATE_KEYS) {
+        const v = o.expr[k]
+        if (typeof v === 'number' && Number.isFinite(v)) pose.e[k] = v
+      }
+    }
+    if (o.look) {
+      pose.look.x = num(o.look.x)
+      pose.look.y = num(o.look.y)
+    }
+    if (o.acc) {
+      for (const k of ACCESSORY_KEYS) {
+        const v = o.acc[k]
+        if (typeof v === 'number' && Number.isFinite(v)) pose.acc[k] = v
+      }
+    }
   }
 
   /**

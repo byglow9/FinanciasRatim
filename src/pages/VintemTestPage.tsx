@@ -57,6 +57,34 @@ const SAMPLE_SLOTS = buildSlots({
   dias: 3,
 })
 
+/** O autoteste so existe com `?test` na URL; sem ele o modulo nem e carregado. */
+function hasTestParam(): boolean {
+  return new URLSearchParams(window.location.search).has('test')
+}
+
+/**
+ * Cartao "Autoteste" (so com `?test`): carrega o modulo por import dinamico, roda por pixels e escreve o
+ * relatorio no `pre#selftest`. O executor CDP espera `window.__done` e le o texto.
+ */
+function SelfTestCard() {
+  const outRef = useRef<HTMLPreElement>(null)
+  useEffect(() => {
+    const out = outRef.current
+    if (!out) return
+    void import('@/lib/vintem/selftest').then((mod) => mod.runSelfTest(out))
+  }, [])
+  return (
+    <section aria-labelledby="vt-selftest" className="space-y-4 rounded-card bg-card p-4">
+      <h2 id="vt-selftest" className="text-base font-bold">
+        Autoteste
+      </h2>
+      <pre id="selftest" ref={outRef} className="overflow-x-auto whitespace-pre-wrap break-words text-xs font-normal">
+        Rodando o autoteste...
+      </pre>
+    </section>
+  )
+}
+
 /** Aplica `noindex` enquanto a pagina estiver montada (D-17): a rota e oculta e nao deve ser indexada. */
 function useNoIndex() {
   useEffect(() => {
@@ -98,6 +126,7 @@ function SwitchRow({
  */
 export function VintemTestPage() {
   useNoIndex()
+  const selfTest = hasTestParam()
   const stageRef = useRef<VintemHandle>(null)
   const [state, setState] = useState<VintemState>('neutro')
   const [pct, setPct] = useState(60)
@@ -293,6 +322,8 @@ export function VintemTestPage() {
           <p className="text-xs font-normal text-muted-foreground">Toque em Falar para ouvir uma fala</p>
         )}
       </section>
+
+      {selfTest && <SelfTestCard />}
     </div>
   )
 }

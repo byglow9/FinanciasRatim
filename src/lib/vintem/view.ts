@@ -427,6 +427,17 @@ export function drawPose(svg: SVGSVGElement, uid: string, pose: VintemPose) {
 
 // ---- view ----
 
+/** Pose de teste (`freeze`): estado, angulo do giro e variantes que so os testes usam. */
+export interface VintemFreeze {
+  state?: string
+  /** Angulo do giro, de 0 (frente) a 1 (perfil). */
+  turn?: number
+  /** Sobrescreve chaves de expressao da pose (variante de teste, sem estado novo no produto). */
+  expr?: Record<string, number>
+  look?: { x: number; y: number }
+  acc?: Record<string, number>
+}
+
 export interface VintemViewHandle {
   setState: (state: string) => void
   setReduced: (reduced: boolean) => void
@@ -437,6 +448,11 @@ export interface VintemViewHandle {
   touch: () => boolean
   /** Giro de lado: frente (falso) ou perfil (verdadeiro). */
   setTurn: (on: boolean) => void
+  /**
+   * Pose fixa para medir pixels sem animacao: liga movimento reduzido, troca o estado, congela o
+   * modelo no angulo pedido e desenha um quadro na hora. Vale ate destruir a instancia.
+   */
+  freeze: (o: VintemFreeze) => void
   destroy: () => void
   /** O modelo vivo (leitura da pose por testes e capturas). */
   model: VintemModel
@@ -508,6 +524,13 @@ export function createVintemView(svg: SVGSVGElement, opts: VintemViewOptions): V
     },
     setTurn(on) {
       model.setTurn(on)
+      wake()
+    },
+    freeze(o) {
+      reduced = true
+      if (o.state) model.setState(o.state)
+      model.freezeAt({ turn: o.turn ?? 0, expr: o.expr, look: o.look, acc: o.acc })
+      draw()
       wake()
     },
     destroy() {

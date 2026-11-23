@@ -828,3 +828,39 @@ test('modelo destruido ou removido nao avanca e as entradas pendentes viram nada
   run(world, 1, DT120)
   assert.equal(model.dead, true)
 })
+
+test('freezeAt congela a pose: o giro fica exatamente em T e nada muda em 5 s', () => {
+  for (const turn of [0, 0.3, 0.5, 1]) {
+    const { world, model } = make(31)
+    model.setState('triste')
+    model.freezeAt({ turn })
+    assert.equal(model.pose.turn, turn, `turn ${turn}`)
+    assert.equal(model.state, 'triste', 'mantem o estado')
+    assert.equal(model.pose.blink, 0, 'sem piscar')
+    assert.equal(model.pose.look.x, 0, 'sem deriva do olhar')
+    assertFinitePose(model.pose, 'congelado')
+    const antes = JSON.stringify(model.pose)
+    model.setTurn(true)
+    model.react('festa')
+    run(world, 5, DT60)
+    assert.equal(JSON.stringify(model.pose), antes, `a pose andou com turn ${turn}`)
+    assert.equal(model.isSettled(), true, 'congelado assenta')
+  }
+})
+
+test('freezeAt aceita variantes de teste (expr, look e acc) sem criar estado novo', () => {
+  const { world, model } = make(32)
+  model.freezeAt({ expr: { cvL: 0.18, cvR: 0.18, ba: 0 }, look: { x: 0.8, y: 0.3 }, acc: { tear: 1 }, turn: 2 })
+  assert.equal(model.pose.e.cvL, 0.18)
+  assert.equal(model.pose.e.cvR, 0.18)
+  assert.equal(model.pose.e.ba, 0)
+  assert.equal(model.pose.look.x, 0.8)
+  assert.equal(model.pose.acc.tear, 1)
+  assert.equal(model.pose.turn, 1, 'turn acima de 1 fica preso em 1')
+  assert.equal(model.state, 'neutro')
+  run(world, 2, DT60)
+  assert.equal(model.pose.e.cvL, 0.18)
+  const lixo = make(33).model
+  lixo.freezeAt({ expr: { cvL: NaN, ba: Infinity }, look: { x: NaN, y: 0 } })
+  assertFinitePose(lixo.pose, 'variante invalida')
+})

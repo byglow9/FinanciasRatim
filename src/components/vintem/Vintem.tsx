@@ -1,6 +1,6 @@
 import { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { createVintemView, type VintemViewHandle } from '@/lib/vintem/view'
+import { createVintemView, type VintemFreeze, type VintemViewHandle } from '@/lib/vintem/view'
 import { ACCESSORY_SHAPES, COIN, EYE, FRONT, GROUND, PROFILE, VIEWBOX } from '@/lib/vintem/geometry'
 
 /** Os sete estados do Vintem (D-05b). */
@@ -25,6 +25,11 @@ export interface VintemProps {
   decorative?: boolean
   /** Interruptor de teste que vale mais que a midia de movimento reduzido. */
   reduced?: boolean
+  /**
+   * Pose fixa para o autoteste (so a pagina de teste usa): congela estado e giro. Uma vez
+   * congelada, a instancia fica congelada ate desmontar; mude a pose trocando o objeto.
+   */
+  frozen?: VintemFreeze
   className?: string
   ref?: Ref<VintemHandle>
 }
@@ -39,6 +44,8 @@ export interface VintemHandle {
   touch: () => boolean
   /** Giro de lado: frente (falso) ou perfil (verdadeiro). */
   setTurn: (on: boolean) => void
+  /** O elemento svg vivo (o autoteste le geometria e estilos computados dele). */
+  svg: () => SVGSVGElement | null
 }
 
 const ink = 'var(--vintem-ink)'
@@ -104,6 +111,7 @@ export function Vintem({
   follow = true,
   decorative = true,
   reduced,
+  frozen,
   className,
   ref,
 }: VintemProps) {
@@ -134,6 +142,11 @@ export function Vintem({
     }
   }, [uid])
 
+  // Pose de teste: no mesmo ciclo de layout da montagem, antes de qualquer efeito de estado.
+  useLayoutEffect(() => {
+    if (frozen) viewRef.current?.freeze(frozen)
+  }, [frozen])
+
   useEffect(() => {
     viewRef.current?.setState(state)
   }, [state])
@@ -152,6 +165,7 @@ export function Vintem({
       react: (kind) => viewRef.current?.react(kind),
       touch: () => viewRef.current?.touch() ?? false,
       setTurn: (on) => viewRef.current?.setTurn(on),
+      svg: () => svgRef.current,
     }),
     [],
   )

@@ -3,7 +3,9 @@
 // Abre /vintem-teste a 360x640 e confere montagem, olhos, ausencia de NaN e de excecao, e a piscada.
 // So dados ficticios do seed; Vite e Chrome em 127.0.0.1; perfil temporario removido no fim; nada e
 // lido de .env*.
-// Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/vintem.mjs
+// Com --test abre /vintem-teste?test&w=360, espera o autoteste por pixels (window.__done), imprime o
+// relatorio dele e soma as falhas as das verificacoes da pagina.
+// Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/vintem.mjs [--test]
 // Saida: uma linha JSON por verificacao e a linha final `FALHAS n`. Codigos: 0 ok, 1 alguma
 // verificacao falhou, 2 falha do script.
 import { spawn } from 'node:child_process'
@@ -13,6 +15,9 @@ import { buildSeed } from './seed.mjs'
 const PORT = 5197
 const ORIGIN = `http://127.0.0.1:${PORT}`
 const ROUTE = '/vintem-teste?w=360'
+const TEST_ROUTE = '/vintem-teste?test&w=360'
+const WITH_TEST = process.argv.includes('--test')
+const SELFTEST_WAIT_MS = 90000
 const VIEWPORT = { width: 360, height: 640 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -210,15 +215,19 @@ async function navigate(page, url) {
   await sleep(600)
 }
 
-/** Roda todas as verificacoes e devolve a lista de resultados. */
-async function runChecks(page, collected) {
+/** Registra verificacoes: uma linha JSON por resultado. */
+function makeChecker() {
   const results = []
   const check = (name, ok, detail = {}) => {
     const line = { check: name, ok: Boolean(ok), ...detail }
     results.push(line)
     console.log(JSON.stringify(line))
   }
+  return { results, check }
+}
 
+/** Celular de 360 por 640 com toque. */
+async function setupViewport(page) {
   await page.send('Emulation.setDeviceMetricsOverride', {
     width: VIEWPORT.width,
     height: VIEWPORT.height,
@@ -226,6 +235,42 @@ async function runChecks(page, collected) {
     mobile: true,
   })
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+}
+
+/**
+ * Autoteste por pixels da pagina (?test): espera `window.__done`, imprime o relatorio e conta como falha
+ * cada linha que comeca com `FALHA:`. A pagina so carrega o modulo do autoteste com o parametro.
+ */
+async function runSelfTestChecks(page, collected) {
+  const { results, check } = makeChecker()
+  await setupViewport(page)
+  collected.exceptions.length = 0
+  collected.consoleErrors.length = 0
+  await navigate(page, `${ORIGIN}${TEST_ROUTE}`)
+
+  const done = await page.evaluate(WAIT_FOR('window.__done === true', SELFTEST_WAIT_MS))
+  check('autoteste-termina-no-prazo', done.ok, { ...done, limitMs: SELFTEST_WAIT_MS })
+  const text = await page.evaluate(`document.getElementById('selftest')?.textContent ?? ''`)
+  const lines = String(text).split('\n').filter((l) => l.trim() !== '')
+  for (const line of lines) console.log(`autoteste: ${line}`)
+  const failed = lines.filter((l) => l.startsWith('FALHA:'))
+  for (const line of failed) check(`autoteste: ${line.slice(0, 160)}`, false)
+  const last = lines[lines.length - 1] ?? ''
+  check('autoteste-fecha-em-FALHAS-n', last === `FALHAS ${failed.length}` && lines.length > 1, { last, falhas: failed.length })
+  const title = await page.evaluate('document.title')
+  check('autoteste-ajusta-o-titulo', title === `Vintem teste FALHAS ${failed.length}`, { title })
+  check('autoteste-sem-excecoes-nem-console-error', collected.exceptions.length === 0 && collected.consoleErrors.length === 0, {
+    exceptions: [...collected.exceptions],
+    consoleErrors: [...collected.consoleErrors],
+  })
+  return results
+}
+
+/** Roda todas as verificacoes e devolve a lista de resultados. */
+async function runChecks(page, collected) {
+  const { results, check } = makeChecker()
+
+  await setupViewport(page)
   collected.exceptions.length = 0
   collected.consoleErrors.length = 0
   await navigate(page, `${ORIGIN}${ROUTE}`)
@@ -413,7 +458,8 @@ async function main() {
 
     let all
     try {
-      all = await runChecks(page, collected)
+      all = WITH_TEST ? await runSelfTestChecks(page, collected) : []
+      all = [...all, ...(await runChecks(page, collected))]
     } catch (err) {
       // Mostra o que a pagina reportou antes da falha: ajuda a achar a tela quebrada.
       console.error(JSON.stringify({ exceptions: collected.exceptions, consoleErrors: collected.consoleErrors }))

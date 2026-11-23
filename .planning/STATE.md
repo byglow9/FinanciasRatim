@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-11-23T15:49:06.574Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-11-23T15:53:54.575Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: b6458c46e8e75812cb60b92b7dd32b73dfafdd22
+state_head: f1a5380395c5e5cc181a192fe1c0425105914c75
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 87
+  completed_plans: 88
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 2 of 21
+Plan: 3 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -130,6 +130,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 04 P20 | ~15min | 3 tasks | 7 files |
 | Phase 04 P18 | 10min | 3 tasks | 12 files |
 | Phase 05 P02 | 2min | 2 tasks | 4 files |
+| Phase 05 P03 | 15min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -191,6 +192,7 @@ Recent decisions affecting current work:
 - [Phase 4]: [Phase 4] 04-15: onLaunched e onGoal compartilham uma entrega unica (slot da Home reage e fala; sem slot, toast claro do Vintem na fila); meta batida decidida em centavos; guardar no Porquinho arma a festa de fundo antes do portao da view
 - [Phase 4]: [Phase 4] 04-17: estados vazios e de erro com VintemEmpty calado (neutro nos vazios, surpreso nos erros, nunca triste); hero sem renda, cartao de contas fixas da Home e vazio por filtro ficam sem a peca para respeitar o limite de dois Vintens
 - [Phase 4]: [Phase 4] 04-18: insights fortes guardados em vintemInsights por setDoc de id deterministico, so via toStoredInsight (sem rotulo de loja); regra publicada pelo dono; sem indice novo (19)
+- [Phase 5]: 05-03: dock #2c5a38 separada da acao #2f6f3e; P-01 (dock igual a acao) segue para o dono no plano 05-16
 
 ### Pending Todos
 
@@ -222,6 +224,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T15:49:06.456Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-11-23T15:53:54.459Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None

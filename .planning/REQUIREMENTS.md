@@ -66,7 +66,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **IDEN-03**: Usuário instala o Coinki como app no celular (manifest, ícones incluindo o maskable, service worker) e vê uma tela com os passos para Android e iPhone
 - [x] **IDEN-04**: Usuário recebe um aviso para atualizar quando há versão nova, sem tela branca depois de um deploy
 - [x] **IDEN-05**: O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
-- [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
+- [x] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
 - [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
 - [ ] **IDEN-08**: Usuário vê um onboarding curto de 3 telas e um login novo no visual do Coinki
 
@@ -204,7 +204,7 @@ Preenchida na criação do roadmap.
 | IDEN-03 | Phase 5 | Pending |
 | IDEN-04 | Phase 5 | Complete |
 | IDEN-05 | Phase 5 | Complete |
-| IDEN-06 | Phase 5 | Pending |
+| IDEN-06 | Phase 5 | Complete |
 | IDEN-08 | Phase 5 | Pending |
 | CARD-01 | Phase 6 | Pending |
 | CARD-02 | Phase 6 | Pending |

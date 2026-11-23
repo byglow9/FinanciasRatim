@@ -253,6 +253,27 @@ export function situationForTap(facts) {
 }
 
 /**
+ * Humor da linha do Vintem em "Limites do mes" (D-16, UI-SPEC S3): segue a categoria mais
+ * critica, que e a primeira de `rows` (o nucleo ja as entrega por urgencia). Estourou e triste
+ * acima de 130% do limite ou no tom suave, senao bravo; perto e atento viram atento; abaixo
+ * e feliz quando todas as linhas estao abaixo de 40%, senao neutro. Sem linhas, nao ha linha.
+ * O veredito sobre dado velho e o perfil do parceiro ficam com quem chama.
+ * @param {{ rows: MoodFacts['rows'], tone: MoodFacts['tone'] }} args
+ * @returns {{ state: VintemState, situation: 'central', subject: { categoryId: string } } | null}
+ */
+export function inlineMood({ rows, tone }) {
+  if (!Array.isArray(rows) || rows.length === 0) return null
+  const top = rows[0]
+  const band = limitBand(top)
+  /** @type {VintemState} */
+  let state
+  if (band === 'estourou') state = overState(top, tone)
+  else if (band === 'perto' || band === 'atento') state = 'atento'
+  else state = rows.every((r) => r.pct < 40) ? 'feliz' : 'neutro'
+  return { state, situation: 'central', subject: { categoryId: top.categoryId } }
+}
+
+/**
  * Duracao de cada reacao a um lancamento, em ms (UI-SPEC, secao Reacoes).
  * `wake` e o despertar ao tocar no Vintem sonolento.
  */

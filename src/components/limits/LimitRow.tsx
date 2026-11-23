@@ -4,6 +4,8 @@ import { ChevronDown, CircleAlert, Gauge, LayoutGrid, TriangleAlert } from 'luci
 import { Collapsible } from '@/components/ui/collapsible'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { Progress, type ProgressTone } from '@/components/ui/progress'
+import { VintemInlineRow } from '@/components/vintem/VintemInlineRow'
+import { useInlineVintem } from '@/hooks/useInlineVintem'
 import { iconComponent } from '@/lib/categoryIcons'
 import type { CategoryDef } from '@/types'
 import type { BudgetRow } from '@shared/core/budget.js'
@@ -214,6 +216,7 @@ export function LimitsList({
   // Alternâncias feitas pelo usuário; sem alternância vale o padrão (expandId).
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const titleId = useId()
+  const inline = useInlineVintem({ rows, neutralOk, categoryDefs })
 
   const isOpen = (key: string, fallback: boolean) => (key in toggled ? toggled[key] : fallback)
   const setOpen = (key: string, open: boolean) => setToggled((t) => ({ ...t, [key]: open }))
@@ -233,6 +236,18 @@ export function LimitsList({
           </Link>
         )}
       </div>
+
+      {inline.visible && (
+        <div className="mt-3">
+          <VintemInlineRow
+            state={inline.state}
+            text={inline.text}
+            popKey={inline.popKey}
+            onTap={inline.onTap}
+            onDismiss={inline.onDismiss}
+          />
+        </div>
+      )}
 
       {rows.length === 0 && (
         <div className="py-4">

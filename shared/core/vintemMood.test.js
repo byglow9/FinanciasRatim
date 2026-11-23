@@ -4,6 +4,7 @@ import {
   MOOD_BANDS,
   limitBand,
   deriveVintemState,
+  inlineMood,
   situationForTap,
   REACTION_MS,
   reactionState,
@@ -368,4 +369,46 @@ test('SAMPLE_SITUATION_BY_STATE cobre exatamente os sete estados', () => {
     surpreso: 'gasto-grande',
     atento: 'limite-perto',
   })
+})
+
+test('inlineMood: sem linhas nao ha linha do Vintem', () => {
+  assert.equal(inlineMood({ rows: [], tone: 'sem-filtro' }), null)
+})
+
+test('inlineMood: estouro de 120% e bravo no sem filtro e no direto, triste no suave', () => {
+  const rows = [line(12000, 10000, 'lazer')]
+  assert.deepEqual(inlineMood({ rows, tone: 'sem-filtro' }), {
+    state: 'bravo',
+    situation: 'central',
+    subject: { categoryId: 'lazer' },
+  })
+  assert.equal(inlineMood({ rows, tone: 'direto' })?.state, 'bravo')
+  assert.equal(inlineMood({ rows, tone: 'suave' })?.state, 'triste')
+})
+
+test('inlineMood: acima de 130% e sempre triste, em qualquer tom', () => {
+  for (const tone of ['suave', 'direto', 'sem-filtro']) {
+    assert.equal(inlineMood({ rows: [line(13000, 10000)], tone })?.state, tone === 'suave' ? 'triste' : 'bravo')
+    assert.equal(inlineMood({ rows: [line(13001, 10000)], tone })?.state, 'triste')
+  }
+})
+
+test('inlineMood: perto e atento da primeira linha viram atento', () => {
+  assert.equal(inlineMood({ rows: [line(7500)], tone: 'sem-filtro' })?.state, 'atento')
+  assert.equal(inlineMood({ rows: [line(9000)], tone: 'sem-filtro' })?.state, 'atento')
+  assert.equal(inlineMood({ rows: [line(10000)], tone: 'sem-filtro' })?.state, 'atento')
+})
+
+test('inlineMood: fronteira de 39 e 40 por cento decide entre feliz e neutro', () => {
+  assert.equal(inlineMood({ rows: [line(3900)], tone: 'sem-filtro' })?.state, 'feliz')
+  assert.equal(inlineMood({ rows: [line(4000)], tone: 'sem-filtro' })?.state, 'neutro')
+  // Uma linha em 40% ou mais tira o feliz de todas, mesmo a primeira estando baixa.
+  assert.equal(inlineMood({ rows: [line(3900, 10000, 'a'), line(4000, 10000, 'b')], tone: 'sem-filtro' })?.state, 'neutro')
+})
+
+test('inlineMood: o sujeito e a primeira linha da lista, sem tocar nas entradas', () => {
+  const rows = [line(9000, 10000, 'mercado'), line(12000, 10000, 'lazer')]
+  const copy = JSON.parse(JSON.stringify(rows))
+  assert.equal(inlineMood({ rows, tone: 'sem-filtro' })?.subject.categoryId, 'mercado')
+  assert.deepEqual(rows, copy)
 })

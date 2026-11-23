@@ -15,7 +15,8 @@ service cloud.firestore {
     function ownsIncoming() { return request.resource.data.ownerId == request.auth.token.hid; }
     function clientCollections() {
       return ['transactions', 'fixedExpenses', 'fixedExpensePayments', 'savings', 'goals',
-              'goalContributions', 'events', 'eventCategories', 'notes', 'settings', 'limitAlerts'];
+              'goalContributions', 'events', 'eventCategories', 'notes', 'settings', 'limitAlerts',
+              'vintemInsights'];
     }
 
     // Colecoes que o cliente le e escreve

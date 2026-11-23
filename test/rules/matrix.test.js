@@ -41,6 +41,7 @@ const CLIENT_COLS = [
   'notes',
   'settings',
   'limitAlerts',
+  'vintemInsights',
 ]
 const BANK_COLS = ['bankConnections', 'bankImports']
 
@@ -300,5 +301,60 @@ describe('matriz de regras do Firestore', () => {
     await assertFails(getDoc(doc(outro, 'limitAlerts', ALERT_ID)))
     await assertFails(byOwner(outro, 'limitAlerts', HID_A))
     await assertSucceeds(byOwner(ele, 'limitAlerts', HID_A))
+  })
+  test('vintemInsights: setDoc idempotente por dono, a parceira le, ownerId imutavel e outro casal negado (D-15)', async () => {
+    const INSIGHT_ID = 'ele__2026-11__delivery-heavy__delivery__2026-11-19'
+    const doc1 = () => ({
+      ownerId: HID_A,
+      id: INSIGHT_ID,
+      v: 1,
+      person: 'ele',
+      type: 'delivery-heavy',
+      severity: 2,
+      cycleKey: '2026-11',
+      day: '2026-11-19',
+      subjectKind: 'merchant-group',
+      subjectKey: 'delivery',
+      metrics: { count: 4, totalCents: 18750 },
+      evidenceTxIds: ['t1', 't2'],
+      evidenceDays: ['2026-11-18'],
+      updatedAt: Timestamp.now(),
+    })
+
+    // (a) o dono cria e repete o mesmo setDoc no mesmo id (idempotente: a segunda vez e um update do mesmo dono)
+    await assertSucceeds(setDoc(doc(ele, 'vintemInsights', INSIGHT_ID), doc1()))
+    await assertSucceeds(setDoc(doc(ele, 'vintemInsights', INSIGHT_ID), doc1()))
+
+    // (b) a outra pessoa do mesmo casal le
+    const lido = (await assertSucceeds(getDoc(doc(ela, 'vintemInsights', INSIGHT_ID)))).data()
+    assert.equal(lido.ownerId, HID_A)
+    assert.equal(lido.subjectKey, 'delivery')
+
+    // (c) trocar o ownerId numa atualizacao e negado
+    await assertFails(updateDoc(doc(ele, 'vintemInsights', INSIGHT_ID), { ownerId: HID_B }))
+    await assertFails(setDoc(doc(ele, 'vintemInsights', INSIGHT_ID), { ...doc1(), ownerId: HID_B }))
+
+    // (d) criar com ownerId de outro casal e negado
+    await assertFails(setDoc(doc(ele, 'vintemInsights', 'ele__2026-11__x__y__z'), { ...doc1(), ownerId: HID_B }))
+
+    // (e) consulta por igualdade (dono, pessoa e ciclo) funciona para o casal A
+    const consulta = (db, hid) =>
+      getDocs(
+        query(
+          collection(db, 'vintemInsights'),
+          where('ownerId', '==', hid),
+          where('person', '==', 'ele'),
+          where('cycleKey', '==', '2026-11')
+        )
+      )
+    const achados = await assertSucceeds(consulta(ele, HID_A))
+    assert.equal(achados.size, 1)
+
+    // (f) o outro casal e quem esta sem claim ou anonimo nao leem nem listam
+    await assertFails(getDoc(doc(outro, 'vintemInsights', INSIGHT_ID)))
+    await assertFails(consulta(outro, HID_A))
+    await assertFails(consulta(semClaim, HID_A))
+    await assertFails(consulta(anon, HID_A))
+    await assertFails(setDoc(doc(semClaim, 'vintemInsights', 'ele__2026-11__a__b__c'), { ...doc1() }))
   })
 })

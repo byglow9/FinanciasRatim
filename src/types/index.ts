@@ -15,6 +15,8 @@ export interface Transaction {
   transfer?: boolean
   // Nota digitada no sheet de lancamento; as paginas legadas ignoram.
   note?: string
+  // Documentos importados do banco ja trazem o campo.
+  source?: 'bank'
   date: Date
   createdAt: Date
 }

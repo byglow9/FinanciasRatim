@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { AreaProvider } from '@/contexts/AreaContext'
 import { CycleProvider } from '@/contexts/CycleContext'
 import { LimitAlertsProvider } from '@/contexts/LimitAlertsContext'
+import { VintemProvider } from '@/contexts/VintemContext'
 import { LaunchProvider } from '@/contexts/LaunchContext'
 import { ToastProvider } from '@/components/ui/toast'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -48,11 +49,13 @@ function App() {
             <ProtectedRoute>
               <CycleProvider>
                 <LimitAlertsProvider>
-                  <LaunchProvider>
-                    <AppShell>
-                      <AnimatedRoutes />
-                    </AppShell>
-                  </LaunchProvider>
+                  <VintemProvider>
+                    <LaunchProvider>
+                      <AppShell>
+                        <AnimatedRoutes />
+                      </AppShell>
+                    </LaunchProvider>
+                  </VintemProvider>
                 </LimitAlertsProvider>
               </CycleProvider>
             </ProtectedRoute>

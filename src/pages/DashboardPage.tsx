@@ -5,8 +5,10 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useLaunch } from '@/contexts/LaunchContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { useCycleBudget } from '@/hooks/useCycleBudget'
+import { useHomeVintem } from '@/hooks/useHomeVintem'
 import { useHashReveal, useSectionReveal } from '@/hooks/useSectionReveal'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
+import { VintemSlot } from '@/components/vintem/VintemSlot'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
 import { StaleNotice } from '@/components/dashboard/StaleNotice'
@@ -32,9 +34,10 @@ export function DashboardPage() {
   const { viewPerson } = useCycle()
   // Porquinho nunca tem Pode gastar (D-02): nem consulta o ciclo.
   const isPiggy = currentArea === 'porquinho'
-  const { view, cycle, loading, error, refetch } = useCycleBudget(viewPerson, { enabled: !isPiggy })
+  const { view, cycle, transactions, loading, error, refetch } = useCycleBudget(viewPerson, { enabled: !isPiggy })
   const { open } = useLaunch()
   const { readOnly } = useReadOnly()
+  const vintem = useHomeVintem({ view, cycle, transactions, enabled: !isPiggy, readOnly })
   const reveal = useSectionReveal()
   // Aviso de limite leva à Home com `#cat-{id}`: a linha abre expandida e a seção rola até ela.
   const { hash } = useLocation()
@@ -115,7 +118,9 @@ export function DashboardPage() {
           restPct={view && !noIncome ? view.restPct : null}
           tone={suppressed ? 'neutral' : arcToneFor(view?.rhythmLevel ?? null)}
           loading={loading}
-        />
+        >
+          <VintemSlot state={vintem.state} />
+        </ArcGauge>
 
         {view === null && (
           <div aria-hidden="true" className="mt-2 flex flex-col items-center gap-2">

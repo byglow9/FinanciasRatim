@@ -97,5 +97,7 @@ export function useCycleBudget(person: PersonType, opts: Options = {}) {
     loading: enabled && current === null && error === null,
     error,
     refetch: fetchInputs,
+    // Lancamentos do ciclo ja carregados (detector de insights do Vintem); nulo enquanto carrega.
+    transactions: current?.transactions ?? null,
   }
 }

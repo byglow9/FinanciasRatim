@@ -554,6 +554,27 @@ async function scenarioStorage({ page, check, navigate }) {
   check('cenario-8-sem-onboarding', !onboarding, {})
 }
 
+// cenario 9 (pendencia do 05-12): a marca de sessao do aviso de endereco novo sobrevive as telas do onboarding.
+async function scenarioLegacyOrigin({ page, check, navigate }) {
+  await navigate('/?origem=antigo', READY_APP)
+  const stored = () => page.evaluate(`sessionStorage.getItem('coinc:origem-antiga')`)
+  check('cenario-9-chegada-pelo-redirect-guarda-a-marca', (await stored()) === 'antigo', {})
+  const reached = await reachOnboarding(page, navigate)
+  check('cenario-9-onboarding-aparece', reached, {})
+  if (!reached) return
+  for (let n = 0; n < 3; n++) {
+    await goTo(page, n)
+    check(`cenario-9-tela-${n + 1}-marca-de-sessao-intacta`, (await stored()) === 'antigo', {})
+    check(`cenario-9-tela-${n + 1}-sem-aviso-no-onboarding`, !(await page.evaluate(`document.body.innerText.includes('O Coinc mudou de endereço.')`)), {})
+  }
+  await click(page, 'Entrar')
+  const login = await until(page, FORM, 4000)
+  check('cenario-9-entrar-mostra-o-login', login, {})
+  const notice = await page.evaluate(`document.body.innerText.includes('O Coinc mudou de endereço.') && document.body.innerText.includes('Entre de novo por aqui. Seus dados continuam salvos.')`)
+  check('cenario-9-login-mostra-o-aviso-de-endereco-novo', notice, {})
+  check('cenario-9-marca-de-sessao-continua-ate-o-login-dar-certo', (await stored()) === 'antigo', {})
+}
+
 async function main() {
   let vite = null
   let chrome = null
@@ -574,6 +595,7 @@ async function main() {
       await inTab(chrome, 'replay', viewport, {}, results, scenarioReplay)
       await inTab(chrome, 'tema-escuro', viewport, { seed: { 'coinc:tema:v1': 'escuro' } }, results, scenarioDark)
       await inTab(chrome, 'armazenamento-indisponivel', viewport, {}, results, scenarioStorage)
+      await inTab(chrome, 'origem-antiga', viewport, {}, results, scenarioLegacyOrigin)
     }
     if (!SMOKE) {
       // Altura menor que 640: so a regiao do meio rola.

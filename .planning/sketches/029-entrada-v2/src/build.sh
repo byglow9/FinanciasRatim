@@ -30,7 +30,7 @@ html='''<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name
 <nav id="nav"></nav>
 <div id="wrap">
 <h1>Entrada do Coinc, versão 2</h1>
-<div class="note">Cenas ilustradas da variante C do 026, agora com fundo liso do app e prints reais (modo mock, dados fictícios): Home, Limites e Calendário. O Vintém só de frente e em três quartos leves; a física (molas, queda com peso, antecipação, achatar e esticar, arrasto das orelhas, olhar em três tempos, piscar e respiração) roda num relógio próprio. Use ?v=o, ?v=i ou ?v=l, ?t=dark para o escuro, ?still para a pose final (movimento reduzido), ?only=o1&amp;w=390&amp;h=844&amp;vclock para uma cena só com relógio virtual e ?test para o autoteste.</div>
+<div class="note">Cenas ilustradas da variante C do 026, agora com fundo liso do app e prints reais (modo mock, dados fictícios): Home, Limites e Calendário. O Vintém só de frente e em três quartos leves; a física (molas, queda com peso, antecipação, achatar e esticar, arrasto das orelhas, olhar em três tempos, piscar e respiração) roda num relógio próprio. Use ?v=o, ?v=i ou ?v=l, ?t=dark para o escuro, ?wm=bricolage para o COINC na fonte antiga (padrão: Sora), ?t=dark para o escuro, ?still para a pose final (movimento reduzido), ?only=o1&amp;w=390&amp;h=844&amp;vclock para uma cena só com relógio virtual e ?test para o autoteste.</div>
 <div id="stage"></div>
 <div id="selftest"></div>
 </div>

@@ -11,15 +11,17 @@ var IC={
 };
 function ic(n,s,sw){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+IC[n]+'</svg>'}
 function wordmark(){
- /* COINC em maiusculas, glifos reais do Bricolage 700 (a fonte dos numeros do app) como paths */
- var order=['C','O','I','N','C'],gap={'CO':56,'OI':84,'IN':92,'NC':92},x=0,h='',prev=null,CAP=660;
+ /* COINC em maiusculas, glifos como paths: Sora 800 (padrao) ou Bricolage 700 (?wm=bricolage); mesma altura de capitular */
+ var bri=P.get('wm')==='bricolage',F=bri?WG:WGS,CAPH=44;
+ var gap=bri?{CO:56,OI:84,IN:92,NC:92}:{CO:78,OI:112,IN:128,NC:104};
+ var order=['C','O','I','N','C'],x=0,h='',prev=null,CAP=F.I.cap,SC=bri?1:660/CAP;
  order.forEach(function(ch){
-  var gl=WG[ch];if(prev)x+=gap[prev+ch];
-  h+='<path transform="translate('+(x-gl.x0).toFixed(1)+' '+CAP+') scale(1 -1)" d="'+gl.d+'" fill="var(--okink)"/>';
+  var gl=F[ch];if(prev)x+=gap[prev+ch]/SC;
+  h+='<path transform="translate('+(x-gl.x0).toFixed(1)+' '+CAP.toFixed(1)+') scale(1 -1)" d="'+gl.d+'" fill="var(--okink)"/>';
   x+=gl.x1-gl.x0;prev=ch;
  });
- var W=x;
- return '<div class="wm" role="img" aria-label="Coinc"><svg viewBox="-20 -30 '+(W+40)+' '+(CAP+60)+'" aria-hidden="true" focusable="false">'+h+'</svg></div>';
+ var W=x,vw=W+40/SC,vh=CAP+60/SC,px=CAPH/(CAP)*SC*0+CAPH/660*SC;
+ return '<div class="wm" role="img" aria-label="Coinc"><svg style="width:'+(vw*px).toFixed(1)+'px" viewBox="'+(-20/SC)+' '+(-30/SC)+' '+vw.toFixed(1)+' '+vh.toFixed(1)+'" aria-hidden="true" focusable="false">'+h+'</svg></div>';
 }
 
 /* ===== texto ===== */
@@ -66,13 +68,13 @@ function buildInner(kind,w,h){
   s+='<div class="bot" style="margin-top:4px">'+dots(3)+'<button class="cta" type="button">Já adicionei</button></div>';
  }else{
   var err=kind==='le',off=kind==='lo';
-  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.5)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
+  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.64)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
    '<div class="form">'+
    fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID))+
    fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>')+
    (err?'<div class="note-box err" role="alert">'+ic('alert',20)+'<span>E-mail ou senha incorretos. Confira e tente de novo.</span></div>':'')+
    (off?'<div class="note-box off" role="alert">'+ic('wifioff',20)+'<span>Sem conexão. Ligue a internet para entrar.</span></div>':'')+
-   '<button class="cta" type="button">Entrar</button><button class="ghost" type="button">Ver a apresentação</button></div>'+
+   '<button class="cta" type="button">Entrar</button></div>'+
    '<span class="fgap"></span><button class="quiet" type="button">Esqueci minha senha</button><p class="help">Acesso só para quem foi convidado.</p></div>';
  }
  return s;
@@ -341,8 +343,8 @@ function scriptLogin(S){
   S.endT=4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('triste');r.lookAt(0,.2)};
  }else{
   r.setPose('neutro',true);
-  S.at(1.4,function(){r.setPose('sonolento')});
-  S.endT=3.4;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('sonolento');r.lookAt(0,.1)};
+  S.at(1.1,function(){r.setPose('sonolento')});S.at(2.1,function(){r.setPose('dormindo')});
+  S.endT=5;S.snapFinal=function(){S.sp.halo.t=1;r.setPose('dormindo');r.lookAt(0,.1)};
  }
  r.home={x:0,y:.1};
 }

@@ -7,7 +7,7 @@
  --wash:rgba(47,111,62,.07);--halo:rgba(63,138,74,.13);--bezel:#0e1311;--bezline:rgba(255,255,255,.08);
  --vintem-body:var(--action);--vintem-snout:#4e845b;--vintem-ink:#1a3d22;--vintem-eye:#ffffff;
  --vintem-brow:var(--atext);--vintem-tear:#7dd3fc;--vintem-spark:#f59e0b;--vintem-excl:#d97706;--vintem-accent-line:#92400e;
- --vintem-z:#66635a;--vintem-coin:#fbbf24;--vintem-coin-line:#92400e;
+ --vintem-z:#7f9a8a;--vintem-coin:#fbbf24;--vintem-coin-line:#92400e;
  --pg:#e4dfd0;--pgfg:#1e1f19;--pgmut:#55584a;--pgcard:#f3efe3;--pgline:#cfc8b4;
 }
 html.dark{
@@ -15,7 +15,7 @@ html.dark{
  --action:#2c7f4b;--atext:#f4fbf6;--brand:#4dae6b;--warn:#d9922a;--danger:#e0584a;--okink:#8fd9a3;--track:#1a3024;
  --warnbg:#3a2e12;--warnink:#f0c070;--dangerbg:#3d1f1a;--dangerink:#f6a094;--okbg:#15382a;
  --wash:rgba(77,174,107,.09);--halo:rgba(77,174,107,.14);--bezel:#1b2822;--bezline:rgba(255,255,255,.16);
- --vintem-snout:#4b9266;--vintem-tear:#bae6fd;--vintem-coin:#fde68a;--vintem-z:#9aa79e;
+ --vintem-snout:#4b9266;--vintem-tear:#bae6fd;--vintem-coin:#fde68a;--vintem-z:#a8c5b4;
  --pg:#050b08;--pgfg:#e6f1e9;--pgmut:#9bb3a2;--pgcard:#0c1712;--pgline:#1d3328;
 }
 *{box-sizing:border-box;margin:0}
@@ -101,11 +101,11 @@ h2{font:700 16px/1.4 var(--font);margin:20px 0 4px}
 .help{font:400 12px/1.4 var(--font);color:var(--muted);text-align:center}
 .lg{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0}
 .lgv{position:relative;flex:none;width:100%}
-.wm{display:flex;justify-content:center;margin:6px 0 24px}
+.wm{display:flex;justify-content:center;margin:4px 0 30px}
 .wm svg{display:block;width:196px;height:auto;overflow:visible}
 .form{width:100%;display:flex;flex-direction:column;gap:12px}
-.fgap{flex:1.1;min-height:8px}
-.tgap{flex:.7;min-height:0}
+.fgap{flex:1;min-height:8px}
+.tgap{flex:.65;min-height:0}
 /* ---- instalar ---- */
 .seg{display:flex;gap:4px;padding:4px;border-radius:26px;background:var(--s2);width:100%}
 .seg button{flex:1;height:44px;border-radius:22px;font:400 16px var(--font);color:var(--muted)}

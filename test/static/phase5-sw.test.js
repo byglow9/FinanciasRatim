@@ -137,3 +137,10 @@ test('main.tsx captura a instalacao e registra o worker; captura antes de create
   assert.ok(MAIN.indexOf('registerPwa(') > MAIN.indexOf('.render('), 'registerPwa depois de montar')
   assert.ok(MAIN.indexOf("import './index.css'") < capture, 'a ordem de fontes e CSS vem antes')
 })
+
+test('registerPwa.ts: em segundo plano com algo em andamento a versao nova espera (nunca no meio de um lancamento)', () => {
+  assert.ok(/hidden:\s*document\.visibilityState === 'hidden' && !busy/.test(REGISTER), 'hidden precisa ceder a busy')
+  assert.ok(/busy,\s*\n/.test(REGISTER) || /\bbusy\b,/.test(REGISTER), 'busy vai para decideUpdate')
+  const visible = /visibilityState === 'visible'[\s\S]*?else/.exec(REGISTER)
+  assert.ok(visible && /evaluate\(\)/.test(visible[0]), 'ao voltar a visivel a versao que esperava e reavaliada')
+})

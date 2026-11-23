@@ -68,11 +68,14 @@ export function registerPwa({ onBootError }: RegisterPwaOptions = {}): void {
   let openedAt = Date.now()
 
   const evaluate = (): void => {
+    const busy = isBusy()
     const decision = decideUpdate({
       hasWaiting: waiting,
       msSinceOpen: Date.now() - openedAt,
-      busy: isBusy(),
-      hidden: document.visibilityState === 'hidden',
+      busy,
+      // Com um lancamento ou uma edicao aberta, ir para segundo plano nao basta: quem sai do app para
+      // conferir um valor volta e encontra o formulario. So entra a versao nova com nada em andamento.
+      hidden: document.visibilityState === 'hidden' && !busy,
     })
     if (decision !== 'ativar') return
     waiting = false
@@ -97,6 +100,8 @@ export function registerPwa({ onBootError }: RegisterPwaOptions = {}): void {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           openedAt = Date.now()
+          // Versao que ficou esperando (havia algo em andamento ao sair): vale como nova abertura.
+          evaluate()
           if (navigator.onLine && !registration.installing) void registration.update().catch(() => undefined)
         } else {
           // Indo para segundo plano e quando a versao que esperava entra, em recarga invisivel.

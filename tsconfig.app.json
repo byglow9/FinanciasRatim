@@ -5,7 +5,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client"],
     "skipLibCheck": true,
     "allowJs": true,
 
@@ -33,5 +33,5 @@
     }
   },
   "include": ["src", "shared"],
-  "exclude": ["shared/**/*.test.js"]
+  "exclude": ["shared/**/*.test.js", "src/sw.ts"]
 }

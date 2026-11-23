@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-11-PLAN.md
-last_updated: "2026-11-23T16:40:31.832Z"
+stopped_at: Completed 05-12-PLAN.md
+last_updated: "2026-11-23T16:46:22.322Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: 1f65db87354157ff38ee1911c5311504ec623a07
+state_head: 2f0131cbae33053cecda83279ce0885f64cc8ad4
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 97
+  completed_plans: 98
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 12 of 21
+Plan: 13 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -140,6 +140,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 5 P09 | 3min | 3 tasks | 11 files |
 | Phase 05 P10 | 10min | 2 tasks | 8 files |
 | Phase 5 P11 | 25min | 2 tasks | 5 files |
+| Phase 5 P12 | 25min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,7 @@ Recent decisions affecting current work:
 - [Phase 5]: [Phase 5] 05-09: plugin ja injeta o link do manifest (link manual removido); auditor registra o sw.js porque o registro pelo app e do 05-10; dist/sw.js e worker classico (sem type module)
 - [Phase 5]: 05-10: em segundo plano com lancamento ou edicao aberta a versao nova espera (hidden && !busy); nucleo 05-02 intacto
 - [Phase 5]: [Phase 5] 05-11: Adicionar agora so chama prompt() no toque; onDone so no aceito; standalone em CDP exige forcar a consulta display-mode na pagina (setEmulatedMedia nao aplica); IDEN-03 segue aberto ate o 05-20
+- [Phase 5]: [Phase 5] 05-12: marca do Login por img de /icons/icon.svg (CoincMark acompanha a troca do icone); ?origem so liga o aviso por igualdade estrita com antigo e a URL perde so esse parametro
 
 ### Pending Todos
 
@@ -240,6 +242,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T16:40:31.728Z
-Stopped at: Completed 05-11-PLAN.md
+Last session: 2026-11-23T16:46:22.222Z
+Stopped at: Completed 05-12-PLAN.md
 Resume file: None

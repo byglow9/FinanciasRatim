@@ -10,7 +10,12 @@ import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import type { Insight } from '@shared/core/insights.js'
-import { deriveVintemState, situationForTap, type MoodFacts } from '@shared/core/vintemMood.js'
+import {
+  deriveVintemState,
+  reactionForLaunch,
+  situationForTap,
+  type MoodFacts,
+} from '@shared/core/vintemMood.js'
 
 type Budget = ReturnType<typeof useCycleBudget>
 
@@ -121,14 +126,14 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak } = useVintem()
+  const { tone, speak, slot } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson } = useCycle()
   const todayKey = dayKeyOf(now)
 
   // Insights do detector local: sem leitura nova do ciclo (usa as transacoes da Home) e com a linha
   // de base dos ciclos anteriores vinda do cache depois da primeira consulta. Somente leitura: nada.
-  const { insights, ready: insightsReady } = useVintemInsights({
+  const { insights, ready: insightsReady, bankArrival } = useVintemInsights({
     person: viewPerson,
     cycle,
     view,
@@ -176,6 +181,42 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
       announce: false,
     })
   }, [view, situation, subject, entryKey, speak, categoryDefs, insights, insightsReady, todayKey])
+
+  // Lancamento importado do banco: uma reacao por carga (chave pessoa:ciclo), so com o slot registrado
+  // e fora do modo somente leitura (perfil do parceiro nao reage). O gasto ja esta somado na view.
+  const reactedKey = useRef<string | null>(null)
+  useEffect(() => {
+    if (bankArrival === null || view === null || !enabled || readOnly || view.isPast) return
+    if (reactedKey.current === entryKey) return
+    const handle = slot.current
+    if (handle === null) return
+    const result = reactionForLaunch({
+      view,
+      kind: 'gasto',
+      categoryId: bankArrival.categoryId,
+      cents: bankArrival.cents,
+      bigSpend: bankArrival.bigSpend,
+      counted: true,
+    })
+    if (result === null) return
+    reactedKey.current = entryKey
+    handle.react(result.reaction)
+    const raw = slotsFor(
+      result.situation,
+      result.categoryId === null ? null : { categoryId: result.categoryId },
+      view,
+      categoryDefs,
+      insights,
+      todayKey,
+    )
+    if (result.categoryId !== null && raw.categoria === undefined) {
+      raw.categoria = categoryDisplayName({ categoryId: result.categoryId }, categoryDefs)
+    }
+    if (result.situation === 'lancamento-ok' || result.situation === 'gasto-grande') {
+      raw.valorCents = bankArrival.cents
+    }
+    speak({ situation: result.situation, raw, announce: true })
+  }, [bankArrival, view, enabled, readOnly, entryKey, slot, speak, categoryDefs, insights, todayKey])
 
   // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
   // do giro ficam em ref e sao limpos ao desmontar.

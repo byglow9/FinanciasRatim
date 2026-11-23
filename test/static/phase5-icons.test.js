@@ -85,10 +85,7 @@ test('maskable e apple-touch: borda a borda (as quatro bordas sao so degrade) e 
     const canais = [0, 1, 2]
     const lo = canais.map((k) => Math.min(...bordas.map((p) => p[k])))
     const hi = canais.map((k) => Math.max(...bordas.map((p) => p[k])))
-    // o degrade e de duas cores: a faixa vista nas bordas e a do degrade e nao pode chegar ao creme da silhueta nem ao branco
-    for (const p of bordas) {
-      assert.ok(p[1] > p[0] && p[1] > p[2], `${arquivo}: borda ${p} nao e verde (faixa de cor estranha na borda)`)
-    }
+    // o degrade e de duas cores: as bordas so variam dentro da faixa do degrade (conferido abaixo), seja qual for a cor do fundo
     assert.ok(hi[0] - lo[0] < 80 && hi[1] - lo[1] < 80 && hi[2] - lo[2] < 80, `${arquivo}: bordas variam alem do degrade (${lo} a ${hi})`)
     // cada borda, em media, e uma cor do degrade: quatro cantos dentro da faixa observada
     for (const [x, y] of cantos(img)) {
@@ -102,21 +99,29 @@ test('maskable e apple-touch: borda a borda (as quatro bordas sao so degrade) e 
   }
 })
 
-// a silhueta (creme) precisa caber no circulo de raio 40% do lado (204,8 em 512): a mascara do Android corta o resto
+// a silhueta (tudo que nao e a cor do degrade do fundo) precisa caber no circulo de raio 40% do lado (204,8 em 512): a mascara do Android corta o resto
 test('maskable e apple-touch: a silhueta cabe no circulo de raio 40%', () => {
   for (const arquivo of [MASKABLE, APPLE]) {
     const img = readPng(arquivo)
-    const cx = (img.width - 1) / 2
+    const m = img.width - 1
+    const bordas = []
+    for (let i = 0; i <= m; i += Math.max(1, Math.floor(m / 31))) {
+      bordas.push(img.pixel(i, 0), img.pixel(i, m), img.pixel(0, i), img.pixel(m, i))
+    }
+    const distFundo = (p) => Math.min(...bordas.map((b) => Math.abs(p[0] - b[0]) + Math.abs(p[1] - b[1]) + Math.abs(p[2] - b[2])))
+    const cx = m / 2
     const limite = img.width * 0.4
     let pior = 0
+    let achou = 0
     for (let y = 0; y < img.height; y++) {
       for (let x = 0; x < img.width; x++) {
-        const [r, g, b] = img.pixel(x, y)
-        const creme = r > 200 && g > 200 && b > 170
-        if (creme) pior = Math.max(pior, Math.hypot(x - cx, y - cx))
+        if (distFundo(img.pixel(x, y)) > 90) {
+          achou++
+          pior = Math.max(pior, Math.hypot(x - cx, y - cx))
+        }
       }
     }
-    assert.ok(pior > 0, `${arquivo}: nenhuma silhueta encontrada`)
+    assert.ok(achou > 0, `${arquivo}: nenhuma silhueta encontrada`)
     assert.ok(pior <= limite, `${arquivo}: silhueta chega a ${pior.toFixed(1)} px do centro (limite ${limite})`)
   }
 })

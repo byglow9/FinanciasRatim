@@ -8,3 +8,8 @@ backups/
 *-firebase-adminsdk-*.json
 serviceAccount*.json
 *.serviceAccount.json
+
+# saidas intermediarias do gerador de icones (so as de public/ entram no git)
+assets-src/icon/*.png
+assets-src/icon/*.ico
+assets-src/maskable/*.png

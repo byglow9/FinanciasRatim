@@ -11,6 +11,7 @@
     "build:release-a": "VITE_OWNER_SCOPED_READS=false npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "icons": "node scripts/build-icons.mjs",
     "test:core": "node --test \"shared/**/*.test.js\"",
     "test:core:tz": "TZ=UTC node --test \"shared/**/*.test.js\" && TZ=Asia/Tokyo node --test \"shared/**/*.test.js\"",
     "test:server": "npm --prefix server test",

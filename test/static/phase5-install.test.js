@@ -112,3 +112,22 @@ test('HTML bruto, escala, emoji e alvos de toque limpos nos arquivos novos', () 
     assert.doesNotMatch(code(f), /#[0-9a-fA-F]{3,8}\b/, `${f}: hex literal`)
   }
 })
+test('o executor install.mjs existe e cobre os sete cenarios', () => {
+  assert.ok(exists(AUDIT), 'scripts/ux-audit/install.mjs ausente')
+  const src = read(AUDIT)
+  assert.match(src, /5195/, 'porta 5195')
+  assert.match(src, /FALHAS \$\{/, 'sem a linha final FALHAS n')
+  const scenarios = [
+    ['1 folha abre pelo cartao', /cenario 1/],
+    ['2 seletor e passos', /cenario 2/],
+    ['3 padrao por agente de usuario', /cenario 3/],
+    ['4 evento de adicao simulado', /cenario 4/],
+    ['5 standalone emulado', /cenario 5/],
+    ['6 Esc fecha e devolve o foco', /cenario 6/],
+    ['7 sem rolagem horizontal e alvos de 43,5 px', /cenario 7/],
+  ]
+  for (const [label, re] of scenarios) assert.match(src, re, `executor sem o cenario ${label}`)
+  for (const needle of ['beforeinstallprompt', 'setUserAgentOverride', 'setEmulatedMedia', 'display-mode', 'Escape', '43.5']) {
+    assert.ok(src.includes(needle), `executor sem ${needle}`)
+  }
+})

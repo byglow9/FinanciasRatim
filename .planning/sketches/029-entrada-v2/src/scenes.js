@@ -11,17 +11,14 @@ var IC={
 };
 function ic(n,s,sw){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+IC[n]+'</svg>'}
 function wordmark(){
- /* COINC em maiusculas, glifos reais do Bricolage 700 (a fonte dos numeros do app) como paths; o O e a moeda ambar */
- var order=['C','O','I','N','C'],gap={'CO':64,'OI':88,'IN':92,'NC':92},x=0,h='',prev=null,CAP=660,R=336,coin=null;
- order.forEach(function(ch,i){
+ /* COINC em maiusculas, glifos reais do Bricolage 700 (a fonte dos numeros do app) como paths */
+ var order=['C','O','I','N','C'],gap={'CO':56,'OI':84,'IN':92,'NC':92},x=0,h='',prev=null,CAP=660;
+ order.forEach(function(ch){
   var gl=WG[ch];if(prev)x+=gap[prev+ch];
-  if(ch==='O'){coin=x+R;x+=2*R;prev='O';return}
   h+='<path transform="translate('+(x-gl.x0).toFixed(1)+' '+CAP+') scale(1 -1)" d="'+gl.d+'" fill="var(--okink)"/>';
   x+=gl.x1-gl.x0;prev=ch;
  });
  var W=x;
- var cn=coinG(R).replace(/stroke-width="[\d.]+"/,'stroke-width="'+(R*.16)+'"');
- h+='<g transform="translate('+coin.toFixed(1)+' '+(CAP/2)+')">'+cn+'</g>';
  return '<div class="wm" role="img" aria-label="Coinc"><svg viewBox="-20 -30 '+(W+40)+' '+(CAP+60)+'" aria-hidden="true" focusable="false">'+h+'</svg></div>';
 }
 

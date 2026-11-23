@@ -11,6 +11,8 @@ import {
 import { useLocation } from 'react-router-dom'
 import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
 import type { VintemHandle } from '@/components/vintem/Vintem'
+import { VintemToastBody } from '@/components/vintem/VintemToast'
+import { useToast } from '@/components/ui/toast'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -83,6 +85,9 @@ export interface VintemContextType {
 
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
 
+/** Duracao do toast do Vintem fora da Home: um pouco mais que o aviso comum, para ler a frase. */
+const VINTEM_TOAST_MS = 6000
+
 const RECENT_STORAGE_KEY = 'vintem:recent:v1'
 
 type Recent = Record<string, string[]>
@@ -117,6 +122,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const tone = vintemToneOf(settings)
   const slot = useRef<VintemHandle | null>(null)
+  const toast = useToast()
 
   const [speech, setSpeech] = useState<Speech | null>(null)
   const [announced, setAnnounced] = useState('')
@@ -205,14 +211,25 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         }
         const handle = slot.current
         if (handle !== null) {
+          // Na Home: reacao no Vintem do arco e fala no balao, anunciada na regiao viva.
           handle.react(result.reaction)
           speak({ situation: result.situation, raw, announce: true })
+        } else {
+          // Fora da Home: o toast de sucesso ja entrou na fila; o do Vintem vem em seguida (UI-SPEC S4).
+          // Sem frase no banco nao ha toast do Vintem.
+          const chosen = draw({ situation: result.situation, raw })
+          if (chosen !== null) {
+            toast.show('', {
+              custom: <VintemToastBody text={chosen.text} reaction={result.reaction} />,
+              durationMs: VINTEM_TOAST_MS,
+            })
+          }
         }
       } catch {
         // Melhor esforco: a reacao nunca atrapalha o lancamento e nada de valor ou nome vai a log.
       }
     },
-    [now, personConfigFor, categoryDefs, speak],
+    [now, personConfigFor, categoryDefs, speak, draw, toast],
   )
 
   const value = useMemo<VintemContextType>(

@@ -10,6 +10,11 @@ interface ToastOptions {
   /** Apoio opcional, curto, numa segunda linha de 12px. */
   detail?: string
   durationMs?: number
+  /**
+   * Conteudo proprio (fala do Vintem, UI-SPEC S4): vira um item de superficie clara na mesma fila,
+   * nunca sobre o fundo de acao, onde o corpo oliva do mascote sumiria. A mensagem fica vazia.
+   */
+  custom?: React.ReactNode
 }
 
 interface ToastItem {
@@ -18,6 +23,7 @@ interface ToastItem {
   detail?: string
   icon?: LucideIcon
   durationMs: number
+  custom?: React.ReactNode
 }
 
 interface ToastContextValue {
@@ -49,7 +55,42 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
     }
   }, [paused, leaving, onDismiss])
 
+  // Esc dispensa so o item custom (fala do Vintem) enquanto ele esta visivel.
+  const isCustom = item.custom !== undefined
+  React.useEffect(() => {
+    if (!isCustom || leaving) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss()
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [isCustom, leaving, onDismiss])
+
   const Icon = item.icon
+
+  if (isCustom) {
+    return (
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className={`pointer-events-auto flex w-fit max-w-full items-center rounded-2xl border border-border bg-surface-2 text-foreground shadow-float transition-opacity duration-200 anim-toast-in ${
+          leaving ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        <div className="min-w-0 flex-1">{item.custom}</div>
+        <button
+          type="button"
+          aria-label="Dispensar fala do Vintém"
+          onClick={onDismiss}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -94,6 +135,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         icon: options?.icon,
         detail: options?.detail,
         durationMs: options?.durationMs ?? DEFAULT_DURATION_MS,
+        custom: options?.custom,
       },
     ])
   }, [])

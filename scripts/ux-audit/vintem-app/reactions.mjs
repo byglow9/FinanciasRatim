@@ -73,4 +73,67 @@ export async function run({ page, check, navigate, sleep }) {
   check('balao-mostra-a-situacao-do-lancamento', reacted && SITUATIONS.includes(seen.situation), seen)
   check('fala-do-balao-sem-chaves', seen.text.length > 0 && !/[{}]/.test(seen.text), { text: seen.text })
   check('regiao-viva-recebeu-a-fala', seen.live.length > 0 && !/[{}]/.test(seen.live), { live: seen.live })
+
+  await outsideHome({ page, check, navigate, sleep })
+}
+
+const TOAST_BOX = `document.querySelector('div[role="status"][aria-live="polite"]')`
+
+/**
+ * Fora da Home (Transacoes) o toast de sucesso entra primeiro e, em seguida na fila, o toast do Vintem:
+ * superficie clara (nunca o fundo de acao), botao de dispensar de 44 px e Esc fecha.
+ */
+async function outsideHome({ page, check, navigate, sleep }) {
+  await navigate('/transacoes', `${FAB}`)
+  const done = await launchSpend({ page, sleep, categoryName: 'Lazer', digits: ['5', '00'] })
+  check('gasto-salvo-fora-da-home', done.ok, done)
+  if (!done.ok) return
+
+  const seq = await page.evaluate(`new Promise((resolve) => {
+    const out = { successAt: null, vintemAt: null, successBg: null, vintemBg: null, closeW: 0, closeH: 0, text: '', hasClamp: false }
+    const t0 = performance.now()
+    const id = setInterval(() => {
+      const box = ${TOAST_BOX}
+      const ok = box?.querySelector('button[aria-label="Fechar aviso"]')
+      const close = box?.querySelector('button[aria-label="Dispensar fala do Vint\u00e9m"]')
+      if (ok && out.successAt === null) {
+        out.successAt = performance.now() - t0
+        out.successBg = getComputedStyle(ok.parentElement).backgroundColor
+      }
+      if (close && out.vintemAt === null) {
+        out.vintemAt = performance.now() - t0
+        const surface = close.parentElement
+        out.vintemBg = getComputedStyle(surface).backgroundColor
+        const r = close.getBoundingClientRect()
+        out.closeW = r.width
+        out.closeH = r.height
+        const p = surface.querySelector('p')
+        out.text = p?.textContent ?? ''
+        out.hasClamp = [...surface.querySelectorAll('*')].some((el) => /line-clamp/.test(el.className?.baseVal ?? el.className ?? ''))
+      }
+      if (out.vintemAt !== null || performance.now() - t0 > 9000) {
+        clearInterval(id)
+        resolve(out)
+      }
+    }, 40)
+  })`)
+  check('toast-de-sucesso-vem-primeiro', seq.successAt !== null && seq.vintemAt !== null && seq.successAt < seq.vintemAt, seq)
+  check('toast-do-vintem-aparece-em-ate-8s', seq.vintemAt !== null && seq.vintemAt < 8000, { vintemAt: seq.vintemAt })
+  check(
+    'toast-do-vintem-tem-fundo-claro-e-nao-o-de-acao',
+    seq.vintemBg !== null && seq.vintemBg !== seq.successBg && seq.vintemBg !== 'rgba(0, 0, 0, 0)',
+    { vintemBg: seq.vintemBg, successBg: seq.successBg },
+  )
+  check('botao-de-dispensar-tem-pelo-menos-44-por-44', seq.closeW >= 43.5 && seq.closeH >= 43.5, { w: seq.closeW, h: seq.closeH })
+  check('fala-do-toast-sem-chaves-e-ate-110-caracteres', seq.text.length > 0 && seq.text.length <= 110 && !/[{}]/.test(seq.text), {
+    length: seq.text.length,
+    text: seq.text,
+  })
+  check('fala-do-toast-sem-line-clamp', seq.hasClamp === false)
+
+  // Esc fecha o toast do Vintem.
+  await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+  const closed = await waitFor(page, sleep, `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do Vint\u00e9m"]') == null`, 1500)
+  check('esc-fecha-o-toast-do-vintem', closed)
 }

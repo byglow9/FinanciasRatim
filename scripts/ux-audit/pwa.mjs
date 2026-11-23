@@ -3,13 +3,18 @@
 // na porta 5192 e abre no Chrome sem janela. So 127.0.0.1; nada lido de .env*; sem dependencias novas;
 // perfil temporario do Chrome removido no fim.
 // Afirma so o que e do worker, do manifest e da casca: o app pode nao concluir o carregamento no build de
-// producao sem as variaveis do Firebase. O registro do worker pelo app e do plano 05-10; aqui o auditor
-// registra /sw.js na propria pagina, como o app fara.
+// producao sem as variaveis do Firebase. O cenario do worker registra /sw.js na propria pagina.
+// Plano 05-10 (D-14): cenarios de falha e de atualizacao silenciosa sobre o build de producao:
+//  (a) bundle principal bloqueado: o bloco estatico do index.html aparece em ate 10 s;
+//  (b) vite:preloadError: uma recarga e, na segunda falha, a BootError;
+//  (c) versao nova esperando: nao recarrega com Sheet aberto (nem em segundo plano) e recarrega em
+//      segundo plano sem nada em andamento. A versao nova e simulada anexando um comentario a dist/sw.js
+//      durante a execucao (restaurado no fim); a visibilidade oculta e simulada na pagina.
 // Uso: . ./scripts/dev-env.sh && npm run build && node scripts/ux-audit/pwa.mjs
 // Saida: uma linha por verificacao e a linha final `FALHAS n`. Codigos: 0 sem falha, 1 alguma falha,
 // 2 falha do proprio script (dist/ ausente, Chrome ausente, preview nao subiu, prazo vencido).
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connect, launchChrome } from './cdp.mjs'
@@ -17,7 +22,7 @@ import { connect, launchChrome } from './cdp.mjs'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const PORT = 5192
 const ORIGIN = `http://127.0.0.1:${PORT}`
-const TOTAL_TIMEOUT_MS = 120000
+const TOTAL_TIMEOUT_MS = 180000
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Sobe `vite preview` sobre dist/, so em 127.0.0.1. Devolve { stop }. */
@@ -187,6 +192,134 @@ async function scenarioWorker(ctx) {
   check('pagina: nenhuma excecao nem console.error que nao seja de rede', unhandled.length === 0 && errors.length === 0, [...unhandled, ...errors].slice(0, 3).join(' | '))
 }
 
+const SW_RELOAD_KEY = 'coinc:sw-reload:v1'
+const PRELOAD_RELOAD_KEY = 'coinc:recarga:v1'
+const BOOT_TITLE = 'Não foi possível abrir o Coinc'
+
+/** Resolve verdadeiro se a pagina recarregar (Page.loadEventFired) dentro de `ms`; falso se nao. */
+function loadedWithin(page, ms) {
+  return page.waitFor('Page.loadEventFired', ms).then(
+    () => true,
+    () => false,
+  )
+}
+
+/** Espera uma expressao booleana da pagina ficar verdadeira (consulta a cada 200 ms) ate `ms`. */
+async function until(page, expression, ms) {
+  const deadline = Date.now() + ms
+  while (Date.now() < deadline) {
+    try {
+      if (await page.evaluate(expression)) return true
+    } catch {
+      /* pagina recarregando */
+    }
+    await sleep(200)
+  }
+  return false
+}
+
+/** Primeiro, num perfil sem worker: o bundle principal nao carrega e #root segue vazio. */
+async function scenarioBundleBlocked(ctx) {
+  const { page } = ctx
+  const html = readFileSync(join(ROOT, 'dist', 'index.html'), 'utf8')
+  const bundle = /<script[^>]*type="module"[^>]*src="([^"]+)"/.exec(html)?.[1]
+  check('falha (a): o index.html de producao aponta o bundle principal em /assets/', typeof bundle === 'string' && bundle.startsWith('/assets/'), String(bundle))
+  if (typeof bundle !== 'string') return
+  await page.send('Network.enable')
+  await page.send('Network.setBlockedURLs', { urls: [`${ORIGIN}${bundle}`] })
+  await navigate(page, `${ORIGIN}/`)
+  const emptyAtLoad = await page.evaluate(`document.getElementById('root') !== null && document.getElementById('root').childNodes.length === 0`)
+  check('falha (a): com o bundle bloqueado #root fica sem filho', emptyAtLoad === true)
+  const shown = await until(page, `document.getElementById('coinc-boot-error') !== null`, 10000)
+  check('falha (a): em ate 10 s aparece o bloco estatico de falha', shown)
+  const text = await page.evaluate(`document.getElementById('root').innerText`)
+  check('falha (a): o bloco diz "Não foi possível abrir o Coinc" e oferece "Tentar de novo"', String(text).includes(BOOT_TITLE) && String(text).includes('Tentar de novo'), String(text).replace(/\s+/g, ' '))
+  await page.send('Network.setBlockedURLs', { urls: [] })
+  const reloaded = loadedWithin(page, 15000)
+  await page.evaluate(`document.querySelector('#coinc-boot-error button').click()`)
+  check('falha (a): o botao Tentar de novo recarrega a pagina', await reloaded)
+  await sleep(800)
+  const gone = await until(page, `document.getElementById('root').childNodes.length > 0 && document.getElementById('coinc-boot-error') === null`, 15000)
+  check('falha (a): sem o bloqueio o React monta e o bloco estatico some', gone)
+}
+
+/** vite:preloadError: uma recarga protegida e, na segunda falha, a BootError. */
+async function scenarioPreloadError(ctx) {
+  const { page } = ctx
+  await navigate(page, `${ORIGIN}/`)
+  await page.evaluate(`sessionStorage.removeItem('${PRELOAD_RELOAD_KEY}')`)
+  const first = loadedWithin(page, 15000)
+  const cancelable = await page.evaluate(`(() => { const e = new Event('vite:preloadError', { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented })()`)
+  check('falha (b): vite:preloadError e cancelado (preventDefault)', cancelable === true)
+  check('falha (b): a primeira falha recarrega a pagina uma vez', await first)
+  await sleep(800)
+  const mark = await page.evaluate(`sessionStorage.getItem('${PRELOAD_RELOAD_KEY}')`)
+  check('falha (b): a recarga fica marcada na sessao (guarda contra laco)', mark === '1', String(mark))
+  const second = loadedWithin(page, 3000)
+  await page.evaluate(`window.dispatchEvent(new Event('vite:preloadError', { cancelable: true }))`)
+  check('falha (b): a segunda falha nao recarrega de novo', (await second) === false)
+  const shown = await until(page, `document.getElementById('root').innerText.includes('${BOOT_TITLE}')`, 5000)
+  check('falha (b): a segunda falha mostra a BootError com o titulo', shown)
+  const button = await page.evaluate(`[...document.querySelectorAll('#root button')].some((b) => b.innerText.includes('Tentar de novo'))`)
+  check('falha (b): a BootError tem o botao Tentar de novo', button === true)
+  const hook = await page.evaluate(`typeof window.__coincBootError`)
+  check('falha (b): o gancho __coincBootError nao existe no build de producao', hook === 'undefined', String(hook))
+}
+
+/** Versao nova esperando: nunca com Sheet aberto, e em segundo plano sem nada em andamento. */
+async function scenarioWaitingUpdate(ctx) {
+  const { page } = ctx
+  const swPath = join(ROOT, 'dist', 'sw.js')
+  const original = readFileSync(swPath, 'utf8')
+  cleanups.push(async () => writeFileSync(swPath, original))
+  try {
+    // Pagina aberta e controlada pelo worker do app, ja fora da janela de 3 s da abertura.
+    await navigate(page, `${ORIGIN}/`)
+    await page.evaluate(`sessionStorage.removeItem('${SW_RELOAD_KEY}')`)
+    const controlled = await until(page, `navigator.serviceWorker.controller !== null`, 10000)
+    check('atualizacao (c): o worker do app controla a pagina', controlled)
+    if (!controlled) return
+    await sleep(4000)
+    await page.evaluate(`window.__auditMarker = 'mesma-pagina'; window.__hide = (hidden) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (hidden ? 'hidden' : 'visible') })
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    const dialog = document.createElement('div')
+    dialog.id = 'auditoria-dialog'
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    document.body.appendChild(dialog)`)
+
+    // Versao B: o mesmo worker com um byte a mais.
+    writeFileSync(swPath, `${original}\n// auditoria ${Date.now()}\n`)
+    await page.evaluate(`navigator.serviceWorker.getRegistration().then((r) => r.update())`)
+    const waiting = await until(page, `navigator.serviceWorker.getRegistration().then((r) => r.waiting !== null)`, 15000)
+    check('atualizacao (c): a versao nova instala e fica esperando (nao ativa sozinha)', waiting)
+    if (!waiting) return
+
+    const quiet = loadedWithin(page, 4000)
+    await sleep(500)
+    await page.evaluate(`window.__hide(true)`)
+    check('atualizacao (c): com Sheet aberto a pagina nao recarrega, nem indo para segundo plano', (await quiet) === false)
+    const kept = await page.evaluate(`window.__auditMarker === 'mesma-pagina' && document.getElementById('auditoria-dialog') !== null`)
+    check('atualizacao (c): o que estava na tela continua la (nada perdido)', kept === true)
+    const stillWaiting = await page.evaluate(`navigator.serviceWorker.getRegistration().then((r) => r.waiting !== null)`)
+    check('atualizacao (c): a versao nova segue esperando', stillWaiting === true)
+
+    // Sheet fechado e app em segundo plano: a versao nova entra, em recarga invisivel.
+    await page.evaluate(`window.__hide(false); document.getElementById('auditoria-dialog').remove()`)
+    await sleep(500)
+    const reloaded = loadedWithin(page, 15000)
+    await page.evaluate(`window.__hide(true)`)
+    check('atualizacao (c): sem nada em andamento, em segundo plano a pagina recarrega', await reloaded)
+    await sleep(800)
+    const after = await page.evaluate(`({ marker: window.__auditMarker ?? null, controller: navigator.serviceWorker.controller !== null })`)
+    check('atualizacao (c): depois da troca a pagina e nova e segue controlada', after.marker === null && after.controller === true, JSON.stringify(after))
+  } finally {
+    writeFileSync(swPath, original)
+  }
+}
+
 function withTimeout(promise, ms, label) {
   let timer
   const limit = new Promise((_, reject) => {
@@ -223,7 +356,17 @@ async function main() {
       collected.consoleErrors.push(String(text).split('\n')[0].slice(0, 200))
     })
 
-    await withTimeout(scenarioWorker({ page, collected }), TOTAL_TIMEOUT_MS, 'cenarios do PWA')
+    // A ordem importa: o bloqueio do bundle precisa de um perfil ainda sem worker.
+    await withTimeout(
+      (async () => {
+        await scenarioBundleBlocked({ page, collected })
+        await scenarioWorker({ page, collected })
+        await scenarioPreloadError({ page, collected })
+        await scenarioWaitingUpdate({ page, collected })
+      })(),
+      TOTAL_TIMEOUT_MS,
+      'cenarios do PWA',
+    )
   } finally {
     page?.close()
     if (chrome) await chrome.close()

@@ -39,6 +39,56 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      /* Falha de abertura sem bundle (D-14): se #root seguir vazio por 8 s, mostra uma tela estatica de
+         falha com saida. Por DOM (createElement e textContent), so cores de sistema para acompanhar o tema
+         ja aplicado. Se o React montar depois, o bloco some sozinho. */
+      (function () {
+        var root = document.getElementById('root')
+        if (!root) return
+        var BLOCK_ID = 'coinc-boot-error'
+        function drop() {
+          var el = document.getElementById(BLOCK_ID)
+          if (el && el.parentNode) el.parentNode.removeChild(el)
+        }
+        setTimeout(function () {
+          if (root.firstChild) return
+          var wrap = document.createElement('div')
+          wrap.id = BLOCK_ID
+          wrap.setAttribute('role', 'alert')
+          wrap.style.cssText =
+            'box-sizing:border-box;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;text-align:center;font-family:system-ui,sans-serif;background:Canvas;color:CanvasText'
+          var title = document.createElement('h1')
+          title.textContent = 'Não foi possível abrir o Coinc'
+          title.style.cssText = 'margin:0;font-size:28px;line-height:1.2;font-weight:700'
+          var text = document.createElement('p')
+          text.textContent = 'Pode ser a conexão ou uma atualização em andamento. Tente de novo.'
+          text.style.cssText = 'margin:0;font-size:16px;max-width:28rem'
+          var button = document.createElement('button')
+          button.type = 'button'
+          button.textContent = 'Tentar de novo'
+          button.style.cssText =
+            'height:56px;width:100%;max-width:28rem;border:2px solid CanvasText;border-radius:16px;background:Canvas;color:CanvasText;font-size:16px;font-weight:700;cursor:pointer'
+          button.addEventListener('click', function () {
+            location.reload()
+          })
+          wrap.appendChild(title)
+          wrap.appendChild(text)
+          wrap.appendChild(button)
+          root.appendChild(wrap)
+          // O React pode montar depois deste bloco: assim que entrar outro filho, o bloco sai.
+          if (typeof MutationObserver === 'function') {
+            var observer = new MutationObserver(function () {
+              if (root.childNodes.length > 1 || (root.firstChild && root.firstChild.id !== BLOCK_ID)) {
+                drop()
+                observer.disconnect()
+              }
+            })
+            observer.observe(root, { childList: true })
+          }
+        }, 8000)
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -107,11 +107,11 @@ h2{font:700 16px/1.4 var(--font);margin:20px 0 4px}
 .help{font:400 12px/1.4 var(--font);color:var(--muted);text-align:center}
 .lg{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0}
 .lgv{position:relative;flex:none;width:100%}
-.wm{display:flex;align-items:center;justify-content:center;font:700 56px/1 var(--disp);letter-spacing:-.04em;color:var(--okink);margin-top:2px}
-.wm svg{display:block;width:.62em;height:.62em;margin:.06em .01em 0 .02em;overflow:visible}
-.tag{font:400 16px/1.4 var(--font);color:var(--muted);text-align:center;margin:6px 0 16px;max-width:300px}
+.wm{display:flex;justify-content:center;margin:6px 0 24px}
+.wm svg{display:block;width:196px;height:auto;overflow:visible}
 .form{width:100%;display:flex;flex-direction:column;gap:12px}
-.fgap{flex:1;min-height:8px}
+.fgap{flex:1.1;min-height:8px}
+.tgap{flex:.7;min-height:0}
 /* ---- instalar ---- */
 .seg{display:flex;gap:4px;padding:4px;border-radius:26px;background:var(--s2);width:100%}
 .seg button{flex:1;height:44px;border-radius:22px;font:400 16px var(--font);color:var(--muted)}
@@ -181,7 +181,7 @@ function blinkEnv(t){
 var KEYS=['ew','eh','cvL','cvR','lt','bo','pr','arc','by','bt','ea','es','sy','py','rt'];
 var DEF={ew:17,eh:21,cvL:0,cvR:0,lt:0,bo:0,pr:.52,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
 var POSE={
- neutro:{cvL:.48,cvR:.02},
+ neutro:{},
  feliz:{arc:1,by:-5,sy:1.02,ea:8,es:1.08},
  triste:{ew:16,cvL:.3,cvR:.3,lt:-15,bo:1,pr:.74,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
  sonolento:{cvL:.62,cvR:.62,pr:.6,by:4,sy:.96,ea:42,es:.95},
@@ -205,9 +205,9 @@ function eyeSVG(u,id,x){
  return '<g data-p="eye'+id+'" transform="translate('+x+' 106)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="17" ry="21"/></clipPath><g clip-path="url(#'+u+id+')">'+
  '<ellipse data-p="eb'+id+'" rx="17" ry="21" fill="var(--vintem-eye)"/>'+
  '<circle data-p="pu'+id+'" r="8" fill="var(--vintem-ink)"/><circle data-p="hi'+id+'" r="2" fill="var(--vintem-eye)"/>'+
- '<path data-p="lid'+id+'" d="M-40,-60H40V0H-40Z" fill="var(--vintem-body)"/></g>'+
+ '</g><clipPath id="'+u+id+'k"><ellipse data-p="clipB'+id+'" rx="18.5" ry="22.5"/></clipPath><g clip-path="url(#'+u+id+'k)"><path data-p="lid'+id+'" d="M-40,-60H40V0H-40Z" fill="var(--vintem-body)"/></g>'+
  '<path data-p="hap'+id+'" d="M-13,6Q0,-13 13,6" fill="none" stroke="var(--vintem-eye)" stroke-width="5.6" stroke-linecap="round" opacity="0"/>'+
- '<path data-p="brow'+id+'" d="M-13,0Q0,0 13,0" fill="none" stroke="var(--vintem-brow)" stroke-width="4.6" stroke-linecap="round" opacity="0"/></g>';
+ '<path data-p="brow'+id+'" d="M-13,0Q0,0 13,0" fill="none" stroke="var(--vintem-brow)" stroke-width="4.6" stroke-linecap="round" opacity="0" visibility="hidden"/></g>';
 }
 function vtSVG(){
  var u='v'+(++UID)+'_';
@@ -389,20 +389,22 @@ Rig.prototype.render=function(T){
  bl=clamp(bl,-.14,1);
  var drift=rm?0:Math.sin(t*1.7)*.02+Math.sin(t*2.9+1)*.015;
  ['L','R'].forEach(function(s){
-  var cv=pp['cv'+s].x,ew=pp.ew.x*(s==='L'?1-yaw*.06:1+yaw*.06),eh=pp.eh.x,cover=clamp(Math.max(cv,bl),-.14,1);
+  var cv=pp['cv'+s].x,ew=pp.ew.x,eh=pp.eh.x,cover=clamp(Math.max(cv,bl),-.14,1);
   var ex=this.eye.x.x+drift,ey=this.eye.y.x+drift*.6;
-  var pr=Math.min(ew,eh)*pp.pr.x*1.05,room=(Math.min(ew,eh)-pr*.9)*.9;
-  var px=ex*Math.min(room+4,ew-pr*.5),py=ey*Math.min(room+4,eh-pr*.5);
-  E['clip'+s].setAttribute('rx',ew.toFixed(2));E['clip'+s].setAttribute('ry',eh.toFixed(2));
+  var pr=Math.min(ew,eh)*pp.pr.x*1.05;
+  /* pupila presa a uma elipse interna da esclera (margem de 3): nunca encosta na borda */
+  var ax=Math.max(0,ew-pr-3),ay=Math.max(0,eh-pr-3),gx=clamp(ex,-1,1),gy=clamp(ey,-1,1),gm=Math.hypot(gx,gy);if(gm>1){gx/=gm;gy/=gm}
+  var px=gx*ax,py=gy*ay;
+  E['clip'+s].setAttribute('rx',ew.toFixed(2));E['clip'+s].setAttribute('ry',eh.toFixed(2));E['clipB'+s].setAttribute('rx',(ew+1.5).toFixed(2));E['clipB'+s].setAttribute('ry',(eh+1.5).toFixed(2));
   E['eb'+s].setAttribute('rx',ew.toFixed(2));E['eb'+s].setAttribute('ry',eh.toFixed(2));
   E['pu'+s].setAttribute('r',pr.toFixed(2));E['pu'+s].setAttribute('cx',px.toFixed(2));E['pu'+s].setAttribute('cy',py.toFixed(2));
   E['hi'+s].setAttribute('cx',(px-pr*.35).toFixed(2));E['hi'+s].setAttribute('cy',(py-pr*.4).toFixed(2));
-  var ly=-eh+cover*eh*2.24,tilt=(s==='L'?1:-1)*pp.lt.x;
+  var ly=-eh-4+cover*(eh*2.24+4),tilt=(s==='L'?1:-1)*pp.lt.x;
   E['lid'+s].setAttribute('d','M-44,-70H44V'+ly.toFixed(2)+'Q0,'+(ly+3).toFixed(2)+' -44,'+ly.toFixed(2)+'Z');
   E['lid'+s].setAttribute('transform','rotate('+tilt.toFixed(2)+')');
   var arc=pp.arc.x;E['eb'+s].style.opacity=1-arc;E['pu'+s].style.opacity=1-arc;E['hi'+s].style.opacity=1-arc;E['lid'+s].style.opacity=1-arc;
   E['hap'+s].setAttribute('opacity',clamp(arc,0,1).toFixed(2));
-  E['brow'+s].setAttribute('opacity',clamp(pp.bo.x*(1-arc),0,1).toFixed(2));
+  /* sem sobrancelha: a expressao vem da pose da palpebra, nunca de um risco claro */
   E['brow'+s].setAttribute('transform','translate(0 '+(-eh-9+ (cover>.3?cover*6:0)).toFixed(2)+') rotate('+tilt.toFixed(2)+')');
  },this);
  /* acessorios: entram por mola com overshoot, nada de pop */
@@ -415,6 +417,9 @@ Rig.prototype.render=function(T){
  if(this.tr)this.tr.push({t:t,sx:sx,sy:sy,X:X,Y:Y,rot:rotB,hx:hx,hy:hy,tl:tl,ex:this.eye.x.x,eL:this.earL.x,eR:this.earR.x,yaw:yaw,bl:bl,lid:Math.max(pp.cvL.x,bl),land:this.landed});
  this.landed=false;
 };
+
+/* glifos C, O, I, N do Bricolage Grotesque (opsz-normal, wght 700, opsz 56 = o num-display 56px bold do app), 1000/em, y para cima */
+var WG={C:{d:'M357 -13.8Q278.3 -13.8 218.5 10.2Q158.8 34.2 118.7 79.2Q78.6 124.3 58.6 186.6Q38.6 248.8 38.6 325.3Q38.6 403.8 59.2 467.8Q79.8 531.8 119.7 578Q159.6 624.3 217.5 649Q275.4 673.8 350.8 673.8Q412.8 673.8 461.4 656.7Q510 639.7 542.8 608.8Q575.6 577.9 591.8 535.9Q608 493.8 606 444.2L472.8 418.1Q473.4 462.2 457 492.5Q440.7 522.8 412.1 538.9Q383.6 554.9 346.2 554.9Q314.2 554.9 285.7 542.1Q257.2 529.4 235.6 502.3Q214 475.3 201.7 433.4Q189.4 391.5 189.4 332.9Q189.4 257.3 210.1 206.7Q230.9 156.1 269.5 130.5Q308.1 104.8 360.4 104.8Q411.8 104.8 441.8 127Q471.9 149.3 485.2 186.9Q498.6 224.6 497.4 270.1L628.7 253.4Q630.5 198.7 616.5 150.3Q602.4 102 570 65Q537.6 27.9 484.9 7.1Q432.2 -13.8 357 -13.8Z',x0:38.6,x1:628.9},O:{d:'M343.1 -13.8Q271.9 -13.8 215.6 8.7Q159.3 31.2 119.9 74.6Q80.5 118 59.8 181.5Q39 244.9 39 327Q39 444.2 78.6 520.8Q118.1 597.4 188.1 635.6Q258.1 673.8 348.1 673.8Q417.6 673.8 473.6 651.7Q529.5 629.7 569.1 586.3Q608.8 542.9 630 478.4Q651.2 413.9 651.2 329.8Q651.2 245.5 629.6 181.3Q608 117 567.6 73.7Q527.2 30.3 470.3 8.2Q413.4 -13.8 343.1 -13.8ZM347.3 103.4Q398.9 103.4 433.5 128.6Q468.1 153.8 485.6 202.8Q503.2 251.7 503.2 323.4Q503.2 398.5 484.8 449.9Q466.4 501.3 431.1 527.9Q395.7 554.6 343.9 554.6Q294 554.6 258.9 528.9Q223.9 503.2 205.7 453.1Q187.5 403 187.5 329.8Q187.5 274.5 197.9 232.1Q208.3 189.6 228.4 161.1Q248.5 132.5 278.5 117.9Q308.5 103.4 347.3 103.4Z',x0:39.0,x1:651.2},N:{d:'M57.8 0V660H249.3L527.2 189.8H533.5L529.1 660H670.7V0H493.2L201.4 487.1H195L199.4 0Z',x0:57.8,x1:670.7},I:{d:'M57.8 0V660H203.7V0Z',x0:57.8,x1:203.7}};
 
 /* ===== icones (tracos de 2 px, 24x24) ===== */
 var IC={
@@ -429,7 +434,18 @@ var IC={
 };
 function ic(n,s,sw){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+IC[n]+'</svg>'}
 function wordmark(){
- return '<div class="wm" role="img" aria-label="Coinc"><span aria-hidden="true">C</span><svg viewBox="-24 -24 48 48" aria-hidden="true">'+coinG(20).replace(/stroke-width="2.4"/,'stroke-width="3.4"')+'</svg><span aria-hidden="true">inc</span></div>';
+ /* COINC em maiusculas, glifos reais do Bricolage 700 (a fonte dos numeros do app) como paths; o O e a moeda ambar */
+ var order=['C','O','I','N','C'],gap={'CO':64,'OI':88,'IN':92,'NC':92},x=0,h='',prev=null,CAP=660,R=336,coin=null;
+ order.forEach(function(ch,i){
+  var gl=WG[ch];if(prev)x+=gap[prev+ch];
+  if(ch==='O'){coin=x+R;x+=2*R;prev='O';return}
+  h+='<path transform="translate('+(x-gl.x0).toFixed(1)+' '+CAP+') scale(1 -1)" d="'+gl.d+'" fill="var(--okink)"/>';
+  x+=gl.x1-gl.x0;prev=ch;
+ });
+ var W=x;
+ var cn=coinG(R).replace(/stroke-width="[\d.]+"/,'stroke-width="'+(R*.16)+'"');
+ h+='<g transform="translate('+coin.toFixed(1)+' '+(CAP/2)+')">'+cn+'</g>';
+ return '<div class="wm" role="img" aria-label="Coinc"><svg viewBox="-20 -30 '+(W+40)+' '+(CAP+60)+'" aria-hidden="true" focusable="false">'+h+'</svg></div>';
 }
 
 /* ===== texto ===== */
@@ -476,8 +492,8 @@ function buildInner(kind,w,h){
   s+='<div class="bot" style="margin-top:4px">'+dots(3)+'<button class="cta" type="button">Já adicionei</button></div>';
  }else{
   var err=kind==='le',off=kind==='lo';
-  s+='<div class="lg"><div class="lgv" data-stage style="margin-top:'+Math.round(Math.max(0,(h-740)*.45))+'px;height:'+Math.round(w*.5)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
-   '<p class="tag">Entre e veja quanto ainda pode gastar.</p><div class="form">'+
+  s+='<div class="lg"><span class="tgap"></span><div class="lgv" data-stage style="height:'+Math.round(w*.5)+'px"><div class="halo" data-halo></div>'+vwrap(100)+'</div>'+wordmark()+
+   '<div class="form">'+
    fieldHTML('email','mail','E-mail',(err||off)?'ana@email.com':'',err,'em'+(++UID))+
    fieldHTML('password','lock','Senha',(err||off)?'senha1234':'',err,'pw'+UID,'<button class="eyeb" type="button" aria-label="Mostrar senha">'+ic('eye',20)+'</button>')+
    (err?'<div class="note-box err" role="alert">'+ic('alert',20)+'<span>E-mail ou senha incorretos. Confira e tente de novo.</span></div>':'')+

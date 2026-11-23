@@ -34,7 +34,7 @@ const TOKENS = {
   'dot-bill-paid': '#6e7430',
   'dot-pig': '#b8467f',
   'dot-goal': '#7a5cc0',
-  ele: '#4c513b',
+  ele: '#2f6f3e',
   ela: '#9a4a26',
   'bill-od-bg': '#f8e3da',
   'bill-soon-bg': '#f8ead2',
@@ -48,14 +48,14 @@ test('index.css traz os 20 tokens da fase em hex literal', () => {
   }
 })
 
-test('os tokens da fase ficam no @theme inline e sem variante escura', () => {
+test('os tokens da fase ficam no @theme static e sem variante escura', () => {
   const css = code('src/index.css')
-  const themeStart = css.indexOf('@theme inline')
+  const themeStart = css.indexOf('@theme static')
   const themeEnd = css.indexOf('@layer base', themeStart)
   const theme = css.slice(themeStart, themeEnd)
   const dark = css.slice(css.indexOf('.dark {'))
   for (const name of Object.keys(TOKENS)) {
-    assert.ok(theme.includes(`--color-${name}:`), `--color-${name} fora do @theme inline`)
+    assert.ok(theme.includes(`--color-${name}:`), `--color-${name} fora do @theme static`)
     assert.ok(!dark.includes(`--color-${name}`), `--color-${name} com variante escura`)
   }
 })

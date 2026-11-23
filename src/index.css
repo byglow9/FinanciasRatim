@@ -39,10 +39,20 @@
   --color-warn-ink: hsl(var(--warn-ink));
   --color-danger-ink: hsl(var(--danger-ink));
 
+  --radius-card: 22px;
+  --radius-btn: 16px;
+  --radius-chip: 12px;
+}
+
+/* Tokens de cor em hex literal. Bloco `static` (sem `inline`): a utilitaria continua apontando para a
+   variavel, entao a classe .dark consegue reescreve-la; dentro de `@theme inline` o hex viraria literal
+   na utilitaria e o escuro nao pegaria. `static` tambem garante a emissao dos tokens que so sao lidos
+   por var(--color-x) em TS (Recharts). */
+@theme static {
   /* Paleta definitiva (.planning/PALETA.md): creme, areia, salvia, oliva e quase-preto, medida da
      imagem de referencia. Fundo e texto de acao em hex literal: espelham --primary/--primary-foreground
      (cor de "Acao") para os botoes nao dependerem de hsl(var(...)) nem do nome "primary". */
-  --color-action: #4c513b;
+  --color-action: #2f6f3e;
   --color-action-text: #fbf6ea;
 
   /* Fundos suaves dos estados (texto sempre a tinta -ink correspondente) */
@@ -53,10 +63,10 @@
   --color-pig-ink: #9a2e5a;
 
   /* Dock flutuante: oliva escuro com icones creme; item ativo em pilula creme; botao + em verde-folha */
-  --color-dock: #4c513b;
+  --color-dock: #2c5a38;
   --color-dock-fg: #f5ecdb;
   --color-dock-active: #f5ecdb;
-  --color-dock-active-fg: #4c513b;
+  --color-dock-active-fg: #2c5a38;
   --color-fab: #788f56;
   --color-fab-fg: #1e1f19;
 
@@ -111,7 +121,7 @@
   --color-dot-goal: #7a5cc0;
 
   /* Ele e Ela no Casal */
-  --color-ele: #4c513b;
+  --color-ele: #2f6f3e;
   --color-ela: #9a4a26;
 
   /* Linha de conta vencida e em breve */
@@ -119,10 +129,6 @@
   --color-bill-soon-bg: #f8ead2;
 
   --shadow-float: 0 8px 30px rgba(40, 30, 0, 0.16);
-
-  --radius-card: 22px;
-  --radius-btn: 16px;
-  --radius-chip: 12px;
 }
 
 @layer base {
@@ -137,7 +143,7 @@
     --card-foreground: 70 10.7% 11%;  /* #1e1f19 */
     --popover: 42.4 68% 95.1%;  /* #fbf6ea */
     --popover-foreground: 70 10.7% 11%;  /* #1e1f19 */
-    --primary: 73.6 15.7% 27.5%;  /* #4c513b */
+    --primary: 134.1 40.5% 31%;  /* #2f6f3e */
     --primary-foreground: 42.4 68% 95.1%;  /* #fbf6ea */
     --secondary: 41.8 46.5% 86.1%;  /* #ece2cb */
     --secondary-foreground: 70 10.7% 11%;  /* #1e1f19 */
@@ -149,7 +155,7 @@
     --destructive-foreground: 42.4 68% 95.1%;  /* #fbf6ea */
     --border: 40 41.1% 81.4%;  /* #e3d6bc */
     --input: 67.8 10.1% 44.5%;  /* #7a7d66 */
-    --ring: 73.6 15.7% 27.5%;  /* #4c513b */
+    --ring: 134.1 40.5% 31%;  /* #2f6f3e */
     --radius: 0.5rem;
 
     /* Tokens Moeda da Fase 3 (sem variante escura: IDEN-05, Fase 5) */

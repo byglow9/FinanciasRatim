@@ -82,7 +82,7 @@ test('index.css liga as familias de fonte do pacote (D-22)', () => {
 test('index.css traz a paleta definitiva (D-17, PR-17, .planning/PALETA.md)', () => {
   const c = css()
   assert.match(c, /--muted-foreground:\s*70\.9 12\.9% 33\.3%/)
-  assert.match(c, /--primary:\s*73\.6 15\.7% 27\.5%/)
+  assert.match(c, /--primary:\s*134\.1 40\.5% 31%/)
   for (const t of ['surface-2', 'track', 'brand', 'warn', 'danger', 'ok-ink', 'warn-ink', 'danger-ink']) {
     assert.match(c, new RegExp(`--color-${t}:`), `token --color-${t} ausente`)
   }

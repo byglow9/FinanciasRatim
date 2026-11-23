@@ -13,8 +13,8 @@ function hslToHex(h, s, l) {
   return `#${[f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('')}`
 }
 
-/** Mapa nome -> hex de todos os tokens de cor claros (sem o bloco .dark). */
-export function tokens() {
+/** Mapa nome -> hex de todos os tokens de cor claros (tudo que vem antes do bloco .dark). */
+export function tokens(theme = 'light') {
   const src = css()
   const light = src.slice(0, src.indexOf('.dark {'))
   const map = {}

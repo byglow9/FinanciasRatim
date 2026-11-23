@@ -3,7 +3,7 @@
 // Rodar: node --test test/static/palette-contrast.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { contrast, PAIRS, tokens } from './helpers/palette.js'
+import { contrast, luminance, PAIRS, tokens } from './helpers/palette.js'
 import { code, listSrc } from './helpers/phase3-1.js'
 
 test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
@@ -11,9 +11,11 @@ test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
   assert.equal(t.background, '#f5ecdb', 'creme e o fundo')
   assert.equal(t.sand, '#bb9a77', 'areia')
   assert.equal(t.sage, '#888b76', 'salvia')
-  assert.equal(t.action, '#4c513b', 'oliva escuro e a acao')
+  assert.equal(t.action, '#2f6f3e', 'verde de acao (D-07, mais claro que o oliva antigo)')
   assert.equal(t.foreground, '#1e1f19', 'quase-preto e o texto')
-  assert.equal(t.dock, t.action, 'a dock e oliva')
+  assert.equal(t.dock, '#2c5a38', 'a dock e verde mais escuro que a acao (P-01)')
+  assert.notEqual(t.dock, t.action, 'a dock deixa de ser igual a acao')
+  assert.ok(luminance(t.dock) < luminance(t.action), 'a dock e mais escura que a acao')
 })
 
 test('hierarquia de superficies: pagina < cartao; item e campo nunca mais claros que o cartao; nenhuma e branco puro', () => {

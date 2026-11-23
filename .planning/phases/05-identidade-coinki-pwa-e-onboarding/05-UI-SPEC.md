@@ -1,7 +1,8 @@
 ---
 phase: "5"
 slug: "identidade-coinc-pwa-e-onboarding"
-status: draft
+status: approved
+reviewed_at: "2026-11-23"
 shadcn_initialized: false
 preset: none
 created: "2026-11-23"
@@ -690,12 +691,12 @@ Itens com default; "confirmar" = checar com o dono sem bloquear o plano.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
-- [ ] Dimension 7 Inventory Provenance: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
+- [x] Dimension 7 Inventory Provenance: PASS
 
-**Approval:** pending
+**Approval:** 2026-11-23 (gsd-ui-checker: VERIFIED, 4 FLAGs não bloqueantes: CTAs de uma palavra, rodapé pt-3 fora da tabela de exceções, aprovação do npm pendente, S5 sem a condição de nada em andamento para o gatilho de segundo plano)

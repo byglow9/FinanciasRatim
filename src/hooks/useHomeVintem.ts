@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
-import type { VintemState } from '@/components/vintem/Vintem'
+import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 import type { CategoryDef, Transaction } from '@/types'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
-import { deriveVintemState, type MoodFacts } from '@shared/core/vintemMood.js'
+import { deriveVintemState, situationForTap, type MoodFacts } from '@shared/core/vintemMood.js'
 
 type Budget = ReturnType<typeof useCycleBudget>
 
@@ -27,7 +28,12 @@ export interface HomeVintem {
   state: VintemState
   situation: string | null
   subject: { categoryId?: string; merchantKey?: string } | null
+  /** Toque no Vintem: acorda o sonolento, gira de lado (sem movimento reduzido) e troca a fala. */
+  onTap: (handle: VintemHandle | null) => void
 }
+
+/** Tempo em perfil antes de voltar (o giro todo dura cerca de 1,6 s). */
+const TURN_HOLD_MS = 600
 
 type View = NonNullable<Budget['view']>
 
@@ -84,7 +90,7 @@ export function useHomeVintem({ view, cycle, enabled, readOnly, insights }: UseH
     [enabled, view, readOnly, tone, todayKey, insights],
   )
 
-  const mood = useMemo<HomeVintem>(() => {
+  const mood = useMemo(() => {
     const result = deriveVintemState(facts, null, 0)
     return { state: result.state, situation: result.situation, subject: result.subject }
   }, [facts])
@@ -102,5 +108,42 @@ export function useHomeVintem({ view, cycle, enabled, readOnly, insights }: UseH
     speak({ situation, raw: slotsFor(situation, subject, view, categoryDefs), announce: false })
   }, [view, situation, subject, entryKey, speak, categoryDefs])
 
-  return mood
+  // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
+  // do giro ficam em ref e sao limpos ao desmontar.
+  const reduced = useReducedMotion()
+  const turnTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const turned = useRef<VintemHandle | null>(null)
+  useEffect(
+    () => () => {
+      if (turnTimer.current !== null) clearTimeout(turnTimer.current)
+      turned.current?.setTurn(false)
+    },
+    [],
+  )
+  const onTap = useCallback(
+    (handle: VintemHandle | null) => {
+      if (view === null || !enabled || readOnly || view.isPast || !view.income.hasIncome) return
+      const tapSituation = situationForTap(facts)
+      if (tapSituation === null) return
+      const raw = slotsFor(tapSituation, null, view, categoryDefs)
+      // Acordou o sonolento: o susto do proprio Vintem basta, sem giro.
+      if (handle?.touch()) {
+        speak({ situation: tapSituation, raw, announce: true })
+        return
+      }
+      if (!reduced && handle) {
+        if (turnTimer.current !== null) clearTimeout(turnTimer.current)
+        handle.setTurn(true)
+        turned.current = handle
+        turnTimer.current = setTimeout(() => {
+          handle.setTurn(false)
+          turnTimer.current = null
+        }, TURN_HOLD_MS)
+      }
+      speak({ situation: tapSituation, raw, announce: true })
+    },
+    [view, enabled, readOnly, facts, categoryDefs, speak, reduced],
+  )
+
+  return { ...mood, onTap }
 }

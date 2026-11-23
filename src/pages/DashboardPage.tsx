@@ -120,7 +120,7 @@ export function DashboardPage() {
           tone={suppressed ? 'neutral' : arcToneFor(view?.rhythmLevel ?? null)}
           loading={loading}
         >
-          <VintemSlot state={vintem.state} />
+          <VintemSlot state={vintem.state} onTap={vintem.onTap} />
         </ArcGauge>
 
         {view === null && (

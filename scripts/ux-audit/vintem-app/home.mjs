@@ -82,4 +82,43 @@ export async function run({ page, check, navigate, sleep }) {
     const gone = await page.evaluate(`!${BALLOON}`)
     check('tocar-no-balao-remove', dismissed && gone, { dismissed, gone })
   }
+
+  // Tocar no Vintem: abre uma fala em ate 2 s e o balao ganha o botao de dispensa. Sem movimento
+  // reduzido o perfil (grupo "side") aparece durante o giro.
+  const dismissBalloon = `(() => { document.querySelector('button[aria-label="Dispensar fala do Vintém"]')?.click() })()`
+  const tapAndSample = `new Promise((resolve) => {
+    const btn = ${SLOT}
+    const side = btn.querySelector('g[id$="-side"]')
+    let profile = false
+    let balloon = false
+    btn.click()
+    const t0 = performance.now()
+    const id = setInterval(() => {
+      if (side && getComputedStyle(side).display !== 'none') profile = true
+      if (document.querySelector('button[aria-label="Dispensar fala do Vintém"]')) balloon = true
+      if (performance.now() - t0 > 1800) {
+        clearInterval(id)
+        resolve({ profile, balloon, text: document.querySelector('[data-situation] button span')?.textContent ?? '' })
+      }
+    }, 40)
+  })`
+
+  await page.evaluate(dismissBalloon)
+  await sleep(300)
+  const tapped = await page.evaluate(tapAndSample)
+  check('tocar-no-vintem-abre-fala-em-ate-2s', tapped.balloon && tapped.text.length > 0, tapped)
+  check('tocar-no-vintem-gira-de-lado', tapped.profile, { profile: tapped.profile })
+  const liveAfterTap = await page.evaluate(`document.querySelector('p.sr-only[role="status"]')?.textContent ?? null`)
+  check('fala-por-toque-vai-a-regiao-viva', typeof liveAfterTap === 'string' && liveAfterTap.length > 0, { liveAfterTap })
+
+  // Movimento reduzido emulado: o toque fala, mas o perfil nunca aparece.
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
+  await navigate(route, `${SLOT}`)
+  await sleep(1500)
+  await page.evaluate(dismissBalloon)
+  await sleep(300)
+  const reducedTap = await page.evaluate(tapAndSample)
+  check('movimento-reduzido-toque-fala', reducedTap.balloon && reducedTap.text.length > 0, reducedTap)
+  check('movimento-reduzido-sem-perfil', !reducedTap.profile, { profile: reducedTap.profile })
+  await page.send('Emulation.setEmulatedMedia', { features: [] })
 }

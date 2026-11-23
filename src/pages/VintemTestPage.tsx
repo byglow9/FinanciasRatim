@@ -4,8 +4,12 @@ import { Label } from '@/components/ui/label'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { Vintem, type VintemHandle, type VintemState } from '@/components/vintem/Vintem'
+import { VintemInlineRow } from '@/components/vintem/VintemInlineRow'
+import type { ArcTone } from '@/lib/rhythm'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { cn } from '@/lib/utils'
 import type { VintemTone } from '@/types'
 import { PHRASES } from '@shared/core/vintemPhrases.js'
 import { buildSlots, pick, pushRecent, recentKey, recentLimit } from '@shared/core/phrasePicker.js'
@@ -28,6 +32,17 @@ const TONE_OPTIONS: { value: VintemTone; label: string }[] = [
   { value: 'direto', label: 'Direto' },
   { value: 'sem-filtro', label: 'Sem filtro' },
 ]
+
+/** Tom do arco por estado do palco (UI-SPEC S7): feliz e neutro em marca, atento em aviso, bravo e triste em perigo. */
+const ARC_TONE_BY_STATE: Record<VintemState, ArcTone> = {
+  neutro: 'brand',
+  feliz: 'brand',
+  atento: 'warn',
+  bravo: 'danger',
+  triste: 'danger',
+  sonolento: 'neutral',
+  surpreso: 'neutral',
+}
 
 /** Encaixes ficticios das falas de teste: a pagina nunca le dado do usuario. */
 const SAMPLE_SLOTS = buildSlots({
@@ -94,6 +109,8 @@ export function VintemTestPage() {
   const [reducedPick, setReducedPick] = useState<boolean | null>(null)
   const reduced = reducedPick ?? media
   const [speech, setSpeech] = useState<string | null>(null)
+  // Muda a cada fala nova: reinicia o pop do balao.
+  const [popKey, setPopKey] = useState(0)
   const recent = useRef<Record<string, string[]>>({})
 
   const onPct = (next: number) => {
@@ -124,6 +141,7 @@ export function VintemTestPage() {
     const variants = PHRASES[situation]?.[tone]?.length ?? 0
     recent.current = pushRecent(recent.current, recentKey(situation, tone), found.id, recentLimit(variants))
     setSpeech(found.text)
+    setPopKey((k) => k + 1)
   }
 
   return (
@@ -220,6 +238,60 @@ export function VintemTestPage() {
         <p id="vt-speech" role="status" className="text-base font-normal">
           {speech}
         </p>
+      </section>
+
+      <section aria-labelledby="vt-seven" className="space-y-4 rounded-card bg-card p-4">
+        <h2 id="vt-seven" className="text-base font-bold">
+          Sete estados em 84px
+        </h2>
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+          {STATE_OPTIONS.map((o) => {
+            const active = o.value === state
+            return (
+              <button
+                key={o.value}
+                type="button"
+                aria-label={o.label}
+                aria-pressed={active}
+                onClick={() => setState(o.value)}
+                className={cn(
+                  'flex min-h-[104px] flex-col items-center justify-center gap-1 rounded-2xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  active && 'ring-2 ring-action',
+                )}
+              >
+                <Vintem state={o.value} size="hero" follow={follow} reduced={reduced} />
+                <span className="text-xs font-normal">{o.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <section aria-labelledby="vt-gauge" className="space-y-4 rounded-card bg-card p-4">
+        <h2 id="vt-gauge" className="text-base font-bold">
+          No medidor
+        </h2>
+        <ArcGauge restPct={Math.min(Math.max(100 - pct, 0), 100)} tone={ARC_TONE_BY_STATE[state]}>
+          <Vintem state={state} size="hero" follow={follow} reduced={reduced} />
+        </ArcGauge>
+      </section>
+
+      <section aria-labelledby="vt-balloon" className="space-y-4 rounded-card bg-card p-4">
+        <h2 id="vt-balloon" className="text-base font-bold">
+          Balão de fala
+        </h2>
+        {speech ? (
+          <VintemInlineRow
+            state={state}
+            text={speech}
+            popKey={popKey}
+            reduced={reduced}
+            onTap={speak}
+            onDismiss={() => setSpeech(null)}
+          />
+        ) : (
+          <p className="text-xs font-normal text-muted-foreground">Toque em Falar para ouvir uma fala</p>
+        )}
       </section>
     </div>
   )

@@ -2,7 +2,7 @@
 // Rodar: node --test test/static/phase4-testpage.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+import { code, listSrc, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const APP = 'src/App.tsx'
 const PAGE = 'src/pages/VintemTestPage.tsx'
@@ -77,4 +77,57 @@ test('a pagina nao le nem grava dado do usuario: nenhum servico, hook de dados o
   assert.doesNotMatch(src, /from ['"]@\/hooks\/use(?!ReducedMotion)/, 'a pagina importa um hook de dados')
   assert.doesNotMatch(src, /from ['"]@\/contexts/, 'a pagina importa um contexto de dados')
   assert.doesNotMatch(src, /localStorage|sessionStorage|updateVintemTone|updateSettings/, 'a pagina grava algo')
+})
+
+const BALLOON = 'src/components/vintem/VintemBalloon.tsx'
+const INLINE_ROW = 'src/components/vintem/VintemInlineRow.tsx'
+const WORLD = 'src/lib/vintem/world.ts'
+const NEW_FILES = [PAGE, BALLOON, INLINE_ROW]
+
+test('a pagina tem os cartoes Sete estados em 84px, No medidor e Balao de fala', () => {
+  const src = code(PAGE)
+  for (const title of ['Sete estados em 84px', 'No medidor', 'Balão de fala', 'Toque em Falar para ouvir uma fala']) {
+    assert.ok(src.includes(title), `pagina sem "${title}"`)
+  }
+  assert.match(src, /<ArcGauge\b/, 'o medidor nao e o ArcGauge real')
+  assert.match(src, /<VintemInlineRow\b/, 'a pagina nao usa a linha em linha')
+  const order = ['Vintém grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala'].map((t) => src.indexOf(t))
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), 'cartoes fora da ordem do UI-SPEC S7')
+})
+
+test('o balao e botao dispensavel, texto simples dentro de aria-hidden, sem corte nem HTML bruto', () => {
+  const src = code(BALLOON)
+  assert.match(src, /aria-label="Dispensar fala do Vintém"/, 'balao sem o aria-label do contrato')
+  assert.match(src, /<span aria-hidden="true">\{text\}<\/span>/, 'o texto nao fica dentro de aria-hidden como filho React')
+  assert.match(src, /type="button"/, 'o balao nao e um botao')
+  assert.doesNotMatch(src, /line-clamp|truncate|text-ellipsis/, 'o balao trunca a fala')
+  assert.doesNotMatch(src, /\bitalic\b/, 'o balao usa italico')
+  assert.doesNotMatch(src, /dangerouslySetInnerHTML|innerHTML/, 'o balao injeta HTML')
+  assert.match(src, /bg-\[var\(--vintem-balloon\)\]/, 'balao sem o token de fundo')
+  assert.match(src, /text-\[var\(--vintem-balloon-fg\)\]/, 'balao sem o token de texto')
+})
+
+test('o pop do balao usa o laco unico (onFrame) e nao cria outro requestAnimationFrame nem estado por quadro', () => {
+  const balloon = code(BALLOON)
+  assert.match(balloon, /onFrame\(/, 'o balao nao usa onFrame')
+  assert.match(balloon, /SPRING_PARAMS\.bub/, 'o balao nao usa a mola bub')
+  assert.doesNotMatch(balloon, /useState/, 'o balao guarda estado por quadro')
+  assert.match(code(WORLD), /export function onFrame\(/, 'world.ts nao exporta onFrame')
+  const raf = [...listSrc('src')].filter((f) => /requestAnimationFrame\s*\(/.test(code(f)))
+  const outside = raf.filter((f) => f !== WORLD && !/ArcGauge|useSectionReveal/.test(f))
+  assert.deepEqual(outside, [], 'requestAnimationFrame novo fora de world.ts')
+  assert.equal((code(WORLD).match(/requestAnimationFrame\s*\(/g) ?? []).length, 2, 'world.ts deve ter so o rAF do laco (inicio e continuacao)')
+})
+
+test('a linha em linha some sem texto e usa o Vintem de 48px', () => {
+  const src = code(INLINE_ROW)
+  assert.match(src, /size="inline"/, 'linha sem o Vintem de 48px')
+  assert.match(src, /if \(!text\) return null/, 'a linha nao some sem texto')
+  assert.match(src, /aria-label="Vintém, toque para ouvir uma fala"/, 'linha sem o aria-label do contrato')
+  assert.match(src, /h-12 w-12/, 'o botao do Vintem nao tem 48x48')
+})
+
+test('as pecas novas seguem a escala tipografica e os alvos de toque', () => {
+  assert.deepEqual(scaleProblems(NEW_FILES), [])
+  assert.deepEqual(touchProblems(NEW_FILES), [])
 })

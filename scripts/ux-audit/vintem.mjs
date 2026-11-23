@@ -261,6 +261,41 @@ async function runChecks(page, collected) {
   const blink = await page.evaluate(WAIT_BLINK(9000))
   check('piscada-observada-em-9s', blink.changed, blink)
 
+  // (4b) Cartoes novos: grade de 7 estados em 84 px, medidor real com Vintem no slot e balao ainda sem fala.
+  const cards = await page.evaluate(`(() => {
+    const titles = [...document.querySelectorAll('section h2')].map((h) => h.textContent.trim())
+    const section = (t) => [...document.querySelectorAll('section')].find((x) => x.querySelector('h2')?.textContent.trim() === t)
+    const grid = section('Sete estados em 84px')
+    const gridBtns = grid ? [...grid.querySelectorAll('button')] : []
+    const gridArt = gridBtns.map((b) => { const r = b.querySelector('svg.vt')?.getBoundingClientRect(); return r ? Math.round(r.width) : 0 })
+    const gaugeSvg = section('No medidor')?.querySelector('svg.vt')
+    const gaugeBox = gaugeSvg ? Math.round(gaugeSvg.getBoundingClientRect().width) : 0
+    const inGauge = Boolean(gaugeSvg && gaugeSvg.closest('div.rounded-full'))
+    const balloonCard = section('Balão de fala')
+    return {
+      titles,
+      gridCount: gridBtns.length,
+      gridArt,
+      pressed: gridBtns.filter((b) => b.getAttribute('aria-pressed') === 'true').length,
+      gaugeBox,
+      inGauge,
+      balloonLegend: balloonCard?.textContent.includes('Toque em Falar para ouvir uma fala') ?? false,
+      balloonButtons: balloonCard ? balloonCard.querySelectorAll('button').length : -1,
+    }
+  })()`)
+  const wantTitles = ['Vintém grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala']
+  check('cinco-cartoes-na-ordem-do-contrato', JSON.stringify(cards.titles) === JSON.stringify(wantTitles), { titles: cards.titles })
+  check(
+    'grade-de-sete-estados-em-84px',
+    cards.gridCount === 7 && cards.gridArt.every((w) => w === 84) && cards.pressed === 1,
+    { gridCount: cards.gridCount, gridArt: cards.gridArt, pressed: cards.pressed },
+  )
+  check('arcgauge-real-com-vintem-84-no-slot', cards.gaugeBox === 84 && cards.inGauge, { gaugeBox: cards.gaugeBox, inGauge: cards.inGauge })
+  check('balao-sem-fala-mostra-so-a-legenda', cards.balloonLegend && cards.balloonButtons === 0, {
+    balloonLegend: cards.balloonLegend,
+    balloonButtons: cards.balloonButtons,
+  })
+
   // (5) Estado pelo Select: "Triste" liga a lagrima.
   await page.evaluate(PICK_SELECT_OPTION('vt-state', 'Triste'))
   await sleep(150)
@@ -280,6 +315,31 @@ async function runChecks(page, collected) {
   const speech = await page.evaluate(`document.getElementById('vt-speech')?.textContent?.trim() ?? ''`)
   check('falar-mostra-texto', clickedFalar && speech.length > 0, { clickedFalar, speech: speech.slice(0, 80) })
 
+  // (7b) Balao de fala: aparece com a fala, pop de mola por onFrame e texto simples dentro de aria-hidden.
+  const pop = await page.evaluate(`new Promise((resolve) => {
+    const falar = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Falar')
+    falar.click()
+    const grab = () => document.querySelector('button[aria-label="Dispensar fala do Vintém"]')
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = grab()
+      if (!el) { resolve({ found: false }); return }
+      const early = { opacity: el.style.opacity, transform: el.style.transform, origin: el.style.transformOrigin }
+      const t0 = performance.now()
+      const timer = setInterval(() => {
+        const e = grab()
+        const settled = e && e.style.transform === 'none' && e.style.opacity === '1'
+        const spent = Math.round(performance.now() - t0)
+        if (settled || spent > 3000) {
+          clearInterval(timer)
+          const hiddenText = e ? e.querySelector('span[aria-hidden="true"]')?.textContent ?? '' : ''
+          resolve({ found: true, early, settled: Boolean(settled), ms: spent, hiddenText: hiddenText.slice(0, 60), height: e ? Math.round(e.getBoundingClientRect().height) : 0, rowBtn: Boolean(document.querySelector('button[aria-label="Vintém, toque para ouvir uma fala"]')) })
+        }
+      }, 50)
+    }))
+  })`)
+  const animating = pop.found && (Number(pop.early.opacity) < 1 || /scale/.test(pop.early.transform))
+  check('balao-aparece-com-pop-e-assenta', pop.found && animating && pop.settled && pop.hiddenText.length > 0 && pop.rowBtn && pop.height >= 48, pop)
+
   // (8) Girar de lado: o perfil aparece em ate 2 s e a frente volta ao desligar.
   await page.evaluate(CLICK_BY_ID('vt-turn'))
   const profile = await page.evaluate(WAIT_FOR(`document.querySelector('svg.vt [id$="-side"]')?.getAttribute('display') === 'inline'`, 2000))
@@ -293,6 +353,17 @@ async function runChecks(page, collected) {
   check('sem-rolagem-horizontal-a-360', scroll.sw <= scroll.cw && scroll.bw <= scroll.cw, scroll)
   const small = await page.evaluate(SMALL_TARGETS)
   check('nenhum-alvo-de-toque-menor-que-43-5', small.length === 0, { small })
+
+  // (9b) Tocar no balao o dispensa e a legenda volta.
+  const dismissed = await page.evaluate(`(() => {
+    const el = document.querySelector('button[aria-label="Dispensar fala do Vintém"]')
+    if (!el) return { had: false }
+    el.click()
+    return { had: true }
+  })()`)
+  await sleep(200)
+  const after = await page.evaluate(`({ gone: !document.querySelector('button[aria-label="Dispensar fala do Vintém"]'), legend: document.body.textContent.includes('Toque em Falar para ouvir uma fala') })`)
+  check('balao-dispensa-ao-tocar', dismissed.had && after.gone && after.legend, { ...dismissed, ...after })
 
   // (10) Movimento reduzido: a cobertura da palpebra fica parada por 6 s.
   await page.evaluate(CLICK_BY_ID('vt-reduced'))

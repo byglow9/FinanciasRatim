@@ -26,6 +26,8 @@ interface Instance {
 }
 
 const instances = new Set<Instance>()
+/** Retornos por quadro de outras pecas (ex.: pop do balao): rodam no mesmo laco, sem outro rAF. */
+const frameCallbacks = new Set<(dtSec: number) => boolean>()
 const byHost = new WeakMap<Element, Instance>()
 
 let raf = 0
@@ -86,7 +88,7 @@ function onVisibility() {
 
 /** Acorda o laco (troca de estado, reacao, entrada na tela, aba de volta). */
 export function wake() {
-  if (raf || document.hidden || instances.size === 0) return
+  if (raf || document.hidden || (instances.size === 0 && frameCallbacks.size === 0)) return
   raf = requestAnimationFrame(frame)
 }
 
@@ -116,6 +118,19 @@ function frame(now: number) {
     inst.draw()
     if (!(inst.reduced() && inst.model.isSettled())) busy = true
   }
+
+  // Retornos por quadro (depois dos desenhos): falso devolvido ou excecao tira o retorno do laco.
+  for (const cb of [...frameCallbacks]) {
+    let alive = false
+    try {
+      alive = cb(dt)
+    } catch {
+      alive = false
+    }
+    if (!alive) frameCallbacks.delete(cb)
+  }
+  if (frameCallbacks.size > 0) busy = true
+  else releaseLoopIfIdle()
 
   if (busy) raf = requestAnimationFrame(frame)
   else last = 0
@@ -185,16 +200,40 @@ export function registerInstance(o: {
     simWorld.remove(o.model)
     syncPointerListeners()
     if (instances.size === 0) {
-      if (raf) cancelAnimationFrame(raf)
-      raf = 0
-      last = 0
       observer?.disconnect()
       observer = null
-      if (hiddenListening) {
-        document.removeEventListener('visibilitychange', onVisibility)
-        hiddenListening = false
-      }
+      releaseLoopIfIdle()
     }
+  }
+}
+
+/** Sem instancia e sem retorno por quadro: para o laco e solta o ouvinte de visibilidade. */
+function releaseLoopIfIdle() {
+  if (instances.size > 0 || frameCallbacks.size > 0) return
+  if (raf) cancelAnimationFrame(raf)
+  raf = 0
+  last = 0
+  if (hiddenListening) {
+    document.removeEventListener('visibilitychange', onVisibility)
+    hiddenListening = false
+  }
+}
+
+/**
+ * Registra um retorno por quadro no laco unico (o pop do balao entra por aqui, sem segundo
+ * requestAnimationFrame). O retorno recebe `dtSec` e devolve falso quando terminou; sai do laco
+ * sozinho. Devolve a funcao de remocao antecipada (simetrica em StrictMode).
+ */
+export function onFrame(cb: (dtSec: number) => boolean): () => void {
+  frameCallbacks.add(cb)
+  if (!hiddenListening) {
+    document.addEventListener('visibilitychange', onVisibility)
+    hiddenListening = true
+  }
+  wake()
+  return () => {
+    frameCallbacks.delete(cb)
+    releaseLoopIfIdle()
   }
 }
 

@@ -388,7 +388,7 @@ async function runChecks(page, collected) {
     const gridArt = gridBtns.map((b) => { const r = b.querySelector('svg.vt')?.getBoundingClientRect(); return r ? Math.round(r.width) : 0 })
     const gaugeSvg = section('No medidor')?.querySelector('svg.vt')
     const gaugeBox = gaugeSvg ? Math.round(gaugeSvg.getBoundingClientRect().width) : 0
-    const inGauge = Boolean(gaugeSvg && gaugeSvg.closest('div.rounded-full'))
+    const inGauge = Boolean(gaugeSvg && gaugeSvg.closest('div.absolute'))
     const balloonCard = section('Balão de fala')
     return {
       titles,
@@ -408,7 +408,7 @@ async function runChecks(page, collected) {
     cards.gridCount === 7 && cards.gridArt.every((w) => w === 84) && cards.pressed === 1,
     { gridCount: cards.gridCount, gridArt: cards.gridArt, pressed: cards.pressed },
   )
-  check('arcgauge-real-com-vintem-84-no-slot', cards.gaugeBox === 84 && cards.inGauge, { gaugeBox: cards.gaugeBox, inGauge: cards.inGauge })
+  check('arcgauge-real-com-vintem-150-no-slot', cards.gaugeBox === 150 && cards.inGauge, { gaugeBox: cards.gaugeBox, inGauge: cards.inGauge })
   check('balao-sem-fala-mostra-so-a-legenda', cards.balloonLegend && cards.balloonButtons === 0, {
     balloonLegend: cards.balloonLegend,
     balloonButtons: cards.balloonButtons,

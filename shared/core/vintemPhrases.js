@@ -96,4 +96,4 @@ export function mergeGroups(groups) {
 export const PHRASES = mergeGroups([PHRASES_LIMITES, PHRASES_LANCAMENTO, PHRASES_RITMO])
 
 /** Revisao do dono (D-12): `reviewedAt` vira data quando o dono fechar o checkpoint de conteudo. */
-export const REVIEW = Object.freeze({ reviewedAt: null })
+export const REVIEW = Object.freeze({ reviewedAt: '2026-11-23' })

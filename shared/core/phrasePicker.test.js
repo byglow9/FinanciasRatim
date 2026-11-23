@@ -180,5 +180,5 @@ test('o banco declara 20 situacoes, metadados completos e limite-perto com 8 fra
   for (const tone of TONES) assert.equal(PHRASES['limite-perto'][tone].length, 8)
   assert.equal(PHRASES['limite-perto'].suave[0].id, 'lp-su-01')
   assert.equal(PHRASES['limite-perto'].suave[0].t, 'Está perto do limite de {categoria}, vale segurar.')
-  assert.equal(REVIEW.reviewedAt, null)
+  assert.match(REVIEW.reviewedAt, /^\d{4}-\d{2}-\d{2}$/) // revisado pelo dono (plano 04-19)
 })

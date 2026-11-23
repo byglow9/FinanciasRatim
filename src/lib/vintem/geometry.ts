@@ -106,14 +106,17 @@ export const PROFILE = {
   eye: { x: 180, y: 107, k: 0.88, drift: 2 },
   /** Rabinho em espiral, preso ao corpo. */
   tail: { x: 36, y: 110, path: 'M0,0C-10,-2 -17,-12 -11,-20C-6,-26 3,-22 -1,-15' },
-  /** Duas patas do lado de la (escuras) e duas do lado de ca. */
+  /**
+   * Duas patas do lado de la (escuras) e duas do lado de ca. Terminam em y = 172: com 178 o triste (corpo
+   * mais alto, py 5 e cabeca tombada) empurrava a pata ate a borda de baixo do quadro no giro (autoteste 04-13).
+   */
   pawsFar: [
-    { x: 76, y: 146, width: 24, height: 32, rx: 11 },
-    { x: 150, y: 146, width: 24, height: 32, rx: 11 },
+    { x: 76, y: 146, width: 24, height: 26, rx: 11 },
+    { x: 150, y: 146, width: 24, height: 26, rx: 11 },
   ],
   pawsNear: [
-    { x: 46, y: 144, width: 28, height: 34, rx: 12 },
-    { x: 132, y: 144, width: 28, height: 34, rx: 12 },
+    { x: 46, y: 144, width: 28, height: 28, rx: 12 },
+    { x: 132, y: 144, width: 28, height: 28, rx: 12 },
   ],
   /** Todo o perfil a 95% em torno do chao (92% no sketch; maior para o giro nao perder area). */
   scale: 0.95,

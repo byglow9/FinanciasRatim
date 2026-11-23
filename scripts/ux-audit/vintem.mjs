@@ -263,7 +263,80 @@ async function runSelfTestChecks(page, collected) {
     exceptions: [...collected.exceptions],
     consoleErrors: [...collected.consoleErrors],
   })
+  await runRestChecks(page, collected, check)
   return results
+}
+
+/** Observa a pagina por `ms` e devolve as mutacoes de nos fora do svg do Vintem (os atributos mudam por quadro de proposito). */
+const OBSERVE_IDLE = (ms) => `new Promise((resolve) => {
+  const seen = []
+  const inVintem = (n) => { const el = n.nodeType === 1 ? n : n.parentElement; return Boolean(el && el.closest('svg.vt')) }
+  const obs = new MutationObserver((records) => {
+    for (const r of records) {
+      if (inVintem(r.target)) continue
+      seen.push({ type: r.type, target: r.target.nodeName, added: r.addedNodes.length, removed: r.removedNodes.length })
+    }
+  })
+  obs.observe(document.body, { childList: true, subtree: true, characterData: true })
+  setTimeout(() => { obs.disconnect(); resolve(seen.slice(0, 10)) }, ${ms})
+})`
+
+/** Valores distintos do atributo da cobertura da palpebra durante `ms`. */
+const LID_VALUES = (ms) => `new Promise((resolve) => {
+  const read = () => { const e = document.querySelector('svg.vt [id$="-eL"] [data-e="lb"]'); return e ? e.getAttribute('y') : null }
+  const seen = new Set([read()])
+  const t0 = performance.now()
+  const timer = setInterval(() => {
+    seen.add(read())
+    if (performance.now() - t0 >= ${ms}) { clearInterval(timer); resolve([...seen]) }
+  }, 50)
+})`
+
+/** Liga ou desliga a midia de movimento reduzido do proprio navegador (nao o interruptor da pagina). */
+const setReducedMedia = (page, on) =>
+  page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: on ? 'reduce' : 'no-preference' }] })
+
+/**
+ * Repouso sem re-render e movimento reduzido real (UI-SPEC "Movimento reduzido", testes 7 e 14): com a pagina
+ * parada nenhum no muda fora do svg do Vintem em 3 s; com a midia emulada a palpebra fica parada por 6 s, as
+ * expressoes ainda mudam e o perfil aparece de imediato; sem a midia a palpebra muda em ate 9 s.
+ */
+async function runRestChecks(page, collected, check) {
+  // (a) repouso: a pagina do autoteste ja terminou e nada mais deve mexer nos nos fora do svg
+  await sleep(500)
+  const idle = await page.evaluate(OBSERVE_IDLE(3000))
+  check('repouso-sem-mudanca-de-nos-fora-do-svg-em-3s', idle.length === 0, { mutations: idle })
+
+  // (b) movimento reduzido real: a midia e emulada e a pagina de teste recarregada
+  collected.exceptions.length = 0
+  collected.consoleErrors.length = 0
+  await setReducedMedia(page, true)
+  await navigate(page, `${ORIGIN}${ROUTE}`)
+  const media = await page.evaluate(`matchMedia('(prefers-reduced-motion: reduce)').matches`)
+  check('midia-de-movimento-reduzido-emulada', media === true, { media })
+  await sleep(1200)
+  const lids = await page.evaluate(LID_VALUES(6000))
+  check('midia-reduzida-segura-a-palpebra-por-6s', lids.length === 1, { values: lids })
+
+  await page.evaluate(PICK_SELECT_OPTION('vt-state', 'Triste'))
+  await sleep(150)
+  const clickedTriste = await page.evaluate(CLICK_OPTION('Triste'))
+  const tear = await page.evaluate(WAIT_FOR(`(() => { const e = document.querySelector('svg.vt [id$="-tear"]'); return e && e.getAttribute('display') === 'inline' })()`, 3000))
+  check('midia-reduzida-ainda-muda-a-expressao', clickedTriste && tear.ok, { clickedTriste, ...tear })
+
+  await page.evaluate(CLICK_BY_ID('vt-turn'))
+  const profile = await page.evaluate(WAIT_FOR(`document.querySelector('svg.vt [id$="-side"]')?.getAttribute('display') === 'inline'`, 500))
+  check('midia-reduzida-mostra-o-perfil-de-imediato', profile.ok, profile)
+
+  // (c) sem a midia a palpebra volta a mudar em ate 9 s
+  await setReducedMedia(page, false)
+  await navigate(page, `${ORIGIN}${ROUTE}`)
+  const blink = await page.evaluate(WAIT_BLINK(9000))
+  check('sem-a-midia-a-palpebra-muda-em-ate-9s', blink.changed, blink)
+  check('repouso-e-midia-sem-excecoes-nem-console-error', collected.exceptions.length === 0 && collected.consoleErrors.length === 0, {
+    exceptions: [...collected.exceptions],
+    consoleErrors: [...collected.consoleErrors],
+  })
 }
 
 /** Roda todas as verificacoes e devolve a lista de resultados. */

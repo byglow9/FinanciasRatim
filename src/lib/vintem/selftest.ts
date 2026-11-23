@@ -47,9 +47,20 @@ const MIN_SAD_HEIGHT_RATIO = 0.92
 const EAR_OVERHANG = 14
 const EAR_LEFT_LIMIT = 14
 const EAR_RIGHT_LIMIT = 226
+/** Giro: angulos medidos (0 a 1 em passos de 0,05) e minimos da silhueta em relacao a frente. */
+const TURN_STEPS = 20
+const MIN_TURN_WIDTH_RATIO = 0.5
+const MIN_TURN_AREA_RATIO = 0.7
+/** Acima disto (pixels) uma mancha conexa e o corpo; abaixo sao acessorios soltos (suor, Zzz, brilho). */
+const BODY_MIN_PX = 800
+/** Acessorio visivel no perfil: mais que isto de pixels na cor dele (UI-SPEC, ponto fraco 3). */
+const MIN_ACCESSORY_PIXELS = 12
+/** Distancia RGB maxima entre um pixel e a cor computada do acessorio (cobre a opacidade da fase fixa). */
+const ACCESSORY_COLOR_TOLERANCE = 120
 /** Lados do quadro de medicao (larguras em pixels); a altura segue a proporcao 6:5 do viewBox. */
 const SIZE_HERO = 84
 const SIZE_INLINE = 48
+const SIZE_STAGE = 240
 
 // ---- relatorio ----
 
@@ -536,6 +547,167 @@ async function checkWeakPoints12(r: Report, bg: Rgb) {
   m.dispose()
 }
 
+/** Os estados cujo acessorio precisa aparecer por pixels no perfil (UI-SPEC, ponto fraco 3), com o id do acessorio. */
+const PROFILE_ACCESSORIES: Array<[string, string]> = [
+  ['triste', 'tear'],
+  ['atento', 'sweat'],
+  ['bravo', 'anger'],
+  ['sonolento', 'z0'],
+]
+const NO_ACCESSORY = { tear: 0, sweat: 0, anger: 0, spark: 0, excl: 0, z: 0 }
+
+/** Opacidade efetiva de uma camada (frente ou perfil) lida dos atributos que o desenhista escreve. */
+function layerOpacity(el: Element): number {
+  if (el.getAttribute('display') === 'none') return 0
+  const op = el.getAttribute('opacity')
+  return op === null ? 1 : Number(op)
+}
+
+/** Olhos com caixa na camada dominante: dois na frente, um no perfil (empate vale a frente). */
+function visibleEyes(svg: SVGSVGElement): number {
+  const front = layerOpacity(svg.querySelector('[id$="-front"]') as Element)
+  const side = layerOpacity(svg.querySelector('[id$="-side"]') as Element)
+  if (front === 0 && side === 0) return 0
+  const ids = front >= side ? ['eL', 'eR'] : ['eP']
+  return ids.filter((id) => (svg.querySelector(`[id$="-${id}"]`) as SVGGElement).getBBox().width > 3).length
+}
+
+/** Leva um ponto do espaco local de `from` para o espaco local de `to` (ambos dentro do mesmo svg). */
+function between(from: SVGGraphicsElement, to: SVGGraphicsElement, x: number, y: number): DOMPoint {
+  const mat = (to.getScreenCTM() as DOMMatrix).inverse().multiply(from.getScreenCTM() as DOMMatrix)
+  return new DOMPoint(x, y).matrixTransform(mat)
+}
+
+/** Pontos da orelha que ficam dentro do corpo (espaco local da orelha): o pivo e o meio da base. */
+const EAR_ANCHORS_FRONT: Array<[string, number, number]> = [['pivo', 0, 0], ['base', 0, 8]]
+const EAR_ANCHORS_PROFILE: Array<[string, number, number]> = [['pivo', 0, 0], ['base', 1, 8]]
+
+/**
+ * Orelhas ancoradas: o pivo e o meio da base de cada orelha (ja com a rotacao e a escala da pose) caem
+ * dentro do preenchimento do corpo, na frente e no perfil. As pontas da base nao entram: com a orelha
+ * dobrada do triste uma ponta passa 3 unidades do topo da cabeca sem soltar a orelha do corpo.
+ */
+function anchoredEars(svg: SVGSVGElement): string[] {
+  const bad: string[] = []
+  const body = svg.querySelector('[id$="-bodyF"]') as SVGGeometryElement
+  // camada oculta (display none) nao tem matriz de tela confiavel: so mede a que aparece
+  const showFront = layerOpacity(svg.querySelector('[id$="-front"]') as Element) > 0
+  const showSide = layerOpacity(svg.querySelector('[id$="-side"]') as Element) > 0
+  for (const id of showFront ? ['earL', 'earR'] : []) {
+    const ear = svg.querySelector(`[id$="-${id}"]`) as SVGGraphicsElement
+    for (const [name, x, y] of EAR_ANCHORS_FRONT) {
+      if (!body.isPointInFill(between(ear, body, x, y))) bad.push(`${id} ${name}`)
+    }
+  }
+  if (!showSide) return bad
+  const prof = [svg.querySelector('[id$="-profHead"]'), svg.querySelector('[id$="-profBody"]')] as SVGGeometryElement[]
+  const earP = svg.querySelector('[id$="-earP"]') as SVGGraphicsElement
+  for (const [name, x, y] of EAR_ANCHORS_PROFILE) {
+    if (!prof.some((p) => p.isPointInFill(between(earP, p, x, y)))) bad.push(`earP ${name}`)
+  }
+  return bad
+}
+
+/** Pixels do acessorio: diferem da mesma pose sem acessorio e estao perto da cor computada dele. */
+function accessoryPixels(withAcc: Shot, without: Shot, color: Rgb): number {
+  const a = withAcc.img.data
+  const b = without.img.data
+  let n = 0
+  for (let i = 0; i < a.length; i += 4) {
+    const d = Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])
+    if (d <= DIFF_THRESHOLD) continue
+    const c = Math.abs(a[i] - color[0]) + Math.abs(a[i + 1] - color[1]) + Math.abs(a[i + 2] - color[2])
+    if (c <= ACCESSORY_COLOR_TOLERANCE) n++
+  }
+  return n
+}
+
+/** 9 e 10. Giro sem vazamento nem colapso nos 7 estados e 21 angulos, orelhas ancoradas, acessorios no perfil. */
+async function checkTurn(r: Report, bg: Rgb) {
+  const leaks: string[] = []
+  const collapse: string[] = []
+  const eyes: string[] = []
+  const ears: string[] = []
+  let worstWidth = Infinity
+  let worstArea = Infinity
+  let worstAt = ''
+  /** Pixels de desenho em cada borda do quadro, ex.: `topo 2, direita 3` (vazio quando limpo). */
+  const edge = (m: Uint8Array, w: number, h: number) => {
+    let top = 0
+    let bottom = 0
+    let left = 0
+    let right = 0
+    for (let x = 0; x < w; x++) {
+      top += m[x]
+      bottom += m[(h - 1) * w + x]
+    }
+    for (let y = 0; y < h; y++) {
+      left += m[y * w]
+      right += m[y * w + w - 1]
+    }
+    return [top && `topo ${top}`, bottom && `base ${bottom}`, left && `esquerda ${left}`, right && `direita ${right}`].filter(Boolean).join(', ')
+  }
+  const m = mount('stage', { state: 'neutro', turn: 0 })
+  for (const state of VINTEM_STATES) {
+    const hasAcc = state !== 'neutro'
+    let front: Comp | null = null
+    for (let step = 0; step <= TURN_STEPS; step++) {
+      const turn = step / TURN_STEPS
+      const tag = `${state} T=${turn.toFixed(2)}`
+      const shot = await shoot(m, { state, turn }, SIZE_STAGE, bg)
+      const w = shot.img.width
+      const h = shot.img.height
+      const comps = components(shot.mask, w, h)
+      const bodyComps = comps.filter((c) => c.n > BODY_MIN_PX)
+      const touching = edge(shot.mask, w, h)
+      if (touching) leaks.push(`${tag} borda ${touching}`)
+      if (hasAcc ? bodyComps.length !== 1 : comps.length !== 1) leaks.push(`${tag} massas ${comps.map((c) => c.n).join('/')}`)
+      const body = [...comps].sort((a, b) => b.n - a.n)[0]
+      if (step === 0) front = body ?? null
+      if (body && front) {
+        const wr = (body.x1 - body.x0 + 1) / (front.x1 - front.x0 + 1)
+        const ar = body.n / front.n
+        if (wr < worstWidth) {
+          worstWidth = wr
+          worstAt = tag
+        }
+        worstArea = Math.min(worstArea, ar)
+        if (wr < MIN_TURN_WIDTH_RATIO || ar < MIN_TURN_AREA_RATIO) collapse.push(`${tag} largura ${(wr * 100).toFixed(0)}% area ${(ar * 100).toFixed(0)}%`)
+      }
+      const seen = visibleEyes(m.svg())
+      const want = turn <= 0.4 ? [2] : turn >= 0.6 ? [1] : [1, 2]
+      if (!want.includes(seen)) eyes.push(`${tag} olhos ${seen}`)
+      const loose = anchoredEars(m.svg())
+      if (loose.length) ears.push(`${tag}: ${loose.join(', ')}`)
+    }
+  }
+  ok(r, `giro sem vazamento: 7 estados x ${TURN_STEPS + 1} angulos com uma massa conexa e nada na borda do quadro`, leaks.length === 0, leaks.slice(0, 6).join('; '))
+  info(r, `giro: pior largura ${(worstWidth * 100).toFixed(0)}% (${worstAt}), pior area ${(worstArea * 100).toFixed(0)}%`)
+  ok(
+    r,
+    `giro sem colapso: largura >= ${MIN_TURN_WIDTH_RATIO * 100}% e area >= ${MIN_TURN_AREA_RATIO * 100}% da frontal em todos os angulos`,
+    collapse.length === 0,
+    collapse.slice(0, 6).join('; '),
+  )
+  ok(r, 'giro: dois olhos na frente, um no perfil e nunca zero no cruzamento', eyes.length === 0, eyes.slice(0, 6).join('; '))
+  ok(r, 'orelhas ancoradas: pivo e base dentro do corpo em todos os estados e angulos', ears.length === 0, ears.slice(0, 4).join('; '))
+
+  // Acessorios no perfil (T = 1): contam pixels na cor deles, medidos contra a mesma pose sem acessorio.
+  const lost: string[] = []
+  for (const [state, accId] of PROFILE_ACCESSORIES) {
+    const withAcc = await shoot(m, { state, turn: 1 }, SIZE_STAGE, bg)
+    const el = m.svg().querySelector(`[id$="-${accId}"] path`) as Element
+    const cs = getComputedStyle(el)
+    const color = toRgb(cs.fill !== 'none' ? cs.fill : cs.stroke)
+    const without = await shoot(m, { state, turn: 1, acc: NO_ACCESSORY }, SIZE_STAGE, bg)
+    const n = accessoryPixels(withAcc, without, color)
+    info(r, `acessorio ${accId} de ${state} no perfil: ${n} pixels na cor ${color.join(',')}`)
+    if (n <= MIN_ACCESSORY_PIXELS) lost.push(`${state} ${n}`)
+  }
+  ok(r, `acessorios de triste, atento, bravo e sonolento aparecem no perfil (mais de ${MIN_ACCESSORY_PIXELS} pixels)`, lost.length === 0, lost.join('; '))
+  m.dispose()
+}
+
 /** Roda todas as verificacoes e escreve o relatorio no elemento `host` (o `pre` da pagina de teste). */
 async function run(host: HTMLElement): Promise<void> {
   const r: Report = { lines: [], fails: 0 }
@@ -546,6 +718,7 @@ async function run(host: HTMLElement): Promise<void> {
     checkMaskThreshold(r)
     await checkDistinction(r, bg)
     await checkWeakPoints12(r, bg)
+    await checkTurn(r, bg)
   } catch (err) {
     r.fails++
     r.lines.push(`FALHA: erro no autoteste -> ${err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err)}`)

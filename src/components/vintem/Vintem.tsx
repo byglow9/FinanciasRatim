@@ -269,8 +269,8 @@ export function Vintem({
             {PROFILE.pawsNear.map((r, i) => (
               <rect key={i} id={`${uid}-${PAW_IDS.near[i]}`} {...r} fill={bodyFill} />
             ))}
-            <ellipse cx={PROFILE.body.cx} cy={PROFILE.body.cy} rx={PROFILE.body.rx} ry={PROFILE.body.ry} fill={bodyFill} />
-            <circle cx={PROFILE.head.cx} cy={PROFILE.head.cy} r={PROFILE.head.r} fill={bodyFill} />
+            <ellipse id={`${uid}-profBody`} cx={PROFILE.body.cx} cy={PROFILE.body.cy} rx={PROFILE.body.rx} ry={PROFILE.body.ry} fill={bodyFill} />
+            <circle id={`${uid}-profHead`} cx={PROFILE.head.cx} cy={PROFILE.head.cy} r={PROFILE.head.r} fill={bodyFill} />
             <ellipse cx={PROFILE.snout.cx} cy={PROFILE.snout.cy} rx={PROFILE.snout.rx} ry={PROFILE.snout.ry} fill="var(--vintem-snout)" />
             <ellipse cx={PROFILE.nostril.cx} cy={PROFILE.nostril.cy} rx={PROFILE.nostril.rx} ry={PROFILE.nostril.ry} fill={ink} />
             <g id={`${uid}-earP`}>

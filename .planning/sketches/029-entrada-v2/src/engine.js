@@ -36,15 +36,15 @@ function blinkEnv(t){
 
 /* ===== poses (vintemStates.js) ===== */
 var KEYS=['sl','ew','eh','cvL','cvR','lt','bo','pr','arc','by','bt','ea','es','sy','py','rt'];
-var DEF={sl:0,ew:16,eh:13.5,cvL:.28,cvR:.28,lt:0,bo:0,pr:.64,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
+var DEF={sl:0,ew:21,eh:18,cvL:.20,cvR:.20,lt:0,bo:0,pr:.64,arc:0,by:0,bt:0,ea:16,es:1,sy:1,py:0,rt:0};
 var POSE={
  neutro:{},
  feliz:{arc:1,by:-5,sy:1.02,ea:8,es:1.08},
- triste:{ew:15,eh:13,cvL:.42,cvR:.42,lt:-15,bo:1,pr:.7,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
- sonolento:{cvL:.58,cvR:.58,pr:.66,by:3,bt:2,ea:30,es:.98},
+ triste:{ew:18,eh:15.5,cvL:.42,cvR:.42,lt:-15,bo:1,pr:.7,by:6,bt:-8,sy:1.04,py:5,rt:5,ea:70,es:.72},
+ sonolento:{cvL:.55,cvR:.55,pr:.66,by:3,bt:2,ea:30,es:.98},
  dormindo:{sl:1,cvL:1,cvR:1,pr:.6,by:7,bt:3,ea:38,es:.96},
- surpreso:{ew:19,eh:19,cvL:0,cvR:0,pr:.42,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
- atento:{ew:17,eh:16,pr:.58,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.08,cvR:.08}
+ surpreso:{ew:22,eh:22,cvL:0,cvR:0,pr:.42,by:-13,sy:1.04,py:-3,ea:26,es:1.2,bo:1},
+ atento:{ew:20,eh:19,pr:.58,by:-8,sy:1.12,ea:0,es:1.12,bo:1,cvL:.08,cvR:.08}
 };
 function poseVal(name,k){var p=POSE[name]||{};return p.hasOwnProperty(k)?p[k]:DEF[k]}
 
@@ -60,8 +60,8 @@ var G={
 var UID=0;
 function coinG(r){r=r||20;return '<circle r="'+r+'" fill="var(--vintem-coin)" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.12)+'"/><circle r="'+(r*.62)+'" fill="none" stroke="var(--vintem-coin-line)" stroke-width="'+(r*.1)+'"/><rect x="'+(-r*.11)+'" y="'+(-r*.35)+'" width="'+(r*.22)+'" height="'+(r*.7)+'" rx="'+(r*.11)+'" fill="var(--vintem-coin-line)"/>'}
 function eyeSVG(u,id,x){
- return '<g data-p="eye'+id+'" transform="translate('+x+' 109)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="16" ry="13.5"/></clipPath><g clip-path="url(#'+u+id+')">'+
- '<ellipse data-p="eb'+id+'" rx="16" ry="13.5" fill="var(--vintem-eye)"/>'+
+ return '<g data-p="eye'+id+'" transform="translate('+x+' 109)"><clipPath id="'+u+id+'"><ellipse data-p="clip'+id+'" rx="21" ry="18"/></clipPath><g clip-path="url(#'+u+id+')">'+
+ '<ellipse data-p="eb'+id+'" rx="21" ry="18" fill="var(--vintem-eye)"/>'+
  '<circle data-p="pu'+id+'" r="8" fill="var(--vintem-ink)"/><circle data-p="hi'+id+'" r="2" fill="var(--vintem-eye)"/>'+
  '</g><clipPath id="'+u+id+'k"><ellipse data-p="clipB'+id+'" rx="18.5" ry="22.5"/></clipPath><g clip-path="url(#'+u+id+'k)"><path data-p="lid'+id+'" d="M-40,-60H40V0H-40Z" fill="var(--vintem-body)"/></g>'+
  '<path data-p="hap'+id+'" d="M-13,6Q0,-13 13,6" fill="none" stroke="var(--vintem-eye)" stroke-width="5.6" stroke-linecap="round" opacity="0"/>'+

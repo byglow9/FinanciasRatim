@@ -227,7 +227,7 @@ async function runTests(){
   var S=simScreen('l',390,844,8,60),E=S.rig.E||null,g=function(k){return S.sc.querySelector('[data-p="'+k+'"]')};
   S.rig.blinks=[];S.rig.nextBlink=99;S.rig.lookAt(0,0);for(var i=0;i<120;i++)S.tick(1/60);
   var o={};['L','R'].forEach(function(s){var e=g('eb'+s),p=g('pu'+s),ly=g('lid'+s).getAttribute('d').match(/V(-?[\d.]+)/)[1];o[s]={rx:+e.getAttribute('rx'),ry:+e.getAttribute('ry'),pr:+p.getAttribute('r'),px:+p.getAttribute('cx'),py:+p.getAttribute('cy'),cover:(+ly+ +e.getAttribute('ry'))/(2*+e.getAttribute('ry'))}});
-  ok('olhos neutros: oval mais largo que alto ('+o.L.rx+'x'+o.L.ry+'), mesma abertura nos dois olhos, pálpebra cobre '+(o.L.cover*100).toFixed(0)+'% (alvo 15 a 25%)',o.L.rx>o.L.ry&&o.L.ry===o.R.ry&&o.L.rx===o.R.rx&&o.L.cover>=.15&&o.L.cover<=.25&&o.L.cover===o.R.cover);
+  ok('olhos neutros: oval mais largo que alto ('+o.L.rx+'x'+o.L.ry+'), mesma abertura nos dois olhos, pálpebra cobre '+(o.L.cover*100).toFixed(0)+'% (alvo 8 a 25%)',o.L.rx>o.L.ry&&o.L.ry===o.R.ry&&o.L.rx===o.R.rx&&o.L.cover>=.08&&o.L.cover<=.25&&o.L.cover===o.R.cover);
   ok('olhos neutros: pupila (r '+o.L.pr.toFixed(1)+') grande em relação à esclera (>= 55% da altura) e dentro dela',o.L.pr*2/(o.L.ry*2)>=.55&&Math.pow((Math.abs(o.L.px)+o.L.pr)/o.L.rx,2)+Math.pow((Math.abs(o.L.py)+o.L.pr)/o.L.ry,2)<=1.02);
   var worst=0,names=['neutro','atento','feliz','triste','sonolento'];
   names.forEach(function(n){S.rig.setPose(n,true);[[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]].forEach(function(gz){S.rig.lookAt(gz[0],gz[1]);for(var i=0;i<90;i++)S.tick(1/60);

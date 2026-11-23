@@ -10,6 +10,7 @@ const LOGIN = 'src/components/auth/LoginForm.tsx'
 const MARK = 'src/components/brand/CoincMark.tsx'
 const ORIGIN = 'src/lib/legacyOrigin.ts'
 const MAIN = 'src/main.tsx'
+const AUDIT = 'scripts/ux-audit/identity.mjs'
 
 // Termos montados por concatenacao para o teste nao se acusar.
 const OLD_NAME = ['Ratim', 'bum'].join('')
@@ -124,4 +125,20 @@ test('main.tsx chama captureLegacyOrigin antes do createRoot e a ordem de import
 test('escala 12/16/28/56 e alvos de 44px limpos nos arquivos novos', () => {
   assert.deepEqual(scaleProblems([LOGIN, MARK]), [])
   assert.deepEqual(touchProblems([LOGIN, MARK]), [])
+})
+
+test('public/piggy.svg e public/vite.svg nao existem e nada os referencia', () => {
+  for (const f of ['public/piggy.svg', 'public/vite.svg']) assert.ok(!exists(f), `${f} ainda existe`)
+  const files = [...listText('src'), ...listText('public'), 'index.html']
+  const hits = files.filter((f) => /piggy\.svg|vite\.svg/.test(read(f)))
+  assert.deepEqual(hits, [])
+})
+
+
+test('executor identity.mjs: porta 5194, so 127.0.0.1 e linha final FALHAS', () => {
+  const src = read(AUDIT)
+  assert.match(src, /const PORT = 5194/)
+  assert.ok(src.includes('127.0.0.1') && !src.includes('0.0.0.0'), 'fora de 127.0.0.1')
+  assert.ok(src.includes('`FALHAS ${'), 'sem a linha final FALHAS n')
+  assert.ok(!/readFileSync\([^)]*\.env/.test(src), 'le .env*')
 })

@@ -7,6 +7,7 @@ import { useBankFreshness } from '@/hooks/useBankFreshness'
 import { useNow } from '@/hooks/useNow'
 import { useHashReveal } from '@/hooks/useSectionReveal'
 import { AccountsSkeletonCard } from '@/components/settings/AccountsSkeletonCard'
+import { AppCard } from '@/components/settings/AppCard'
 import { AppearanceCard } from '@/components/settings/AppearanceCard'
 import { BankConnections } from '@/components/settings/BankConnections'
 import { CategoriesCard } from '@/components/settings/CategoriesCard'
@@ -19,7 +20,7 @@ import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 
 /**
  * Configurações em cartões (UI-SPEC S5 e S6, D-15, CENT-05), com âncoras #ciclo, #categorias,
- * #contas, #bancos, #aparencia, #vintem (tom do Vintém, entre Aparência e Notificações) e #notificacoes. Ao entrar com hash a página rola ao cartão e
+ * #contas, #bancos, #aparencia, #vintem (tom do Vintém, entre Aparência e Notificações), #notificacoes e #aplicativo (passos para adicionar à tela inicial, último cartão). Ao entrar com hash a página rola ao cartão e
  * foca o título. O limite por categoria só se edita aqui, em Categorias (D-21).
  */
 export function SettingsPage() {
@@ -93,6 +94,7 @@ export function SettingsPage() {
       <AppearanceCard />
       <VintemToneCard />
       <NotificationsCard />
+      <AppCard />
 
       <button
         type="button"

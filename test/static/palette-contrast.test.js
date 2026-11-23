@@ -18,25 +18,42 @@ test('os cinco tons medidos da imagem de referencia estao nos tokens', () => {
   assert.ok(luminance(t.dock) < luminance(t.action), 'a dock e mais escura que a acao')
 })
 
-test('hierarquia de superficies: pagina < cartao; item e campo nunca mais claros que o cartao; nenhuma e branco puro', () => {
-  const t = tokens()
-  const lum = (hex) => contrast(hex, '#000000')
-  const ratio = (a, b) => contrast(t[a], t[b])
-  assert.ok(lum(t.card) > lum(t.background), 'cartao mais claro que o fundo')
-  assert.equal(t.popover, t.card, 'sheets e popovers usam o tom do cartao, separados por scrim, sombra e borda')
-  // Regra: um item dentro de um cartao nunca e mais claro que o cartao (exceto destaque intencional, que usa bg-card explicito).
-  assert.ok(lum(t['surface-2']) < lum(t.card), 'item (surface-2) mais escuro que o cartao')
-  assert.ok(lum(t.inset) < lum(t['surface-2']), 'campo (inset) mais escuro que o item')
-  // Niveis aninhados distinguiveis a olho (razao minima entre niveis vizinhos).
-  assert.ok(ratio('card', 'surface-2') >= 1.12, `cartao x item = ${ratio('card', 'surface-2').toFixed(3)}`)
-  assert.ok(ratio('surface-2', 'inset') >= 1.05, `item x campo = ${ratio('surface-2', 'inset').toFixed(3)}`)
-  assert.ok(ratio('card', 'inset') >= 1.2, `cartao x campo = ${ratio('card', 'inset').toFixed(3)}`)
-  assert.ok(ratio('background', 'card') >= 1.05, `pagina x cartao = ${ratio('background', 'card').toFixed(3)}`)
-  for (const name of ['background', 'card', 'surface-2', 'inset', 'popover']) {
-    assert.notEqual(t[name], '#ffffff', `${name} e branco puro`)
-    assert.ok(lum(t[name]) < lum('#fdf9ee'), `${name} quase branco`)
-  }
-})
+for (const theme of ['light', 'dark']) {
+  test(`hierarquia de superficies (${theme}): niveis distinguiveis e nenhuma e branco puro`, () => {
+    const t = tokens(theme)
+    const lum = (hex) => contrast(hex, '#000000')
+    const ratio = (a, b) => contrast(t[a], t[b])
+    assert.equal(t.popover, t.card, 'sheets e popovers usam o tom do cartao, separados por scrim, sombra e borda')
+    for (const name of ['background', 'card', 'surface-2', 'inset', 'popover']) {
+      assert.notEqual(t[name], '#ffffff', `${name} e branco puro`)
+      assert.ok(lum(t[name]) < lum('#fdf9ee'), `${name} quase branco`)
+    }
+    if (theme === 'light') {
+      assert.ok(lum(t.card) > lum(t.background), 'cartao mais claro que o fundo')
+      // Regra: um item dentro de um cartao nunca e mais claro que o cartao (exceto destaque intencional, que usa bg-card explicito).
+      assert.ok(lum(t['surface-2']) < lum(t.card), 'item (surface-2) mais escuro que o cartao')
+      assert.ok(lum(t.inset) < lum(t['surface-2']), 'campo (inset) mais escuro que o item')
+      // Niveis aninhados distinguiveis a olho (razao minima entre niveis vizinhos).
+      assert.ok(ratio('card', 'surface-2') >= 1.12, `cartao x item = ${ratio('card', 'surface-2').toFixed(3)}`)
+      assert.ok(ratio('surface-2', 'inset') >= 1.05, `item x campo = ${ratio('surface-2', 'inset').toFixed(3)}`)
+      assert.ok(ratio('card', 'inset') >= 1.2, `cartao x campo = ${ratio('card', 'inset').toFixed(3)}`)
+      assert.ok(ratio('background', 'card') >= 1.05, `pagina x cartao = ${ratio('background', 'card').toFixed(3)}`)
+    } else {
+      // No escuro as superficies sobem em luminancia (pagina < cartao < item) e o campo e afundado (mais escuro que o cartao).
+      assert.equal(t.background, '#0a1510')
+      assert.equal(t.card, '#0f1f17')
+      assert.equal(t['surface-2'], '#14271d')
+      assert.equal(t.inset, '#0b1811')
+      assert.equal(t.action, '#2c7f4b')
+      assert.ok(lum(t.background) < lum(t.card), 'fundo mais escuro que o cartao')
+      assert.ok(lum(t.card) < lum(t['surface-2']), 'item (surface-2) mais claro que o cartao')
+      assert.ok(lum(t.inset) < lum(t.card), 'campo (inset) mais escuro que o cartao')
+      assert.ok(ratio('background', 'card') >= 1.05, `fundo x cartao = ${ratio('background', 'card').toFixed(3)}`)
+      assert.ok(ratio('card', 'surface-2') >= 1.05, `cartao x item = ${ratio('card', 'surface-2').toFixed(3)}`)
+      assert.ok(ratio('card', 'inset') >= 1.05, `cartao x campo = ${ratio('card', 'inset').toFixed(3)}`)
+    }
+  })
+}
 
 test('componentes usam o nivel certo: campos em inset, sheets e paineis em popover, sem item mais claro que o cartao', () => {
   for (const f of ['input', 'select', 'search-field', 'square-check']) {
@@ -56,16 +73,24 @@ test('componentes usam o nivel certo: campos em inset, sheets e paineis em popov
   }
 })
 
-test('todos os pares de contraste da paleta passam (texto 4.5, nao textual 3)', () => {
-  const t = tokens()
-  const failures = []
-  for (const [role, fg, bg, min] of PAIRS) {
-    assert.ok(t[fg], `token ${fg} ausente`)
-    assert.ok(t[bg], `token ${bg} ausente`)
-    const ratio = contrast(t[fg], t[bg])
-    if (ratio < min) failures.push(`${role}: ${fg} ${t[fg]} sobre ${bg} ${t[bg]} = ${ratio.toFixed(2)} (minimo ${min})`)
-  }
-  assert.deepEqual(failures, [])
+for (const theme of ['light', 'dark']) {
+  test(`todos os pares de contraste da paleta passam no tema ${theme} (texto 4.5, nao textual 3)`, () => {
+    const t = tokens(theme)
+    const failures = []
+    for (const [role, fg, bg, min] of PAIRS) {
+      assert.ok(t[fg], `token ${fg} ausente no tema ${theme}`)
+      assert.ok(t[bg], `token ${bg} ausente no tema ${theme}`)
+      const ratio = contrast(t[fg], t[bg])
+      if (ratio < min) failures.push(`[${theme}] ${role}: ${fg} ${t[fg]} sobre ${bg} ${t[bg]} = ${ratio.toFixed(2)} (minimo ${min})`)
+    }
+    assert.deepEqual(failures, [])
+  })
+}
+
+test('PAIRS cobre os pares da paleta (100 hoje) e o piso do botao + ao lado da dock segue em 2.2', () => {
+  assert.ok(PAIRS.length >= 100, `PAIRS encolheu para ${PAIRS.length}`)
+  const fab = PAIRS.find(([role]) => role === 'botao + ao lado da dock')
+  assert.equal(fab[3], 2.2, 'o piso nao pode ser afrouxado (P-01 so por decisao do dono, plano 05-16)')
 })
 
 test('componentes nao espalham cor em hex literal nem branco/preto puro: tudo vem dos tokens', () => {

@@ -13,17 +13,57 @@ function hslToHex(h, s, l) {
   return `#${[f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('')}`
 }
 
-/** Mapa nome -> hex de todos os tokens de cor claros (tudo que vem antes do bloco .dark). */
+/** Le os tokens de um bloco de declaracoes (texto entre chaves): --color-x em hex e tripletes HSL. */
+function readBlock(block, map) {
+  for (const m of block.matchAll(/--color-([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) map[m[1]] = m[2].toLowerCase()
+  for (const m of block.matchAll(/--([a-z0-9-]+):\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*;/g)) {
+    map[m[1]] = hslToHex(Number(m[2]), Number(m[3]), Number(m[4]))
+  }
+  return map
+}
+
+/** Texto do bloco `.dark { ... }` de index.css (sem aninhamento: vai ate a primeira chave que fecha). */
+export function darkBlock() {
+  const src = css()
+  const start = src.indexOf('.dark {')
+  return src.slice(start + '.dark {'.length, src.indexOf('}', start))
+}
+
+/** Mapa nome -> hex dos tokens de cor de um tema ('light' ou 'dark'). O escuro parte do mapa claro e
+ *  sobrepoe o que o bloco .dark redefine. */
 export function tokens(theme = 'light') {
   const src = css()
   const light = src.slice(0, src.indexOf('.dark {'))
   const map = {}
   for (const m of light.matchAll(/--color-([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) map[m[1]] = m[2].toLowerCase()
-  const root = light.slice(light.indexOf(':root {'))
-  for (const m of root.matchAll(/--([a-z0-9-]+):\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*;/g)) {
-    map[m[1]] = hslToHex(Number(m[2]), Number(m[3]), Number(m[4]))
-  }
+  readBlock(light.slice(light.indexOf(':root {')), map)
+  if (theme === 'dark') readBlock(darkBlock(), map)
   return map
+}
+
+/** Cores do Vintem (bloco plano .vt de index.css) em hex: no escuro, .dark .vt sobrepoe as do claro. */
+export function vintemTokens(theme = 'light') {
+  const src = css().replace(/\/\*[\s\S]*?\*\//g, '')
+  const body = (re) => (re.exec(src) || [])[1] || ''
+  const read1 = (block) => {
+    const out = {}
+    for (const m of block.matchAll(/--vintem-([a-z-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) out[m[1]] = m[2].toLowerCase()
+    return out
+  }
+  const base = read1(body(/(?:^|\n)\s*\.vt\s*\{([^}]*)\}/))
+  const dark = theme === 'dark' ? read1(body(/\.dark \.vt\s*\{([^}]*)\}/)) : {}
+  const all = { ...base, ...dark }
+  return {
+    eye: all.eye,
+    tear: all.tear,
+    sweat: all.sweat,
+    anger: all.anger,
+    spark: all.spark,
+    excl: all.excl,
+    z: all.z,
+    coin: all.coin,
+    accentLine: all['accent-line'],
+  }
 }
 
 const channel = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Mascote Vintém
 status: executing
-stopped_at: Completed 04-11-PLAN.md
-last_updated: "2026-11-23T12:30:48.552Z"
+stopped_at: Completed 04-12-PLAN.md
+last_updated: "2026-11-23T12:37:35.641Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 4 execution started
-state_head: 83d9c2f521630949d2571da7e698dafb58fce2ce
+state_head: 13caa6a6683bc9019ea057c2f10d86226ed6d104
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 77
+  completed_plans: 78
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 4 (Mascote Vintém) — EXECUTING
-Plan: 2 of 20
+Plan: 3 of 20
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 4 execution started
 
@@ -121,6 +121,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 04 P02 | 25min | 3 tasks | 2 files |
 | Phase 04 P03 | 30min | 3 tasks | 2 files |
 | Phase 04 P11 | 35min | 3 tasks | 9 files |
+| Phase 04 P12 | 25min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -175,6 +176,7 @@ Recent decisions affecting current work:
 - [Phase 4]: 04-01: STATE_PARAMS guarda so diferencas sobre STATE_DEFAULTS; consumidores mesclam
 - [Phase 4]: 04-03: gasto grande = 3x ticket medio da categoria (>=5 amostras), fallback 30% do limite; nomes de loja so do dicionario ou com token de estabelecimento
 - [Phase 4]: [Phase 4] 04-11: grade de sete estados em 3 colunas (4 a partir de md) porque 4 de 84px nao cabem a 360px; onFrame no laco unico serve o pop do balao
+- [Phase 4]: 04-12: fala de entrada uma por visita (chave pessoa:ciclo) sem anuncio; fala por toque anunciada na regiao viva
 
 ### Pending Todos
 
@@ -206,6 +208,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T12:30:48.422Z
-Stopped at: Completed 04-11-PLAN.md
+Last session: 2026-11-23T12:37:35.549Z
+Stopped at: Completed 04-12-PLAN.md
 Resume file: None

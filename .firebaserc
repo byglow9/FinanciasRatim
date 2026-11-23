@@ -3,5 +3,13 @@
     "default": "financias-ratimbum",
     "ratimbum": "financias-ratimbum",
     "amigo": "financias-xrd"
+  },
+  "targets": {
+    "financias-ratimbum": {
+      "hosting": {
+        "coinc": ["coinc-financias"],
+        "legacy": ["financias-ratimbum"]
+      }
+    }
   }
 }

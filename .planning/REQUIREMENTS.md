@@ -57,7 +57,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [x] **MASC-04**: O balão usa um banco de frases próprias em português, com variantes para cada tom
 - [x] **MASC-05**: Usuário ajusta o tom do Vintém nas Configurações (suave, direto, sem filtro), e o padrão é sem filtro, com bronca e xingamento permitidos
 - [x] **MASC-06**: Existe uma página de teste do Vintém com controles (porcentagem do limite, seguir o cursor, girar de lado) para ver todas as expressões
-- [ ] **MASC-07**: O mascote, o nome e todos os textos são originais, sem copiar o personagem, o nome, o slogan nem as frases do app de referência
+- [x] **MASC-07**: O mascote, o nome e todos os textos são originais, sem copiar o personagem, o nome, o slogan nem as frases do app de referência
 
 ### Identidade, PWA e onboarding (IDEN)
 
@@ -198,7 +198,7 @@ Preenchida na criação do roadmap.
 | MASC-04 | Phase 4 | Complete |
 | MASC-05 | Phase 4 | Complete |
 | MASC-06 | Phase 4 | Complete |
-| MASC-07 | Phase 4 | Pending |
+| MASC-07 | Phase 4 | Complete |
 | IDEN-01 | Phase 5 | Pending |
 | IDEN-02 | Phase 5 | Pending |
 | IDEN-03 | Phase 5 | Pending |

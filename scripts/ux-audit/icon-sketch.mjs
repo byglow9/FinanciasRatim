@@ -13,8 +13,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { connect, launchChrome } from './cdp.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const SKETCH = resolve(ROOT, '.planning/sketches/021-icone-app/index.html')
-const PREVIEW = resolve(ROOT, '.planning/sketches/021-icone-app/preview.png')
+const DIR = process.argv[2] ?? '021-icone-app'
+const NUM = DIR.slice(0, 3)
+const SKETCH = resolve(ROOT, `.planning/sketches/${DIR}/index.html`)
+const PREVIEW = resolve(ROOT, `.planning/sketches/${DIR}/preview.png`)
 const SKETCH_URL = pathToFileURL(SKETCH).href
 const VIEWPORT = { width: 1000, height: 900 }
 const WAIT_MS = 30000
@@ -80,7 +82,7 @@ async function main() {
     const failLines = lines.filter((l) => l.startsWith('FAIL '))
     const crashed = lines[0]?.startsWith('FALHAS 1 (erro no teste')
     let failures = failLines.length + (crashed ? 1 : 0)
-    if (!crashed && title !== `021 teste FALHAS ${failLines.length}`) {
+    if (!crashed && title !== `${NUM} teste FALHAS ${failLines.length}`) {
       console.log(`icon-sketch: titulo inesperado: ${title}`)
       failures += 1
     }

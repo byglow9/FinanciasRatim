@@ -76,13 +76,6 @@ function eyeEl(v,x,y,s){
  /* elipse de olho: tamanho fixo em unidades de 512, dividido pela escala do desenho */
  return '<ellipse data-role="eye" cx="'+x+'" cy="'+y+'" rx="'+f(ER/s)+'" ry="'+f(ERY/s)+'" fill="'+VERS[v].eye+'"/>';
 }
-/* focinho de frente (versao A): oval verde com duas narinas escuras, para a silhueta ler como porco */
-function snoutEl(){
- var n=G.snout;
- return '<ellipse data-role="detail" cx="'+n.cx+'" cy="'+(n.cy-2)+'" rx="'+(n.rx+4)+'" ry="'+(n.ry+4)+'" fill="#3f8a4a"/>'+
-  '<ellipse data-role="detail" cx="'+(n.cx-G.nostrilDx)+'" cy="'+(n.cy-2)+'" rx="3.4" ry="5" fill="#14301e"/>'+
-  '<ellipse data-role="detail" cx="'+(n.cx+G.nostrilDx)+'" cy="'+(n.cy-2)+'" rx="3.4" ry="5" fill="#14301e"/>';
-}
 function earEl(fill,tf,dp){return '<path data-role="sil" d="'+(dp||G.ear)+'" transform="'+tf+'" fill="'+fill+'"/>'}
 /* devolve {inner,tf,s} : desenho em 240x200 e a transformacao que o leva ao quadro 512 */
 function art(v){
@@ -90,8 +83,7 @@ function art(v){
  if(v==='a'||v==='c'){
   s=1.9;
   inner=earEl(sil,'translate(63 80)')+earEl(sil,'translate(177 80) scale(-1 1)')+
-   '<path data-role="sil" d="'+G.body+'" fill="'+sil+'"/>'+eyeEl(v,87,106,s)+eyeEl(v,153,106,s)+
-   (v==='a'?snoutEl():'');
+   '<path data-role="sil" d="'+G.body+'" fill="'+sil+'"/>'+eyeEl(v,87,106,s)+eyeEl(v,153,106,s);
   tf='translate(256 '+(v==='c'?238:256)+') scale('+s+') translate(-120 -104)';
  }else if(v==='d'){
   /* cofre de lado: geometria PROFILE do Vintem, com os dois olhos na cabeca; fenda no dorso */

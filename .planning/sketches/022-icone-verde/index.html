@@ -1,0 +1,234 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>022 Ícone verde do app</title>
+<style>
+/* Sketch 022: autossuficiente (sem fonte, imagem nem script de terceiros). Texto so em 12, 16 e 28 com pesos 400 e 700. */
+*{box-sizing:border-box;margin:0}
+body{background:#fbf8f2;font:400 16px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1b1b18;min-height:100vh;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+#nav{background:#fff;border-bottom:1px solid #e7e1d3;padding:6px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tab{display:inline-flex;align-items:center;justify-content:center;height:44px;min-width:44px;border:1px solid #e7e1d3;background:#fff;border-radius:12px;padding:0 16px;color:#1b1b18;text-decoration:none;font:400 12px system-ui,sans-serif}
+.tab.active{background:#14532d;color:#fff;border-color:#14532d;font-weight:700}
+#wrap{max-width:1000px;margin:0 auto;padding:12px 16px 32px}
+h1{font:700 28px/1.2 system-ui,sans-serif;letter-spacing:-.02em}
+h2{font:700 16px/1.4 system-ui,sans-serif;margin-bottom:8px}
+.note{font:400 12px/1.4 system-ui,sans-serif;color:#77746a;margin:4px 0 12px}
+.card{background:#f1ede3;border-radius:22px;padding:16px;margin-top:12px}
+.strip{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.strip figure{display:grid;justify-items:center;gap:4px}
+.strip figcaption,.cap{font:400 12px/1.4 system-ui,sans-serif;color:#77746a;text-align:center}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:8px}
+.item{display:grid;justify-items:center;gap:4px}
+.mask{border-radius:50%;overflow:hidden;display:block}
+.safebox{position:relative;width:96px;height:96px}
+.safebox>svg{position:absolute;left:0;top:0}
+.safebox .ring{display:none}
+body.safe-on .safebox .ring{display:block}
+.toggle{display:flex;align-items:center;gap:8px;min-height:44px;font:400 12px system-ui,sans-serif;cursor:pointer}
+.toggle input{width:24px;height:24px;accent-color:#14532d}
+.home{display:flex;gap:16px;padding:16px;border-radius:22px;align-items:flex-start}
+.home.light{background:#e9e3d6;color:#1b1b18}
+.home.dark{background:#1b1b18;color:#fbf8f2}
+.app{display:grid;justify-items:center;gap:4px;width:64px}
+.app span{font:400 12px/1.2 system-ui,sans-serif}
+.ph{width:60px;height:60px;border-radius:14px;display:block}
+.light .ph.p1{background:#b9b4a8}.light .ph.p2{background:#8a8678}.light .ph.p3{background:#cfc9ba}
+.dark .ph.p1{background:#3a3a36}.dark .ph.p2{background:#4b4a45}.dark .ph.p3{background:#2b2a27}
+body[data-v] .strip-card,body[data-v] .vcard{display:none}
+body[data-v="a"] #card-a,body[data-v="b"] #card-b,body[data-v="c"] #card-c,body[data-v="d"] #card-d,body[data-v="e"] #card-e{display:block}
+#selftest{white-space:pre-wrap;font:400 12px monospace;margin-top:12px;color:#77746a}
+#thost{position:absolute;left:-9999px;top:0;width:512px;height:512px;pointer-events:none}
+</style></head><body>
+<nav id="nav"></nav>
+<div id="wrap">
+<h1>Ícone do Coinc</h1>
+<div class="note" id="vnote">Quatro versões com o porquinho verde, como no app, no estilo da silhueta escura (C do sketch 021), com o focinho do Vintém. Sem moeda, cifrão, letra nem emoji.</div>
+<div class="card strip-card"><h2>As quatro lado a lado</h2><div class="strip" id="strip"></div></div>
+<div id="cards"></div>
+<div id="selftest"></div>
+</div>
+<div id="thost" aria-hidden="true"></div>
+<script>
+'use strict';
+/* ===== geometria do Vintem (viewBox 240x200 de src/lib/vintem/geometry.ts), copiada como numeros ===== */
+var G={
+ profile:{ear:'M-14,8C-16,-12 -6,-30 6,-36C14,-26 20,-8 16,8Z',paws:[[76,146,24,26,11],[150,146,24,26,11],[46,144,28,28,12],[132,144,28,28,12]]},
+ body:'M28,120C28,74 66,48 120,48C174,48 212,74 212,120C212,156 178,174 120,174C62,174 28,156 28,120Z',
+ ear:'M-19,8C-24,-14 -12,-40 3,-46C16,-36 26,-12 21,8Z',
+ slit:'M98,56Q120,60 142,56',
+ snout:{cx:120,cy:141,rx:21,ry:12},
+ nostrilDx:6.5
+};
+/* meia largura do olho em unidades de 512 (largura 32, o minimo do autoteste e 28) e meia altura */
+var ER=16,ERY=20;
+var R=116,CIRC=204.8;
+/* cada versao: nome, degrade (2 cores, direcao), cor da silhueta, dos olhos e desenho em coordenadas 240x200 */
+var VERS={
+ f:{name:'F. Verde do app',origin:'Silhueta como o C',stops:['#f5ecdb','#d9c398'],dir:'d',sil:'#2f6f3e',eye:'#fbf6ea',snout:'#6aa377',nost:'#14301e'},
+ g:{name:'G. Verde claro, cabeça inclinada',origin:'Silhueta como o B',stops:['#f5ecdb','#ece2cb'],dir:'d',sil:'#3b8447',eye:'#ffffff',snout:'#78b184',nost:'#14301e'},
+ h:{name:'H. Verde claro sobre verde escuro',origin:'Silhueta como o C',stops:['#1f4d2b','#0f2a1a'],dir:'d',sil:'#7bc48a',eye:'#0f2a1a',snout:'#b4e3be',nost:'#0f2a1a'},
+ i:{name:'I. Verde escuro sobre verde menta',origin:'Silhueta como o C',stops:['#8fd29c','#5fb36f'],dir:'d',sil:'#14301e',eye:'#8fd29c',snout:'#3f7d50',nost:'#0a1a10'}
+};
+var ORDER=['f','g','h','i'];
+var uidN=0;
+function f(n){return Math.round(n*100)/100}
+function eyeEl(v,x,y,s){
+ /* elipse de olho: tamanho fixo em unidades de 512, dividido pela escala do desenho */
+ return '<ellipse data-role="eye" cx="'+x+'" cy="'+y+'" rx="'+f(ER/s)+'" ry="'+f(ERY/s)+'" fill="'+VERS[v].eye+'"/>';
+}
+function earEl(fill,tf,dp){return '<path data-role="sil" d="'+(dp||G.ear)+'" transform="'+tf+'" fill="'+fill+'"/>'}
+/* devolve {inner,tf,s} : desenho em 240x200 e a transformacao que o leva ao quadro 512 */
+function snoutEl(v,cx,cy,k){
+ /* focinho do Vintem de frente: oval mais clara que o corpo e duas narinas escuras */
+ var d=VERS[v],n=G.snout,rx=n.rx*k,ry=n.ry*k,dx=G.nostrilDx*k;
+ return '<ellipse data-role="detail" cx="'+cx+'" cy="'+cy+'" rx="'+f(rx)+'" ry="'+f(ry)+'" fill="'+d.snout+'"/>'+
+  '<ellipse data-role="detail" cx="'+f(cx-dx)+'" cy="'+cy+'" rx="'+f(2.4*k*1.25)+'" ry="'+f(3.4*k*1.25)+'" fill="'+d.nost+'"/>'+
+  '<ellipse data-role="detail" cx="'+f(cx+dx)+'" cy="'+cy+'" rx="'+f(2.4*k*1.25)+'" ry="'+f(3.4*k*1.25)+'" fill="'+d.nost+'"/>';
+}
+function art(v){
+ var d=VERS[v],sil=d.sil,s,tf,inner;
+ if(v==='g'){
+  s=1.6;
+  inner=earEl(sil,'translate(28 86) rotate(-172) scale(1.3)')+earEl(sil,'translate(212 86) scale(-1 1) rotate(-172) scale(1.3)')+
+   '<path data-role="sil" d="'+G.body+'" transform="translate(120 111) scale(1.155 1.74) translate(-120 -111)" fill="'+sil+'"/>'+
+   eyeEl(v,84,116,s)+eyeEl(v,156,116,s)+snoutEl(v,120,160,1.3);
+  tf='translate(256 256) rotate(8) scale('+s+') translate(-120 -111)';
+ }else{
+  s=1.9;
+  inner=earEl(sil,'translate(63 80)')+earEl(sil,'translate(177 80) scale(-1 1)')+
+   '<path data-role="sil" d="'+G.body+'" fill="'+sil+'"/>'+eyeEl(v,87,106,s)+eyeEl(v,153,106,s)+snoutEl(v,120,141,1);
+  tf='translate(256 238) scale('+s+') translate(-120 -104)';
+ }
+ return {inner:inner,tf:tf,s:s};
+}
+/* monta o SVG de uma versao. mask=true: borda a borda (sem cantos arredondados). suf: sufixo de id unico por copia */
+function icon(v,opt){
+ opt=opt||{};var d=VERS[v],a=art(v),suf=opt.suf||'',size=opt.size||512,gid='g-'+v+suf,cid='c-'+v+suf;
+ var g=d.dir==='v'?'x1="0" y1="0" x2="0" y2="1"':'x1="0" y1="0" x2="1" y2="1"';
+ var h='<svg id="icon-'+v+suf+'" viewBox="0 0 512 512" width="'+size+'" height="'+size+'" role="img" aria-label="Ícone do Coinc, versão '+v.toUpperCase()+'">';
+ h+='<defs><linearGradient id="'+gid+'" '+g+'><stop offset="0" stop-color="'+d.stops[0]+'"/><stop offset="1" stop-color="'+d.stops[1]+'"/></linearGradient>';
+ if(false)h+='<clipPath id="'+cid+'"><rect x="0" y="0" width="512" height="342"/></clipPath>';
+ h+='</defs>';
+ h+='<rect data-role="bg" x="0" y="0" width="512" height="512"'+(opt.mask?'':' rx="'+R+'"')+' fill="url(#'+gid+')"/>';
+ if(false){
+  h+='<g data-role="art" clip-path="url(#'+cid+')"><g transform="'+a.tf+'">'+a.inner+'</g></g>';
+  h+='<path data-role="band" d="'+(opt.mask?'M0,341H512V512H0Z':'M0,341H512V'+(512-R)+'A'+R+','+R+' 0 0 1 '+(512-R)+',512H'+R+'A'+R+','+R+' 0 0 1 0,'+(512-R)+'Z')+'" fill="'+d.band+'"/>';
+ }else{
+  h+='<g data-role="art" transform="'+a.tf+'">'+a.inner+'</g>';
+ }
+ return h+'</svg>';
+}
+function slot(v,size,kind){
+ uidN++;
+ return icon(v,{size:size,mask:kind==='mask',suf:'-p'+uidN});
+}
+
+/* ===== pagina ===== */
+function $(i){return document.getElementById(i)}
+var qs=location.search,mv=/[?&]v=([a-e])/.exec(qs),V=mv?mv[1]:'';
+function nav(){
+ var h='<a class="tab'+(V?'':' active')+'" href="?">Todas</a>';
+ ORDER.forEach(function(k){h+='<a class="tab'+(V===k?' active':'')+'" href="?v='+k+'">'+k.toUpperCase()+'</a>'});
+ $('nav').innerHTML=h;
+}
+function build(){
+ var strip='',cards='';
+ ORDER.forEach(function(k){
+  var d=VERS[k];
+  strip+='<figure>'+slot(k,96,'any')+'<figcaption>'+d.name+'</figcaption></figure>';
+  var sizes=[192,96,60,48,32].map(function(z){return '<div class="item">'+slot(k,z,'any')+'<span class="cap">'+z+' px</span></div>'}).join('');
+  cards+='<section class="card vcard" id="card-'+k+'"><h2>'+d.name+'</h2><div class="note">'+d.origin+'. Quadrado arredondado, máscara circular, zona segura e tela inicial.</div>'+
+   '<div class="row">'+sizes+
+   '<div class="item"><div class="mask" style="width:96px;height:96px">'+slot(k,96,'mask')+'</div><span class="cap">máscara circular</span></div>'+
+   '<div class="item"><div class="safebox">'+slot(k,96,'mask')+'<svg class="ring" viewBox="0 0 512 512" width="96" height="96" aria-hidden="true"><circle cx="256" cy="256" r="'+CIRC+'" fill="none" stroke="#dc2626" stroke-width="8" stroke-dasharray="24 16"/></svg></div><span class="cap">zona segura (raio 40%)</span></div>'+
+   '</div>'+
+   '<div class="row">'+
+   ['light','dark'].map(function(t){return '<div class="home '+t+'"><div class="app"><i class="ph p1"></i><span>Notas</span></div><div class="app"><i class="ph p2"></i><span>Mapas</span></div><div class="app">'+slot(k,60,'any')+'<span>Coinc</span></div><div class="app"><i class="ph p3"></i><span>Relógio</span></div></div>'}).join('')+
+   '</div></section>';
+ });
+ $('strip').innerHTML=strip;$('cards').innerHTML=cards;
+ $('nav').insertAdjacentHTML('beforeend','<label class="toggle"><input type="checkbox" id="safe"> mostrar zona segura</label>');
+ $('safe').addEventListener('change',function(){document.body.classList.toggle('safe-on',$('safe').checked)});
+ if(V)document.body.setAttribute('data-v',V);
+}
+nav();build();
+window.__icon={icon:icon,VERS:VERS,ORDER:ORDER,CIRC:CIRC};
+
+/* ===== autoteste (?test) ===== */
+(function(){
+if(!/[?&]test/.test(location.search))return;
+(async function(){
+ var out=[];function ok(n,c,x){out.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ function info(n){out.push('INFO '+n)}
+ var host=$('thost');
+ /* copias de teste fora da tela, uma por versao, no tamanho 512 */
+ var T={};ORDER.forEach(function(k){var w=document.createElement('div');w.innerHTML=icon(k,{suf:'-t'});host.appendChild(w);T[k]=w.firstChild});
+ var M={};ORDER.forEach(function(k){var w=document.createElement('div');w.innerHTML=icon(k,{suf:'-m',mask:true});host.appendChild(w);M[k]=w.firstChild});
+ function lum(h){h=h.replace('#','');var c=[0,2,4].map(function(i){var x=parseInt(h.substr(i,2),16)/255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+ function cr(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+ function ras(svg,w,h){return new Promise(function(res,rej){var s=new XMLSerializer().serializeToString(svg);var im=new Image();
+  im.onload=function(){var c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');x.drawImage(im,0,0,w,h);res(x.getImageData(0,0,w,h))};
+  im.onerror=function(){rej(new Error('falha ao rasterizar'))};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)})}
+ /* 1. existencia e ids distintos */
+ var ids=ORDER.map(function(k){return T[k]&&T[k].id});
+ ok('as versões existem e têm id distinto ('+ids.join(', ')+')',ORDER.every(function(k){return T[k]&&T[k].tagName.toLowerCase()==='svg'})&&new Set(ids).size===ORDER.length,ids.join(' '));
+ /* 2. estrutura */
+ var bad=[];ORDER.forEach(function(k){var s=T[k];
+  if(s.getAttribute('viewBox')!=='0 0 512 512')bad.push(k+' viewBox');
+  ['image','text','script','foreignObject','tspan'].forEach(function(t){if(s.querySelector(t))bad.push(k+' '+t)});
+  s.querySelectorAll('use').forEach(function(u){var h=u.getAttribute('href')||u.getAttribute('xlink:href')||'';if(h.charAt(0)!=='#')bad.push(k+' use externo')});
+  s.querySelectorAll('*').forEach(function(e){['href','xlink:href'].forEach(function(a){var h=e.getAttribute(a);if(h!==null&&h.charAt(0)!=='#')bad.push(k+' '+a+' externo')})});
+  if(/\p{Extended_Pictographic}/u.test(s.outerHTML.replace(/aria-label="[^"]*"/,'')))bad.push(k+' emoji')});
+ ok('cada versão tem viewBox 0 0 512 512 e nenhuma tag image, text, script, use externo nem href fora de #',!bad.length,bad.join(', '));
+ /* 3. dois olhos de largura >= 28 (medidos no quadro 512) */
+ bad=[];var minEye=999;ORDER.forEach(function(k){var es=T[k].querySelectorAll('[data-role="eye"]');if(es.length!==2){bad.push(k+' '+es.length+' olhos');return}
+  es.forEach(function(e){var w=e.getBoundingClientRect().width;minEye=Math.min(minEye,w);if(w<28)bad.push(k+' olho '+w.toFixed(1))})});
+ ok('cada versão tem exatamente 2 olhos com largura de pelo menos 28 unidades (menor medido '+minEye.toFixed(1)+')',!bad.length,bad.join(', '));
+ /* 4. silhueta maskable dentro do circulo de raio 204,8 (por pixel) */
+ bad=[];var worst={};
+ for(var i=0;i<ORDER.length;i++){var k=ORDER[i],cl=M[k].cloneNode(true);
+  cl.querySelectorAll('[data-role="bg"],[data-role="band"]').forEach(function(e){e.remove()});
+  cl.querySelectorAll('[fill]').forEach(function(e){if(e.getAttribute('fill')!=='none')e.setAttribute('fill','#000')});
+  cl.querySelectorAll('[stroke]').forEach(function(e){e.setAttribute('stroke','#000')});
+  var d=await ras(cl,512,512),mx=0,cnt=0;
+  for(var y=0;y<512;y++)for(var x=0;x<512;x++){if(d.data[(y*512+x)*4+3]>=64){cnt++;var r=Math.hypot(x+.5-256,y+.5-256);if(r>mx)mx=r}}
+  worst[k]=mx;if(!cnt||mx>CIRC+.5)bad.push(k+' raio '+mx.toFixed(1))}
+ ok('todo pixel da silhueta maskable cabe no círculo de raio 204,8 (pior raio por versão: '+ORDER.map(function(k){return k.toUpperCase()+' '+worst[k].toFixed(1)}).join(', ')+')',!bad.length,bad.join(', '));
+ /* 5. contraste nas duas pontas do degrade */
+ bad=[];var crl=[];ORDER.forEach(function(k){var s=T[k],sil=s.querySelector('[data-role="sil"]').getAttribute('fill'),eye=s.querySelector('[data-role="eye"]').getAttribute('fill'),st=[].map.call(s.querySelectorAll('stop'),function(n){return n.getAttribute('stop-color')});
+  var ce=cr(eye,sil),c0=cr(sil,st[0]),c1=cr(sil,st[1]);crl.push(k.toUpperCase()+': silhueta/fundo '+c0.toFixed(2)+' e '+c1.toFixed(2)+', olho/silhueta '+ce.toFixed(2));
+  if(c0<3||c1<3||ce<4.5)bad.push(k+' '+c0.toFixed(2)+'/'+c1.toFixed(2)+'/'+ce.toFixed(2))});
+ ok('contraste silhueta/fundo >= 3 e olho/silhueta >= 4,5 nas duas pontas do degradê',!bad.length,bad.join(', '));
+ crl.forEach(function(l){info(l)});
+ /* 6. versoes distintas a 60 px */
+ var ims={};for(var j=0;j<ORDER.length;j++){ims[ORDER[j]]=await ras(T[ORDER[j]],60,60)}
+ bad=[];var mnD=999,mnP='';
+ for(var a=0;a<ORDER.length;a++)for(var b=a+1;b<ORDER.length;b++){var A=ims[ORDER[a]],B=ims[ORDER[b]],n=60*60,diff=0,uni=0;
+  for(var q=0;q<n;q++){var oa=A.data[q*4+3]>=128,ob=B.data[q*4+3]>=128;if(!oa&&!ob)continue;uni++;
+   var dl=Math.abs(A.data[q*4]-B.data[q*4])+Math.abs(A.data[q*4+1]-B.data[q*4+1])+Math.abs(A.data[q*4+2]-B.data[q*4+2]);if(dl>150||oa!==ob)diff++}
+  var pc=100*diff/uni;info('diferença '+ORDER[a].toUpperCase()+' x '+ORDER[b].toUpperCase()+' a 60 px: '+pc.toFixed(1)+'%');
+  if(pc<mnD){mnD=pc;mnP=ORDER[a].toUpperCase()+' x '+ORDER[b].toUpperCase()}if(pc<12)bad.push(ORDER[a]+ORDER[b]+' '+pc.toFixed(1))}
+ ok('quaisquer duas versões diferem em pelo menos 12% dos pixels a 60 px (menor: '+mnP+' '+mnD.toFixed(1)+'%)',!bad.length,bad.join(', '));
+ /* 7. degrade de 2 cores, sem filtro nem opacidade < 1 */
+ bad=[];ORDER.forEach(function(k){var s=T[k];
+  if(s.querySelectorAll('linearGradient').length!==1||s.querySelectorAll('stop').length!==2)bad.push(k+' degradê');
+  if(s.querySelector('filter,feGaussianBlur,radialGradient,mask,pattern'))bad.push(k+' filtro');
+  s.querySelectorAll('*').forEach(function(e){['opacity','fill-opacity','stroke-opacity','stop-opacity'].forEach(function(a){var o=e.getAttribute(a);if(o!==null&&parseFloat(o)<1)bad.push(k+' '+a)});
+   var st=e.getAttribute('style')||'';if(/opacity\s*:\s*(0?\.\d|0\b)|filter/.test(st))bad.push(k+' style')})});
+ ok('no máximo duas cores no degradê e nenhum filter, feGaussianBlur nem opacidade menor que 1',!bad.length,bad.join(', '));
+ /* 8. escala tipografica do sketch */
+ var fb=[];document.querySelectorAll('body *').forEach(function(e){if(e.closest('svg')||e.closest('script')||e.closest('style')||e.closest('#thost')||e.id==='selftest')return;
+  var own=[].some.call(e.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;
+  var cs=getComputedStyle(e),fs=parseFloat(cs.fontSize),fw=cs.fontWeight;if([12,16,28].indexOf(fs)<0||(fw!=='400'&&fw!=='700'))fb.push(e.tagName.toLowerCase()+' '+fs+'/'+fw)});
+ ok('escala tipográfica do sketch 12/16/28 com pesos 400/700',!fb.length,fb.join(', '));
+ /* extras: independencia de rede, emoji, moeda */
+ var html=document.documentElement.outerHTML.replace(/xmlns="[^"]*"/g,'');
+ ok('sem emoji',!/\p{Extended_Pictographic}/u.test(html));
+ ok('sem fonte, script, link nem imagem externa (offline)',!document.querySelector('script[src],link,img,iframe,object,embed,image')&&!/(src|href)="(https?:)?\/\//.test(html)&&!/url\(\s*['"]?https?:/.test(html),'');
+ ok('o único script do arquivo é o do sketch',document.querySelectorAll('script').length===1,document.querySelectorAll('script').length);
+ ok('nenhuma versão tem texto, cifrão ou letra (sem tag text; coin só no app)',ORDER.every(function(k){return !T[k].querySelector('text')&&!/[$]/.test(T[k].outerHTML)}),'');
+ var fl=out.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ $('selftest').textContent='TOTAL '+out.filter(function(x){return x.indexOf('INFO')!==0}).length+' | FALHAS '+fl+'\n'+out.join('\n');
+ document.title='022 teste FALHAS '+fl;window.__done=true;
+ })().catch(function(e){$('selftest').textContent='FALHAS 1 (erro no teste: '+e.message+')\n'+e.stack;document.title='022 teste FALHAS 1';window.__done=true});
+})();
+</script></body></html>

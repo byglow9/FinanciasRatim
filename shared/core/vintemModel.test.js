@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mulberry32, BLINK } from './vintemSpring.js'
-import { STATE_KEYS } from './vintemStates.js'
+import { STATE_KEYS, STATE_PARAMS } from './vintemStates.js'
 import { World, VintemModel, POSE_KEYS, ACCESSORY_KEYS, REACTION_KINDS } from './vintemModel.js'
 
 const DT60 = 1 / 60
@@ -68,7 +68,8 @@ test('setState triste assenta as molas de expressao em menos de 3 s', () => {
   run(world, 3, DT60, () => assertFinitePose(model.pose, 'triste'))
   assert.equal(model.isSettled(), true)
   assert.ok(Math.abs(model.pose.e.ea - 70) < 1, `ea ${model.pose.e.ea}`)
-  assert.ok(Math.abs(model.pose.e.sy - 0.93) < 0.01, `e.sy ${model.pose.e.sy}`)
+  // sy do triste vem da tabela (o autoteste 04-13 subiu de 0,93 para 1,04 para a altura da silhueta)
+  assert.ok(Math.abs(model.pose.e.sy - STATE_PARAMS.triste.sy) < 0.01, `e.sy ${model.pose.e.sy}`)
 })
 
 test('estado desconhecido e ignorado e o construtor cai no neutro', () => {

@@ -30,14 +30,18 @@ export const STATE_DEFAULTS = Object.freeze({
  * Diferencas de cada estado em relacao a STATE_DEFAULTS (mesclar antes de usar).
  */
 export const STATE_PARAMS = Object.freeze({
-  // D-02: esperto e debochado. Palpebra esquerda mais baixa e sobrancelha direita mais alta.
-  neutro: Object.freeze({ cvL: 0.3, cvR: 0.06, ba: -6, bc: 2 }),
+  // D-02: esperto e debochado. Palpebra esquerda mais baixa e sobrancelha direita mais alta. O UI-SPEC
+  // partia de cvL .30, cvR .06 e ba -6: a 84 px isso media 2,5% contra o neutro simetrico (minimo 3%), e
+  // com .40, .04 e -8 ainda 2,9%. Com .48, .02 e -9 mede 3,2% (autoteste 04-13, P-14).
+  neutro: Object.freeze({ cvL: 0.48, cvR: 0.02, ba: -9, bc: 2 }),
   // Olhos em arco de sorriso (arc 1); a esclera some.
   feliz: Object.freeze({ arc: 1, cu: 0, by: -5, bc: 3, sy: 1.02, ea: 8, es: 1.08 }),
-  // Correcao 2: achata menos, desce o corpo, cabeca tomba e as orelhas dobram.
+  // Correcao 2: nao achata, desce o corpo, cabeca tomba e as orelhas dobram. O UI-SPEC partia de sy .93,
+  // mas a altura da silhueta (>= 92% do neutro, cujas orelhas em pe lhe dao altura) so passa com o corpo
+  // sem encolher: sy 1.04 (autoteste 04-13, P-14). O peso do triste vem de py, rt, olhos e orelhas.
   triste: Object.freeze({
     ew: 16, eh: 21, cvL: 0.3, cvR: 0.3, lt: -15, cu: 0.1, pr: 0.74, wet: 1, ly: 0.7,
-    by: 6, bt: -22, sy: 0.93, py: 5, rt: 5, ea: 70, es: 0.72,
+    by: 6, bt: -22, sy: 1.04, py: 5, rt: 5, ea: 70, es: 0.72,
   }),
   bravo: Object.freeze({
     ew: 16, eh: 20, cvL: 0.38, cvR: 0.38, lt: 22, pr: 0.4,

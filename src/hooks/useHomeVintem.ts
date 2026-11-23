@@ -4,24 +4,24 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
 import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { useVintemInsights } from '@/hooks/useVintemInsights'
 import type { CategoryDef, Transaction } from '@/types'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
+import type { Insight } from '@shared/core/insights.js'
 import { deriveVintemState, situationForTap, type MoodFacts } from '@shared/core/vintemMood.js'
 
 type Budget = ReturnType<typeof useCycleBudget>
 
 export interface UseHomeVintemArgs {
   view: Budget['view']
-  /** Ciclo e lancamentos ja chegam para o detector de insights (plano 04-14). */
+  /** Ciclo e lancamentos do ciclo, ja carregados pela Home, alimentam o detector de insights. */
   cycle: Budget['cycle']
   transactions: Transaction[] | null
   /** Falso (aba Porquinho): o Vintem fica neutro. */
   enabled: boolean
   readOnly: boolean
-  /** Insights do detector; vazio por padrao. */
-  insights?: MoodFacts['insights']
 }
 
 export interface HomeVintem {
@@ -37,15 +37,43 @@ const TURN_HOLD_MS = 600
 
 type View = NonNullable<Budget['view']>
 
+/** Insight que sustenta a situacao de leitura de gasto, se houver (o sujeito ja vem filtrado). */
+function insightFor(
+  situation: string,
+  subject: HomeVintem['subject'],
+  insights: Insight[],
+  todayKey: string,
+): Insight | undefined {
+  switch (situation) {
+    case 'delivery-semana':
+      return insights.find((i) => i.type === 'delivery-heavy')
+    case 'loja-repete':
+      return insights.find((i) => i.type === 'merchant-repeat' && i.subject.key === subject?.merchantKey)
+    case 'categoria-acima-media':
+      return insights.find((i) => i.type === 'category-over-average' && i.subject.key === subject?.categoryId)
+    case 'gasto-grande':
+      return insights.find(
+        (i) => i.type === 'spend-spike' && i.day === todayKey && i.subject.key === subject?.categoryId,
+      )
+    case 'sem-lancar':
+      return insights.find((i) => i.type === 'days-without-launch')
+    default:
+      return undefined
+  }
+}
+
 /**
  * Encaixes da fala a partir da view: dias do ciclo e, se a situacao aponta uma categoria, nome,
  * porcentagem, restante e (no estouro) o excesso; sem categoria, o que sobra so quando positivo.
+ * Situacoes de leitura de gasto trazem os numeros do insight (ordinal, vezes, valor, loja, dias).
  */
 function slotsFor(
   situation: string,
   subject: HomeVintem['subject'],
   view: View,
   categoryDefs: CategoryDef[],
+  insights: Insight[] = [],
+  todayKey = '',
 ): SlotsRaw {
   const raw: SlotsRaw = { dias: view.daysLeft }
   const row = subject?.categoryId
@@ -59,6 +87,31 @@ function slotsFor(
   } else if (view.safeCents > 0) {
     raw.restanteCents = view.safeCents
   }
+
+  const insight = insightFor(situation, subject, insights, todayKey)
+  if (insight) {
+    const m = insight.metrics
+    if (insight.subject.kind === 'category') {
+      raw.categoria = categoryDisplayName({ categoryId: insight.subject.key }, categoryDefs)
+    }
+    if (situation === 'delivery-semana') {
+      raw.ordinal = m.ordinal
+      raw.vezes = m.count
+      raw.valorCents = m.totalCents
+    } else if (situation === 'loja-repete') {
+      if (insight.subject.label) raw.loja = insight.subject.label
+      raw.vezes = m.count
+      raw.ordinal = m.ordinal
+      raw.valorCents = m.totalCents
+    } else if (situation === 'categoria-acima-media') {
+      raw.pct = m.ratioPct
+      raw.valorCents = m.spentCents
+    } else if (situation === 'gasto-grande') {
+      raw.valorCents = m.totalCents
+    } else if (situation === 'sem-lancar') {
+      raw.dias = m.days
+    }
+  }
   return raw
 }
 
@@ -67,11 +120,22 @@ function slotsFor(
  * decisao e da funcao pura deriveVintemState (pior fato vence; neutro sem veredito possivel).
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
-export function useHomeVintem({ view, cycle, enabled, readOnly, insights }: UseHomeVintemArgs): HomeVintem {
+export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
   const { tone, speak } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson } = useCycle()
   const todayKey = dayKeyOf(now)
+
+  // Insights do detector local: sem leitura nova do ciclo (usa as transacoes da Home) e com a linha
+  // de base dos ciclos anteriores vinda do cache depois da primeira consulta. Somente leitura: nada.
+  const { insights, ready: insightsReady } = useVintemInsights({
+    person: viewPerson,
+    cycle,
+    view,
+    transactions,
+    categoryDefs,
+    enabled: enabled && !readOnly,
+  })
 
   const facts = useMemo<MoodFacts>(
     () => ({
@@ -85,7 +149,7 @@ export function useHomeVintem({ view, cycle, enabled, readOnly, insights }: UseH
       rhythmLevel: view?.rhythmLevel ?? null,
       rows: view?.spend.rows ?? [],
       cheer: null,
-      insights: insights ?? [],
+      insights,
     }),
     [enabled, view, readOnly, tone, todayKey, insights],
   )
@@ -102,11 +166,16 @@ export function useHomeVintem({ view, cycle, enabled, readOnly, insights }: UseH
   const entryKey = `${viewPerson}:${cycle.key}`
   const { situation, subject } = mood
   useEffect(() => {
-    if (view === null || situation === null) return
+    // Espera a linha de base: a fala de entrada sai uma vez so e precisa ja ter os insights completos.
+    if (view === null || situation === null || !insightsReady) return
     if (spokenKey.current === entryKey) return
     spokenKey.current = entryKey
-    speak({ situation, raw: slotsFor(situation, subject, view, categoryDefs), announce: false })
-  }, [view, situation, subject, entryKey, speak, categoryDefs])
+    speak({
+      situation,
+      raw: slotsFor(situation, subject, view, categoryDefs, insights, todayKey),
+      announce: false,
+    })
+  }, [view, situation, subject, entryKey, speak, categoryDefs, insights, insightsReady, todayKey])
 
   // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
   // do giro ficam em ref e sao limpos ao desmontar.

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 5
 current_phase_name: Identidade Coinc, PWA e onboarding
 status: executing
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-11-23T16:04:49.802Z"
+stopped_at: Completed 05-06-PLAN.md
+last_updated: "2026-11-23T16:12:37.022Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 5 execution started
-state_head: 4899bc221ecd7c11d3928c3dea7725db8ed870d2
+state_head: 7d089b2f62b40dd75bab22ae76551b1c335c195b
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 107
-  completed_plans: 90
+  completed_plans: 91
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 5 of 21
+Plan: 6 of 21
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 5 execution started
 
@@ -133,6 +133,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 05 P03 | 15min | 3 tasks | 8 files |
 | Phase 05 P04 | 10min | 2 tasks | 6 files |
 | Phase 5 P05 | 25min | 2 tasks | 3 files |
+| Phase 05 P06 | 35min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,7 @@ Recent decisions affecting current work:
 - [Phase 4]: [Phase 4] 04-18: insights fortes guardados em vintemInsights por setDoc de id deterministico, so via toStoredInsight (sem rotulo de loja); regra publicada pelo dono; sem indice novo (19)
 - [Phase 5]: 05-03: dock #2c5a38 separada da acao #2f6f3e; P-01 (dock igual a acao) segue para o dono no plano 05-16
 - [Phase 5]: [Phase 5] 05-05: sketch 021 com D (cofre) de lado e B de cabeca grande, pois de frente D x C media 2,1% e A x B 9% (minimo 12% a 60 px); escolha do icone fica no 05-13
+- [Phase 5]: 05-06: meta theme-color antes do script inline de tema; tema do aparelho nunca passa por AreaContext nem Firestore
 
 ### Pending Todos
 
@@ -227,6 +229,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T16:04:49.688Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-11-23T16:12:36.895Z
+Stopped at: Completed 05-06-PLAN.md
 Resume file: None

@@ -96,11 +96,11 @@ function art(v){
  var d=VERS[v],sil=d.sil,s,tf,inner;
  if(v==='g'){
   /* cabeca inclinada, mais gorda e baixa (como o corpo do Vintem), orelhas de porco sobre o topo, focinho grande */
-  s=1.7;
-  inner=pigEar(sil,58,76,-24,1.0,false)+pigEar(sil,182,76,-24,1.0,true)+
-   '<path data-role="sil" d="'+G.body+'" transform="translate(120 111) scale(1.05 1.12) translate(-120 -111)" fill="'+sil+'"/>'+
-   eyeEl(v,86,108,s)+eyeEl(v,154,108,s)+snoutEl(v,120,148,1.5)+sparkEl(v,208,60,0.6);
-  tf='translate(256 262) rotate(-7) scale('+s+') translate(-120 -111)';
+  s=1.55;
+  inner=pigEar(sil,58,62,-24,1.0,false)+pigEar(sil,182,62,-24,1.0,true)+
+   '<path data-role="sil" d="'+G.body+'" transform="translate(120 111) scale(0.94 1.5) translate(-120 -111)" fill="'+sil+'"/>'+
+   eyeEl(v,88,118,s)+eyeEl(v,152,118,s)+snoutEl(v,120,164,1.5)+sparkEl(v,200,70,0.55);
+  tf='translate(256 250) rotate(-22) scale('+s+') translate(-120 -111)';
  }else{
   s=1.9;
   inner=pigEar(sil,66,84,-28,0.9,false)+pigEar(sil,174,84,-28,0.9,true)+

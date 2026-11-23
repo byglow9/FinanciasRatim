@@ -320,7 +320,7 @@ Plans:
   4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinc
 
-**Plans**: 8/21 plans executed
+**Plans**: 9/21 plans executed
 **UI hint**: yes
 
 Plans:
@@ -340,7 +340,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-09-PLAN.md — PWA: service worker de pré-cache, manifest, captura da adição à tela inicial e prova em Chrome (IDEN-03, IDEN-04)
+- [x] 05-09-PLAN.md — PWA: service worker de pré-cache, manifest, captura da adição à tela inicial e prova em Chrome (IDEN-03, IDEN-04)
 - [ ] 05-13-PLAN.md — Portão do ícone: escolha do dono entre as cinco versões e aplicação do definitivo (IDEN-03)
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -444,7 +444,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinc, PWA e onboarding | 8/21 | In Progress|  |
+| 5. Identidade Coinc, PWA e onboarding | 9/21 | In Progress|  |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

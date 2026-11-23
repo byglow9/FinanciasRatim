@@ -257,7 +257,7 @@ Plans:
   4. O usuário escolhe o tom do Vintém nas Configurações (suave, direto, sem filtro; padrão sem filtro, com bronca e xingamento permitidos) e o balão usa um banco de frases próprias com variantes para cada tom
   5. O desenho, o nome e todas as falas são originais: uma conferência dos textos contra os prints de referência não encontra personagem, nome, slogan nem frases copiados
 
-**Plans**: 16/20 plans executed
+**Plans**: 17/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -297,7 +297,7 @@ Plans:
 **Wave 7** *(blocked on Wave 6 completion)*
 
 - [x] 04-15-PLAN.md — Reação ao lançar gasto, receita, Porquinho e meta, na Home e no toast do Vintém (MASC-01 a MASC-04)
-- [ ] 04-17-PLAN.md — Vintém calado nos vazios e erros de Home, Transações, Calendário e Contas Fixas (MASC-01, MASC-02)
+- [x] 04-17-PLAN.md — Vintém calado nos vazios e erros de Home, Transações, Calendário e Contas Fixas (MASC-01, MASC-02)
 - [ ] 04-20-PLAN.md — Vintém calado no sino, Casal, Porquinho, Relatórios e Configurações (MASC-01, MASC-02)
 
 **Wave 8** *(blocked on Wave 7 completion)*
@@ -385,7 +385,7 @@ Plans:
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
-| 4. Mascote Vintém | 16/20 | In Progress|  |
+| 4. Mascote Vintém | 17/20 | In Progress|  |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Mascote Vintém
 status: executing
-stopped_at: Completed 04-15-PLAN.md
-last_updated: "2026-11-23T13:24:44.558Z"
+stopped_at: Completed 04-17-PLAN.md
+last_updated: "2026-11-23T13:28:30.819Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 4 execution started
-state_head: 52cfc07e38510c8655363edd05c9b71cf79a6a42
+state_head: a94ad6204d3dbce987bb8e3c696d33d6e65ebdc8
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 82
+  completed_plans: 83
   percent: 11
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 4 (Mascote Vintém) — EXECUTING
-Plan: 7 of 20
+Plan: 8 of 20
 Status: Ready to execute
 Last activity: 2026-11-23 — Phase 4 execution started
 
@@ -126,6 +126,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 04 P14 | 25min | 3 tasks | 5 files |
 | Phase 04 P16 | 6min | 3 tasks | 10 files |
 | Phase 4 P15 | 25min | 3 tasks | 10 files |
+| Phase 04 P17 | 10min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,7 @@ Recent decisions affecting current work:
 - [Phase 4]: [Phase 4] 04-14: fala de entrada espera a linha de base (ready); marco vintem:seen:v1 congelado em estado e gravado so no localStorage; reacao do banco observada pela moeda e regiao viva
 - [Phase 4]: [Phase 4] 04-16: linha do Vintem em Limites do mes refaz a fala quando muda a categoria mais critica ou o pct dela; previa de tom com texto fixo e popKey por troca
 - [Phase 4]: [Phase 4] 04-15: onLaunched e onGoal compartilham uma entrega unica (slot da Home reage e fala; sem slot, toast claro do Vintem na fila); meta batida decidida em centavos; guardar no Porquinho arma a festa de fundo antes do portao da view
+- [Phase 4]: [Phase 4] 04-17: estados vazios e de erro com VintemEmpty calado (neutro nos vazios, surpreso nos erros, nunca triste); hero sem renda, cartao de contas fixas da Home e vazio por filtro ficam sem a peca para respeitar o limite de dois Vintens
 
 ### Pending Todos
 
@@ -216,6 +218,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T13:24:44.465Z
-Stopped at: Completed 04-15-PLAN.md
+Last session: 2026-11-23T13:28:30.723Z
+Stopped at: Completed 04-17-PLAN.md
 Resume file: None

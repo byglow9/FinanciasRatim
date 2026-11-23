@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronRight, Smartphone } from 'lucide-react'
 import { InstallSteps } from '@/components/onboarding/InstallSteps'
+import { Onboarding } from '@/components/onboarding/Onboarding'
 import { SettingsCard } from '@/components/settings/SettingsCard'
 import { Sheet } from '@/components/ui/sheet'
 import { usePwaInstall } from '@/hooks/usePwaInstall'
@@ -12,6 +13,7 @@ import { usePwaInstall } from '@/hooks/usePwaInstall'
 export function AppCard() {
   const { isStandalone } = usePwaInstall()
   const [open, setOpen] = useState(false)
+  const [replay, setReplay] = useState(false)
 
   return (
     <SettingsCard id="aplicativo" icon={Smartphone} title="Aplicativo" subtitle="Coinc na tela inicial">
@@ -29,11 +31,26 @@ export function AppCard() {
         <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
       </button>
 
+      <button
+        type="button"
+        onClick={() => setReplay(true)}
+        className="flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold">Rever a apresentação</span>
+          <span className="block text-xs font-normal text-muted-foreground">As 3 telas de boas-vindas</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+      </button>
+
       <Sheet open={open} onClose={() => setOpen(false)} title="Adicionar à tela inicial">
         <div className="mt-4">
           <InstallSteps />
         </div>
       </Sheet>
+
+      {/* Replay: sobreposicao que nao grava a marca nem leva ao Login; o foco volta a esta linha ao fechar. */}
+      {replay ? <Onboarding mode="replay" onFinish={() => setReplay(false)} /> : null}
     </SettingsCard>
   )
 }

@@ -80,7 +80,7 @@ test('AppCard tem a ancora, o icone, os textos do contrato e a folha', () => {
   assert.match(src, /<Sheet[\s\S]*?title="Adicionar à tela inicial"/, 'AppCard sem a folha')
   assert.match(src, /<InstallSteps\s*\/>/, 'folha sem InstallSteps')
   assert.match(src, /min-h-14/, 'linha sem min-h-14')
-  assert.doesNotMatch(src, /Rever a apresentação/, 'a linha de rever a apresentacao nasce no 05-14')
+  // A segunda linha (Rever a apresentacao) nasceu no 05-14 e tem guarda propria em phase5-onboarding.test.js.
   assert.doesNotMatch(src, /useArea|readOnly/, 'o cartao nao depende de area nem de somente leitura')
 })
 

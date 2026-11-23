@@ -13,3 +13,6 @@ serviceAccount*.json
 assets-src/icon/*.png
 assets-src/icon/*.ico
 assets-src/maskable/*.png
+
+# capturas da auditoria de tema (plano 05-15): so para o dono olhar, nunca vao para o git
+.planning/phases/05-identidade-coinki-pwa-e-onboarding/captures/

@@ -4,9 +4,18 @@
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/theme.mjs --smoke
 //   --smoke  so o primeiro desenho: escuro forcado no aparelho nasce pintado, sem piscar o tema errado.
 //   sem flag todos os cenarios (smoke mais o seletor de Ajustes e o modo Automatico).
+//   --audit  (plano 05-15, D-10, IDEN-06) todas as rotas e telas de entrada nos dois temas e nos dois tamanhos,
+//            cinco verificacoes (rolagem horizontal, contraste, bloco claro no escuro, hex em src, alvo de toque)
+//            e uma captura por tela e tema. Filtros: --route R, --theme claro|escuro, --viewport LxA,
+//            --report-only (lista violacoes e sai com 0).
+//   --selftest  prova que o auditor enxerga defeitos: injeta um bloco claro, texto sem contraste, alvo pequeno e
+//            estouro de largura no escuro e exige que as quatro verificacoes de pagina os acusem.
 // Saida: uma linha por verificacao e a linha final `FALHAS n`. Codigos: 0 sem falha, 1 alguma falha,
 // 2 falha do proprio script (Chrome ausente, Vite nao subiu, prazo vencido).
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { connect, launchChrome } from './cdp.mjs'
 import { buildSeed } from './seed.mjs'
 
@@ -20,11 +29,21 @@ const TOTAL_TIMEOUT_MS = 180000
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function parseArgs(argv) {
-  const opts = { smoke: false }
-  for (const arg of argv) {
+  const opts = { smoke: false, audit: false, selftest: false, reportOnly: false, route: null, theme: null, viewport: null }
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]
     if (arg === '--smoke') opts.smoke = true
-    else throw new Error(`flag desconhecida: ${arg}`)
+    else if (arg === '--audit') opts.audit = true
+    else if (arg === '--selftest') opts.selftest = true
+    else if (arg === '--report-only') opts.reportOnly = true
+    else if (arg === '--route' || arg === '--theme' || arg === '--viewport') {
+      const value = argv[++i]
+      if (value === undefined) throw new Error(`${arg} pede um valor`)
+      opts[arg.slice(2)] = value
+    } else throw new Error(`flag desconhecida: ${arg}`)
   }
+  if (opts.theme !== null && !['claro', 'escuro'].includes(opts.theme)) throw new Error('--theme aceita claro ou escuro')
+  if (opts.viewport !== null && !/^\d+x\d+$/.test(opts.viewport)) throw new Error('--viewport aceita LxA, por exemplo 390x844')
   return opts
 }
 
@@ -348,6 +367,432 @@ async function scenarioKeyboardAndStorage(ctx) {
 
 const SCENARIOS_FULL = [scenarioSelector, scenarioKeyboardAndStorage]
 
+// ---------------------------------------------------------------------------------------------------------
+// Modo --audit (plano 05-15, D-10, IDEN-06): rotas e telas de entrada nos dois temas e nos dois tamanhos.
+// ---------------------------------------------------------------------------------------------------------
+
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const CAPTURES_DIR = path.join(ROOT_DIR, '.planning', 'phases', '05-identidade-coinki-pwa-e-onboarding', 'captures')
+const AUDIT_THEMES = ['claro', 'escuro']
+const AUDIT_VIEWPORTS = [
+  { width: 360, height: 640 },
+  { width: 390, height: 844 },
+]
+const CAPTURE_VIEWPORT = '390x844'
+const AUDIT_TOTAL_TIMEOUT_MS = 20 * 60 * 1000
+const AUDIT_COMBO_TIMEOUT_MS = 60000
+const MIN_TARGET = 43.5
+const MIN_BLOCK = 64
+
+/**
+ * Excecoes do auditor. Toda excecao tem motivo e vale para UMA verificacao. So entram aqui coisas de terceiros,
+ * de dado do usuario ou isentas por norma; nunca um defeito nosso (T-05-15-03).
+ */
+const AUDIT_EXCEPTIONS = [
+  {
+    id: 'widget-pluggy',
+    check: 'bloco-claro',
+    selector: 'iframe[src*="pluggy"], iframe[title*="Pluggy"]',
+    reason: 'O widget do Pluggy Connect e de terceiros, vive em iframe e nao segue o tema; continua claro (UI-SPEC P-09).',
+  },
+  {
+    id: 'cor-de-categoria-de-evento',
+    check: 'bloco-claro',
+    selector: '.rounded-full[style*="background"]',
+    reason: 'A cor de categoria de evento e escolhida pelo usuario (DEFAULT_EVENT_CATEGORY_COLORS) e e dado: aparece so como ponto de cor com borda, nunca como fundo de texto (UI-SPEC S6).',
+  },
+  {
+    id: 'balao-do-vintem',
+    check: 'bloco-claro',
+    selector: '[class*="bg-[var(--vintem-balloon)]"]',
+    reason: 'O balao do Vintem e claro de proposito, com texto escuro, nos dois temas (UI-SPEC, Vintem nos dois temas); o contraste dele e medido normalmente.',
+  },
+  {
+    id: 'controle-desabilitado',
+    check: 'contraste',
+    selector: ':disabled, [aria-disabled="true"], fieldset:disabled *',
+    reason: 'Controle desabilitado e inativo e fica isento de contraste minimo na WCAG 1.4.3.',
+  },
+]
+
+/** Telas percorridas. `prep` leva a pagina ate o estado certo depois da navegacao inicial. */
+const sel = {
+  button: (text) => `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === ${JSON.stringify(text)})`,
+}
+const AUDIT_SCREENS = [
+  { id: 'home', path: '/' },
+  { id: 'transacoes', path: '/transacoes' },
+  { id: 'calendario', path: '/calendario' },
+  { id: 'contas-fixas', path: '/contas-fixas' },
+  { id: 'casal', path: '/casal' },
+  { id: 'relatorios-categorias', path: '/relatorios', tab: 'Categorias' },
+  { id: 'relatorios-comparacao', path: '/relatorios', tab: 'Comparação' },
+  { id: 'relatorios-evolucao', path: '/relatorios', tab: 'Evolução' },
+  { id: 'relatorios-visao-geral', path: '/relatorios', tab: 'Visão geral' },
+  { id: 'metas', path: '/metas' },
+  { id: 'porquinho', path: '/porquinho' },
+  { id: 'configuracoes', path: '/configuracoes' },
+  { id: 'vintem-teste', path: '/vintem-teste' },
+  { id: 'login', path: '/configuracoes', entry: 'login' },
+  { id: 'onboarding-1', path: '/configuracoes', entry: 'onboarding', step: 0 },
+  { id: 'onboarding-2', path: '/configuracoes', entry: 'onboarding', step: 1 },
+  { id: 'onboarding-3', path: '/configuracoes', entry: 'onboarding', step: 2 },
+  { id: 'falha', path: '/', entry: 'falha' },
+]
+
+/** Semeia o mock, a marca do onboarding e o tema do combo em CADA documento novo. */
+function auditBootSource(theme) {
+  const seed = buildSeed('full')
+  return `(() => { try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('db::') || k.startsWith('doc::')) localStorage.removeItem(k)
+    const seed = ${JSON.stringify(seed)}
+    for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    localStorage.setItem('coinc:onboarding:v1', '1')
+    localStorage.setItem(${JSON.stringify(THEME_KEY)}, ${JSON.stringify(theme)})
+  } catch {} })()`
+}
+
+/**
+ * Roda DENTRO da pagina (serializada com toString): as verificacoes (a), (b), (c) e (e).
+ * A verificacao (d), hex literal em src, e estatica e roda no Node.
+ */
+function pageAudit(cfg) {
+  const round = (n) => Math.round(n * 100) / 100
+  const cap = (list) => list.slice(0, 100)
+  const doc = document.documentElement
+  const selectorOf = (el) => {
+    let s = el.tagName.toLowerCase()
+    if (el.id) s += `#${el.id}`
+    const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : []
+    if (cls.length) s += `.${cls.join('.')}`
+    const label = el.getAttribute('aria-label') || (el.textContent || '').trim()
+    if (label) s += ` "${label.replace(/\s+/g, ' ').slice(0, 28)}"`
+    return s
+  }
+  const isVisible = (el) => {
+    const r = el.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0) return false
+    return typeof el.checkVisibility === 'function' ? el.checkVisibility({ visibilityProperty: true, opacityProperty: true }) : true
+  }
+  const inAriaHidden = (el) => el.closest('[aria-hidden="true"]') !== null
+  const exceptionHits = {}
+  const excepted = (el, check) => {
+    for (const ex of cfg.exceptions) {
+      if (ex.check !== check) continue
+      if (el.matches(ex.selector) || el.closest(ex.selector)) {
+        exceptionHits[ex.id] = (exceptionHits[ex.id] ?? 0) + 1
+        return true
+      }
+    }
+    return false
+  }
+
+  // Cores: o canvas resolve qualquer sintaxe (rgb, color-mix, oklab) para sRGB.
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 1
+  const g2d = canvas.getContext('2d', { willReadFrequently: true })
+  const colorCache = new Map()
+  const parse = (css) => {
+    if (colorCache.has(css)) return colorCache.get(css)
+    g2d.clearRect(0, 0, 1, 1)
+    g2d.fillStyle = '#000'
+    g2d.fillStyle = css
+    g2d.fillRect(0, 0, 1, 1)
+    const d = g2d.getImageData(0, 0, 1, 1).data
+    const out = { r: d[0], g: d[1], b: d[2], a: d[3] / 255 }
+    colorCache.set(css, out)
+    return out
+  }
+  const over = (top, bottom) => {
+    const a = top.a + bottom.a * (1 - top.a)
+    if (a === 0) return { r: 0, g: 0, b: 0, a: 0 }
+    const mix = (t, b) => (t * top.a + b * bottom.a * (1 - top.a)) / a
+    return { r: mix(top.r, bottom.r), g: mix(top.g, bottom.g), b: mix(top.b, bottom.b), a }
+  }
+  const lin = (v) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+  const ratioOf = (a, b) => {
+    const la = lum(a)
+    const lb = lum(b)
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+  }
+  const hex = (c) => `#${[c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`
+
+  /** Fundo efetivo de `el` (o proprio fundo entra quando includeSelf for verdadeiro) e opacidade acumulada. */
+  const backdrop = (el, includeSelf) => {
+    const layers = []
+    let opacity = 1
+    let onImage = false
+    for (let p = includeSelf ? el : el.parentElement; p; p = p.parentElement) {
+      const cs = getComputedStyle(p)
+      opacity *= Number(cs.opacity)
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') onImage = true
+      const bg = parse(cs.backgroundColor)
+      if (bg.a > 0) layers.push(bg)
+      if (bg.a >= 0.999) break
+    }
+    let base = { r: 255, g: 255, b: 255, a: 1 }
+    for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base)
+    return { color: base, onImage, opacity }
+  }
+
+  const result = { overflowers: [], contrast: [], lightBlocks: [], smallTargets: [], notes: { onImage: 0, measured: 0 } }
+
+  // (a) Rolagem horizontal, no criterio do auditor da 3.1.
+  result.overflowX = doc.scrollWidth > doc.clientWidth
+  result.scrollWidth = doc.scrollWidth
+  result.clientWidth = doc.clientWidth
+  const clipped = (el) => {
+    for (let p = el.parentElement; p && p !== document.body && p !== doc; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX
+      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') return true
+    }
+    return false
+  }
+  for (const el of document.body.querySelectorAll('*')) {
+    if (!isVisible(el) || inAriaHidden(el)) continue
+    const r = el.getBoundingClientRect()
+    if (r.right <= window.innerWidth + 0.5) continue
+    if (clipped(el)) continue
+    result.overflowers.push({ sel: selectorOf(el), right: round(r.right), innerWidth: window.innerWidth })
+  }
+  result.overflowers = cap(result.overflowers)
+
+  // (b) Contraste de texto e de icones contra o fundo efetivo composto.
+  const seen = new Set()
+  const checkPair = (el, fgCss, label, min, kind) => {
+    const bd = backdrop(el, true)
+    if (bd.onImage) {
+      result.notes.onImage++
+      return
+    }
+    const fg0 = parse(fgCss)
+    const fg = over({ ...fg0, a: fg0.a * bd.opacity }, bd.color)
+    const ratio = ratioOf(fg, bd.color)
+    result.notes.measured++
+    if (ratio + 0.005 >= min) return
+    const key = `${selectorOf(el)}|${label}`
+    if (seen.has(key)) return
+    seen.add(key)
+    result.contrast.push({ kind, sel: selectorOf(el), text: label.slice(0, 28), fg: hex(fg), bg: hex(bd.color), ratio: round(ratio), min })
+  }
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  const textOwners = new Set()
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const parent = n.parentElement
+    if (!parent || !(n.nodeValue || '').trim()) continue
+    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'OPTION'].includes(parent.tagName)) continue
+    textOwners.add(parent)
+  }
+  for (const el of textOwners) {
+    if (!isVisible(el)) continue
+    const r = el.getBoundingClientRect()
+    if (r.width < 4 || r.height < 4) continue
+    if (excepted(el, 'contraste')) continue
+    const cs = getComputedStyle(el)
+    const size = parseFloat(cs.fontSize)
+    const isSvg = el instanceof SVGElement
+    const fgCss = isSvg ? cs.fill : cs.color
+    if (!fgCss || fgCss === 'none') continue
+    const own = [...el.childNodes].filter((c) => c.nodeType === 3).map((c) => c.nodeValue.trim()).join(' ')
+    checkPair(el, fgCss, own, size >= 28 ? 3 : 4.5, 'texto')
+  }
+  for (const svg of document.querySelectorAll('svg[class*="lucide"]')) {
+    if (!isVisible(svg)) continue
+    if (excepted(svg, 'contraste')) continue
+    const cs = getComputedStyle(svg)
+    const paint = cs.stroke && cs.stroke !== 'none' ? cs.stroke : cs.fill
+    if (!paint || paint === 'none') continue
+    const name = (svg.getAttribute('class') || '').split(/\s+/).find((c) => c.startsWith('lucide-') && c !== 'lucide') ?? 'icone'
+    checkPair(svg, paint, name, 3, 'icone')
+  }
+  result.contrast = cap(result.contrast)
+
+  // (c) No escuro, bloco de 64x64 ou mais com fundo claro (luminancia acima de 0,5).
+  if (cfg.theme === 'escuro') {
+    for (const el of document.body.querySelectorAll('*')) {
+      if (el instanceof SVGElement) continue
+      if (!isVisible(el)) continue
+      const r = el.getBoundingClientRect()
+      if (r.width < cfg.minBlock || r.height < cfg.minBlock) continue
+      const own = parse(getComputedStyle(el).backgroundColor)
+      if (own.a < 0.05) continue
+      const eff = backdrop(el, true)
+      const l = lum(eff.color)
+      if (l <= 0.5) continue
+      if (excepted(el, 'bloco-claro')) continue
+      result.lightBlocks.push({ sel: selectorOf(el), size: `${Math.round(r.width)}x${Math.round(r.height)}`, bg: hex(eff.color), lum: round(l) })
+    }
+  }
+  result.lightBlocks = cap(result.lightBlocks)
+
+  // (e) Alvo de toque menor que 43,5 px em elemento interativo.
+  const targetSel = 'button, a[href], [role="button"], [role="tab"], [role="radio"], [role="switch"], [role="checkbox"], input, select, textarea'
+  for (const el of document.querySelectorAll(targetSel)) {
+    if (el instanceof HTMLInputElement && el.type === 'hidden') continue
+    if (!isVisible(el) || inAriaHidden(el)) continue
+    const r = el.getBoundingClientRect()
+    if (r.width >= cfg.minTarget && r.height >= cfg.minTarget) continue
+    result.smallTargets.push({ sel: selectorOf(el), w: round(r.width), h: round(r.height) })
+  }
+  result.smallTargets = cap(result.smallTargets)
+
+  result.notes.exceptions = exceptionHits
+  result.h1 = document.querySelector('h1')?.textContent.trim() ?? null
+  result.temaAplicado = doc.classList.contains('dark') ? 'escuro' : 'claro'
+  result.interativos = document.querySelectorAll(targetSel).length
+  return result
+}
+
+const waitUntil = async (page, expr, ms = 8000) => {
+  const deadline = Date.now() + ms
+  while (Date.now() < deadline) {
+    if (await page.evaluate(`!!(${expr})`)) return true
+    await sleep(120)
+  }
+  return false
+}
+const clickByText = (page, text) => page.evaluate(`(() => { const b = ${sel.button(text)}; if (!b) return false; b.click(); return true })()`)
+
+/** Leva a pagina ao estado de `screen` (rota ja navegada). */
+async function prepareScreen(page, screen) {
+  const LOGOUT = `[...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sair da conta'))`
+  if (screen.tab) {
+    await waitUntil(page, `document.querySelector('[role="tab"]')`)
+    if (!(await clickByText(page, screen.tab))) throw new Error(`aba ${screen.tab} nao achada`)
+    await sleep(900)
+  }
+  if (screen.entry === 'login' || screen.entry === 'onboarding') {
+    if (!(await waitUntil(page, LOGOUT))) throw new Error('botao Sair da conta nao achado')
+    if (screen.entry === 'onboarding') await page.evaluate(`localStorage.removeItem('coinc:onboarding:v1')`)
+    await page.evaluate(`(() => { const b = ${LOGOUT}; b.click() })()`)
+    const target = screen.entry === 'login' ? `document.querySelector('input[type="password"]')` : `document.querySelector('h1')?.textContent.trim() === 'Veja quanto ainda pode gastar'`
+    if (!(await waitUntil(page, target))) throw new Error(`tela ${screen.id} nao abriu`)
+    for (let i = 0; i < (screen.step ?? 0); i++) {
+      const before = await page.evaluate(`document.querySelector('h1')?.textContent`)
+      if (!(await clickByText(page, 'Continuar'))) throw new Error('Continuar nao achado')
+      await waitUntil(page, `document.querySelector('h1')?.textContent !== ${JSON.stringify(before)}`, 4000)
+    }
+    await sleep(500)
+  }
+  if (screen.entry === 'falha') {
+    if (!(await waitUntil(page, `typeof window.__coincBootError === 'function'`))) throw new Error('gancho __coincBootError ausente (so existe em DEV)')
+    await page.evaluate(`window.__coincBootError()`)
+    if (!(await waitUntil(page, `document.querySelector('h1')?.textContent.includes('Não foi possível abrir o Coinc')`))) throw new Error('tela de falha nao abriu')
+    await sleep(400)
+  }
+}
+
+/** Estado carregado: sem esqueleto nem aria-busy, mais uma folga para as animacoes de entrada. */
+async function waitLoaded(page, screen) {
+  await waitUntil(page, `!document.querySelector('.animate-pulse, [aria-busy="true"]')`, 8000)
+  await sleep(screen.id === 'home' ? 1600 : 700)
+}
+
+/** Verificacao (d): a guarda de paleta existente (hex literal em src) como subprocesso. */
+function runHexGuard() {
+  const res = spawnSync(process.execPath, ['--test', 'test/static/palette-contrast.test.js'], { cwd: ROOT_DIR, encoding: 'utf8', timeout: 120000 })
+  if (res.error) throw new Error(`guarda de paleta nao rodou: ${res.error.message}`)
+  const tail = `${res.stdout}\n${res.stderr}`.split('\n').filter((l) => /^# (pass|fail)|not ok/.test(l.trim())).slice(0, 6).join(' | ')
+  return { ok: res.status === 0, detail: tail }
+}
+
+/** Prova de sensibilidade do auditor: defeitos plantados na pagina precisam ser acusados. */
+async function runSelftest(page, collected) {
+  await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+  await page.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true })
+  const boot = await page.send('Page.addScriptToEvaluateOnNewDocument', { source: auditBootSource('escuro') })
+  await navigate(page, `${ORIGIN}/porquinho`)
+  await waitLoaded(page, { id: 'porquinho' })
+  await page.evaluate(`(() => {
+    const host = document.createElement('div')
+    host.id = '__selftest'
+    host.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;width:600px'
+    host.innerHTML = '<div style="width:80px;height:80px;background:#ffffff">claro</div>' +
+      '<p style="background:#222222;color:#2a2a2a;font-size:16px">sem contraste</p>' +
+      '<button style="width:30px;height:30px">x</button>'
+    document.body.appendChild(host)
+  })()`)
+  const r = await page.evaluate(`(${pageAudit.toString()})(${JSON.stringify({ theme: 'escuro', minTarget: MIN_TARGET, minBlock: MIN_BLOCK, exceptions: AUDIT_EXCEPTIONS })})`)
+  check('selftest: bloco claro de 80x80 no escuro e acusado', r.lightBlocks.some((b) => b.size === '80x80'), JSON.stringify(r.lightBlocks.slice(0, 2)))
+  check('selftest: texto cinza sobre cinza e acusado', r.contrast.some((c) => c.text === 'sem contraste'), JSON.stringify(r.contrast.slice(0, 2)))
+  check('selftest: botao de 30x30 e acusado', r.smallTargets.some((t) => t.w === 30), JSON.stringify(r.smallTargets.slice(0, 2)))
+  check('selftest: estouro de largura e acusado', r.overflowers.some((o) => o.right > 390), JSON.stringify(r.overflowers.slice(0, 2)))
+  check('selftest: o balao do Vintem passa pela excecao e nao pelo auditor', !r.lightBlocks.some((b) => b.sel.includes('vintem-balloon')))
+  check('selftest: nenhuma excecao nem console.error', collected.exceptions.length === 0 && collected.consoleErrors.length === 0, [...collected.exceptions, ...collected.consoleErrors].join(' | '))
+  await page.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier })
+}
+
+async function runAudit(page, opts, collected) {
+  const screens = AUDIT_SCREENS.filter((s) => opts.route === null || s.id === opts.route || s.path === opts.route)
+  if (screens.length === 0) throw new Error(`--route sem correspondencia: ${opts.route}`)
+  const themes = AUDIT_THEMES.filter((t) => opts.theme === null || t === opts.theme)
+  const viewports = AUDIT_VIEWPORTS.filter((v) => opts.viewport === null || `${v.width}x${v.height}` === opts.viewport)
+  if (viewports.length === 0) throw new Error(`--viewport desconhecido: ${opts.viewport} (use 360x640 ou 390x844)`)
+  fs.mkdirSync(CAPTURES_DIR, { recursive: true })
+  await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+  await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] })
+
+  let total = 0
+  let failures = 0
+  const failed = []
+  for (const theme of themes) {
+    const boot = await page.send('Page.addScriptToEvaluateOnNewDocument', { source: auditBootSource(theme) })
+    for (const viewport of viewports) {
+      await page.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 2, mobile: true })
+      const vp = `${viewport.width}x${viewport.height}`
+      for (const screen of screens) {
+        const run = async () => {
+          collected.exceptions.length = 0
+          collected.consoleErrors.length = 0
+          await navigate(page, `${ORIGIN}${screen.path}`)
+          await prepareScreen(page, screen)
+          await waitLoaded(page, screen)
+          const r = await page.evaluate(`(${pageAudit.toString()})(${JSON.stringify({ theme, minTarget: MIN_TARGET, minBlock: MIN_BLOCK, exceptions: AUDIT_EXCEPTIONS })})`)
+          if (vp === CAPTURE_VIEWPORT) {
+            const shot = await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
+            fs.writeFileSync(path.join(CAPTURES_DIR, `${screen.id}-${theme}.png`), Buffer.from(shot.data, 'base64'))
+          }
+          return r
+        }
+        const r = await withTimeout(run(), AUDIT_COMBO_TIMEOUT_MS, `${screen.id} ${theme} ${vp}`)
+        // Salvaguarda do proprio auditor: se o tema pedido nao foi aplicado, a medicao nao vale.
+        const temaErrado = r.temaAplicado !== theme
+        const found = (temaErrado ? 1 : 0) + (r.overflowX || r.overflowers.length > 0 ? 1 : 0) + r.contrast.length + r.lightBlocks.length + r.smallTargets.length
+        total++
+        failures += found
+        if (found > 0) failed.push(`${screen.id} ${theme} ${vp}`)
+        console.log(
+          JSON.stringify({
+            screen: screen.id,
+            theme,
+            viewport: vp,
+            violacoes: found,
+            h1: r.h1,
+            temaErrado: temaErrado ? `pedido ${theme}, aplicado ${r.temaAplicado}` : null,
+            interativos: r.interativos,
+            rolagemHorizontal: r.overflowX || r.overflowers.length > 0 ? { scrollWidth: r.scrollWidth, clientWidth: r.clientWidth, overflowers: r.overflowers.slice(0, 8) } : null,
+            contraste: r.contrast,
+            blocoClaro: r.lightBlocks,
+            alvoPequeno: r.smallTargets,
+            notas: r.notes,
+            erros: [...collected.exceptions, ...collected.consoleErrors].slice(0, 3),
+          }),
+        )
+      }
+    }
+    await page.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: boot.identifier })
+  }
+  const hex = runHexGuard()
+  console.log(JSON.stringify({ verificacao: 'hex-literal-em-src', ok: hex.ok, detalhe: hex.detail }))
+  if (!hex.ok) failures++
+  console.log(JSON.stringify({ resumo: true, combinacoes: total, comViolacao: failed, capturas: path.relative(ROOT_DIR, CAPTURES_DIR) }))
+  return failures
+}
+
 function withTimeout(promise, ms, label) {
   let timer
   const limit = new Promise((_, reject) => {
@@ -361,6 +806,7 @@ async function main() {
   let vite = null
   let chrome = null
   let page = null
+  let auditFailures = null
   try {
     vite = await startVite()
     cleanups.push(() => vite.stop())
@@ -369,7 +815,7 @@ async function main() {
     page = await connect(chrome.wsUrl)
     await page.send('Page.enable')
     await page.send('Runtime.enable')
-    await page.send('Page.addScriptToEvaluateOnNewDocument', { source: bootSource('escuro') })
+    if (!opts.audit && !opts.selftest) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: bootSource('escuro') })
 
     const collected = { exceptions: [], consoleErrors: [] }
     page.on('Runtime.exceptionThrown', (p) => {
@@ -382,22 +828,30 @@ async function main() {
       collected.consoleErrors.push(String(text).split('\n')[0].slice(0, 200))
     })
 
-    const ctx = { page, collected }
-    const list = opts.smoke ? [scenarioSmoke] : [scenarioSmoke, ...SCENARIOS_FULL]
-    await withTimeout(
-      (async () => {
-        for (const scenario of list) await scenario(ctx)
-      })(),
-      TOTAL_TIMEOUT_MS,
-      'cenarios do tema',
-    )
+    if (opts.selftest) {
+      await withTimeout(runSelftest(page, collected), 60000, 'selftest do auditor')
+    } else if (opts.audit) {
+      const failures = await withTimeout(runAudit(page, opts, collected), AUDIT_TOTAL_TIMEOUT_MS, 'auditoria de tema')
+      auditFailures = failures
+    } else {
+      const ctx = { page, collected }
+      const list = opts.smoke ? [scenarioSmoke] : [scenarioSmoke, ...SCENARIOS_FULL]
+      await withTimeout(
+        (async () => {
+          for (const scenario of list) await scenario(ctx)
+        })(),
+        TOTAL_TIMEOUT_MS,
+        'cenarios do tema',
+      )
+    }
   } finally {
     page?.close()
     if (chrome) await chrome.close()
     if (vite) await vite.stop()
   }
-  const failures = results.filter((r) => !r.ok).length
+  const failures = auditFailures ?? results.filter((r) => !r.ok).length
   console.log(`FALHAS ${failures}`)
+  if (opts.audit && opts.reportOnly) return 0
   return failures > 0 ? 1 : 0
 }
 

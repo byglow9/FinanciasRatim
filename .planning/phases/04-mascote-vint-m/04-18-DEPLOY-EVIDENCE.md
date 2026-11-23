@@ -43,4 +43,13 @@ Sem a regra em produção a gravação dos insights falha em silêncio (a regra 
 
 ## Resultado da publicação
 
-(preenchido depois da resposta do dono no checkpoint da Task 3)
+Resposta literal do dono no checkpoint da Task 3 (2026-11-23):
+
+```
+✔  firestore: released rules firestore.rules to cloud.firestore
+✔  Deploy complete!
+```
+
+- Comando: `firebase deploy --only firestore:rules --project financias-ratimbum` (firebase-tools 15.9.1), duração de 16 s, compilação das regras OK, nenhum índice publicado.
+- `npm run test:rules`: o dono não rodou de novo; o resultado vale o do portão local (13 de 13, rodado no ambiente de desenvolvimento).
+- Rollback não necessário. Credenciais: nenhuma registrada.

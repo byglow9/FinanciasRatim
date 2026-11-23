@@ -257,7 +257,7 @@ Plans:
   4. O usuário escolhe o tom do Vintém nas Configurações (suave, direto, sem filtro; padrão sem filtro, com bronca e xingamento permitidos) e o balão usa um banco de frases próprias com variantes para cada tom
   5. O desenho, o nome e todas as falas são originais: uma conferência dos textos contra os prints de referência não encontra personagem, nome, slogan nem frases copiados
 
-**Plans**: 10/20 plans executed
+**Plans**: 11/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -282,7 +282,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-11-PLAN.md — Rota oculta /vintem-teste com controles, balão de fala e executor CDP (MASC-06, MASC-03, MASC-02)
+- [x] 04-11-PLAN.md — Rota oculta /vintem-teste com controles, balão de fala e executor CDP (MASC-06, MASC-03, MASC-02)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -385,7 +385,7 @@ Plans:
 | 1. Fundação de dados e acesso | 13/13 | In Progress|  |
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
-| 4. Mascote Vintém | 10/20 | In Progress|  |
+| 4. Mascote Vintém | 11/20 | In Progress|  |
 | 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |

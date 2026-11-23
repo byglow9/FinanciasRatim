@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 current_phase: 4
-current_phase_name: Mascote Vintem
+current_phase_name: Mascote Vintém
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-11-19T20:13:04.066Z"
-last_activity: 2026-11-19
+stopped_at: Completed 04-11-PLAN.md
+last_updated: "2026-11-23T12:30:48.552Z"
+last_activity: 2026-11-23
 last_activity_desc: Phase 4 execution started
-state_head: fd981d4a6df63e1bbf0ec61da3c0ae08111c3481
+state_head: 83d9c2f521630949d2571da7e698dafb58fce2ce
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 69
+  completed_plans: 77
   percent: 11
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 4 — Mascote Vintem
+**Current focus:** Phase 4 — Mascote Vintém
 
 ## Current Position
 
-Phase: 4 (Mascote Vintem) — EXECUTING
-Plan: 4 of 20
+Phase: 4 (Mascote Vintém) — EXECUTING
+Plan: 2 of 20
 Status: Ready to execute
-Last activity: 2026-11-19 — Phase 4 execution started
+Last activity: 2026-11-23 — Phase 4 execution started
 
 Progress: [█░░░░░░░░░] 11%
 
@@ -120,6 +120,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 04 P01 | 15min | 3 tasks | 4 files |
 | Phase 04 P02 | 25min | 3 tasks | 2 files |
 | Phase 04 P03 | 30min | 3 tasks | 2 files |
+| Phase 04 P11 | 35min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,7 @@ Recent decisions affecting current work:
 - [Phase 03.1]: [03.1-24] Guarda de confirmacao nativa varre todo src e fica vermelha por G-01 (BankConnections.tsx) em vez de ganhar excecao; nyquist_compliant falso ate decisao do dono
 - [Phase 4]: 04-01: STATE_PARAMS guarda so diferencas sobre STATE_DEFAULTS; consumidores mesclam
 - [Phase 4]: 04-03: gasto grande = 3x ticket medio da categoria (>=5 amostras), fallback 30% do limite; nomes de loja so do dicionario ou com token de estabelecimento
+- [Phase 4]: [Phase 4] 04-11: grade de sete estados em 3 colunas (4 a partir de md) porque 4 de 84px nao cabem a 360px; onFrame no laco unico serve o pop do balao
 
 ### Pending Todos
 
@@ -204,6 +206,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-19T20:13:03.977Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-11-23T12:30:48.422Z
+Stopped at: Completed 04-11-PLAN.md
 Resume file: None

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Mascote Vintém
 status: executing
-stopped_at: Completed 04-18-PLAN.md
-last_updated: "2026-11-23T13:42:26.904Z"
+stopped_at: Phase 5 context gathered
+last_updated: "2026-11-23T14:13:52.291Z"
 last_activity: 2026-11-23
 last_activity_desc: Phase 4 execution started
-state_head: 0aa7f2741ddccb1cb3ec0c10f6ae5e5df67069f0
+state_head: 46dcf23accd35c86f9d6f9971220e33233064dae
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 86
-  completed_plans: 85
+  completed_plans: 86
   percent: 11
 ---
 
@@ -221,6 +221,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-23T13:42:26.805Z
-Stopped at: Completed 04-18-PLAN.md
-Resume file: None
+Last session: 2026-11-23T14:13:52.184Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-identidade-coinki-pwa-e-onboarding/05-CONTEXT.md

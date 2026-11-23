@@ -1,0 +1,390 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>030 Quinze ícones do app</title>
+<style>
+/* Sketch 030: autossuficiente (sem fonte, sem rede, sem script de terceiros). Texto so em 12, 16 e 28 com pesos 400 e 700. */
+*{box-sizing:border-box;margin:0}
+body{background:#f5ecdb;font:400 16px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1e1f19;min-height:100vh;overflow-x:hidden}
+#nav{background:#fbf6ea;border-bottom:1px solid #e3d6bc;padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tab{display:inline-flex;align-items:center;justify-content:center;height:44px;min-width:44px;border:1px solid #e3d6bc;background:#fbf6ea;border-radius:16px;padding:0 12px;color:#1e1f19;text-decoration:none;font:400 16px system-ui,sans-serif}
+.tab.active{background:#2f6f3e;color:#fbf6ea;border-color:#2f6f3e;font-weight:700}
+#wrap{max-width:1000px;margin:0 auto;padding:12px 16px 32px}
+h1{font:700 28px/1.2 system-ui,sans-serif;letter-spacing:-.02em}
+h2{font:700 16px/1.4 system-ui,sans-serif;margin-bottom:4px}
+.note{font:400 12px/1.4 system-ui,sans-serif;color:#5c604a;margin:4px 0 12px}
+.card{background:#fbf6ea;border-radius:22px;padding:16px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:20px 16px}
+.grid figure{display:grid;justify-items:center;gap:6px;align-content:start}
+.grid figcaption{font:400 12px/1.4 system-ui,sans-serif;color:#5c604a;text-align:center;max-width:176px}
+.grid figcaption b{color:#1e1f19;display:block;font-size:12px}
+.grid a{display:block;text-decoration:none;color:inherit}
+.cap{font:400 12px/1.4 system-ui,sans-serif;color:#5c604a;text-align:center}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-top:8px}
+.item{display:grid;justify-items:center;gap:4px}
+.mask{border-radius:50%;overflow:hidden;display:block}
+.safebox{position:relative;width:96px;height:96px}
+.safebox>svg{position:absolute;left:0;top:0}
+.safebox .ring{display:none}
+body.safe-on .safebox .ring{display:block}
+.toggle{display:flex;align-items:center;gap:8px;min-height:44px;font:400 12px system-ui,sans-serif;cursor:pointer}
+.toggle input{width:24px;height:24px;accent-color:#2f6f3e}
+.home{display:flex;gap:16px;padding:16px;border-radius:22px;align-items:flex-start}
+.home.light{background:#ede3cb;color:#1e1f19}
+.home.dark{background:#0a1510;color:#e6f1e9}
+.app{display:grid;justify-items:center;gap:4px;width:64px}
+.app span{font:400 12px/1.2 system-ui,sans-serif}
+.ph{width:60px;height:60px;border-radius:14px;display:block}
+.light .ph.p1{background:#e3d6bc}.light .ph.p2{background:#d6c7a4}.light .ph.p3{background:#e6dcc4}
+.dark .ph.p1{background:#14271d}.dark .ph.p2{background:#1a3024}.dark .ph.p3{background:#0f1f17}
+body[data-v] .gridcard{display:none}
+.vcard{display:none}
+.pal{display:flex;flex-wrap:wrap;gap:8px 12px}
+.pal span{display:inline-flex;align-items:center;gap:6px;font:400 12px/1.2 system-ui,sans-serif}
+.pal i{width:20px;height:20px;border-radius:7px;display:inline-block;border:1px solid #e3d6bc}
+.palh{font:700 12px/1.4 system-ui,sans-serif;margin:8px 0 4px}
+#selftest{white-space:pre-wrap;font:400 12px monospace;margin-top:12px;color:#5c604a}
+#thost{position:absolute;left:-9999px;top:0;width:512px;height:512px;pointer-events:none}
+</style></head><body>
+<nav id="nav"></nav>
+<div id="wrap">
+<h1>Quinze ícones com a cara do Coinc</h1>
+<div class="note">Todos usam só a paleta do app (verdes, creme, verde escuro e o âmbar da moeda como acento) e a linguagem da Home: formas chapadas, macias e grossas, uma luz de topo e uma sombra interna discreta. Toque para ver o individual (192, 96, 60 e 32 px, máscara circular e tela inicial clara e escura). Também por ?v=1 a ?v=15.</div>
+<div class="card gridcard"><div class="grid" id="grid"></div></div>
+<div class="card" id="palcard"><h2>Paleta do app usada nos ícones</h2><div class="note">Tokens de src/index.css (claro e escuro). O autoteste falha se algum ícone usar uma cor fora desta lista. Exceção declarada: o terracota de &quot;Ela&quot; (--color-ela), só no ícone 13.</div><div id="pal"></div></div>
+<div id="cards"></div>
+<div id="selftest"></div>
+</div>
+<div id="thost" aria-hidden="true"></div>
+<script>
+var CIRC=204.8,R=116;
+/* ===== paleta (tokens do app) ===== */
+var PALG=[
+ ['Verdes',[['#2f6f3e','ação'],['#3f8a4a','marca'],['#2c5a38','dock'],['#1d5b37','dock escuro'],['#4dae6b','marca escuro'],['#7bc48a','verde claro'],['#a3dd9c','botão + escuro'],['#2e6a34','tinta ok'],['#788f56','botão +'],['#4c513b','oliva']]],
+ ['Verdes escuros',[['#0f2a1a','fundo do app'],['#0a1510','fundo escuro'],['#0f1f17','cartão escuro'],['#14271d','item escuro'],['#1a3024','trilha escura'],['#1e1f19','tinta']]],
+ ['Cremes',[['#fbf3df','creme'],['#f1dcb0','creme quente'],['#f5ecdb','fundo claro'],['#fbf6ea','cartão claro'],['#ede3cb','item claro'],['#e6dcc4','trilha clara'],['#dfe8c8','ok suave'],['#cfe0b8','ritmo 0'],['#e6f1e9','texto escuro'],['#ffffff','olho do Vintém']]],
+ ['Âmbar da moeda',[['#fbbf24','moeda'],['#f59e0b','moeda sombra'],['#fde68a','moeda escuro'],['#92400e','linha da moeda']]]
+];
+var EXCP=[['#9a4a26','Ela (--color-ela)']];
+var PAL={};PALG.forEach(function(g){g[1].forEach(function(c){PAL[c[0]]=1})});
+var EXC={};EXCP.forEach(function(c){EXC[c[0]]=1});
+/* letras: glifos c e o do Bricolage Grotesque ExtraBold (wght 800), unidades de 1000 por em, y para cima */
+var GC="M311 -14Q243 -14 191 5Q139 24 104 59.5Q69 95 50.5 145Q32 195 32 257Q32 321 50.5 373Q69 425 104 463Q139 501 190 521.5Q241 542 307 542Q373 542 421 521Q469 500 499.5 462Q530 424 541 374L392 324Q389 357 376 378Q363 399 342.5 408.5Q322 418 298 418Q273 418 254 408Q235 398 222 378Q209 358 202 329.5Q195 301 195 264Q195 211 208.5 175.5Q222 140 248.5 122Q275 104 313 104Q352 104 374 120Q396 136 406 159.5Q416 183 418 206L558 175Q554 138 538.5 103.5Q523 69 493 42.5Q463 16 418.5 1Q374 -14 311 -14Z";
+var GO="M305 -14Q225 -14 163.5 17Q102 48 67 110Q32 172 32 265Q32 358 67 419.5Q102 481 164 511.5Q226 542 306 542Q386 542 448 511Q510 480 545 418.5Q580 357 580 264Q580 169 544 107Q508 45 445.5 15.5Q383 -14 305 -14ZM310 103Q346 103 370 119.5Q394 136 406 170Q418 204 418 254Q418 307 405 343.5Q392 380 366.5 399.5Q341 419 301 419Q267 419 242.5 402.5Q218 386 206 352Q194 318 194 267Q194 185 224.5 144Q255 103 310 103Z";
+/* ===== utilitarios de SVG ===== */
+function K(s){return {s:s,n:0,d:'',F:{}}}
+function nid(k,p){k.n++;return p+k.n+'-'+k.s}
+function f1(n){return Math.round(n*10)/10}
+function stp(a){return a.map(function(x){return '<stop offset="'+x[0]+'" stop-color="'+x[1]+'"'+(x[2]!=null?' stop-opacity="'+x[2]+'"':'')+'/>'}).join('')}
+function lg(k,c,a){var i=nid(k,'l');k.d+='<linearGradient id="'+i+'" x1="'+c[0]+'" y1="'+c[1]+'" x2="'+c[2]+'" y2="'+c[3]+'">'+stp(a)+'</linearGradient>';return 'url(#'+i+')'}
+function rg(k,c,a){var i=nid(k,'r');k.d+='<radialGradient id="'+i+'" cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'">'+stp(a)+'</radialGradient>';return 'url(#'+i+')'}
+function bl(k,sd){if(!k.F['b'+sd]){var i=nid(k,'b');k.F['b'+sd]='url(#'+i+')';k.d+='<filter id="'+i+'" filterUnits="userSpaceOnUse" x="-100" y="-100" width="712" height="712"><feGaussianBlur stdDeviation="'+sd+'"/></filter>'}return k.F['b'+sd]}
+function cp(k,d){var i=nid(k,'c');k.d+='<clipPath id="'+i+'"><path d="'+d+'"/></clipPath>';return 'url(#'+i+')'}
+/* luz de topo e sombra interna: um degrade sobre a propria forma (bbox), sem textura */
+function SOFT(k){if(!k.F.soft)k.F.soft=lg(k,[0,0,0,1],[[0,'#ffffff',.2],[.4,'#ffffff',0],[.62,'#0a1510',0],[1,'#0a1510',.14]]);return k.F.soft}
+function soft(k,d,fill,at,fr){var a=(at||'')+(fr?' fill-rule="evenodd"':'');return '<path d="'+d+'" fill="'+fill+'"'+a+'/><path data-role="fx" d="'+d+'" fill="'+SOFT(k)+'"'+(fr?' fill-rule="evenodd"':'')+'/>'}
+function softStroke(k,d,col,w){var s=' fill="none" stroke-width="'+w+'" stroke-linecap="round"';return '<path d="'+d+'"'+s+' stroke="'+col+'"/><path data-role="fx" d="'+d+'"'+s+' stroke="'+SOFT(k)+'"/>'}
+function shadow(k,d,o){o=o||{};return '<path data-role="fx" d="'+d+'" transform="translate('+(o.x||0)+' '+(o.y||10)+')" fill="'+(o.c||'#0a1510')+'" opacity="'+(o.a==null?.2:o.a)+'" filter="'+bl(k,o.b||8)+'"'+(o.fr?' fill-rule="evenodd"':'')+'/>'}
+function ell(cx,cy,rx,ry){return 'M'+(cx-rx)+','+cy+'A'+rx+','+ry+' 0 1 0 '+(cx+rx)+','+cy+'A'+rx+','+ry+' 0 1 0 '+(cx-rx)+','+cy+'Z'}
+function pill(x,y,w,h){var r=h/2;return 'M'+(x+r)+','+y+'H'+(x+w-r)+'A'+r+','+r+' 0 0 1 '+(x+w-r)+','+(y+h)+'H'+(x+r)+'A'+r+','+r+' 0 0 1 '+(x+r)+','+y+'Z'}
+function rr(x,y,w,h,r){return 'M'+(x+r)+','+y+'H'+(x+w-r)+'A'+r+','+r+' 0 0 1 '+(x+w)+','+(y+r)+'V'+(y+h-r)+'A'+r+','+r+' 0 0 1 '+(x+w-r)+','+(y+h)+'H'+(x+r)+'A'+r+','+r+' 0 0 1 '+x+','+(y+h-r)+'V'+(y+r)+'A'+r+','+r+' 0 0 1 '+(x+r)+','+y+'Z'}
+function pt(cx,cy,r,a){var t=a*Math.PI/180;return f1(cx+r*Math.cos(t))+','+f1(cy+r*Math.sin(t))}
+function arc(cx,cy,r,a0,a1){return 'M'+pt(cx,cy,r,a0)+'A'+r+','+r+' 0 '+((a1-a0)>180?1:0)+' 1 '+pt(cx,cy,r,a1)}
+/* olho: branco chapado com pupila escura; look em fracao do raio (max .38) */
+function eye(cx,cy,rx,ry,o){o=o||{};var lx=o.lx||0,ly=o.ly||0,ink=o.ink||'#0f2a1a';
+ return '<g data-role="eye"><ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+rx+'" ry="'+ry+'" fill="#ffffff"/><ellipse cx="'+f1(cx+lx*rx)+'" cy="'+f1(cy+ly*ry)+'" rx="'+f1(rx*.64)+'" ry="'+f1(ry*.64)+'" fill="'+ink+'"/></g>'}
+function dot(cx,cy,rx,ry,c){return '<g data-role="eye"><ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+rx+'" ry="'+ry+'" fill="'+c+'"/></g>'}
+/* fundo do tile: degrade suave de cima para baixo e luz de topo; any = quadrado arredondado, mask = sangrado */
+function tile(k,kind,c0,c1){var rx=kind==='mask'?'':' rx="'+R+'"';
+ return '<g data-role="bg"><rect width="512" height="512"'+rx+' fill="'+lg(k,[0,0,0,1],[[0,c0],[1,c1]])+'"/><rect width="512" height="512"'+rx+' fill="'+lg(k,[0,0,0,.6],[[0,'#ffffff',.14],[1,'#ffffff',0]])+'"/></g>'}
+/* geometria do Vintem (viewBox 240x200 de src/lib/vintem/geometry.ts) */
+var PB='M28,120C28,74 66,48 120,48C174,48 212,74 212,120C212,156 178,174 120,174C62,174 28,156 28,120Z';
+var PE='M-19,8C-24,-14 -12,-40 3,-46C16,-36 26,-12 21,8Z';
+function earTf(sx){return sx<0?'translate(66 84) rotate(-28) scale(1.04)':'translate(174 84) scale(-1 1) rotate(-28) scale(1.04)'}
+/* o Vintem de frente: o={body,ear,snout,nos,dots,look:[x,y],ears:false,slit} */
+function pig(k,cx,cy,s,o){o=o||{};var lk=o.look||[0,0];
+ var h='<g transform="translate('+cx+' '+cy+') scale('+s+') translate(-120 -111)">';
+ if(o.ears!==false)[-1,1].forEach(function(sx){h+='<g transform="'+earTf(sx)+'">'+soft(k,PE,o.ear||o.body)+'</g>'});
+ h+=soft(k,PB,o.body);
+ if(o.slit)h+='<path d="M98,56Q120,60 142,56" fill="none" stroke="'+o.slit+'" stroke-width="5" stroke-linecap="round"/>';
+ [87,153].forEach(function(x){h+=o.dots?dot(x,106,15,19,o.dots):eye(x,106,17,21,{lx:lk[0],ly:lk[1]})});
+ if(o.snout!==false){h+='<path d="'+pill(99,129,42,24)+'" fill="'+o.snout+'"/><ellipse cx="113.5" cy="141" rx="2.6" ry="4" fill="'+o.nos+'"/><ellipse cx="126.5" cy="141" rx="2.6" ry="4" fill="'+o.nos+'"/>'}
+ return h+'</g>'}
+function coin(k,cx,cy,r,o){o=o||{};
+ return '<g>'+'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#fbbf24"/><circle data-role="fx" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+SOFT(k)+'"/><circle cx="'+cx+'" cy="'+cy+'" r="'+f1(r*.64)+'" fill="none" stroke="#f59e0b" stroke-width="'+f1(Math.max(r*.13,2))+'"/></g>'}
+
+/* ===== os 15 conceitos: cada draw(k,kind) devolve o conteudo do SVG ===== */
+var CON=[];
+function add(c){CON.push(c)}
+
+/* 1. olhar: so olhos e focinho, o tile e a cabeca */
+add({n:1,name:'Olhar',idea:'Close-up: só os olhos grandes olhando de lado e o focinho de pílula, sem contorno de cabeça; o próprio tile verde é o rosto',tc:'#3f8a4a/#2f6f3e',eyes:2,minEye:80,draw:function(k,kind){
+ var h=tile(k,kind,'#3f8a4a','#2f6f3e');
+ h+=shadow(k,ell(172,222,66,80)+ell(340,222,66,80),{y:10,a:.18,b:8});
+ h+=eye(172,222,66,80,{lx:.34,ly:.06})+eye(340,222,66,80,{lx:.34,ly:.06});
+ var sn=pill(160,334,192,84);
+ h+=shadow(k,sn,{y:8,a:.2,b:6})+soft(k,sn,'#7bc48a')+'<ellipse cx="222" cy="376" rx="11" ry="17" fill="#2c5a38"/><ellipse cx="290" cy="376" rx="11" ry="17" fill="#2c5a38"/>';
+ return h}});
+
+/* 2. bolha: sem orelhas, verde luminoso no escuro */
+add({n:2,name:'Bolha',idea:'A bolha do Vintém sem orelhas, em verde claro que brilha sobre o verde escuro; olhos chapados e focinho creme, com a fenda de cofre no dorso',tc:'#0f2a1a/#0a1510',eyes:2,minEye:30,draw:function(k,kind){
+ var h=tile(k,kind,'#14271d','#0a1510');
+ h+='<circle data-role="fx" cx="256" cy="262" r="240" fill="'+rg(k,[.5,.5,.5],[[0,'#4dae6b',.4],[1,'#4dae6b',0]])+'"/>';
+ h+=shadow(k,'M72,264'+'L440,264',{a:0});
+ h+=pig(k,256,262,2.0,{ears:false,body:'#7bc48a',dots:'#0f2a1a',snout:'#fbf3df',nos:'#2f6f3e',slit:'#4dae6b'});
+ return h}});
+
+/* 3. espiando por tras de um cartao */
+add({n:3,name:'Espiando',idea:'Só orelhas, olhos e a ponta do focinho aparecem por trás de um cartão de bordas macias; os olhos vão para o canto, curiosos',tc:'#fbf3df/#f1dcb0',eyes:2,minEye:40,draw:function(k,kind){
+ var h=tile(k,kind,'#fbf3df','#f1dcb0');
+ h+=pig(k,256,238,1.68,{body:'#2f6f3e',ear:'#2c5a38',snout:'#7bc48a',nos:'#2c5a38',look:[.36,-.25]});
+ var sl=rr(106,326,300,88,44);
+ h+=shadow(k,sl,{y:-4,a:.22,b:8})+soft(k,sl,'#0f2a1a');
+ h+='';
+ return h}});
+
+/* 4. medidor Pode gastar */
+add({n:4,name:'Medidor',idea:'O arco do "Pode gastar" da Home, com o Vintém no centro olhando para o ponto âmbar onde o arco termina',tc:'#dfe8c8/#cfe0b8',eyes:2,minEye:26,draw:function(k,kind){
+ var h=tile(k,kind,'#dfe8c8','#cfe0b8');
+ h+='<path d="'+arc(256,292,148,160,380)+'" fill="none" stroke="#fbf6ea" stroke-width="52" stroke-linecap="round"/>';
+ h+=softStroke(k,arc(256,292,148,160,296),'#3f8a4a',52);
+ var kp=pt(256,292,148,296).split(',');
+ h+=shadow(k,ell(+kp[0],+kp[1],24,24),{y:5,a:.25,b:4})+'<circle cx="'+kp[0]+'" cy="'+kp[1]+'" r="31" fill="#fbf6ea"/>'+coin(k,+kp[0],+kp[1],24);
+ h+=shadow(k,'M170,300A86,60 0 1 0 342,300A86,60 0 1 0 170,300Z',{y:8,a:.14,b:7});
+ h+=pig(k,256,312,1.24,{body:'#2f6f3e',ear:'#2c5a38',snout:'#7bc48a',nos:'#2c5a38',look:[.3,-.28]});
+ return h}});
+
+/* 5. barra de limite com o Vintem na ponta */
+add({n:5,name:'Limite',idea:'A barra de limite em pílula, verde cheia até o Vintém, que empurra a ponta como se a barra fosse o corpo dele; fundo verde escuro',tc:'#0f2a1a/#0a1510',eyes:2,minEye:30,draw:function(k,kind){
+ var h=tile(k,kind,'#0f2a1a','#0a1510');
+ h+='<path d="'+pill(56,196,400,120)+'" fill="#1a3024"/>';
+ h+=soft(k,pill(56,196,300,120),'#4dae6b');
+ h+=shadow(k,ell(340,262,100,56),{y:10,a:.3,b:9});
+ h+=pig(k,340,254,1.15,{body:'#a3dd9c',ear:'#7bc48a',snout:'#fbf3df',nos:'#2f6f3e',look:[.34,.05]});
+ return h}});
+/* 6. botao + com orelhas */
+add({n:6,name:'Botão com orelhas',idea:'O botão "+" da dock vira porquinho só ganhando duas orelhas; um símbolo, uma forma, sem rosto',tc:'#fbf3df/#f1dcb0',eyes:0,draw:function(k,kind){
+ var h=tile(k,kind,'#fbf3df','#f1dcb0');
+ var ct=ell(256,292,132,132);
+ h+=shadow(k,ct,{y:12,a:.2,b:10});
+ h+='<g transform="translate(172 200) rotate(-22) scale(1.45)">'+soft(k,PE,'#2c5a38')+'</g><g transform="translate(340 200) scale(-1 1) rotate(-22) scale(1.45)">'+soft(k,PE,'#2c5a38')+'</g>';
+ h+=soft(k,ct,'#2f6f3e');
+ var pl='M256,236V348M200,292H312';
+ h+='<path data-role="fx" d="'+pl+'" transform="translate(0 6)" stroke="#0a1510" stroke-opacity=".28" stroke-width="46" stroke-linecap="round" fill="none"/><path d="'+pl+'" stroke="#fbf6ea" stroke-width="46" stroke-linecap="round" fill="none"/>';
+ return h}});
+
+/* 7. dock */
+add({n:7,name:'Dock',idea:'A pílula flutuante da dock: o item ativo é um círculo creme com o rostinho do Vintém, ao lado dos outros ícones e de uma moeda',tc:'#f1dcb0/#e6dcc4',eyes:2,minEye:18,draw:function(k,kind){
+ var h=tile(k,kind,'#f1dcb0','#e6dcc4');
+ var dk=pill(56,170,400,172);
+ h+=shadow(k,dk,{y:14,a:.24,b:11})+soft(k,dk,'#2f6f3e');
+ h+=shadow(k,ell(142,256,68,68),{y:5,a:.25,b:4})+soft(k,ell(142,256,68,68),'#f5ecdb');
+ h+=dot(120,242,10,15,'#2f6f3e')+dot(164,242,10,15,'#2f6f3e');
+ h+='<path d="'+pill(112,266,60,34)+'" fill="#7bc48a"/><ellipse cx="132" cy="283" rx="4" ry="6" fill="#2c5a38"/><ellipse cx="152" cy="283" rx="4" ry="6" fill="#2c5a38"/>';
+ [[272,0],[348,0]].forEach(function(p){h+='<circle cx="'+p[0]+'" cy="256" r="26" fill="#f5ecdb" opacity=".9"/><circle cx="'+p[0]+'" cy="256" r="12" fill="#2f6f3e"/>'});
+ h+=coin(k,420,256,30);
+ return h}});
+/* 8. fenda de cofre no cartao */
+add({n:8,name:'Fenda',idea:'Um cartão de 22 px que é o cofrinho: fenda no topo, moeda âmbar afundando e o rosto embaixo; sem orelhas, só forma',tc:'#fbf3df/#f1dcb0',eyes:2,minEye:40,draw:function(k,kind){
+ var h=tile(k,kind,'#fbf3df','#f1dcb0');
+ var cd=rr(104,196,304,224,78);
+ h+=shadow(k,cd,{y:12,a:.2,b:10})+soft(k,cd,'#2f6f3e');
+ h+='<path d="'+pill(186,212,140,22)+'" fill="#0f2a1a"/>';
+ var ci=cp(k,'M0,0H512V224H0Z');
+ h+='<g clip-path="'+ci+'">'+shadow(k,ell(256,176,54,54),{y:6,a:.2,b:5})+coin(k,256,176,54)+'</g>';
+ h+=eye(192,298,27,34,{lx:.1,ly:.1})+eye(320,298,27,34,{lx:.1,ly:.1});
+ h+='<path d="'+pill(206,352,100,50)+'" fill="#7bc48a"/><ellipse cx="234" cy="377" rx="6" ry="9" fill="#2c5a38"/><ellipse cx="278" cy="377" rx="6" ry="9" fill="#2c5a38"/>';
+ return h}});
+
+/* 9. C com a moeda no miolo */
+add({n:9,name:'C e moeda',idea:'A inicial C como um arco grosso e creme que abraça a moeda âmbar no miolo; a abertura do C olha para a direita',tc:'#3f8a4a/#2c5a38',eyes:0,draw:function(k,kind){
+ var h=tile(k,kind,'#3f8a4a','#2c5a38');
+ var d=arc(266,256,128,40,320);
+ h+='<path data-role="fx" d="'+d+'" transform="translate(0 10)" fill="none" stroke="#0a1510" stroke-opacity=".25" stroke-width="84" stroke-linecap="round" filter="'+bl(k,9)+'"/>';
+ h+=softStroke(k,d,'#fbf3df',84);
+ h+=shadow(k,ell(266,256,60,60),{y:8,a:.25,b:6})+coin(k,266,256,60);
+ return h}});
+
+/* 10. calendario: padrao de celulas, uma e o Vintem */
+add({n:10,name:'Calendário',idea:'O mapa do mês do Calendário: nove células macias em tons de verde, uma é o Vintém de frente e outra é a moeda do dia; padrão repetido',tc:'#2c5a38/#1d5b37',eyes:2,minEye:14,draw:function(k,kind){
+ var h=tile(k,kind,'#2c5a38','#1d5b37');
+ var cs=['#3f8a4a','#4dae6b','#fbbf24','#4dae6b','#fbf3df','#7bc48a','#7bc48a','#a3dd9c','#a3dd9c'];
+ var sz=93,gp=15,x0=256-(3*sz+2*gp)/2;
+ cs.forEach(function(c,i){var x=x0+(i%3)*(sz+gp),y=x0+Math.floor(i/3)*(sz+gp);
+  h+=shadow(k,rr(x,y,sz,sz,34),{y:6,a:.2,b:5})+soft(k,rr(x,y,sz,sz,34),c)});
+ h+=dot(238,240,7.5,11,'#2f6f3e')+dot(274,240,7.5,11,'#2f6f3e');
+ h+='<path d="'+pill(236,262,40,22)+'" fill="#7bc48a"/><ellipse cx="247" cy="273" rx="3" ry="4.6" fill="#2c5a38"/><ellipse cx="265" cy="273" rx="3" ry="4.6" fill="#2c5a38"/>';
+ return h}});
+/* 11. balao de fala */
+add({n:11,name:'Balão',idea:'O balão de fala do Vintém é o próprio porquinho: bolha creme com rabinho de balão, dois olhos e o focinho; o app conversando com você',tc:'#4dae6b/#3f8a4a',eyes:2,minEye:30,draw:function(k,kind){
+ var h=tile(k,kind,'#4dae6b','#3f8a4a');
+ var bd=rr(92,96,328,224,100)+'M168,306L240,306L126,386Z';
+ h+=shadow(k,bd,{y:12,a:.22,b:10});
+ h+=soft(k,bd,'#fbf3df',' stroke="#fbf3df" stroke-width="12" stroke-linejoin="round"');
+ h+=dot(190,196,20,28,'#2f6f3e')+dot(322,196,20,28,'#2f6f3e');
+ h+='<path d="'+pill(212,234,88,48)+'" fill="#7bc48a"/><ellipse cx="234" cy="258" rx="6" ry="10" fill="#2f6f3e"/><ellipse cx="278" cy="258" rx="6" ry="10" fill="#2f6f3e"/>';
+ return h}});
+/* 12. co com o o virando moeda */
+add({n:12,name:'co',idea:'Duas letras de Bricolage ExtraBold: o "c" verde e o "o" que é a própria moeda âmbar, com o miolo da moeda aparecendo no vazado',tc:'#fbf3df/#f1dcb0',eyes:0,draw:function(k,kind){
+ var h=tile(k,kind,'#fbf3df','#f1dcb0');
+ var s=.34,tx=256-(1123*s)/2-32*s+32*s,ty=256+264*s,oo=575;
+ h+='<g transform="translate('+f1(tx)+' '+f1(ty)+') scale('+s+' '+(-s)+')">'+soft(k,GC,'#2f6f3e')+'</g>';
+ var ox=tx+(oo+306)*s;
+ h+=shadow(k,ell(ox,256,98*s*1.4*1.0+14,98*s*1.4*1.0+14),{y:6,a:.0});
+ h+='<circle cx="'+f1(ox)+'" cy="256" r="'+f1(150*s)+'" fill="#f59e0b"/>';
+ h+='<g transform="translate('+f1(tx+oo*s)+' '+f1(ty)+') scale('+s+' '+(-s)+')">'+soft(k,GO,'#fbbf24')+'</g>';
+ return h}});
+
+/* 13. Ele e Ela */
+add({n:13,name:'Ele e Ela',idea:'Dois círculos de tamanho igual que se encontram: verde (Ele) e terracota (Ela), com a moeda âmbar onde se cruzam; cada um com um olho que olha para o outro',tc:'#fbf3df/#f1dcb0',eyes:2,minEye:40,exc:['#9a4a26'],draw:function(k,kind){
+ var h=tile(k,kind,'#fbf3df','#f1dcb0');
+ var a=ell(196,256,118,118),b=ell(316,256,118,118);
+ h+=shadow(k,a+b,{y:12,a:.2,b:10});
+ h+=soft(k,a,'#2f6f3e')+soft(k,b,'#9a4a26');
+ var lens='M256,154.4A118,118 0 0 1 256,357.6A118,118 0 0 1 256,154.4Z';
+ h+=soft(k,lens,'#fbbf24');
+ h+=eye(138,240,30,38,{lx:.34,ly:.05})+eye(374,240,30,38,{lx:-.34,ly:.05});
+ return h}});
+
+/* 14. espaco negativo */
+add({n:14,name:'Negativo',idea:'Vintém todo creme sobre verde escuro, com olhos e focinho vazados no corpo (espaço negativo); orelhas e uma silhueta só',tc:'#0f2a1a/#0a1510',eyes:0,draw:function(k,kind){
+ var h=tile(k,kind,'#0f2a1a','#0a1510');
+ var holes=ell(87,106,17,21)+ell(153,106,17,21)+pill(99,129,42,24);
+ h+='<g transform="translate(256 262) scale(1.95) translate(-120 -111)">';
+ [-1,1].forEach(function(sx){h+='<g transform="'+earTf(sx)+'">'+soft(k,PE,'#f1dcb0')+'</g>'});
+ h+=soft(k,PB+holes,'#fbf3df','',true);
+ h+='<ellipse cx="113.5" cy="141" rx="3" ry="4.6" fill="#fbf3df"/><ellipse cx="126.5" cy="141" rx="3" ry="4.6" fill="#fbf3df"/>';
+ return h+'</g>'}});
+
+/* 15. de lado */
+add({n:15,name:'De lado',idea:'O giro de lado do Vintém: corpo de pílula, cabeça, orelha, rabinho em espiral e quatro patas curtas; um olho só',tc:'#a3dd9c/#7bc48a',eyes:1,minEye:20,draw:function(k,kind){
+ var h=tile(k,kind,'#a3dd9c','#7bc48a');
+ var bd=ell(110,110,78,50)+ell(168,104,42,42);
+ h+='<ellipse data-role="fx" cx="256" cy="372" rx="150" ry="13" fill="#0a1510" opacity=".18" filter="'+bl(k,8)+'"/>';
+ h+='<g transform="translate(256 262) scale(1.8) translate(-125 -112)">';
+ [[76,146],[150,146]].forEach(function(p){h+='<path d="'+rr(p[0],p[1],24,26,11)+'" fill="#2c5a38"/>'});
+ h+='<path d="M36,110C26,108 19,98 25,90C30,84 39,88 35,95" fill="none" stroke="#2c5a38" stroke-width="7" stroke-linecap="round"/>';
+ h+=soft(k,bd,'#2f6f3e');
+ [[46,144],[132,144]].forEach(function(p){h+=soft(k,rr(p[0],p[1],28,28,12),'#2f6f3e')});
+ h+='<g transform="translate(160 70)">'+soft(k,'M-14,8C-16,-12 -6,-30 6,-36C14,-26 20,-8 16,8Z','#2c5a38')+'</g>';
+ h+=soft(k,ell(205,114,17,14),'#e6f1e9')+'<ellipse cx="212" cy="111" rx="2.6" ry="3.8" fill="#2c5a38"/>';
+ h+=eye(181,100,12,15,{lx:.3,ly:.05});
+ return h+'</g>'}});
+
+/* ===== montagem ===== */
+var uidN=0;
+function icon(n,o){o=o||{};var kind=o.kind||'any',size=o.size||512,s=n+(o.suf||'x'),k=K(s),c=CON[n-1];
+ var inner=c.draw(k,kind);
+ return '<svg id="icon-'+s+'" data-concept="'+n+'" viewBox="0 0 512 512" width="'+size+'" height="'+size+'" role="img" aria-label="Ícone do Coinc, proposta '+n+'"><defs>'+k.d+'</defs>'+inner+'</svg>'}
+function slot(n,size,kind){uidN++;return icon(n,{size:size,kind:kind||'any',suf:'-p'+uidN})}
+function $(i){return document.getElementById(i)}
+var mv=/[?&]v=(\d+)/.exec(location.search),V=mv?Math.max(1,Math.min(15,+mv[1])):0;
+function build(){
+ var nav='<a class="tab'+(V?'':' active')+'" href="?">Todos</a>';
+ CON.forEach(function(c){nav+='<a class="tab'+(V===c.n?' active':'')+'" href="?v='+c.n+'">'+c.n+'</a>'});
+ nav+='<label class="toggle"><input type="checkbox" id="safe"> mostrar zona segura</label>';
+ $('nav').innerHTML=nav;
+ var pal='';PALG.forEach(function(g){pal+='<div class="palh">'+g[0]+'</div><div class="pal">'+g[1].map(function(c){return '<span><i style="background:'+c[0]+'"></i>'+c[0]+' '+c[1]+'</span>'}).join('')+'</div>'});
+ pal+='<div class="palh">Exceção declarada (token do app, só no ícone 13)</div><div class="pal">'+EXCP.map(function(c){return '<span><i style="background:'+c[0]+'"></i>'+c[0]+' '+c[1]+'</span>'}).join('')+'</div>';
+ $('pal').innerHTML=pal;
+ var grid='',cards='';
+ CON.forEach(function(c){
+  grid+='<figure><a href="?v='+c.n+'" aria-label="Proposta '+c.n+'">'+slot(c.n,160,'any')+'</a><figcaption><b>'+c.n+'. '+c.name+'</b>'+c.idea+'</figcaption></figure>';
+  var sizes=[192,96,60,32].map(function(z){return '<div class="item">'+slot(c.n,z,'any')+'<span class="cap">'+z+' px</span></div>'}).join('');
+  cards+='<section class="card vcard" id="card-'+c.n+'"><h2>'+c.n+'. '+c.name+'</h2><div class="note">'+c.idea+'.</div><div class="row">'+sizes+
+   '<div class="item"><div class="mask" style="width:96px;height:96px">'+slot(c.n,96,'mask')+'</div><span class="cap">máscara circular</span></div>'+
+   '<div class="item"><div class="safebox">'+slot(c.n,96,'mask')+'<svg class="ring" viewBox="0 0 512 512" width="96" height="96" aria-hidden="true"><circle cx="256" cy="256" r="'+CIRC+'" fill="none" stroke="#b3382c" stroke-width="8" stroke-dasharray="24 16"/></svg></div><span class="cap">zona segura (raio 40%)</span></div>'+
+   '</div><div class="row">'+['light','dark'].map(function(t){return '<div class="home '+t+'"><div class="app"><i class="ph p1"></i><span>Notas</span></div><div class="app"><i class="ph p2"></i><span>Mapas</span></div><div class="app">'+slot(c.n,60,'any')+'<span>Coinc</span></div><div class="app"><i class="ph p3"></i><span>Relógio</span></div></div>'}).join('')+'</div></section>'});
+ $('grid').innerHTML=grid;$('cards').innerHTML=cards;
+ $('safe').addEventListener('change',function(){document.body.classList.toggle('safe-on',$('safe').checked)});
+ if(V){document.body.setAttribute('data-v',V);var cc=$('card-'+V);if(cc)cc.style.display='block';$('palcard').style.display='none'}
+}
+build();
+window.__icon={icon:icon,CON:CON,CIRC:CIRC};
+
+/* ===== autoteste (?test) ===== */
+(function(){
+if(!/[?&]test/.test(location.search))return;
+(async function(){
+ var out=[];function ok(n,c,x){out.push((c?'PASS ':'FAIL ')+n+(c?'':' -> '+x))}
+ function info(n){out.push('INFO '+n)}
+ var host=$('thost'),N=CON.length;
+ function mount(html){var w=document.createElement('div');w.innerHTML=html;host.appendChild(w);return w.firstChild}
+ var T={},M={};
+ CON.forEach(function(c){T[c.n]=mount(icon(c.n,{suf:'-t'}));M[c.n]=mount(icon(c.n,{suf:'-m',kind:'mask'}))});
+ function lumC(r,g,b){var c=[r,g,b].map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+ function ras(svg,w,h){return new Promise(function(res,rej){var s=new XMLSerializer().serializeToString(svg);var im=new Image();
+  im.onload=function(){var c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');x.drawImage(im,0,0,w,h);res(x.getImageData(0,0,w,h))};
+  im.onerror=function(){rej(new Error('falha ao rasterizar '+svg.id))};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)})}
+ /* 1. quinze conceitos distintos */
+ var names=CON.map(function(c){return c.name}),ideas=CON.map(function(c){return c.idea}),tcs=CON.map(function(c){return c.tc});
+ ok('15 conceitos presentes, com nome e ideia distintos, cada um com seu SVG',N===15&&new Set(names).size===15&&new Set(ideas).size===15&&CON.every(function(c){return T[c.n]&&T[c.n].tagName.toLowerCase()==='svg'}),names.length+' '+new Set(names).size);
+ info('tiles: '+CON.map(function(c){return c.n+' '+c.tc}).join(' | '));
+ /* 2. estrutura: sem texto de interface, script, estilo, imagem, rede, emoji, cifrao, textura */
+ var bad=[];CON.forEach(function(c){[['any',T[c.n]],['mask',M[c.n]]].forEach(function(p){var s=p[1],t=c.n+' '+p[0];
+  if(s.getAttribute('viewBox')!=='0 0 512 512')bad.push(t+' viewBox');
+  ['text','tspan','script','foreignObject','style','image','feTurbulence','feSpecularLighting','feDiffuseLighting','feImage','pattern'].forEach(function(g){if(s.querySelector(g))bad.push(t+' '+g)});
+  s.querySelectorAll('*').forEach(function(e){['href','xlink:href'].forEach(function(a){var h=e.getAttribute(a);if(h!==null&&h.charAt(0)!=='#')bad.push(t+' '+a+' externo')});if(e.hasAttribute('style'))bad.push(t+' style')});
+  if(/\p{Extended_Pictographic}/u.test(s.outerHTML.replace(/aria-label="[^"]*"/,'')))bad.push(t+' emoji');
+  if(/[$]/.test(s.outerHTML))bad.push(t+' cifrao')})});
+ ok('cada SVG (any e maskable) tem viewBox 0 0 512 512 e nenhum texto, script, estilo, imagem, textura, href externo, emoji ou cifrão (letras só como path)',!bad.length,bad.join(', '));
+ /* 3. olhos */
+ bad=[];var minEye=999;
+ CON.forEach(function(c){[['any',T[c.n]],['mask',M[c.n]]].forEach(function(p){var es=p[1].querySelectorAll('[data-role="eye"]');
+  if(es.length!==c.eyes){bad.push(c.n+p[0]+' '+es.length+' olhos (esperado '+c.eyes+')');return}
+  es.forEach(function(e){var w=e.getBoundingClientRect().width;minEye=Math.min(minEye,w);if(w<(c.minEye||0))bad.push(c.n+p[0]+' olho '+w.toFixed(1)+' < '+c.minEye)})})});
+ ok('a quantidade de olhos bate com o conceito e cada olho tem a largura mínima declarada (menor medido '+minEye.toFixed(1)+' unidades; a 32 px vira '+(minEye/16).toFixed(1)+' px)',!bad.length,bad.join(', '));
+ /* 4. silhueta maskable no circulo de raio 204,8 */
+ bad=[];var worst={};
+ for(var i=0;i<N;i++){var c=CON[i],cl=M[c.n].cloneNode(true);
+  cl.querySelectorAll('[data-role="bg"],[data-role="fx"]').forEach(function(e){e.remove()});
+  var dd=await ras(cl,512,512),mx=0,cnt=0;
+  for(var y=0;y<512;y++)for(var x=0;x<512;x++){if(dd.data[(y*512+x)*4+3]>=64){cnt++;var r=Math.hypot(x+.5-256,y+.5-256);if(r>mx)mx=r}}
+  worst[c.n]=mx;if(!cnt||mx>CIRC+.5)bad.push(c.n+' raio '+mx.toFixed(1))}
+ ok('a silhueta de cada maskable (sem fundo nem sombras) cabe no círculo de raio 204,8',!bad.length,bad.join(', '));
+ info('pior raio: '+CON.map(function(c){return c.n+' '+worst[c.n].toFixed(0)}).join(', '));
+ /* 5. legibilidade a 32 px e distincao */
+ bad=[];var ims={},rep=[];
+ for(var j=0;j<N;j++){var cj=CON[j],sm=await ras(T[cj.n],32,32);ims[cj.n]=sm;
+  var Ls=[];for(var z=0;z<1024;z++){Ls.push(lumC(sm.data[z*4],sm.data[z*4+1],sm.data[z*4+2]))}
+  var mean=Ls.reduce(function(a,b){return a+b},0)/1024,sd=Math.sqrt(Ls.reduce(function(a,b){return a+(b-mean)*(b-mean)},0)/1024);
+  var cl2=T[cj.n].cloneNode(true);cl2.querySelectorAll('[data-role="bg"],[data-role="fx"]').forEach(function(e){e.remove()});
+  var ar=await ras(cl2,32,32),cov=0;for(var z2=0;z2<1024;z2++)if(ar.data[z2*4+3]>100)cov++;cov/=1024;
+  rep.push(cj.n+': desvio '+sd.toFixed(2)+' cobertura '+(100*cov).toFixed(0)+'%');
+  if(sd<.05||cov<.18||cov>.85)bad.push(cj.n+' desvio '+sd.toFixed(2)+' cobertura '+cov.toFixed(2))}
+ ok('a 32 px cada ícone tem contraste interno (desvio de luminância >= 0,05) e o motivo ocupa entre 18% e 85% do tile',!bad.length,bad.join(', '));
+ info('32 px: '+rep.join(' | '));
+ var minD=100,pair='',all=[];
+ for(var a1=1;a1<=N;a1++)for(var b1=a1+1;b1<=N;b1++){var A=ims[a1],B=ims[b1],df=0;
+  for(var z3=0;z3<1024;z3++){var dl=Math.abs(A.data[z3*4]-B.data[z3*4])+Math.abs(A.data[z3*4+1]-B.data[z3*4+1])+Math.abs(A.data[z3*4+2]-B.data[z3*4+2]);if(dl>110)df++}
+  var pc=100*df/1024;all.push(pc);if(pc<minD){minD=pc;pair=a1+' x '+b1}}
+ ok('a 32 px quaisquer dois ícones diferem em >= 20% dos pixels (menor: '+pair+' com '+minD.toFixed(1)+'%)',minD>=20,pair+' '+minD.toFixed(1));
+ info('diferença média entre pares: '+(all.reduce(function(a,b){return a+b},0)/all.length).toFixed(1)+'%');
+ /* 6. paleta do app: toda cor de fill, stroke e stop-color esta na lista; excecoes so as declaradas */
+ bad=[];var used={},excUsers=[];
+ CON.forEach(function(c){[['any',T[c.n]],['mask',M[c.n]]].forEach(function(p){
+  p[1].querySelectorAll('*').forEach(function(e){['fill','stroke','stop-color','flood-color'].forEach(function(a){var v=e.getAttribute(a);if(v===null||v==='none'||v.indexOf('url(')===0)return;
+   v=v.toLowerCase();used[v]=1;
+   if(!/^#[0-9a-f]{6}$/.test(v)){bad.push(c.n+' '+a+'='+v+' (formato)');return}
+   if(PAL[v])return;
+   if(EXC[v]&&(c.exc||[]).indexOf(v)>=0){if(excUsers.indexOf(c.n)<0)excUsers.push(c.n);return}
+   bad.push(c.n+' '+p[0]+' '+a+'='+v)})})})});
+ ok('toda cor dos 15 ícones (fill, stroke, stop-color) está na paleta do app; fora dela só a exceção declarada',!bad.length,bad.slice(0,8).join(', '));
+ var declared=CON.filter(function(c){return c.exc&&c.exc.length});
+ ok('no máximo 2 ícones têm cor extra, e ela é um token do app (declarados: '+declared.map(function(c){return c.n}).join(', ')+'; usam de fato: '+excUsers.join(', ')+')',declared.length<=2&&declared.every(function(c){return c.exc.every(function(v){return EXC[v]})})&&excUsers.length===declared.length,declared.length+' '+excUsers.length);
+ var pg=document.querySelectorAll('#pal i');var shown={};pg.forEach(function(i){shown[i.style.backgroundColor]=1});
+ ok('a paleta está listada no sketch (swatches = '+pg.length+' cores) e cobre todas as cores usadas',pg.length===Object.keys(PAL).length+Object.keys(EXC).length,pg.length);
+ info('cores usadas: '+Object.keys(used).sort().join(' '));
+ /* 7. tipografia e offline */
+ var fb=[];document.querySelectorAll('body *').forEach(function(e){if(e.closest('svg')||e.closest('script')||e.closest('style')||e.closest('#thost')||e.id==='selftest')return;
+  var own=[].some.call(e.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;
+  var cs=getComputedStyle(e),fs=parseFloat(cs.fontSize),fw=cs.fontWeight;if([12,16,28].indexOf(fs)<0||(fw!=='400'&&fw!=='700'))fb.push(e.tagName.toLowerCase()+' '+fs+'/'+fw)});
+ ok('escala tipográfica do sketch 12/16/28 com pesos 400/700',!fb.length,fb.join(', '));
+ var html=document.documentElement.outerHTML.replace(/xmlns="[^"]*"/g,'');
+ ok('sem emoji',!/\p{Extended_Pictographic}/u.test(html),'');
+ ok('sem fonte, link, iframe, img nem referência de rede (offline)',!document.querySelector('link,img,iframe,object,embed')&&!/(src|href)="(https?:)?\/\//.test(html)&&!/url\(\s*['"]?https?:/.test(html),'');
+ ok('o único script é o do sketch',document.querySelectorAll('script').length===1&&!document.querySelector('script[src]'),document.querySelectorAll('script').length);
+ var fl=out.filter(function(x){return x.indexOf('FAIL')===0}).length;
+ $('selftest').textContent='TOTAL '+out.filter(function(x){return x.indexOf('INFO')!==0}).length+' | FALHAS '+fl+'\n'+out.join('\n');
+ document.title='030 teste FALHAS '+fl;window.__done=true;
+ })().catch(function(e){$('selftest').textContent='FALHAS 1 (erro no teste: '+e.message+')\n'+e.stack;document.title='030 teste FALHAS 1';window.__done=true});
+})();
+</script></body></html>

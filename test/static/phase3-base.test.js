@@ -56,10 +56,13 @@ test('nenhum arquivo referencia dominio de fontes do Google (D-22, T-03-03)', ()
   assert.deepEqual(hits, [])
 })
 
-test('index.html nao aplica tema escuro antes do React (PR-18, P-01)', () => {
+test('index.html so aplica o escuro pelo script de tema do aparelho (Fase 5, D-09)', () => {
   const html = read('index.html')
-  assert.doesNotMatch(html, /financias_theme/)
-  assert.doesNotMatch(html, /classList\.add\(\s*['"]dark['"]/)
+  assert.doesNotMatch(html, /financias_theme/, 'a chave antiga de tema nao volta')
+  for (const m of html.matchAll(/classList\.add\(\s*['"]dark['"]/g)) {
+    const head = html.slice(0, m.index)
+    assert.ok(head.lastIndexOf('coinc:tema:v1') > head.lastIndexOf('<script'), 'a classe dark so entra depois de ler coinc:tema:v1')
+  }
 })
 
 test('nenhum emoji em src/**/*.ts e *.tsx (D-18)', () => {

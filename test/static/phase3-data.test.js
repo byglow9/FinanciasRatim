@@ -61,14 +61,14 @@ test('nenhuma formula de orcamento escrita a mao fora do nucleo', () => {
   }
 })
 
-test('AreaContext expoe o contrato novo e mantem o tema claro forcado (PR-18)', () => {
+test('AreaContext expoe o contrato novo e nao mexe no tema (o tema e do aparelho, Fase 5)', () => {
   const src = code('src/contexts/AreaContext.tsx')
   for (const name of ['readOnly', 'lastPerson', 'personConfigFor', 'updatePersonConfig', 'updateNotifications']) {
     assert.match(src, new RegExp(`\\b${name}\\b`), `AreaContext sem ${name}`)
   }
   assert.doesNotMatch(src, /classList\.toggle\(\s*['"]dark['"]/, 'o tema escuro nao pode voltar')
   assert.doesNotMatch(src, /financias_theme/, 'o cache de tema nao deve ser lido')
-  assert.match(src, /classList\.remove\(\s*['"]dark['"]/)
+  assert.doesNotMatch(src, /classList\.remove\(\s*['"]dark['"]/, 'o tema do aparelho pertence ao useTheme, nao ao AreaContext')
   assert.match(src, /\bupdateTheme\b/, 'updateTheme deve permanecer no contexto')
 })
 

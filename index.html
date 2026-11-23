@@ -2,13 +2,34 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="theme-color" content="#f5ecdb" />
+    <script>
+      /* Tema antes do primeiro desenho (D-09). Mesma chave e mesmas cores de shared/core/theme.js,
+         comparadas por teste (test/static/phase5-theme.test.js). Sincrono, JS antigo, sem dependencia. */
+      (function () {
+        var pref = 'auto'
+        try {
+          var stored = localStorage.getItem('coinc:tema:v1')
+          if (stored === 'claro' || stored === 'escuro') pref = stored
+        } catch (e) {}
+        var dark = pref === 'escuro'
+        if (pref === 'auto') {
+          try {
+            dark = window.matchMedia('(prefers-color-scheme: dark)').matches === true
+          } catch (e) {}
+        }
+        var root = document.documentElement
+        if (dark) root.classList.add('dark')
+        else root.classList.remove('dark')
+        root.style.colorScheme = dark ? 'dark' : 'light'
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', dark ? '#0a1510' : '#f5ecdb')
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href="/piggy.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Financias Ratimbum</title>
+    <title>Coinc</title>
   </head>
   <body>
     <div id="root"></div>

@@ -106,7 +106,7 @@ test('regras e indice de limitAlerts e o servico existem (e)', () => {
   assert.ok(exists('src/services/limitAlerts.service.ts'), 'servico limitAlerts ausente')
 })
 
-test('idioma pt-BR, sem fonte do Google e tema escuro nunca aplicado (f)', () => {
+test('idioma pt-BR, sem fonte do Google e tema fora do AreaContext (f)', () => {
   const html = read('index.html')
   assert.match(html, /<html[^>]*\blang="pt-BR"/)
   const files = [path.join(ROOT, 'index.html'), ...srcFiles(['.ts', '.tsx', '.css'])]
@@ -117,7 +117,7 @@ test('idioma pt-BR, sem fonte do Google e tema escuro nunca aplicado (f)', () =>
   )
   const area = code('src/contexts/AreaContext.tsx')
   assert.doesNotMatch(area, /classList\.(add|toggle)\(\s*['"]dark['"]/)
-  assert.doesNotMatch(html, /classList\.(add|toggle)\(\s*['"]dark['"]/)
+  // O index.html aplica o escuro pelo script de tema do aparelho (Fase 5); a guarda dele fica em phase3-base e phase5-theme.
 })
 
 test('package.json tem as duas fontes e nenhum runner de interface (g, PR-16)', () => {

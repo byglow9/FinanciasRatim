@@ -118,11 +118,6 @@ export function AreaProvider({ children }: { children: ReactNode }) {
     if (area !== 'porquinho') setLastPerson(area)
   }, [])
 
-  // Tema claro forcado ate a Fase 5 (PR-18): so garante que a classe escura nao esteja presente.
-  useEffect(() => {
-    document.documentElement.classList.remove('dark')
-  }, [])
-
   const readOnly = !!person && currentArea !== 'porquinho' && currentArea !== person
 
   const updateTabNames = async (tabNames: Settings['tabNames']) => {

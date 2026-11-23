@@ -320,14 +320,14 @@ Plans:
   4. O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinki
 
-**Plans**: 0/21 plans executed
+**Plans**: 1/21 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
 - [ ] 05-01-PLAN.md — Gates humanos: pacotes do PWA (versão exata, aprovação do dono) e reserva do ID de site coinc (IDEN-01, IDEN-03)
-- [ ] 05-02-PLAN.md — Núcleo: política de atualização silenciosa e resolução do tema, funções puras testadas (IDEN-04, IDEN-05)
+- [x] 05-02-PLAN.md — Núcleo: política de atualização silenciosa e resolução do tema, funções puras testadas (IDEN-04, IDEN-05)
 - [ ] 05-03-PLAN.md — Tokens: verde claro novo, @theme static, tema escuro e paleta medida nos dois temas, com as guardas legadas atualizadas (IDEN-05, IDEN-06)
 - [ ] 05-04-PLAN.md — Documentos: nome Coinc, coinc.web.app, redirect direto e atualização silenciosa (IDEN-01, IDEN-02, IDEN-04)
 - [ ] 05-05-PLAN.md — Sketch 021 do ícone: cinco versões com autoteste (IDEN-03)
@@ -444,7 +444,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinki, PWA e onboarding | 0/21 | Not started | - |
+| 5. Identidade Coinki, PWA e onboarding | 1/21 | In Progress|  |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

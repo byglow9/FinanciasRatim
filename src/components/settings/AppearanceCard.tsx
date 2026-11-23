@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Notice } from '@/components/ui/notice'
 import { useToast } from '@/components/ui/toast'
 import { SettingsCard } from '@/components/settings/SettingsCard'
+import { ThemeGroup } from '@/components/settings/ThemeGroup'
 import type { Settings } from '@/types'
 
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
@@ -22,8 +23,8 @@ const FIELDS: { key: keyof TabNames; id: string; label: string }[] = [
 ]
 
 /**
- * Cartão "Aparência" (UI-SPEC S5, cartão 5): nomes das abas e a nota do tema claro.
- * Não há interruptor de tema: o tema escuro volta na Fase 5 (PR-18, P-01).
+ * Cartão "Aparência" (UI-SPEC S3, D-08): tema do aparelho (Automático, Claro, Escuro) e nomes das abas.
+ * O tema é por aparelho e não segue o modo somente leitura; os nomes das abas continuam dado do casal.
  */
 export function AppearanceCard() {
   const { settings, updateTabNames, readOnly } = useArea()
@@ -67,7 +68,8 @@ export function AppearanceCard() {
   }
 
   return (
-    <SettingsCard id="aparencia" icon={Palette} title="Aparência" subtitle="Nomes das abas e tema">
+    <SettingsCard id="aparencia" icon={Palette} title="Aparência" subtitle="Tema e nomes das abas">
+      <ThemeGroup />
       <h3 className="text-base font-bold">Nomes das abas</h3>
       {FIELDS.map((field) => (
         <div key={field.id} className="space-y-1">
@@ -90,9 +92,6 @@ export function AppearanceCard() {
         </p>
       ) : null}
       {readOnly ? <p className="text-xs font-normal text-muted-foreground">{READ_ONLY_HINT}</p> : null}
-      <p className="text-xs font-normal text-muted-foreground">
-        Tema claro. O tema escuro chega numa próxima fase.
-      </p>
       {failed ? <Notice tone="danger">{SAVE_FAILED}</Notice> : null}
       <Button
         type="button"

@@ -128,3 +128,52 @@ test('AreaContext nao forca mais o tema claro', () => {
   const src = code('src/contexts/AreaContext.tsx')
   assert.doesNotMatch(src, /classList\.remove\('dark'\)/, 'o AreaContext desfaria o escuro')
 })
+
+// ---- Plano 05-06, tarefa 2: seletor Tema nos Ajustes ----
+
+const GROUP = 'src/components/settings/ThemeGroup.tsx'
+const CARD = 'src/components/settings/AppearanceCard.tsx'
+
+test('ThemeGroup: radiogroup Tema do aplicativo com Automatico, Claro e Escuro na ordem do contrato', () => {
+  const src = code(GROUP)
+  assert.ok(src.includes('role="radiogroup"') && src.includes('aria-label="Tema do aplicativo"'))
+  assert.ok(src.includes('role="radio"') && src.includes('aria-checked'))
+  assert.ok(src.includes('min-h-14'))
+  assert.ok(src.includes('Vale só neste aparelho.'))
+  assert.ok(src.includes('>Tema</h3>'), 'h3 Tema')
+  const order = ['Automático', 'Claro', 'Escuro'].map((t) => src.indexOf(`name: '${t}'`))
+  assert.ok(order.every((n) => n > 0), 'as tres opcoes')
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), 'ordem Automatico, Claro, Escuro')
+  for (const text of ['Segue o tema do celular', 'Sempre claro', 'Sempre escuro']) assert.ok(src.includes(text), text)
+  for (const icon of ['Monitor', 'Sun', 'Moon', 'Check']) assert.match(src, new RegExp(`\\b${icon}\\b`))
+  assert.match(src, /tabIndex=\{checked \? 0 : -1\}/, 'so a opcao marcada e tabulavel')
+  for (const key of ['ArrowDown', 'ArrowUp', 'Home', 'End']) assert.ok(src.includes(`'${key}'`), key)
+})
+
+test('ThemeGroup: preferencia do aparelho, nunca desabilitada, sem aviso, sem rede e sem dados do casal (P-13, D-09)', () => {
+  const src = code(GROUP)
+  assert.doesNotMatch(src, /disabled|readOnly|aria-disabled|useArea|useToast|show\(|fetch\(|firebase|service/i)
+  assert.match(src, /useTheme\(\)/)
+  assert.match(src, /setPref/)
+  assert.doesNotMatch(src, /\bdark:/, 'o escuro vem da troca de variaveis, nao de classe dark: em componente')
+  assert.doesNotMatch(src, /#[0-9a-fA-F]{3,8}\b/, 'sem hex literal')
+  assert.doesNotMatch(src, /transition/, 'sem transicao de cor ao trocar de tema')
+})
+
+test('AppearanceCard: ThemeGroup acima dos nomes, subtitulo novo e nota antiga removida', () => {
+  const src = code(CARD)
+  assert.match(src, /import \{ ThemeGroup \} from '@\/components\/settings\/ThemeGroup'/)
+  assert.ok(src.includes('subtitle="Tema e nomes das abas"'))
+  assert.ok(src.indexOf('<ThemeGroup />') > 0)
+  assert.ok(src.indexOf('<ThemeGroup />') < src.indexOf('<h3 className="text-base font-bold">Nomes das abas</h3>'))
+  assert.ok(!src.includes('Tema claro.'), 'a nota Tema claro foi removida')
+  assert.ok(!src.includes('chega numa próxima fase'))
+  // O que nao e tema segue como era: salvar nomes e somente leitura desabilitam so os nomes.
+  assert.ok(src.includes('Salvar nomes das abas') && src.includes('disabled={readOnly || saving}'))
+})
+
+test('ThemeGroup e AppearanceCard: escala tipografica, alvos de toque e sem emoji', async () => {
+  const { scaleProblems, touchProblems } = await import('./helpers/phase3-1.js')
+  assert.deepEqual(scaleProblems([GROUP, CARD]), [])
+  assert.deepEqual(touchProblems([GROUP, CARD]), [])
+})

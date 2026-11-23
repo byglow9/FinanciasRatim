@@ -119,14 +119,14 @@ test('a renda esperada passa pelo nucleo e oferece o escopo por ciclo (LIM-06, D
   )
 })
 
-test('AppearanceCard tem os nomes das abas, a nota do tema claro e nenhum interruptor de tema (PR-18)', () => {
+test('AppearanceCard tem os nomes das abas e delega o tema ao ThemeGroup, sem interruptor (Fase 5, D-08)', () => {
   assertIncludes(APPEARANCE, [
     'id="aparencia"',
     'Nomes das abas',
     'Aba 1',
     'Aba 2',
     'Poupança',
-    'Tema claro. O tema escuro chega numa próxima fase.',
+    '<ThemeGroup />',
     'Salvar nomes das abas',
     'updateTabNames',
     'Salvo',

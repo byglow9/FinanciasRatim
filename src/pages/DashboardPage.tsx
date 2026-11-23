@@ -10,6 +10,7 @@ import { useHashReveal, useSectionReveal } from '@/hooks/useSectionReveal'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { VintemSlot } from '@/components/vintem/VintemSlot'
 import { VintemHomeBalloon } from '@/components/vintem/VintemHomeBalloon'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
 import { StaleNotice } from '@/components/dashboard/StaleNotice'
@@ -57,6 +58,7 @@ export function DashboardPage() {
   if (settingsStatus === 'error') {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
+        <VintemEmpty pose="surpreso" />
         <Notice
           tone="danger"
           icon={CircleAlert}
@@ -76,6 +78,7 @@ export function DashboardPage() {
   if (error) {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
+        <VintemEmpty pose="surpreso" />
         <Notice
           tone="danger"
           icon={CircleAlert}

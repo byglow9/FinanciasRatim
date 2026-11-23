@@ -4,6 +4,7 @@ import { ChevronDown, CircleAlert, Gauge, LayoutGrid, TriangleAlert } from 'luci
 import { Collapsible } from '@/components/ui/collapsible'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { Progress, type ProgressTone } from '@/components/ui/progress'
+import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { VintemInlineRow } from '@/components/vintem/VintemInlineRow'
 import { useInlineVintem } from '@/hooks/useInlineVintem'
 import { iconComponent } from '@/lib/categoryIcons'
@@ -251,6 +252,7 @@ export function LimitsList({
 
       {rows.length === 0 && (
         <div className="py-4">
+          <VintemEmpty pose="neutro" />
           <p className="text-base font-bold">Nenhum limite definido</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Escolha um limite por categoria para acompanhar o gasto. Passar do limite só avisa.

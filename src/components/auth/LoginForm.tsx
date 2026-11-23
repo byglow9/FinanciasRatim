@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AlertCircle, Eye, EyeOff, Lock, Mail, PiggyBank } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Info, Lock, Mail } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Notice } from '@/components/ui/notice'
+import { CoincMark } from '@/components/brand/CoincMark'
+import { clearLegacyOrigin, hasLegacyOrigin } from '@/lib/legacyOrigin'
 import { cn } from '@/lib/utils'
 
 const loginSchema = z.object({
@@ -19,6 +21,8 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 // Mensagem fixa e generica: o texto cru do provedor de autenticacao nunca vai para a tela.
 const AUTH_FAILED_MESSAGE = 'E-mail ou senha incorretos.'
+// Sem rede a tentativa nem comeca: a falha de rede nao pode virar "credencial errada".
+const OFFLINE_MESSAGE = 'Sem conexão. Conecte-se à internet para entrar.'
 
 // Campo moderno: 56px, fundo preenchido, rotulo sempre visivel dentro do campo, icone a esquerda
 // e anel de foco na cor de acao (o foco e desenhado no contorno, nao no input).
@@ -35,6 +39,9 @@ const fieldError = 'mt-1 px-1 text-xs font-bold text-danger-ink'
 export function LoginForm() {
   const { signIn, accessError } = useAuth()
   const [authFailed, setAuthFailed] = useState(false)
+  const [offline, setOffline] = useState(false)
+  // Lido uma vez ao montar: a marca vem do boot (redirect do site antigo) e sobrevive ao onboarding.
+  const [legacyOrigin] = useState(() => hasLegacyOrigin())
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -48,8 +55,14 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setAuthFailed(false)
+    setOffline(false)
+    if (navigator.onLine === false) {
+      setOffline(true)
+      return
+    }
     try {
       await signIn(data.email, data.password)
+      clearLegacyOrigin()
     } catch {
       setAuthFailed(true)
     }
@@ -59,12 +72,16 @@ export function LoginForm() {
     <div className="flex min-h-dvh items-center justify-center bg-background p-4">
       <div className="w-full max-w-md rounded-[22px] bg-card px-4 py-6">
         <div className="grid justify-items-center gap-2 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-action">
-            <PiggyBank className="size-7" aria-hidden="true" />
-          </span>
-          <h1 className="font-display text-[28px] font-bold leading-[1.2]">Financias Ratimbum</h1>
+          <CoincMark />
+          <h1 className="font-display text-[28px] font-bold leading-[1.2]">Coinc</h1>
           <p className="text-base font-normal text-muted-foreground">Entre para gerenciar suas finanças</p>
         </div>
+
+        {legacyOrigin && (
+          <Notice tone="info" icon={Info} title="O Coinc mudou de endereço." className="mt-4 bg-surface-2">
+            Entre de novo por aqui. Seus dados continuam salvos.
+          </Notice>
+        )}
 
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -143,6 +160,7 @@ export function LoginForm() {
           {authFailed && (
             <Notice tone="danger" icon={AlertCircle} title={AUTH_FAILED_MESSAGE} />
           )}
+          {offline && <Notice tone="danger" icon={AlertCircle} title={OFFLINE_MESSAGE} />}
           {accessError && (
             <Notice tone="danger" icon={AlertCircle} title={accessError} />
           )}

@@ -8,10 +8,13 @@ import { BootError } from '@/components/brand/BootError'
 import { initTheme } from './hooks/useTheme'
 import { captureInstallPrompt } from '@/lib/pwa/installPrompt'
 import { registerPwa } from '@/lib/pwa/registerPwa'
+import { captureLegacyOrigin } from '@/lib/legacyOrigin'
 
 initTheme()
 // O evento de instalacao dispara cedo e uma vez por carga: o ouvinte nasce antes de o React montar.
 captureInstallPrompt()
+// Leitura unica de ?origem=antigo (redirect do site antigo): guarda a marca e limpa a URL.
+captureLegacyOrigin()
 
 const root = createRoot(document.getElementById('root')!)
 

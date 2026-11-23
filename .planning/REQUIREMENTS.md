@@ -64,7 +64,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc.web.app, no mesmo projeto do Firebase
 - [ ] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
 - [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na terceira tela do onboarding e em Ajustes
-- [x] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
+- [ ] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
 - [ ] **IDEN-05**: O tema é Automático (segue o celular), Claro ou Escuro, escolhido por aparelho nos Ajustes
 - [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
 - [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
@@ -202,7 +202,7 @@ Preenchida na criação do roadmap.
 | IDEN-01 | Phase 5 | Pending |
 | IDEN-02 | Phase 5 | Pending |
 | IDEN-03 | Phase 5 | Pending |
-| IDEN-04 | Phase 5 | Complete |
+| IDEN-04 | Phase 5 | Pending |
 | IDEN-05 | Phase 5 | Pending |
 | IDEN-06 | Phase 5 | Pending |
 | IDEN-08 | Phase 5 | Pending |

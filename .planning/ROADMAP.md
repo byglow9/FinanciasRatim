@@ -320,8 +320,66 @@ Plans:
   4. O tema segue o do celular (claro ou escuro), com opção de forçar um nos Ajustes
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinki
 
-**Plans**: TBD
+**Plans**: 0/21 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Gates humanos: pacotes do PWA (versão exata, aprovação do dono) e reserva do ID de site coinc (IDEN-01, IDEN-03)
+- [ ] 05-02-PLAN.md — Núcleo: política de atualização silenciosa e resolução do tema, funções puras testadas (IDEN-04, IDEN-05)
+- [ ] 05-03-PLAN.md — Tokens: verde claro novo, @theme static, tema escuro e paleta medida nos dois temas, com as guardas legadas atualizadas (IDEN-05, IDEN-06)
+- [ ] 05-04-PLAN.md — Documentos: nome Coinc, coinc.web.app, redirect direto e atualização silenciosa (IDEN-01, IDEN-02, IDEN-04)
+- [ ] 05-05-PLAN.md — Sketch 021 do ícone: cinco versões com autoteste (IDEN-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-06-PLAN.md — Tema em execução: script inline, useTheme e seletor Automático, Claro e Escuro em Ajustes (IDEN-05, IDEN-06)
+- [ ] 05-07-PLAN.md — Ícones provisórios e pipeline do gerador: PNGs, maskable, apple-touch e favicon (IDEN-03)
+- [ ] 05-08-PLAN.md — Hosting com dois alvos: site coinc com cabeçalhos corrigidos e site antigo só com redirect 302 (IDEN-01, IDEN-02, IDEN-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 05-09-PLAN.md — PWA: service worker de pré-cache, manifest, captura da adição à tela inicial e prova em Chrome (IDEN-03, IDEN-04)
+- [ ] 05-13-PLAN.md — Portão do ícone: escolha do dono entre as cinco versões e aplicação do definitivo (IDEN-03)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 05-10-PLAN.md — Boot do app: atualização silenciosa ao abrir, recarga protegida e tela de falha (IDEN-04, IDEN-03)
+- [ ] 05-11-PLAN.md — Passos de adicionar à tela inicial e cartão Aplicativo em Ajustes (IDEN-03)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 05-12-PLAN.md — Marca e Login Coinc, aviso de endereço novo e mensagem de sem conexão (IDEN-01, IDEN-02, IDEN-08)
+- [ ] 05-14-PLAN.md — Onboarding de 3 telas com o Vintém calado, portão antes do login e replay em Ajustes (IDEN-08, IDEN-03)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 05-15-PLAN.md — Auditoria do escuro: rotas e telas de entrada em dois temas e dois tamanhos (IDEN-06)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 05-16-PLAN.md — Auditoria do escuro: sobreposições e decisão da dock do tema claro (IDEN-06, IDEN-05)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 05-17-PLAN.md — Produção 1: ALLOWED_ORIGINS no Railway e domínio no login do Firebase (IDEN-02)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 05-18-PLAN.md — Produção 2: site coinc no ar, cabeçalhos ao vivo e login no endereço novo (IDEN-01, IDEN-03, IDEN-04)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 05-19-PLAN.md — Produção 3: redirect 302 do site antigo, por último (IDEN-02, IDEN-01)
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 05-20-PLAN.md — Fechamento: guarda transversal, suíte e executores, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 05-21-PLAN.md — Decisão opcional do redirect permanente 301, depois do uso real do endereço novo (IDEN-02)
 
 ### Phase 6: Cartão de crédito
 
@@ -386,7 +444,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinki, PWA e onboarding | 0/TBD | Not started | - |
+| 5. Identidade Coinki, PWA e onboarding | 0/21 | Not started | - |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

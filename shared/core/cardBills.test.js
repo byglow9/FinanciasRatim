@@ -10,6 +10,9 @@ import {
   derivedBillMonth,
   openBillMonth,
   derivationMismatch,
+  BILL_STATUSES,
+  sumBillTotals,
+  cardBillStatus,
 } from './cardBills.js'
 
 // Meio-dia em Sao Paulo (15:00 UTC): nunca cruza a virada do dia em UTC nem em Tokyo.
@@ -123,4 +126,103 @@ test('derivationMismatch conta compras em que o mes da Pluggy difere do derivado
   assert.equal(derivationMismatch([{ cardKind: 'purchase', date: at('2026-11-08') }], 7), 0)
   assert.equal(derivationMismatch(six, undefined), 0)
   assert.equal(derivationMismatch(null, 7), 0)
+})
+
+// As seis compras reais do dono (D-08): fatura 2026-12 de 181,41.
+const SIX = [
+  ['2026-11-08', 30.08],
+  ['2026-11-10', 45.9],
+  ['2026-11-12', 12.34],
+  ['2026-11-15', 50],
+  ['2026-11-20', 20],
+  ['2026-11-24', 23.09],
+].map(([d, amount], i) => ({
+  id: `c${i}`,
+  cardKind: 'purchase',
+  cardStatus: 'pending',
+  billMonth: '2026-12',
+  amount,
+  date: at(d),
+  bankImportId: `bank-${i}`,
+}))
+
+test('sumBillTotals soma em centavos inteiros por mes da fatura', () => {
+  assert.deepEqual(sumBillTotals(SIX), { totals: { '2026-12': 18141 }, unassignedCents: 0 })
+  const float = [
+    { cardKind: 'purchase', billMonth: '2026-12', amount: 0.1 },
+    { cardKind: 'purchase', billMonth: '2026-12', amount: 0.2 },
+  ]
+  assert.equal(sumBillTotals(float).totals['2026-12'], 30)
+})
+
+test('sumBillTotals: estorno subtrai, pagamento e outros tipos nao entram, sem mes vai para unassigned', () => {
+  const txs = [
+    { cardKind: 'purchase', billMonth: '2026-12', amount: 100 },
+    { cardKind: 'refund', billMonth: '2026-12', amount: 30 },
+    { cardKind: 'payment', billMonth: '2026-12', amount: 70 },
+    { cardKind: 'transfer', billMonth: '2026-12', amount: 9 },
+    { cardKind: 'purchase', amount: 12.5 },
+  ]
+  assert.deepEqual(sumBillTotals(txs), { totals: { '2026-12': 7000 }, unassignedCents: 1250 })
+  assert.deepEqual(sumBillTotals(null), { totals: {}, unassignedCents: 0 })
+})
+
+test('sumBillTotals deriva o mes da compra lancada a mao pelo fechamento (D-12)', () => {
+  const manual = { cardKind: 'purchase', amount: 40, date: at('2026-11-08') }
+  assert.deepEqual(sumBillTotals([manual], { closingDay: 7 }), { totals: { '2026-12': 4000 }, unassignedCents: 0 })
+  assert.deepEqual(sumBillTotals([manual], {}), { totals: {}, unassignedCents: 4000 })
+  assert.deepEqual(sumBillTotals([manual]), { totals: {}, unassignedCents: 4000 })
+  // quem ja traz billMonth usa o dele e ignora o fechamento
+  const piped = { cardKind: 'purchase', amount: 40, billMonth: '2027-03', date: at('2026-11-08') }
+  assert.deepEqual(sumBillTotals([piped], { closingDay: 7 }), { totals: { '2027-03': 4000 }, unassignedCents: 0 })
+})
+
+const BASE = { billMonth: '2026-12', totalCents: 18141, paidCents: 0, closingDay: 7, dueDay: 14 }
+const status = (day, extra = {}) => cardBillStatus({ ...BASE, now: at(day), ...extra })
+
+test('BILL_STATUSES tem o vocabulario proprio da fatura', () => {
+  assert.deepEqual([...BILL_STATUSES], ['aberta', 'fechada', 'paga', 'atrasada', 'futura'])
+})
+
+test('cardBillStatus: transicoes nas datas reais do dono', () => {
+  assert.deepEqual(status('2026-11-24'), { status: 'aberta', remainingCents: 18141 })
+  assert.equal(status('2026-12-07').status, 'aberta')
+  assert.equal(status('2026-12-08').status, 'fechada')
+  assert.equal(status('2026-12-14').status, 'fechada')
+  assert.deepEqual(status('2026-12-15'), { status: 'atrasada', remainingCents: 18141 })
+})
+
+test('cardBillStatus: paga quando o pago cobre o total, parcial mantem o saldo', () => {
+  assert.deepEqual(status('2026-12-10', { paidCents: 18141 }), { status: 'paga', remainingCents: 0 })
+  assert.deepEqual(status('2027-02-01', { paidCents: 20000 }), { status: 'paga', remainingCents: 0 })
+  assert.deepEqual(status('2026-12-10', { paidCents: 10000 }), { status: 'fechada', remainingCents: 8141 })
+  assert.deepEqual(status('2026-12-20', { paidCents: 10000 }), { status: 'atrasada', remainingCents: 8141 })
+  // pagamento antes do fechamento nao marca paga
+  assert.equal(status('2026-11-24', { paidCents: 18141 }).status, 'aberta')
+})
+
+test('cardBillStatus: override do dono so vale para fatura ja fechada', () => {
+  assert.equal(status('2026-12-20', { overridePaid: true }).status, 'paga')
+  assert.equal(status('2026-12-10', { overridePaid: true }).status, 'paga')
+  assert.equal(status('2026-11-24', { overridePaid: true }).status, 'aberta')
+  assert.equal(status('2026-11-24', { overridePaid: true, billMonth: '2027-02' }).status, 'futura')
+})
+
+test('cardBillStatus: mes depois da fatura aberta e futura', () => {
+  assert.equal(status('2026-11-24', { billMonth: '2027-01' }).status, 'futura')
+  assert.equal(status('2026-12-08', { billMonth: '2027-01' }).status, 'aberta')
+})
+
+test('cardBillStatus: sem fechamento ou vencimento o status e null', () => {
+  assert.equal(status('2026-12-20', { closingDay: undefined }).status, null)
+  assert.equal(status('2026-12-20', { dueDay: undefined }).status, null)
+  assert.equal(status('2026-12-20', { dueDay: 40 }).status, null)
+  assert.equal(status('2026-12-20', { billMonth: 'lixo' }).status, null)
+  assert.equal(cardBillStatus({ ...BASE, now: new Date('lixo') }).status, null)
+  assert.equal(cardBillStatus(undefined).status, null)
+})
+
+test('cardBillStatus: fatura vazia nao vira paga por pago zero', () => {
+  assert.deepEqual(status('2026-12-10', { totalCents: 0, paidCents: 0 }), { status: 'fechada', remainingCents: 0 })
+  assert.equal(status('2026-12-20', { totalCents: 0, paidCents: 0 }).status, 'fechada')
 })

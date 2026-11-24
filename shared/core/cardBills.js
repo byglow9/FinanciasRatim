@@ -8,6 +8,8 @@
 // devolve o resultado conservador (null, 'unknown' ou lista vazia).
 
 import { DEFAULT_TZ, monthRangeOf, zonedParts } from './time.js'
+import { daysBetweenParts } from './cycle.js'
+import { toCents } from './ledger.js'
 
 /** @typedef {import('./cycle.js').DateParts} DateParts */
 
@@ -183,4 +185,76 @@ export function derivationMismatch(txs, closingDay, tz = DEFAULT_TZ) {
     if (derived && derived !== tx.billMonth) count++
   }
   return count
+}
+
+/**
+ * Centavos assinados de um lancamento de cartao: compra soma, estorno subtrai,
+ * qualquer outro tipo (pagamento, transferencia) nao entra na fatura. O valor
+ * ja vem em reais (compra internacional ja convertida, D-08).
+ * @param {any} tx
+ * @returns {number | null}
+ */
+function signedCents(tx) {
+  if (!tx || typeof tx.amount !== 'number' || !Number.isFinite(tx.amount)) return null
+  if (tx.cardKind === 'purchase') return Math.abs(toCents(tx.amount))
+  if (tx.cardKind === 'refund') return -Math.abs(toCents(tx.amount))
+  return null
+}
+
+/**
+ * Total por fatura em centavos inteiros. Servidor (cards.billTotals) e cliente
+ * usam esta mesma funcao para o total gravado e o exibido nunca divergirem.
+ * Lancamento sem billMonth e com data (compra lancada a mao, D-12) usa o mes
+ * derivado do fechamento; sem fechamento ou sem data vai para unassignedCents.
+ * @param {unknown} txs lancamentos { cardKind, amount, billMonth, date }
+ * @param {{ closingDay?: unknown, tz?: string }} [opts]
+ * @returns {{ totals: Record<string, number>, unassignedCents: number }}
+ */
+export function sumBillTotals(txs, { closingDay, tz = DEFAULT_TZ } = {}) {
+  /** @type {Record<string, number>} */
+  const totals = {}
+  let unassignedCents = 0
+  if (!Array.isArray(txs)) return { totals, unassignedCents }
+  for (const tx of txs) {
+    const cents = signedCents(tx)
+    if (cents === null) continue
+    const { billMonth } = billMonthOf({ billMonth: tx.billMonth, date: tx.date, closingDay, tz })
+    if (billMonth === null) unassignedCents += cents
+    else totals[billMonth] = (totals[billMonth] ?? 0) + cents
+  }
+  return { totals, unassignedCents }
+}
+
+export const BILL_STATUSES = Object.freeze(['aberta', 'fechada', 'paga', 'atrasada', 'futura'])
+
+/** @typedef {'aberta' | 'fechada' | 'paga' | 'atrasada' | 'futura'} CardBillStatus */
+
+/**
+ * Status de uma fatura por datas de calendario. Sem fechamento ou vencimento
+ * validos devolve status null: nunca inventar estado sem as datas do dono
+ * (D-04, D-09).
+ * @param {{
+ *   billMonth?: unknown, totalCents?: number, paidCents?: number, overridePaid?: boolean,
+ *   now?: Date, closingDay?: unknown, dueDay?: unknown, tz?: string,
+ * }} [input]
+ * @returns {{ status: CardBillStatus | null, remainingCents: number }}
+ */
+export function cardBillStatus({ billMonth, totalCents, paidCents, overridePaid, now, closingDay, dueDay, tz = DEFAULT_TZ } = {}) {
+  const total = typeof totalCents === 'number' && Number.isFinite(totalCents) ? totalCents : 0
+  const paid = typeof paidCents === 'number' && Number.isFinite(paidCents) && paidCents > 0 ? paidCents : 0
+  const remaining = Math.max(total - paid, 0)
+  const unknown = { status: null, remainingCents: remaining }
+
+  const due = duePartsOf(billMonth, closingDay, dueDay)
+  const today = partsOfDate(now, tz)
+  const open = openBillMonth(/** @type {Date} */ (now), closingDay, tz)
+  if (!due || !today || !open || typeof billMonth !== 'string') return unknown
+
+  if (billMonth > open) return { status: 'futura', remainingCents: remaining }
+  if (billMonth === open) return { status: 'aberta', remainingCents: remaining }
+
+  // fatura ja fechada
+  if ((total > 0 && paid >= total) || overridePaid === true) return { status: 'paga', remainingCents: 0 }
+  if (remaining > 0 && daysBetweenParts(due, today) > 0) return { status: 'atrasada', remainingCents: remaining }
+  return { status: 'fechada', remainingCents: remaining }
 }

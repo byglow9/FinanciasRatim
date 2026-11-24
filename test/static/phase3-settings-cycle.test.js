@@ -21,8 +21,9 @@ const PICKER = 'src/components/settings/DayPicker.tsx'
 const CYCLE = 'src/components/settings/CycleIncomeCard.tsx'
 const APPEARANCE = 'src/components/settings/AppearanceCard.tsx'
 const NOTIFICATIONS = 'src/components/settings/NotificationsCard.tsx'
-const ACCOUNTS = 'src/components/settings/AccountsSkeletonCard.tsx'
-const FILES = [CARD, ROW, PICKER, CYCLE, APPEARANCE, NOTIFICATIONS, ACCOUNTS]
+const ACCOUNTS = 'src/components/settings/AccountsCard.tsx'
+const CARD_SHEET = 'src/components/settings/CardSettingsSheet.tsx'
+const FILES = [CARD, ROW, PICKER, CYCLE, APPEARANCE, NOTIFICATIONS, ACCOUNTS, CARD_SHEET]
 
 function assertIncludes(file, texts) {
   const src = code(file)
@@ -157,15 +158,10 @@ test('NotificationsCard tem o interruptor, a antecedencia de 0 a 30 e os avisos 
   assert.match(src, /DAYS_MAX\s*=\s*30/)
 })
 
-test('AccountsSkeletonCard e so o esqueleto em breve, sem campos nem botoes (CENT-05)', () => {
-  assertIncludes(ACCOUNTS, [
-    'id="contas"',
-    'Contas e cartões',
-    'em breve',
-    'Fechamento e vencimento do cartão chegam junto com o cartão de crédito.',
-  ])
+test('AccountsCard deixou de ser esqueleto: ancora, titulo, folha de edicao e nada de em breve (CENT-05, CARD-08)', () => {
+  assertIncludes(ACCOUNTS, ['id="contas"', 'Contas e cartões', '<CardSettingsSheet'])
   const src = code(ACCOUNTS)
-  assert.doesNotMatch(src, /<Input|<Button|<button|<Switch|<input/)
+  assert.doesNotMatch(src, /em breve/i)
 })
 
 test('os componentes do plano nao usam tipografia fora da escala, HTML bruto, emoji, console nem Ele/Ela fixos', () => {

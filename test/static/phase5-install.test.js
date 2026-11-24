@@ -92,7 +92,7 @@ test('SettingsPage: AppCard depois de Notificacoes e antes de Sair da conta, ord
   const order = [
     '<CycleIncomeCard',
     '<CategoriesCard',
-    '<AccountsSkeletonCard',
+    '<AccountsCard',
     '<BankConnections',
     '<AppearanceCard',
     '<VintemToneCard',

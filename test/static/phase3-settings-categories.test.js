@@ -45,7 +45,7 @@ test('SettingsPage tem o titulo, a legenda, os seis cartoes na ordem e o botao S
   const order = [
     '<CycleIncomeCard',
     '<CategoriesCard',
-    '<AccountsSkeletonCard',
+    '<AccountsCard',
     '<BankConnections',
     '<AppearanceCard',
     '<NotificationsCard',

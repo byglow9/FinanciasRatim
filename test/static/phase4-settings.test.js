@@ -14,7 +14,7 @@ test('o cartao Vintem fica entre Aparencia e Notificacoes e nenhum cartao antigo
   const order = [
     '<CycleIncomeCard',
     '<CategoriesCard',
-    '<AccountsSkeletonCard',
+    '<AccountsCard',
     '<BankConnections',
     '<AppearanceCard',
     '<VintemToneCard',

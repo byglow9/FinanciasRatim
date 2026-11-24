@@ -157,7 +157,7 @@ const NEW_AND_REWRITTEN = [
     (n) => `src/components/layout/${n}.tsx`,
   ),
   // Configuracoes
-  ...['SettingsCard', 'FieldRow', 'DayPicker', 'CycleIncomeCard', 'AppearanceCard', 'NotificationsCard', 'AccountsSkeletonCard', 'IconPicker', 'CategoryEditorSheet', 'CategoriesCard'].map(
+  ...['SettingsCard', 'FieldRow', 'DayPicker', 'CycleIncomeCard', 'AppearanceCard', 'NotificationsCard', 'AccountsCard', 'CardSettingsSheet', 'IconPicker', 'CategoryEditorSheet', 'CategoriesCard'].map(
     (n) => `src/components/settings/${n}.tsx`,
   ),
   // paginas, contextos e hooks

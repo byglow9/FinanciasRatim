@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useBankFreshness } from '@/hooks/useBankFreshness'
 import { useNow } from '@/hooks/useNow'
 import { useHashReveal } from '@/hooks/useSectionReveal'
-import { AccountsSkeletonCard } from '@/components/settings/AccountsSkeletonCard'
+import { AccountsCard } from '@/components/settings/AccountsCard'
 import { AppCard } from '@/components/settings/AppCard'
 import { AppearanceCard } from '@/components/settings/AppearanceCard'
 import { BankConnections } from '@/components/settings/BankConnections'
@@ -87,7 +87,7 @@ export function SettingsPage() {
 
       <CycleIncomeCard />
       <CategoriesCard />
-      <AccountsSkeletonCard />
+      <AccountsCard />
 
       <BankConnections subtitle={bankSubtitle} />
 

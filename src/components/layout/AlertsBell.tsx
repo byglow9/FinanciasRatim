@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Bell, CalendarDays, CircleAlert, TriangleAlert } from 'lucide-react'
+import { Bell, CalendarDays, CircleAlert, CreditCard, TriangleAlert } from 'lucide-react'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useLimitAlerts } from '@/contexts/LimitAlertsContext'
 import { VintemEmpty } from '@/components/vintem/VintemEmpty'
+import { useCards } from '@/hooks/useCards'
 import { limitHref } from '@/lib/limitHash'
 import { getFixedExpenses, getPaymentsForMonths } from '@/services/fixedExpenses.service'
 import type { LimitAlert } from '@/types'
+import { cardBillAlerts } from '@shared/core/cardCalendar.js'
+import type { CardBillAlert } from '@shared/core/cardCalendar.js'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { daysBetweenParts, nextOccurrence } from '@shared/core/cycle.js'
 import { formatMoney, plural } from '@shared/core/format.js'
@@ -31,7 +34,10 @@ interface DueItem {
   daysUntil: number
 }
 
-type BellItem = { kind: 'limit'; alert: LimitAlert } | ({ kind: 'due' } & DueItem)
+type BellItem =
+  | { kind: 'limit'; alert: LimitAlert }
+  | ({ kind: 'due' } & DueItem)
+  | ({ kind: 'card' } & CardBillAlert)
 
 // Vencimentos de 0 ate daysBefore dias, no calendario de Sao Paulo, sem pagamento no mes da
 // ocorrencia. Duas pessoas: a consulta nao filtra por pessoa.
@@ -110,6 +116,29 @@ export function AlertsBell() {
 
   const due = enabled ? dueState : []
 
+  // Fatura de cartao fechada ou atrasada e nao paga perto do vencimento: so cards e cardSettings,
+  // sem ler as compras do cartao (cota de leituras do Spark).
+  const { cards } = useCards()
+  const cardAlerts = useMemo(
+    () =>
+      cardBillAlerts({
+        cards: cards.map((c) => ({
+          id: c.id,
+          displayName: c.displayName,
+          name: c.name,
+          billTotals: c.billTotals,
+          payments: c.payments,
+          closingDay: c.settings?.closingDay ?? null,
+          dueDay: c.settings?.dueDay ?? null,
+          paidMonths: c.settings?.paidMonths ?? [],
+        })),
+        now,
+        daysBefore,
+        enabled,
+      }),
+    [cards, now, daysBefore, enabled]
+  )
+
   const openPanel = useCallback(() => {
     setOpen(true)
     setOpenTick((t) => t + 1)
@@ -156,9 +185,10 @@ export function AlertsBell() {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .map((alert): BellItem => ({ kind: 'limit', alert })),
     ...due.map((d): BellItem => ({ kind: 'due', ...d })),
+    ...cardAlerts.map((c): BellItem => ({ kind: 'card', ...c })),
   ]
 
-  const count = unread + due.length
+  const count = unread + due.length + cardAlerts.length
   const badgeText = count > 9 ? '9+' : String(count)
 
   function openLimit(alert: LimitAlert) {
@@ -170,6 +200,11 @@ export function AlertsBell() {
   function openDue() {
     closePanel(false)
     navigate('/contas-fixas')
+  }
+
+  function openCard() {
+    closePanel(false)
+    navigate('/cartoes')
   }
 
   return (
@@ -245,6 +280,10 @@ export function AlertsBell() {
                       onOpen={() => openLimit(item.alert)}
                     />
                   </li>
+                ) : item.kind === 'card' ? (
+                  <li key={item.id}>
+                    <CardBillRow item={item} onOpen={openCard} />
+                  </li>
                 ) : (
                   <li key={`due-${item.id}`}>
                     <DueRow item={item} onOpen={openDue} />
@@ -306,6 +345,26 @@ function DueRow({ item, onOpen }: { item: DueItem; onOpen: () => void }) {
       <span className="min-w-0 flex-1">
         <span className="block text-base font-bold">{`${item.name} vence no dia ${item.day}`}</span>
         <span className="block text-xs text-muted-foreground">{`${formatMoney(item.amountCents)} · ${when}`}</span>
+      </span>
+    </button>
+  )
+}
+
+function CardBillRow({ item, onOpen }: { item: CardBillAlert; onOpen: () => void }) {
+  const late = -item.daysUntil
+  const when = item.overdue
+    ? `venceu há ${plural(late, 'dia', 'dias')}`
+    : item.daysUntil === 0
+      ? 'vence hoje'
+      : `vence em ${plural(item.daysUntil, 'dia', 'dias')}`
+  return (
+    <button type="button" data-bell-item onClick={onOpen} className={ROW}>
+      <IconCircle icon={CreditCard} className={item.overdue ? 'text-danger-ink' : 'text-foreground'} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-bold">{`Fatura ${item.name} ${when}`}</span>
+        <span className="block text-xs text-muted-foreground">
+          {`${formatMoney(item.amountCents)} · dia ${item.dueParts.day}`}
+        </span>
       </span>
     </button>
   )

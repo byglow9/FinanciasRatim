@@ -7,7 +7,7 @@ const FAILED_PRECONDITION = 9
 const RETRY_MS = 15_000
 const DEFAULT_INDEXES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'firestore.indexes.json')
 
-// Valores de igualdade usados nas consultas de prova. goalId e um marcador que nao existe:
+// Valores de igualdade usados nas consultas de prova. goalId e cardId sao marcadores que nao existem:
 // a consulta so precisa ter indice pronto, nao devolver documentos.
 const probeValue = (field, hid) => {
   switch (field) {
@@ -18,6 +18,7 @@ const probeValue = (field, hid) => {
     case 'isActive':
       return true
     case 'goalId':
+    case 'cardId':
       return '__check-indexes__'
     default:
       throw new Error(`Campo de igualdade sem valor de prova definido: ${field}`)

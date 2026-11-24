@@ -7,6 +7,7 @@ import {
   normalize,
   DUPLICATE_WINDOW_DAYS,
 } from '../../shared/core/classify.js'
+import { syncCardSnapshot } from './card-sync.js'
 import {
   DEFAULT_CATEGORY_DEFS,
   buildCategoryDefs,
@@ -164,6 +165,17 @@ export async function syncConnection(db, pluggy, connection) {
     )
 
     for (const account of accounts) {
+      // Limite e fatura atual do cartao (CARD-02). Falha aqui nunca derruba a importacao do
+      // banco: so a mensagem vai para o log, sem valores nem dados pessoais.
+      if (account.type === 'CREDIT') {
+        try {
+          if (await syncCardSnapshot(db, { ownerId, person, itemId, account })) {
+            summary.cards = (summary.cards ?? 0) + 1
+          }
+        } catch (err) {
+          console.warn(`[sync] cartao nao gravado no item ${itemId}:`, err?.message ?? String(err))
+        }
+      }
       const txs = await pluggy.fetchAllTransactions(account.id, { dateFrom })
       const existing = await getExisting(db, txs.map((t) => t.id))
       let batch = db.batch()

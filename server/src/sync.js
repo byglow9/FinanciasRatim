@@ -7,7 +7,7 @@ import {
   normalize,
   DUPLICATE_WINDOW_DAYS,
 } from '../../shared/core/classify.js'
-import { syncCardSnapshot } from './card-sync.js'
+import { refreshCardAggregates, syncCardSnapshot, syncCardTransactions } from './card-sync.js'
 import {
   DEFAULT_CATEGORY_DEFS,
   buildCategoryDefs,
@@ -164,17 +164,36 @@ export async function syncConnection(db, pluggy, connection) {
       personImportsSnap.docs.map((d) => d.data().matchedTransactionId).filter(Boolean)
     )
 
+    const bankName = item.connector?.name ?? connection.connectorName ?? 'Banco'
+    // Categoria do cartao pela mesma regra das demais contas (aprendida, mapeada, padrao).
+    const categorize = (entry, categoryNames) => {
+      const mapped = mapCategory(categoryNames, appCategories)
+      return learned.get(normalize(entry.description)) ?? { categoryId: mapped.id, category: mapped.name }
+    }
+
     for (const account of accounts) {
-      // Limite e fatura atual do cartao (CARD-02). Falha aqui nunca derruba a importacao do
-      // banco: so a mensagem vai para o log, sem valores nem dados pessoais.
+      // Conta CREDIT segue o caminho proprio do cartao (limite, compras com campos de cartao e
+      // agregados por fatura, CARD-02/03/06/07) e nunca o classify generico das contas correntes.
+      // Falha aqui nunca derruba a importacao do banco: so a mensagem vai para o log e para o
+      // resumo, sem valores nem dados pessoais.
       if (account.type === 'CREDIT') {
         try {
           if (await syncCardSnapshot(db, { ownerId, person, itemId, account })) {
             summary.cards = (summary.cards ?? 0) + 1
           }
+          const counts = await syncCardTransactions(db, {
+            ownerId, person, itemId, account, connection, bankName, categorize, manual, usedManualIds, pluggy, chains,
+          })
+          await refreshCardAggregates(db, { ownerId, accountId: account.id })
+          const total = summary.cardTxs ?? { created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0 }
+          for (const key of Object.keys(total)) total[key] += counts[key] ?? 0
+          summary.cardTxs = total
         } catch (err) {
-          console.warn(`[sync] cartao nao gravado no item ${itemId}:`, err?.message ?? String(err))
+          const message = err?.message ?? String(err)
+          console.warn(`[sync] cartao nao gravado no item ${itemId}:`, message)
+          summary.cardError = message
         }
+        continue
       }
       const txs = await pluggy.fetchAllTransactions(account.id, { dateFrom })
       const existing = await getExisting(db, txs.map((t) => t.id))
@@ -209,7 +228,6 @@ export async function syncConnection(db, pluggy, connection) {
 
         const date = Timestamp.fromDate(entry.date)
         const transactionId = `bank_${tx.id}`
-        const bankName = item.connector?.name ?? connection.connectorName ?? 'Banco'
 
         batch.set(db.collection(IMPORTS).doc(tx.id), {
           ownerId,

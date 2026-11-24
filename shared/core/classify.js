@@ -143,7 +143,7 @@ export function mapCategory(pluggyCategoryNames, defs) {
  * @param {string} categoryText
  * @returns {boolean}
  */
-function isCardBillPayment(tx, categoryText) {
+export function isCardBillPayment(tx, categoryText) {
   return (
     tx.operationType === 'PAGAMENTO_FATURA' ||
     /credit card payment/.test(categoryText) ||
@@ -158,7 +158,7 @@ function isCardBillPayment(tx, categoryText) {
  * @param {string} categoryText
  * @returns {boolean}
  */
-function isSelfTransfer(tx, categoryText) {
+export function isSelfTransfer(tx, categoryText) {
   if (/same person transfer/.test(categoryText)) return true
   const payer = tx.paymentData?.payer?.documentNumber?.value
   const receiver = tx.paymentData?.receiver?.documentNumber?.value

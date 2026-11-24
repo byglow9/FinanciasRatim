@@ -2,7 +2,7 @@
 
 Data de preparo: 2026-11-24. Só leitura (`curl -sI` e `curl -s`); o agente não roda deploy nem login do Firebase. A evidência registra só comando, status e cabeçalhos relevantes, nunca corpo de resposta.
 
-Estado: **pendente**. A Tarefa 5 do plano 05-23 é o passo do dono; as conferências abaixo só rodam depois do "done" dele.
+Estado: **conferido em 2026-11-24**. A Tarefa 5 do plano 05-23 é o passo do dono; as conferências abaixo só rodam depois do "done" dele.
 
 ## 1. Comando do dono (só o alvo coinc)
 
@@ -56,3 +56,17 @@ Ainda não recebida. O executor registra aqui, literal, o "done", a linha "Deplo
 ## 6. Status
 
 Pacote pronto para o deploy do dono. Falta o "done" dele, as conferências (a) a (e) e a confirmação visual das quatro telas.
+
+
+## 4. Resultado das conferências (24/11/2026, só leitura)
+
+Deploy feito pelo dono (resposta literal: "pronto"), já com o tema padrão Claro (commit 2788565a).
+
+- a. `/`, `/transacoes`, `/metas`, `/sw.js`, `/manifest.webmanifest`: 200 e `no-cache`; `/sw.js` sem `immutable`. ok
+- b. Bundle do pré-cache contém "Oi, eu sou o Vintém!", "Um teto por categoria", "Tudo no calendário" e "Coinc na tela inicial"; também as falas do login. ok
+- c. Seis WebP (home, limites e calendario, claro e escuro): 200 e `public, max-age=31536000, immutable`. ok
+- d. `/icons/icon.svg`: 200, `image/svg+xml`, com `xmlns`. ok
+- e. `https://financias-ratimbum.web.app/`: 200, sem `location`. ok
+- Extra: `index.html` publicado traz `var pref = 'claro'` (tema padrão Claro no ar).
+
+Falta só a confirmação visual do dono sobre as quatro telas.

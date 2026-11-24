@@ -52,7 +52,7 @@ key-decisions:
   - "Corte do topo do print em telas baixas (--onb-k e crop por cena) para o anel e a lente aparecerem a 360 por 640"
 requirements-completed: []
 requirements: [IDEN-08, IDEN-03, IDEN-06]
-status: aguardando deploy do dono
+status: complete
 completed: 2026-11-24
 commits: 4
 plan_head_before: eebcb7160cbce2e965c1e2e4956494967c03c143
@@ -66,7 +66,7 @@ actuals:
 
 **Onboarding de quatro telas no visual do sketch 029: o Vintém de entrada (seis estados, olhar guiado) fala num balão com digitação, reage (susto no limite, festa no calendário) sobre um celular com print real por tema, e a última tela traz os passos ilustrados de adicionar à tela inicial para Android e iPhone; tarefas 1 a 4 prontas e verdes, aguardando o deploy do dono (tarefa 5).**
 
-Status: **aguardando deploy do dono**. A Tarefa 5 (checkpoint humano de publicação do site `coinc`) não foi executada: o agente não roda `firebase deploy` nem `firebase login`. STATE.md e ROADMAP.md não foram avançados além do texto que a Tarefa 4 manda mudar (Goal e critérios 2 e 5 da Fase 5, `REQUIREMENTS.md`).
+Status: **complete**. A Tarefa 5 (checkpoint humano de publicação do site `coinc`) não foi executada: o agente não roda `firebase deploy` nem `firebase login`. STATE.md e ROADMAP.md não foram avançados além do texto que a Tarefa 4 manda mudar (Goal e critérios 2 e 5 da Fase 5, `REQUIREMENTS.md`).
 
 ## O que foi feito
 
@@ -144,3 +144,5 @@ Responder "done" com a linha "Deploy complete" e uma frase sobre o onboarding (i
 
 - Arquivos criados conferidos (`InstallScene.tsx`, `WelcomeScene.tsx`, `OnboardingParts.tsx`, `onboardingScenes.ts`, seis WebP, evidência) e capturas `onboarding-novo-*` (16).
 - Commits `e3a96408`, `5481ab21`, `01368224` e `8624b57b` existem; `git rev-list --count eebcb716..HEAD` = 4 antes deste documento.
+
+Deploy feito pelo dono em 24/11/2026 (resposta "pronto"), conferido por curl em 05-23-DEPLOY-EVIDENCE.md.

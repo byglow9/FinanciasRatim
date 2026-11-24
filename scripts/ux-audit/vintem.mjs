@@ -5,7 +5,10 @@
 // lido de .env*.
 // Com --test abre /vintem-teste?test&w=360, espera o autoteste por pixels (window.__done), imprime o
 // relatorio dele e soma as falhas as das verificacoes da pagina.
-// Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/vintem.mjs [--test]
+// Com --theme claro|escuro (plano 05-20, UI-SPEC "Distincao do Vintem por pares nos dois temas") semeia a chave
+// de tema do aparelho antes da pagina, para rodar o autoteste tambem com o escuro forcado; sem a opcao o
+// comportamento e o de sempre (nenhuma chave semeada). Os criterios do autoteste nunca mudam.
+// Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/vintem.mjs [--test] [--theme claro|escuro]
 // Saida: uma linha JSON por verificacao e a linha final `FALHAS n`. Codigos: 0 ok, 1 alguma
 // verificacao falhou, 2 falha do script.
 import { spawn } from 'node:child_process'
@@ -17,6 +20,17 @@ const ORIGIN = `http://127.0.0.1:${PORT}`
 const ROUTE = '/vintem-teste?w=360'
 const TEST_ROUTE = '/vintem-teste?test&w=360'
 const WITH_TEST = process.argv.includes('--test')
+const THEME_KEY = 'coinc:tema:v1'
+const THEME_ARG = (() => {
+  const i = process.argv.indexOf('--theme')
+  if (i === -1) return null
+  const value = process.argv[i + 1]
+  if (value !== 'claro' && value !== 'escuro') {
+    console.error('vintem: --theme aceita claro ou escuro')
+    process.exit(2)
+  }
+  return value
+})()
 const SELFTEST_WAIT_MS = 90000
 const VIEWPORT = { width: 360, height: 640 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -84,6 +98,7 @@ function seedSource() {
     for (const k of Object.keys(localStorage)) if (k.startsWith('db::') || k.startsWith('doc::')) localStorage.removeItem(k)
     const seed = ${JSON.stringify(seed)}
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    ${THEME_ARG ? `localStorage.setItem(${JSON.stringify(THEME_KEY)}, ${JSON.stringify(THEME_ARG)})` : ''}
   } catch {} })()`
 }
 

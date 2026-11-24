@@ -360,37 +360,37 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
 
       {tab !== "porquinho" ? (
         <div className="mt-2 [@media(max-height:700px)]:mt-1">
-          {/* O rotulo da categoria e os chips de forma de pagamento dividem a mesma linha. */}
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-muted-foreground">Categoria</p>
-            <div className="flex gap-2">
-              {tab === "gasto" ? (
-                <>
+          {/* O rotulo da categoria e os chips de forma de pagamento dividem a mesma linha (so no Gasto). */}
+          {tab === "gasto" ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-bold text-muted-foreground">Categoria</p>
+              <div className="flex gap-2">
+                <Chip
+                  tone={onCard ? "neutral" : "selected"}
+                  icon={Landmark}
+                  pressed={!onCard}
+                  onClick={() => setPayment("conta")}
+                >
+                  Conta
+                </Chip>
+                {/* Sem cartao no perfil o chip fica desabilitado e explica o motivo. */}
+                <span title={choices.length === 0 ? cardReason : undefined} className="inline-flex">
                   <Chip
-                    tone={onCard ? "neutral" : "selected"}
-                    icon={Landmark}
-                    pressed={!onCard}
-                    onClick={() => setPayment("conta")}
+                    tone={onCard ? "selected" : choices.length === 0 ? "muted" : "neutral"}
+                    icon={CreditCard}
+                    pressed={onCard}
+                    disabled={choices.length === 0}
+                    onClick={() => setPayment("cartao")}
                   >
-                    Conta
+                    Cartão
+                    {choices.length === 0 ? <span className="sr-only"> ({cardReason})</span> : null}
                   </Chip>
-                  {/* Sem cartao no perfil o chip fica desabilitado e explica o motivo. */}
-                  <span title={choices.length === 0 ? cardReason : undefined} className="inline-flex">
-                    <Chip
-                      tone={onCard ? "selected" : choices.length === 0 ? "muted" : "neutral"}
-                      icon={CreditCard}
-                      pressed={onCard}
-                      disabled={choices.length === 0}
-                      onClick={() => setPayment("cartao")}
-                    >
-                      Cartão
-                      {choices.length === 0 ? <span className="sr-only"> ({cardReason})</span> : null}
-                    </Chip>
-                  </span>
-                </>
-              ) : null}
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-xs font-bold text-muted-foreground">Categoria</p>
+          )}
           {onCard ? (
             <>
               <CardPicker choices={choices} value={cardId ?? ""} onChange={setPickedCardId} />

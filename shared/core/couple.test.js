@@ -179,3 +179,17 @@ test('leadCategories: ordem por maior valor do casal, empate pela ordem das cate
   )
   assert.deepEqual(leads.map((l) => l.key), ['mercado', 'transporte', 'lazer'])
 })
+
+// Regressao do cartao (D-14, D-12): a compra conta como gasto da pessoa na data
+// da compra; o pagamento da fatura e o estorno sao transferencia e ficam fora.
+test('coupleSummary conta a compra do cartao e ignora pagamento da fatura e estorno', () => {
+  const compra = out(181.41, 'mercado', { cardKind: 'purchase' })
+  const manual = out(20, 'mercado', { cardKind: 'purchase', cardId: 'acc-1' })
+  const pagamento = out(181.41, undefined, { cardKind: 'payment', transfer: true })
+  const estorno = inn(30, { cardKind: 'refund', transfer: true })
+  const s = coupleSummary({ first: [compra, manual, pagamento, estorno], second: [inn(1000)], defs: DEFS })
+  assert.equal(s.first.outCents, 20141)
+  assert.equal(s.first.inCents, 0)
+  assert.equal(s.second.inCents, 100000)
+  assert.equal(s.together.outCents, 20141)
+})

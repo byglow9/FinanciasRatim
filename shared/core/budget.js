@@ -27,7 +27,10 @@ import { billOccurrences, cycleDay, daysLeftInCycle, isCycleOver } from './cycle
 import { limitState, limitsForCycle, normalizePersonConfig } from './limits.js'
 
 /**
- * Lancamento em reais, como o app guarda.
+ * Lancamento em reais, como o app guarda. Compra do cartao (cardKind purchase)
+ * e saida comum e conta pela data da compra (CARD-03); pagamento da fatura e
+ * estorno (cardKind payment e refund) carregam transfer true e ficam fora do
+ * gasto e da renda (CARD-04), sem mudar a logica deste modulo.
  * @typedef {{
  *   type: 'entrada' | 'saida' | string,
  *   amount: number,
@@ -35,6 +38,7 @@ import { limitState, limitsForCycle, normalizePersonConfig } from './limits.js'
  *   category?: string,
  *   categoryId?: string,
  *   transfer?: boolean,
+ *   cardKind?: 'purchase' | 'refund' | 'payment' | string,
  *   id?: string,
  *   description?: string,
  * }} Tx

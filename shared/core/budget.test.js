@@ -645,3 +645,69 @@ test('previewLaunch: com Pode gastar ja negativo, gasto positivo continua estour
   const zero = previewLaunch(PREVIEW_VIEW(450000, -1000), 'gasto', 0)
   assert.equal(zero.overspends, false)
 })
+
+// Regressao do cartao (Fase 6: CARD-03, CARD-04, D-03, D-12): a compra pesa pela
+// data da compra; o pagamento da fatura e o estorno sao transferencia e ficam fora.
+const cardBuy = (amount, extra = {}) => tx('saida', amount, { cardKind: 'purchase', categoryId: 'alimentacao', ...extra })
+const cardPay = (amount) => tx('saida', amount, { cardKind: 'payment', transfer: true })
+const cardRefund = (amount) => tx('entrada', amount, { cardKind: 'refund', transfer: true })
+
+const cardView = (transactions) =>
+  buildBudgetView({
+    now: new Date('2026-11-17T15:00:00Z'),
+    cycle: CYCLE_NOV,
+    config: setCategoryLimit(normalizePersonConfig({ expectedIncomeCents: 600000 }), 'alimentacao', '2026-11', 40000),
+    transactions,
+    bills: [],
+    payments: [],
+    categoryDefs: DEFS,
+  })
+
+test('cartao: compra dentro do ciclo entra no gasto total, na categoria e reduz o Pode gastar', () => {
+  const base = cardView([])
+  const v = cardView([cardBuy(181.41)])
+  assert.equal(v.spend.totalCents, 18141)
+  assert.equal(v.spend.rows[0].categoryId, 'alimentacao')
+  assert.equal(v.spend.rows[0].spentCents, 18141)
+  assert.equal(v.safeCents, base.safeCents - 18141)
+})
+
+test('cartao: compra do ciclo anterior nao entra no ciclo atual (conta pela data da compra)', () => {
+  const old = cardBuy(181.41, { date: new Date('2026-10-20T15:00:00Z') })
+  const v = cardView([old])
+  assert.equal(v.spend.totalCents, 0)
+  assert.equal(v.safeCents, cardView([]).safeCents)
+})
+
+test('cartao: pagamento da fatura nao entra no gasto, no Gasto geral nem no Pode gastar', () => {
+  const v = cardView([cardPay(181.41)])
+  assert.equal(v.spend.totalCents, 0)
+  assert.equal(v.spend.generalCents, 0)
+  assert.equal(v.safeCents, cardView([]).safeCents)
+  assert.equal(isDayToDay({ type: 'saida', cardKind: 'payment', transfer: true }), false)
+})
+
+test('cartao: estorno nao aumenta a renda recebida', () => {
+  const v = cardView([cardRefund(50)])
+  assert.equal(v.income.receivedCents, 0)
+  assert.equal(v.income.effectiveCents, 600000)
+  const sem = incomeForCycle({ config: {}, cycleKey: '2026-11', transactions: [cardRefund(50)] })
+  assert.equal(sem.receivedCents, 0)
+})
+
+test('cartao: parcela do mes conta uma vez e o numero nao depende do pagamento da fatura', () => {
+  const parcela = cardBuy(100, { installmentNumber: 2, totalInstallments: 6 })
+  const sem = cardView([parcela])
+  const com = cardView([parcela, cardPay(100)])
+  assert.equal(sem.spend.totalCents, 10000)
+  assert.equal(com.spend.totalCents, 10000)
+  assert.equal(com.safeCents, sem.safeCents)
+})
+
+test('cartao: compra lancada a mao (D-12) conta como a importada', () => {
+  const manual = cardBuy(90, { cardId: 'acc-1' })
+  const imported = cardBuy(90, { source: 'bank', bankImportId: 'x1' })
+  assert.equal(manual.source, undefined)
+  assert.equal(cardView([manual]).spend.totalCents, 9000)
+  assert.equal(cardView([manual]).safeCents, cardView([imported]).safeCents)
+})

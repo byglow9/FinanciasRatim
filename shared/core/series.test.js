@@ -120,3 +120,24 @@ test('nao altera as listas recebidas', () => {
   )
   assert.equal(list.length, 1)
 })
+
+// Regressao do cartao (D-14, D-12): compra conta no ciclo da data da compra e na
+// categoria; pagamento da fatura e estorno (transfer true) ficam fora de tudo.
+test('cycleSeries conta a compra do cartao e ignora pagamento da fatura e estorno', () => {
+  const list = [
+    tx('saida', 181.41, '2025-12-20T15:00:00Z', { categoryId: 'lazer', cardKind: 'purchase' }),
+    tx('saida', 20, '2025-12-21T15:00:00Z', { categoryId: 'lazer', cardKind: 'purchase', cardId: 'acc-1' }),
+    tx('saida', 201.41, '2026-01-20T15:00:00Z', { cardKind: 'payment', transfer: true }),
+    tx('entrada', 30, '2025-12-22T15:00:00Z', { cardKind: 'refund', transfer: true }),
+  ]
+  const r = cycleSeries({ transactions: list, cycles: [dez, jan], defs: DEFAULT_CATEGORY_DEFS })
+  assert.equal(r[0].saidasCents, 20141)
+  assert.equal(r[0].entradasCents, 0)
+  assert.deepEqual(
+    r[0].byCategory.map((c) => [c.key, c.cents]),
+    [['lazer', 20141]]
+  )
+  assert.equal(r[1].saidasCents, 0)
+  assert.equal(r[1].entradasCents, 0)
+  assert.deepEqual(r[1].byCategory, [])
+})

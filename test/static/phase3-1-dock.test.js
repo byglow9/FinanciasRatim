@@ -7,13 +7,14 @@ import { code, assertIncludes, scaleProblems, touchProblems } from './helpers/ph
 
 const NAVRAIL = 'src/components/layout/NavRail.tsx'
 
-test('NavRail traz os 8 destinos (sem a Central de Limites), cada um com nome e rota, e o contrato do dock', () => {
+test('NavRail traz os 9 destinos (sem a Central de Limites), cada um com nome e rota, e o contrato do dock', () => {
   const src = code(NAVRAIL)
   const destinations = [
     ['/', 'Início'],
     ['/transacoes', 'Transações'],
     ['/calendario', 'Calendário'],
     ['/contas-fixas', 'Contas fixas'],
+    ['/cartoes', 'Cartões'],
     ['/metas', 'Metas'],
     ['/relatorios', 'Relatórios'],
     ['/casal', 'Casal'],
@@ -27,7 +28,7 @@ test('NavRail traz os 8 destinos (sem a Central de Limites), cada um com nome e 
     assert.ok(at > last, `${NAVRAIL}: destino ${label} fora da ordem do UI-SPEC`)
     last = at
   }
-  assert.equal(src.split("{ href: '").length - 1, 8, 'o dock tem exatamente 8 destinos')
+  assert.equal(src.split("{ href: '").length - 1, 9, 'o dock tem exatamente 9 destinos')
   // O nome vira aria-label e title de cada Link: nenhum destino fica sem rotulo acessivel.
   assert.match(src, /aria-label=\{label\}/)
   assert.match(src, /title=\{label\}/)
@@ -50,7 +51,7 @@ test('NavRail traz os 8 destinos (sem a Central de Limites), cada um com nome e 
 
 test('NavRail so tem icones (sem rotulo visivel) e a regra do Porquinho vem da rota', () => {
   const src = code(NAVRAIL)
-  for (const icon of ['House', 'Receipt', 'Calendar', 'Repeat', 'Flag', 'ChartPie', 'Users', 'PiggyBank', 'Plus']) {
+  for (const icon of ['House', 'Receipt', 'Calendar', 'Repeat', 'CreditCard', 'Flag', 'ChartPie', 'Users', 'PiggyBank', 'Plus']) {
     assert.match(src, new RegExp(`\\b${icon}\\b`), `${NAVRAIL} sem o icone ${icon}`)
   }
   assert.doesNotMatch(src, /<span\b/, 'o dock nao tem rotulo de texto')

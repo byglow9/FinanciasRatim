@@ -98,7 +98,7 @@ test('LaunchSheet compacto: chips na linha da categoria e teclado/CTA por altura
 
 // ---------------------------------------------------------------- Tarefa 2: Central removida
 
-test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos sem Gauge', () => {
+test('Central de Limites removida: sem arquivos, sem rota e dock de 9 destinos sem Gauge', () => {
   assert.ok(!exists('src/pages/LimitsPage.tsx'))
   assert.ok(!exists('src/components/dashboard/CentralSummaryCard.tsx'))
   const app = code('src/App.tsx')
@@ -107,7 +107,7 @@ test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos s
   assert.equal([...app.matchAll(/<Route\s+path=/g)].length, 11)
   const dock = code('src/components/layout/NavRail.tsx')
   assert.doesNotMatch(dock, /\bGauge\b/)
-  assert.equal([...dock.matchAll(/\{ href: '/g)].length, 8)
+  assert.equal([...dock.matchAll(/\{ href: '/g)].length, 9)
 })
 
 // ---------------------------------------------------------------- Tarefa 2: seletor de ciclo unico

@@ -71,3 +71,10 @@ files_changed:
   - server/scripts/diagnose-webhooks.js
   - server/test/diagnose-webhooks.test.js
   - .planning/debug/webhook-pluggy-tempo-real-PROTOCOLO.md
+
+## Resultado do diagnóstico (24/11/2026, 14:44, saída do diagnose-webhooks.js)
+
+- Webhooks: os 4 eventos ativos na URL correta do Railway. Cabeçalho x-webhook-secret reaplicado à mão no dashboard às 14:34-14:35 (a aplicação não permite gerenciar webhooks por API: 403); o Railway aceita o mesmo segredo (teste com evento falso devolveu 200; sem segredo, 401).
+- Item MeuPluggy cf5a10f5: último ciclo 24/11 11:46:08; ciclo anterior 23/11 11:45:05; próximo 25/11 11:46:08. Ciclo de ~24 h confirmado. O Uber de R$ 21,95 (banco 08:46) só entrou na Pluggy às 11:46 (createdAt), por isso apareceu "no mesmo dia".
+- Conclusão: o teto é o ciclo de 24 h do MeuPluggy (causa b). Tempo real não é possível por esse caminho; o webhook só pode reduzir o atraso do nosso servidor (até 6 h) a segundos depois do ciclo.
+- Aberto: se o webhook chega. Antes de 14:34 o cabeçalho podia estar divergente do Railway (provável 401 no ciclo das 11:46 de hoje). Teste decisivo: ciclo de 25/11 ~11:46; olhar "Último aviso do banco" (lastWebhookAt) e o atraso importado - createdAt.

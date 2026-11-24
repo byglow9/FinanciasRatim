@@ -5,6 +5,7 @@ import { useReadOnly } from '@/hooks/useReadOnly'
 import { useToast } from '@/components/ui/toast'
 import { LimitsList } from '@/components/limits/LimitRow'
 import { FixedMonthCard } from '@/components/dashboard/FixedMonthCard'
+import { HomeCardSummary } from '@/components/dashboard/HomeCardSummary'
 import { MonthInOneCard } from '@/components/dashboard/MonthInOneCard'
 import { markAsPaid } from '@/services/fixedExpenses.service'
 import type { BillItem, BudgetView } from '@shared/core/budget.js'
@@ -85,6 +86,7 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
         pendingKeys={pendingKeys}
         onMarkPaid={(item) => void onMarkPaid(item)}
       />
+      <HomeCardSummary />
     </div>
   )
 }

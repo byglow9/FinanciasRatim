@@ -25,7 +25,7 @@ export default defineConfig({
       manifest: {
         name: 'Coinc',
         short_name: 'Coinc',
-        description: 'Finanças do casal, com o Vintém de olho nos seus limites.',
+        description: 'Finanças do casal, com o OINC de olho nos seus limites.',
         lang: 'pt-BR',
         dir: 'ltr',
         id: '/',

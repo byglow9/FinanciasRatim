@@ -4,8 +4,8 @@ export const name = 'settings'
 export const route = '/configuracoes#vintem'
 
 const CARD = `document.querySelector('section#vintem')`
-const GROUP = `${CARD}?.querySelector('[role="radiogroup"][aria-label="Tom do Vintém"]')`
-const PREVIEW = `${CARD}?.querySelector('button[aria-label="Dispensar fala do Vintém"]')?.querySelector('span')?.textContent ?? ''`
+const GROUP = `${CARD}?.querySelector('[role="radiogroup"][aria-label="Tom do OINC"]')`
+const PREVIEW = `${CARD}?.querySelector('button[aria-label="Dispensar fala do OINC"]')?.querySelector('span')?.textContent ?? ''`
 
 const EXAMPLES = {
   suave: 'Está perto do limite de Lazer, vale segurar.',
@@ -57,7 +57,7 @@ export async function run({ page, check, navigate, sleep }) {
   await sleep(600)
   const afterSuave = await page.evaluate(`({
     preview: ${PREVIEW},
-    toast: document.body.innerText.includes('Tom do Vintém: Suave'),
+    toast: document.body.innerText.includes('Tom do OINC: Suave'),
     checked: [...${GROUP}.querySelectorAll('[role="radio"][aria-checked="true"]')].map((r) => r.textContent),
   })`)
   check('escolher-suave-troca-o-texto-da-previa', afterSuave.preview === EXAMPLES.suave, { preview: afterSuave.preview })

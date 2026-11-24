@@ -357,7 +357,7 @@ export function Vintem({
 
   if (decorative) return art
   return (
-    <span role="img" aria-label="Vintém, o porquinho-cofre" className="inline-block">
+    <span role="img" aria-label="OINC, o porquinho-cofre" className="inline-block">
       {art}
     </span>
   )

@@ -208,7 +208,7 @@ async function navigate(page, url) {
   await loaded
   const deadline = Date.now() + 20000
   while (Date.now() < deadline) {
-    const ready = await page.evaluate(`!!${STAGE_SVG} && document.querySelector('h1')?.textContent?.trim() === 'Teste do Vintém'`)
+    const ready = await page.evaluate(`!!${STAGE_SVG} && document.querySelector('h1')?.textContent?.trim() === 'Teste do OINC'`)
     if (ready) break
     await sleep(150)
   }
@@ -350,7 +350,7 @@ async function runChecks(page, collected) {
 
   // (1) Montagem: titulo, noindex e o SVG decorativo.
   const h1 = await page.evaluate(`document.querySelector('h1')?.textContent?.trim() ?? null`)
-  check('h1-teste-do-vintem', h1 === 'Teste do Vintém', { h1 })
+  check('h1-teste-do-vintem', h1 === 'Teste do OINC', { h1 })
 
   const robots = await page.evaluate(`[...document.querySelectorAll('meta[name="robots"]')].map((m) => m.getAttribute('content'))`)
   check('meta-robots-noindex', robots.length === 1 && robots[0] === 'noindex', { robots })
@@ -401,7 +401,7 @@ async function runChecks(page, collected) {
       balloonButtons: balloonCard ? balloonCard.querySelectorAll('button').length : -1,
     }
   })()`)
-  const wantTitles = ['Vintém grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala']
+  const wantTitles = ['OINC grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala']
   check('cinco-cartoes-na-ordem-do-contrato', JSON.stringify(cards.titles) === JSON.stringify(wantTitles), { titles: cards.titles })
   check(
     'grade-de-sete-estados-em-84px',
@@ -437,7 +437,7 @@ async function runChecks(page, collected) {
   const pop = await page.evaluate(`new Promise((resolve) => {
     const falar = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Falar')
     falar.click()
-    const grab = () => document.querySelector('button[aria-label="Dispensar fala do Vintém"]')
+    const grab = () => document.querySelector('button[aria-label="Dispensar fala do OINC"]')
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el = grab()
       if (!el) { resolve({ found: false }); return }
@@ -450,7 +450,7 @@ async function runChecks(page, collected) {
         if (settled || spent > 3000) {
           clearInterval(timer)
           const hiddenText = e ? e.querySelector('span[aria-hidden="true"]')?.textContent ?? '' : ''
-          resolve({ found: true, early, settled: Boolean(settled), ms: spent, hiddenText: hiddenText.slice(0, 60), height: e ? Math.round(e.getBoundingClientRect().height) : 0, rowBtn: Boolean(document.querySelector('button[aria-label="Vintém, toque para ouvir uma fala"]')) })
+          resolve({ found: true, early, settled: Boolean(settled), ms: spent, hiddenText: hiddenText.slice(0, 60), height: e ? Math.round(e.getBoundingClientRect().height) : 0, rowBtn: Boolean(document.querySelector('button[aria-label="OINC, toque para ouvir uma fala"]')) })
         }
       }, 50)
     }))
@@ -474,13 +474,13 @@ async function runChecks(page, collected) {
 
   // (9b) Tocar no balao o dispensa e a legenda volta.
   const dismissed = await page.evaluate(`(() => {
-    const el = document.querySelector('button[aria-label="Dispensar fala do Vintém"]')
+    const el = document.querySelector('button[aria-label="Dispensar fala do OINC"]')
     if (!el) return { had: false }
     el.click()
     return { had: true }
   })()`)
   await sleep(200)
-  const after = await page.evaluate(`({ gone: !document.querySelector('button[aria-label="Dispensar fala do Vintém"]'), legend: document.body.textContent.includes('Toque em Falar para ouvir uma fala') })`)
+  const after = await page.evaluate(`({ gone: !document.querySelector('button[aria-label="Dispensar fala do OINC"]'), legend: document.body.textContent.includes('Toque em Falar para ouvir uma fala') })`)
   check('balao-dispensa-ao-tocar', dismissed.had && after.gone && after.legend, { ...dismissed, ...after })
 
   // (10) Movimento reduzido: a cobertura da palpebra fica parada por 6 s.

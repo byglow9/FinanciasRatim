@@ -244,7 +244,7 @@ const CAPTURES = fileURLToPath(new URL('../../.planning/phases/05-identidade-coi
 // Plano 05-23: quatro telas (S29-09, sketch 029).
 const T = ['Seu mês, num número', 'Um teto por categoria', 'Tudo no calendário', 'Coinc na tela inicial']
 const SAYS = [
-  'Oi, eu sou o Vintém! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
+  'Oi, eu sou o OINC! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
   'Dê um teto para cada categoria. Se você chegar perto, eu aviso antes de estourar.',
   'As contas fixas e os eventos ficam no calendário. Eu aviso antes de vencer.',
 ]

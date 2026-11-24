@@ -19,7 +19,7 @@ export function VintemInlineRow({ state, text, onDismiss, onTap, popKey, reduced
     <div className="flex items-center gap-3">
       <button
         type="button"
-        aria-label="Vintém, toque para ouvir uma fala"
+        aria-label="OINC, toque para ouvir uma fala"
         onClick={onTap}
         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >

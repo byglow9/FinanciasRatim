@@ -27,7 +27,7 @@ export const ONBOARDING_SCENES: readonly OnboardingScene[] = [
   {
     id: 'o1',
     title: 'Seu mês, num número',
-    say: 'Oi, eu sou o Vintém! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
+    say: 'Oi, eu sou o OINC! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
     print: 'home',
     finalState: 'neutro',
     crop: 100,

@@ -3,7 +3,7 @@ export const name = 'home'
 export const route = '/'
 
 const STATES = ['neutro', 'feliz', 'triste', 'bravo', 'sonolento', 'surpreso', 'atento']
-const SLOT = `document.querySelector('button[aria-label^="Vintém"]')`
+const SLOT = `document.querySelector('button[aria-label^="OINC"]')`
 
 export async function run({ page, check, navigate, sleep }) {
   await navigate(route, `${SLOT}`)
@@ -27,7 +27,7 @@ export async function run({ page, check, navigate, sleep }) {
     width: slot.width,
     height: slot.height,
   })
-  check('slot-tem-nome-acessivel', slot.label === 'Vintém, toque para ouvir uma fala', { label: slot.label })
+  check('slot-tem-nome-acessivel', slot.label === 'OINC, toque para ouvir uma fala', { label: slot.label })
   check('arte-decorativa-aria-hidden', slot.svgHidden === 'true', { svgHidden: slot.svgHidden })
   check('estado-e-um-dos-sete', STATES.includes(slot.state), { state: slot.state })
 
@@ -73,7 +73,7 @@ export async function run({ page, check, navigate, sleep }) {
     const stays = await page.evaluate(`!!${BALLOON}`)
     check('balao-fica-sem-temporizador-de-sumico', stays, {})
     const dismissed = await page.evaluate(`(() => {
-      const b = document.querySelector('button[aria-label="Dispensar fala do Vintém"]')
+      const b = document.querySelector('button[aria-label="Dispensar fala do OINC"]')
       if (!b) return false
       b.click()
       return true
@@ -85,7 +85,7 @@ export async function run({ page, check, navigate, sleep }) {
 
   // Tocar no Vintem: abre uma fala em ate 2 s e o balao ganha o botao de dispensa. Sem movimento
   // reduzido o perfil (grupo "side") aparece durante o giro.
-  const dismissBalloon = `(() => { document.querySelector('button[aria-label="Dispensar fala do Vintém"]')?.click() })()`
+  const dismissBalloon = `(() => { document.querySelector('button[aria-label="Dispensar fala do OINC"]')?.click() })()`
   const tapAndSample = `new Promise((resolve) => {
     const btn = ${SLOT}
     const side = btn.querySelector('g[id$="-side"]')
@@ -95,7 +95,7 @@ export async function run({ page, check, navigate, sleep }) {
     const t0 = performance.now()
     const id = setInterval(() => {
       if (side && getComputedStyle(side).display !== 'none') profile = true
-      if (document.querySelector('button[aria-label="Dispensar fala do Vintém"]')) balloon = true
+      if (document.querySelector('button[aria-label="Dispensar fala do OINC"]')) balloon = true
       if (performance.now() - t0 > 1800) {
         clearInterval(id)
         resolve({ profile, balloon, text: document.querySelector('[data-situation] button span')?.textContent ?? '' })

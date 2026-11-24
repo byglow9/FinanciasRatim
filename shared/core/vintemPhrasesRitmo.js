@@ -199,7 +199,7 @@ export const PHRASES_RITMO = Object.freeze({
     ]),
     direto: Object.freeze([
       { id: 'to-di-01', t: 'Toque registrado. Estou acompanhando o mês.' },
-      { id: 'to-di-02', t: 'Vintém aqui. Faltam {dias} para o fim do mês.' },
+      { id: 'to-di-02', t: 'OINC aqui. Faltam {dias} para o fim do mês.' },
       { id: 'to-di-03', t: 'Aqui estou. Consulte o Pode gastar na tela inicial.' },
       { id: 'to-di-04', t: 'Toque recebido. Os números do mês estão na Home.' },
       { id: 'to-di-05', t: 'O Pode gastar e o ritmo do mês estão aqui na Home.' },

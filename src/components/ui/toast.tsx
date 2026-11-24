@@ -82,7 +82,7 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
         <div className="min-w-0 flex-1">{item.custom}</div>
         <button
           type="button"
-          aria-label="Dispensar fala do Vintém"
+          aria-label="Dispensar fala do OINC"
           onClick={onDismiss}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >

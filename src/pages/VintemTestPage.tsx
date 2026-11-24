@@ -176,18 +176,18 @@ export function VintemTestPage() {
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
       <div>
-        <h1 className="font-display text-[28px] font-bold leading-tight">Teste do Vintém</h1>
+        <h1 className="font-display text-[28px] font-bold leading-tight">Teste do OINC</h1>
         <p className="text-xs font-normal text-muted-foreground">Página de testes. Nada aqui grava dados.</p>
       </div>
 
       <section aria-labelledby="vt-stage" className="space-y-4 rounded-card bg-card p-4">
         <h2 id="vt-stage" className="text-base font-bold">
-          Vintém grande
+          OINC grande
         </h2>
         <div className="flex justify-center rounded-2xl bg-background py-4">
           <button
             type="button"
-            aria-label="Tocar no Vintém"
+            aria-label="Tocar no OINC"
             onClick={() => stageRef.current?.touch()}
             className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -195,7 +195,7 @@ export function VintemTestPage() {
           </button>
         </div>
         <p className="text-xs font-normal text-muted-foreground">
-          Toque no Vintém: no estado sonolento ele desperta com susto
+          Toque no OINC: no estado sonolento ele desperta com susto
         </p>
       </section>
 

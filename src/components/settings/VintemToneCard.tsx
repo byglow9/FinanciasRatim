@@ -74,7 +74,7 @@ export function VintemToneCard() {
     setSaving(true)
     try {
       await updateVintemTone(option.value)
-      show(`Tom do Vintém: ${option.name}`)
+      show(`Tom do OINC: ${option.name}`)
     } catch {
       setSelected(previous)
       setPop((n) => n + 1)
@@ -107,10 +107,10 @@ export function VintemToneCard() {
   }
 
   return (
-    <SettingsCard id="vintem" icon={MessageCircle} title="Vintém" subtitle="Tom das falas">
+    <SettingsCard id="vintem" icon={MessageCircle} title="OINC" subtitle="Tom das falas">
       <div
         role="radiogroup"
-        aria-label="Tom do Vintém"
+        aria-label="Tom do OINC"
         onKeyDown={onKeyDown}
         className="space-y-2"
       >

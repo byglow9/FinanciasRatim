@@ -33,7 +33,7 @@ test('os textos das quatro telas vem do sketch 029 e a ultima nao diz instalar (
   const src = code(SCENES)
   for (const text of [
     'Seu mês, num número',
-    'Oi, eu sou o Vintém! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
+    'Oi, eu sou o OINC! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
     'Um teto por categoria',
     'Dê um teto para cada categoria. Se você chegar perto, eu aviso antes de estourar.',
     'Tudo no calendário',

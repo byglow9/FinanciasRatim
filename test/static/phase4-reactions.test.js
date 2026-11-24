@@ -51,7 +51,7 @@ test('toast.tsx tem o item custom claro, Esc e o rotulo do Vintem, e o toast com
   assert.match(src, /custom\?: React\.ReactNode/, 'ToastOptions sem custom')
   assert.ok(src.includes('bg-surface-2') && src.includes('border-border'), 'item custom sem superficie clara com borda')
   assert.ok(src.includes('Escape'), 'item custom sem Esc')
-  assert.ok(src.includes('aria-label="Dispensar fala do Vintém"'), 'sem o rotulo "Dispensar fala do Vintém"')
+  assert.ok(src.includes('aria-label="Dispensar fala do OINC"'), 'sem o rotulo "Dispensar fala do OINC"')
   assert.ok(src.includes('aria-label="Fechar aviso"') && src.includes('bg-action'), 'o toast comum perdeu o fundo de acao')
   // O item custom nunca usa fundo de acao nem fundo escuro (o corpo oliva do Vintem sumiria).
   const custom = src.slice(src.indexOf('if (isCustom)'), src.indexOf('return (', src.indexOf('if (isCustom)') + 20) + 900)

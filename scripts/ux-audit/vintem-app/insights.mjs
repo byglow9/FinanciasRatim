@@ -167,7 +167,7 @@ export async function run({ page, check, navigate, sleep }) {
     return {
       coinOn: !!el && getComputedStyle(el).display !== 'none',
       seen: Number(localStorage.getItem('${SEEN_KEY}')),
-      state: document.querySelector('button[aria-label^="Vintém"]')?.getAttribute('data-vintem-state') ?? null,
+      state: document.querySelector('button[aria-label^="OINC"]')?.getAttribute('data-vintem-state') ?? null,
     }
   })()`)
   check('reacao-volta-ao-repouso', rest.coinOn === false, rest)

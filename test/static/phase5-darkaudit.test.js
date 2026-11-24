@@ -147,7 +147,7 @@ test('a lista cobre toda sobreposicao do UI-SPEC S6', () => {
   assert.equal(new Set(ids).size, ids.length, 'id repetido na lista')
   assert.ok(block.includes("aria-label=\"Novo lançamento\"") || audit.includes('button[aria-label="Novo lançamento"]'), 'lancador sem o botao de novo lancamento')
   assert.ok(block.includes('Avisos') && block.includes('Ciclos') && block.includes('Perfil'), 'paineis do sino, do ciclo e do perfil')
-  assert.ok(block.includes('Fechar aviso') && block.includes('Dispensar fala do Vintém'), 'toast comum e toast do Vintem')
+  assert.ok(block.includes('Fechar aviso') && block.includes('Dispensar fala do OINC'), 'toast comum e toast do Vintem')
 })
 
 test('cada sobreposicao declara a raiz medida e a veladura quando existe', () => {

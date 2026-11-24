@@ -25,7 +25,7 @@ export function VintemSlot({
     <button
       type="button"
       onClick={() => onTap?.(handle.current)}
-      aria-label="Vintém, toque para ouvir uma fala"
+      aria-label="OINC, toque para ouvir uma fala"
       data-vintem-state={state}
       className="flex h-[125px] w-[150px] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >

@@ -1050,7 +1050,7 @@ const OVERLAY_LIST = [
     veil: null,
     open: async (page) => {
       await launchSpend(page)
-      if (!(await waitUntil(page, `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do Vintém"]')`, 12000))) throw new Error('toast do Vintem nao apareceu')
+      if (!(await waitUntil(page, `${TOAST_BOX}?.querySelector('button[aria-label="Dispensar fala do OINC"]')`, 12000))) throw new Error('toast do Vintem nao apareceu')
     },
   },
 ]

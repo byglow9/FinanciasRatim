@@ -207,7 +207,7 @@ export const PHRASES_LANCAMENTO = Object.freeze({
       { id: 'mb-sf-04', t: 'Foda pra cacete: meta fechada. Agora escolhe a próxima.' },
       { id: 'mb-sf-05', t: 'Chegou lá! Quem diria, hein? {valor} e a meta está fechada.' },
       { id: 'mb-sf-06', t: 'Meta no bolso e cofre feliz. Hoje pode se gabar.' },
-      { id: 'mb-sf-07', t: 'Fechou a meta! Hoje o Vintém está insuportável de tanta alegria.' },
+      { id: 'mb-sf-07', t: 'Fechou a meta! Hoje o OINC está insuportável de tanta alegria.' },
       { id: 'mb-sf-08', t: 'Bateu a meta e eu vou chorar de emoção. Merda, estou emotivo.' },
     ]),
   }),

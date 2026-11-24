@@ -54,10 +54,10 @@ test('o cartao tem a ancora, as tres opcoes exatas, o chip padrao e o aviso de c
   const src = code(CARD)
   for (const text of [
     'id="vintem"',
-    'title="Vintém"',
+    'title="OINC"',
     'subtitle="Tom das falas"',
     'role="radiogroup"',
-    'aria-label="Tom do Vintém"',
+    'aria-label="Tom do OINC"',
     'role="radio"',
     'aria-checked',
     'MessageCircle',
@@ -74,7 +74,7 @@ test('o cartao tem a ancora, as tres opcoes exatas, o chip padrao e o aviso de c
     'Sem filtro',
     'Zoa, xinga e solta palavrão. Sem atacar quem você é.',
     'padrão',
-    'Tom do Vintém:',
+    'Tom do OINC:',
     'updateVintemTone',
     'vintemToneOf',
   ]) {

@@ -115,6 +115,10 @@ O dono abriu o app publicado e não gostou da primeira versão do onboarding e d
 - **D-24:** O **ícone/logo do app** sobe de nível: profundidade e acabamento (material, luz, reflexo suave) como nas referências de ícones do dono, sem perder o porquinho verde minimalista que ele escolheu (R1). A decisão sai de uma rodada de pesquisa e de sketches, com ferramentas à escolha (SVG avançado ou render 3D no Blender).
 - **Fluxo:** pesquisa e sketches primeiro; o dono escolhe; depois entram os planos de implementação.
 
+### Nome exibido do mascote (decidido em 2026-11-24)
+
+- **D-25:** O mascote passa a ser **exibido como OINC** (sempre assim, em maiúsculas, ex.: "Oi, eu sou o OINC!"), em vez de "Vintém". Vale para todo texto visível ao usuário: onboarding, Login, falas, Ajustes, toasts, rótulos de leitor de tela e descrição do manifesto. **Os identificadores seguem `vintem*`** (arquivos, componentes, rotas como `/vintem-teste`, chaves `vintem:*`, coleção `vintemInsights`, constantes). O histórico dos planos e das decisões anteriores não foi reescrito: onde eles dizem "Vintém", leia "OINC" na tela. Guarda: `test/static/phase5-oinc-name.test.js`.
+
 <deferred>
 ## Deferred Ideas
 

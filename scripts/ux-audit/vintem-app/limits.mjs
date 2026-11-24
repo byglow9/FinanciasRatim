@@ -4,8 +4,8 @@ export const name = 'limits'
 export const route = '/'
 
 const SECTION = `document.querySelector('section#lm')`
-const ROW_BUTTON = `${SECTION}?.querySelector('button[aria-label^="Vintém"]')`
-const ROW_BALLOON = `${SECTION}?.querySelector('button[aria-label="Dispensar fala do Vintém"]')`
+const ROW_BUTTON = `${SECTION}?.querySelector('button[aria-label^="OINC"]')`
+const ROW_BALLOON = `${SECTION}?.querySelector('button[aria-label="Dispensar fala do OINC"]')`
 const LIVE = `document.querySelector('p.sr-only[role="status"]')`
 
 export async function run({ page, check, navigate, sleep }) {

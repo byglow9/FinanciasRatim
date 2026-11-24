@@ -49,7 +49,7 @@ test('VintemContext: regiao viva sempre montada, historico em sessionStorage e s
 
 test('VintemSlot: nome acessivel e caixa de 150 por 125', () => {
   const src = code(SLOT)
-  assert.ok(src.includes('aria-label="Vintém, toque para ouvir uma fala"'), 'slot sem o nome acessivel')
+  assert.ok(src.includes('aria-label="OINC, toque para ouvir uma fala"'), 'slot sem o nome acessivel')
   assert.ok(src.includes('h-[125px] w-[150px]'), 'slot sem a caixa de 150 por 125')
   assert.match(src, /data-vintem-state/, 'slot sem data-vintem-state')
 })

@@ -73,7 +73,7 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
     <button
       ref={ref}
       type="button"
-      aria-label="Dispensar fala do Vintém"
+      aria-label="Dispensar fala do OINC"
       onClick={onDismiss}
       className={cn(
         'relative block rounded-card bg-[var(--vintem-balloon)] px-4 py-3 text-left text-base font-normal leading-normal text-[var(--vintem-balloon-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

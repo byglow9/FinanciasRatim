@@ -32,9 +32,9 @@ test('a pagina tem noindex, o titulo e a legenda do contrato', () => {
   assert.match(src, /name', 'robots'/, 'pagina sem a meta robots')
   assert.match(src, /'noindex'/, 'pagina sem noindex')
   assert.match(src, /meta\.remove\(\)/, 'a meta noindex nao e removida ao desmontar')
-  assert.match(src, /Teste do Vintém/, 'pagina sem o H1 "Teste do Vintém"')
+  assert.match(src, /Teste do OINC/, 'pagina sem o H1 "Teste do OINC"')
   assert.match(src, /Página de testes\. Nada aqui grava dados\./, 'pagina sem a legenda')
-  assert.match(src, /Toque no Vintém: no estado sonolento ele desperta com susto/, 'palco sem a legenda do contrato')
+  assert.match(src, /Toque no OINC: no estado sonolento ele desperta com susto/, 'palco sem a legenda do contrato')
 })
 
 test('a pagina usa a escala tipografica e alvos de toque do app', () => {
@@ -49,7 +49,7 @@ test('a pagina tem todos os rotulos e botoes do contrato de controles', () => {
     'Lançar gasto', 'Susto', 'Bronca', 'Festa', 'Falar',
     'Neutro', 'Feliz', 'Triste', 'Bravo', 'Sonolento', 'Surpreso', 'Atento',
     'Suave', 'Direto', 'Sem filtro',
-    'Vintém grande', 'Controles',
+    'OINC grande', 'Controles',
   ]) {
     assert.ok(src.includes(text), `pagina sem "${text}"`)
   }
@@ -91,13 +91,13 @@ test('a pagina tem os cartoes Sete estados em 84px, No medidor e Balao de fala',
   }
   assert.match(src, /<ArcGauge\b/, 'o medidor nao e o ArcGauge real')
   assert.match(src, /<VintemInlineRow\b/, 'a pagina nao usa a linha em linha')
-  const order = ['Vintém grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala'].map((t) => src.indexOf(t))
+  const order = ['OINC grande', 'Controles', 'Sete estados em 84px', 'No medidor', 'Balão de fala'].map((t) => src.indexOf(t))
   assert.deepEqual(order, [...order].sort((a, b) => a - b), 'cartoes fora da ordem do UI-SPEC S7')
 })
 
 test('o balao e botao dispensavel, texto simples dentro de aria-hidden, sem corte nem HTML bruto', () => {
   const src = code(BALLOON)
-  assert.match(src, /aria-label="Dispensar fala do Vintém"/, 'balao sem o aria-label do contrato')
+  assert.match(src, /aria-label="Dispensar fala do OINC"/, 'balao sem o aria-label do contrato')
   assert.match(src, /<span aria-hidden="true">\{text\}<\/span>/, 'o texto nao fica dentro de aria-hidden como filho React')
   assert.match(src, /type="button"/, 'o balao nao e um botao')
   assert.doesNotMatch(src, /line-clamp|truncate|text-ellipsis/, 'o balao trunca a fala')
@@ -123,7 +123,7 @@ test('a linha em linha some sem texto e usa o Vintem de 48px', () => {
   const src = code(INLINE_ROW)
   assert.match(src, /size="inline"/, 'linha sem o Vintem de 48px')
   assert.match(src, /if \(!text\) return null/, 'a linha nao some sem texto')
-  assert.match(src, /aria-label="Vintém, toque para ouvir uma fala"/, 'linha sem o aria-label do contrato')
+  assert.match(src, /aria-label="OINC, toque para ouvir uma fala"/, 'linha sem o aria-label do contrato')
   assert.match(src, /h-12 w-12/, 'o botao do Vintem nao tem 48x48')
 })
 

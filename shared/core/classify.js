@@ -6,7 +6,8 @@
  * @typedef {{ id: string, name: string, color?: string, archived?: boolean }} CategoryDef
  * @typedef {{
  *   type: string, amount: number, date: Date, description: string, raw: string,
- *   status: string, reason: string | null
+ *   status: string, reason: string | null,
+ *   cardKind?: 'payment', transfer?: boolean
  * }} ClassifiedEntry
  */
 
@@ -198,13 +199,15 @@ export function classify(tx, { accountType, hasCreditCard, categoryNames = [], n
 
   const type = tx.type === 'CREDIT' || (tx.type !== 'DEBIT' && tx.amount > 0) ? 'entrada' : 'saida'
 
+  // Pagamento da fatura que sai da conta (CARD-04, D-05): transferencia vinculada a fatura, nunca
+  // gasto. Vem ANTES da transferencia propria: o banco pode chamar de transferencia entre contas
+  // do mesmo titular o que, pelo texto, e pagamento. O dinheiro saiu da conta (conta no saldo) e
+  // fica fora dos limites (cardKind payment), porque as compras ja entram uma a uma pelo cartao.
+  if (type === 'saida' && hasCreditCard && isCardBillPayment(tx, categoryText)) {
+    return { ...base, type, status: 'imported', reason: null, cardKind: 'payment', transfer: true }
+  }
   if (isSelfTransfer(tx, categoryText)) {
     return { ...base, type, status: 'review', reason: 'self_transfer' }
-  }
-  // Com o cartão conectado as compras já entram uma a uma; pagar a fatura
-  // contaria o mesmo gasto duas vezes.
-  if (type === 'saida' && hasCreditCard && isCardBillPayment(tx, categoryText)) {
-    return { ...base, type, status: 'review', reason: 'card_payment' }
   }
   return { ...base, type, status: 'imported', reason: null }
 }

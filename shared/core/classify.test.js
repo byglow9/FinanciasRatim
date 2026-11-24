@@ -48,15 +48,46 @@ test('pagamento de fatura no lado do cartao e ignorado', () => {
   assert.deepEqual([r.status, r.reason], ['ignored', 'card_payment'])
 })
 
-test('pagamento de fatura na conta vai para revisao so se o cartao esta conectado', () => {
+// Mudanca de proposito (06-08, D-05, CARD-04): o pagamento da fatura que sai da conta, com o cartao
+// do dono conectado, deixa de ir para revisao (card_payment) e vira transferencia vinculada.
+test('pagamento de fatura na conta com cartao vira transferencia vinculada (imported, transfer, cardKind payment)', () => {
   const pay = tx({ description: 'Pagamento de fatura', amount: -900 })
-  assert.equal(classify(pay, { ...bank, hasCreditCard: true }).reason, 'card_payment')
-  assert.equal(classify(pay, bank).status, 'imported')
+  const r = classify(pay, { ...bank, hasCreditCard: true })
+  assert.deepEqual(
+    [r.status, r.reason, r.cardKind, r.transfer, r.type],
+    ['imported', null, 'payment', true, 'saida']
+  )
 })
 
-test('transferencia entre contas proprias vai para revisao', () => {
-  const r = classify(tx(), { ...bank, categoryNames: ['Same person transfer - PIX'] })
+test('pagamento de fatura que o banco marca como transferencia entre pessoas iguais tambem e pagamento', () => {
+  const pay = tx({ description: 'Pagamento de fatura', amount: -900 })
+  const r = classify(pay, { ...bank, hasCreditCard: true, categoryNames: ['Same person transfer - PIX'] })
+  assert.deepEqual([r.status, r.reason, r.cardKind, r.transfer], ['imported', null, 'payment', true])
+})
+
+test('sem cartao o pagamento de fatura continua saida comum', () => {
+  const pay = tx({ description: 'Pagamento de fatura', amount: -900 })
+  const r = classify(pay, bank)
+  assert.equal(r.status, 'imported')
+  assert.equal(r.cardKind, undefined)
+  assert.equal(r.transfer, undefined)
+})
+
+test('transferencia propria sem texto de pagamento continua em revisao, sem pagamento', () => {
+  const r = classify(tx(), { ...bank, hasCreditCard: true, categoryNames: ['Same person transfer - PIX'] })
   assert.deepEqual([r.status, r.reason], ['review', 'self_transfer'])
+  assert.equal(r.cardKind, undefined)
+})
+
+test('credito com texto de pagamento de fatura na conta nao vira pagamento (so saida)', () => {
+  const r = classify(
+    tx({ description: 'Pagamento de fatura', amount: 900, type: 'CREDIT' }),
+    { ...bank, hasCreditCard: true }
+  )
+  assert.equal(r.type, 'entrada')
+  assert.equal(r.cardKind, undefined)
+  assert.equal(r.transfer, undefined)
+  assert.equal(r.status, 'imported')
 })
 
 test('duplicata: mesmo tipo e valor em ate 3 dias, usada uma vez so', () => {

@@ -4,6 +4,7 @@ rules_version = '2';
 // nunca o uid de cada pessoa (D-02, D-03). Os dois logins do casal enxergam tudo (D-05):
 // a regra nao distingue "person". Tudo que nao esta listado aqui e negado por padrao.
 // Escrita em bankConnections, bankImports e cards e so do servidor (Admin SDK ignora regras).
+// cardSettings (dias de fechamento e vencimento, apelido, meses pagos) e do dono: o servidor nunca a escreve.
 service cloud.firestore {
   match /databases/{database}/documents {
     function isMember() {
@@ -16,7 +17,7 @@ service cloud.firestore {
     function clientCollections() {
       return ['transactions', 'fixedExpenses', 'fixedExpensePayments', 'savings', 'goals',
               'goalContributions', 'events', 'eventCategories', 'notes', 'settings', 'limitAlerts',
-              'vintemInsights'];
+              'vintemInsights', 'cardSettings'];
     }
 
     // Colecoes que o cliente le e escreve

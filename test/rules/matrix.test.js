@@ -42,6 +42,7 @@ const CLIENT_COLS = [
   'settings',
   'limitAlerts',
   'vintemInsights',
+  'cardSettings',
 ]
 const BANK_COLS = ['bankConnections', 'bankImports', 'cards']
 
@@ -85,7 +86,7 @@ describe('matriz de regras do Firestore', () => {
     await env.cleanup()
   })
 
-  test('anonimo: leitura e escrita negadas nas 11 colecoes e nas 2 de banco', async () => {
+  test('anonimo: leitura e escrita negadas nas 13 colecoes do cliente e nas 3 de banco', async () => {
     for (const col of [...CLIENT_COLS, ...BANK_COLS]) {
       await assertFails(getDoc(doc(anon, col, 'a1')))
       await assertFails(byOwner(anon, col, HID_A))
@@ -105,7 +106,7 @@ describe('matriz de regras do Firestore', () => {
     }
   })
 
-  test('Ele e Ela (mesmo hid, persons diferentes): create, get, list, update parcial e delete em todas as 11 colecoes (D-05)', async () => {
+  test('Ele e Ela (mesmo hid, persons diferentes): create, get, list, update parcial e delete em todas as 13 colecoes (D-05)', async () => {
     for (const [nome, db] of [
       ['ele', ele],
       ['ela', ela],

@@ -15,7 +15,7 @@ O Coinc é uma evolução de um app que já funciona (lançamentos, fixas, metas
 - [x] **Phase 2: Revisão de importações, contas fixas e webhook** - O ledger fica confiável: itens em revisão resolvidos, fixas vinculadas ao banco e dados chegando na hora (completed 2026-11-18)
 - [ ] **Phase 3: Limites, "Pode gastar" e Central** - Em segundos o usuário sabe quanto ainda pode gastar no mês, por categoria, com alertas
 - [ ] **Phase 4: Mascote Vintém** - O porquinho-cofre original reage ao ritmo e ao uso do limite, com falas próprias em tom ajustável
-- [ ] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc-financias.web.app, instalável no celular, com tema e visual novos
+- [x] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc-financias.web.app, instalável no celular, com tema e visual novos (completed 2026-11-24)
 - [ ] **Phase 6: Cartão de crédito** - Cartão como conta própria, com fatura, parcelas e limite, depois de um teste real do que o MeuPluggy entrega
 - [ ] **Phase 7: Push e Vintém com IA** - Avisos reais no celular e comentários do Vintém gerados por IA gratuita, com frases prontas de reserva
 - [ ] **Phase 8: Visão do casal e multiusuário** - Aba Casal somente leitura e o amigo usando o app com dados separados
@@ -363,31 +363,31 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 05-17-PLAN.md — Produção 1: ALLOWED_ORIGINS no Railway e domínio no login do Firebase (IDEN-02)
+- [x] 05-17-PLAN.md — Produção 1: ALLOWED_ORIGINS no Railway e domínio no login do Firebase (IDEN-02)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 05-18-PLAN.md — Produção 2: site coinc no ar, cabeçalhos ao vivo e login no endereço novo (IDEN-01, IDEN-03, IDEN-04)
+- [x] 05-18-PLAN.md — Produção 2: site coinc no ar, cabeçalhos ao vivo e login no endereço novo (IDEN-01, IDEN-03, IDEN-04)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 05-22-PLAN.md — Login novo do sketch 029: Vintém de entrada, wordmark COINC, avisos como fala do Vintém e deploy do site coinc antes do redirect (IDEN-08, IDEN-01, IDEN-06)
+- [x] 05-22-PLAN.md — Login novo do sketch 029: Vintém de entrada, wordmark COINC, avisos como fala do Vintém e deploy do site coinc antes do redirect (IDEN-08, IDEN-01, IDEN-06)
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 05-23-PLAN.md — Onboarding e adicionar à tela inicial do sketch 029: Vintém falando em quatro telas com prints reais, passos ilustrados e deploy do site coinc antes do redirect (IDEN-08, IDEN-03, IDEN-06)
+- [x] 05-23-PLAN.md — Onboarding e adicionar à tela inicial do sketch 029: Vintém falando em quatro telas com prints reais, passos ilustrados e deploy do site coinc antes do redirect (IDEN-08, IDEN-03, IDEN-06)
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 05-19-PLAN.md — Produção 3: redirect 302 do site antigo, por último (IDEN-02, IDEN-01)
+- [x] 05-19-PLAN.md — Produção 3: redirect 302 do site antigo, por último (IDEN-02, IDEN-01)
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 05-20-PLAN.md — Fechamento: guarda transversal, suíte e executores, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+- [x] 05-20-PLAN.md — Fechamento: guarda transversal, suíte e executores, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 **Wave 14** *(blocked on Wave 13 completion)*
 
-- [ ] 05-21-PLAN.md — Decisão opcional do redirect permanente 301, depois do uso real do endereço novo (IDEN-02)
+- [x] 05-21-PLAN.md — Decisão opcional do redirect permanente 301, depois do uso real do endereço novo (IDEN-02)
 
 ### Phase 6: Cartão de crédito
 
@@ -452,7 +452,7 @@ Plans:
 | 2. Revisão de importações, contas fixas e webhook | 6/6 | Complete    | 2026-11-18 |
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
-| 5. Identidade Coinc, PWA e onboarding | 16/23 | In Progress|  |
+| 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
 | 6. Cartão de crédito | 0/TBD | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

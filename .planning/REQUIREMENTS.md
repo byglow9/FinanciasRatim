@@ -61,14 +61,14 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Identidade, PWA e onboarding (IDEN)
 
-- [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc-financias.web.app, no mesmo projeto do Firebase
-- [ ] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
-- [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na última tela do onboarding e em Ajustes
-- [ ] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
-- [ ] **IDEN-05**: O tema padrão é Claro; o usuário pode escolher Automático (segue o celular), Claro ou Escuro por aparelho nos Ajustes
-- [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
+- [x] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc-financias.web.app, no mesmo projeto do Firebase
+- [x] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
+- [x] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na última tela do onboarding e em Ajustes
+- [x] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
+- [x] **IDEN-05**: O tema padrão é Claro; o usuário pode escolher Automático (segue o celular), Claro ou Escuro por aparelho nos Ajustes
+- [x] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
 - [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
-- [ ] **IDEN-08**: Usuário vê um onboarding curto (três telas de boas-vindas e a de adicionar à tela inicial) e um login novo no visual do Coinc
+- [x] **IDEN-08**: Usuário vê um onboarding curto (três telas de boas-vindas e a de adicionar à tela inicial) e um login novo no visual do Coinc
 
 ### Redesign das abas e UX mobile (UX)
 
@@ -199,13 +199,13 @@ Preenchida na criação do roadmap.
 | MASC-05 | Phase 4 | Complete |
 | MASC-06 | Phase 4 | Complete |
 | MASC-07 | Phase 4 | Complete |
-| IDEN-01 | Phase 5 | Pending |
-| IDEN-02 | Phase 5 | Pending |
-| IDEN-03 | Phase 5 | Pending |
-| IDEN-04 | Phase 5 | Pending |
-| IDEN-05 | Phase 5 | Pending |
-| IDEN-06 | Phase 5 | Pending |
-| IDEN-08 | Phase 5 | Pending |
+| IDEN-01 | Phase 5 | Complete |
+| IDEN-02 | Phase 5 | Complete |
+| IDEN-03 | Phase 5 | Complete |
+| IDEN-04 | Phase 5 | Complete |
+| IDEN-05 | Phase 5 | Complete |
+| IDEN-06 | Phase 5 | Complete |
+| IDEN-08 | Phase 5 | Complete |
 | CARD-01 | Phase 6 | Pending |
 | CARD-02 | Phase 6 | Pending |
 | CARD-03 | Phase 6 | Pending |

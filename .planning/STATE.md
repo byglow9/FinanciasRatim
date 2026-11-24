@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 5
-current_phase_name: Identidade Coinc, PWA e onboarding
-status: executing
-stopped_at: Completed 05-16-PLAN.md
-last_updated: "2026-11-23T18:08:17.288Z"
-last_activity: 2026-11-23
-last_activity_desc: Phase 5 execution started
-state_head: da949547c1d0b12b6f2f57fce0598e93bd56590d
+current_phase: 6
+current_phase_name: Cartão de crédito
+status: planning
+stopped_at: Phase 5 complete (verified passed); ready to discuss Phase 6
+last_updated: "2026-11-24T18:02:09.950Z"
+last_activity: 2026-11-24
+last_activity_desc: Phase 5 complete, transitioned to Phase 6
+state_head: 8d8344e9fa19ba0303be8b7c3dcdb2987a024fb1
 progress:
   total_phases: 9
-  completed_phases: 1
-  total_plans: 107
-  completed_plans: 102
-  percent: 11
+  completed_phases: 2
+  total_plans: 109
+  completed_plans: 109
+  percent: 25
 ---
 
 # Project State
@@ -23,22 +23,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 5 — Identidade Coinc, PWA e onboarding
+**Current focus:** Phase 06 — Cartão de crédito
 
 ## Current Position
 
-Phase: 5 (Identidade Coinc, PWA e onboarding) — EXECUTING
-Plan: 16 of 21
-Status: Ready to execute
-Last activity: 2026-11-23 — Phase 5 execution started
+Phase: 6 — Cartão de crédito
+Plan: Not started
+Status: Ready to discuss
+Last activity: 2026-11-24 — Phase 5 complete, transitioned to Phase 1
 
-Progress: [█░░░░░░░░░] 11%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 29
 - Average duration: -
 - Total execution time: 0.0 hours
 
@@ -47,6 +47,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 2 | 6 | - | - |
+| 5 | 23 | - | - |
 
 **Recent Trend:**
 
@@ -249,5 +250,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-11-23T18:08:17.173Z
-Stopped at: Completed 05-16-PLAN.md
+Stopped at: Phase 5 complete, ready to plan Phase 1
 Resume file: None
+
+## Pendências humanas abertas (24/11/2026)
+
+- Fases 1, 3 e 4: VERIFICATION.md em `human_needed` (itens que dependem do dono); as caixas dessas fases seguem desmarcadas no ROADMAP até ele fechar.
+- Webhook Pluggy: teste decisivo no ciclo de 25/11 ~11:46 (ver .planning/debug/webhook-pluggy-tempo-real.md); segredo whsec_ exposto em conversa, trocar depois.
+- G-01 (window.confirm em BankConnections.tsx) e `git rm --cached .env.local`.

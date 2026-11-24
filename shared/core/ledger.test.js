@@ -8,6 +8,7 @@ import {
   weeklySpend,
   weeklySpendForCycle,
   isOnCardTx,
+  cardSpendCents,
 } from './ledger.js'
 import { cycleOf } from './cycle.js'
 
@@ -265,4 +266,45 @@ test('compra lancada a mao no cartao (D-12) e tratada como qualquer compra do ca
   const now = new Date('2026-11-09T15:00:00Z')
   const w = weeklySpend({ transactions: [tx('entrada', 500, '2026-11-02T15:00:00Z'), manual], now, month: month(11) })
   assert.equal(w.saldoMensal, 410)
+})
+
+// Total do cartao no recorte (06-11, CARD-06): compras menos estornos, em centavos inteiros
+test('cardSpendCents soma compras e subtrai estornos do cartao e ignora o resto', () => {
+  const list = [
+    cardTx('saida', 500, '2026-11-04T15:00:00Z', 'purchase'),
+    cardTx('entrada', 100, '2026-11-05T15:00:00Z', 'refund', { transfer: true }),
+    tx('saida', 200, '2026-11-06T15:00:00Z'),
+    cardTx('saida', 181.41, '2026-11-07T15:00:00Z', 'payment', { transfer: true }),
+  ]
+  assert.equal(cardSpendCents(list), 40000)
+})
+
+test('cardSpendCents devolve 0 sem lancamentos de cartao', () => {
+  assert.equal(cardSpendCents([]), 0)
+  assert.equal(cardSpendCents([tx('saida', 10, '2026-11-06T15:00:00Z'), tx('entrada', 50, '2026-11-07T15:00:00Z')]), 0)
+})
+
+test('cardSpendCents soma em centavos inteiros: 0.1 + 0.2 de compra vira 30', () => {
+  const list = [
+    cardTx('saida', 0.1, '2026-11-04T15:00:00Z', 'purchase'),
+    cardTx('saida', 0.2, '2026-11-05T15:00:00Z', 'purchase'),
+  ]
+  assert.equal(cardSpendCents(list), 30)
+})
+
+test('accumulatedBalance com lancamentos mapeados como o servico (cardKind e transfer) ignora a compra e conta o pagamento', () => {
+  const raw = [
+    { type: 'entrada', amount: 1000, date: '2026-11-01T15:00:00Z' },
+    { type: 'saida', amount: 300, date: '2026-11-03T15:00:00Z', cardKind: 'purchase' },
+    { type: 'saida', amount: 300, date: '2026-11-08T15:00:00Z', cardKind: 'payment', transfer: true },
+  ]
+  const mapped = raw.map((t) => ({
+    type: t.type,
+    amount: t.amount,
+    date: new Date(t.date),
+    cardKind: t.cardKind,
+    transfer: t.transfer,
+  }))
+  assert.equal(accumulatedBalance(mapped, new Date('2026-11-05T15:00:00Z')), 1000)
+  assert.equal(accumulatedBalance(mapped, new Date('2026-11-30T15:00:00Z')), 700)
 })

@@ -100,6 +100,22 @@ export function monthTotals(transactions) {
 }
 
 /**
+ * Quanto foi comprado no cartao no recorte, em centavos inteiros: compras menos
+ * estornos. Pagamento da fatura e lancamentos comuns ficam fora. Serve para a
+ * linha "fora do saldo" de Transacoes (CARD-06); nao mexe em orcamento (CARD-03).
+ * @param {LedgerTx[]} transactions
+ * @returns {number}
+ */
+export function cardSpendCents(transactions) {
+  let sum = 0
+  for (const t of transactions) {
+    if (t.cardKind === 'purchase') sum += toCents(t.amount)
+    else if (t.cardKind === 'refund') sum -= toCents(t.amount)
+  }
+  return sum
+}
+
+/**
  * Saldo acumulado de tudo ate o instante limite (inclusive), meses anteriores incluidos.
  * @param {LedgerTx[]} transactions
  * @param {Date} untilInstant

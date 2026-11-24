@@ -146,7 +146,8 @@ export async function getTransactionsByCategory(category: string): Promise<Trans
 
 // Saldo acumulado ate o fim do ciclo. `until` ja vem pronto de cycle.end (nucleo): sem monthRangeOf.
 // Le todo o historico da pessoa, por isso so roda sob demanda (cota do Spark). Consulta so de
-// igualdade (ownerId e person): nao precisa de indice novo.
+// igualdade (ownerId e person): nao precisa de indice novo. Leva cardKind e transfer de cada
+// lancamento: sem eles a regra de caixa do nucleo nunca enxergaria o cartao (CARD-06).
 export async function getAccumulatedBalanceUntil(
   person: PersonType,
   until: Date
@@ -155,7 +156,13 @@ export async function getAccumulatedBalanceUntil(
     return accumulatedBalance(
       mList<RawTransaction>(COL)
         .filter((t) => t.person === person)
-        .map((t) => ({ type: t.type, amount: t.amount, date: new Date(t.date) })),
+        .map((t) => ({
+          type: t.type,
+          amount: t.amount,
+          date: new Date(t.date),
+          cardKind: t.cardKind,
+          transfer: t.transfer,
+        })),
       until
     )
   }
@@ -169,7 +176,13 @@ export async function getAccumulatedBalanceUntil(
   return accumulatedBalance(
     snapshot.docs.map((d) => {
       const data = d.data()
-      return { type: data.type, amount: data.amount, date: data.date.toDate() }
+      return {
+        type: data.type,
+        amount: data.amount,
+        date: data.date.toDate(),
+        cardKind: data.cardKind,
+        transfer: data.transfer,
+      }
     }),
     until
   )

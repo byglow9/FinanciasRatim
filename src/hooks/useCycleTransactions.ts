@@ -10,7 +10,7 @@ import {
   updateTransaction,
   deleteTransaction,
 } from '@/services/transactions.service'
-import { monthTotals, toCents } from '@shared/core/ledger.js'
+import { cardSpendCents, monthTotals, toCents } from '@shared/core/ledger.js'
 
 /**
  * Lancamentos do ciclo exato escolhido no topo (D-19), com CRUD e totais em centavos.
@@ -84,6 +84,9 @@ export function useCycleTransactions(person: PersonType) {
     return { entradas: toCents(t.entradas), saidas: toCents(t.saidas), saldo: toCents(t.saldo) }
   }, [transactions])
 
+  // Comprado no cartao no ciclo, em centavos (compras menos estornos), vindo do nucleo.
+  const cardSpendCentsValue = useMemo(() => cardSpendCents(transactions), [transactions])
+
   // Saldo acumulado ate o fim do ciclo, em centavos. So sob demanda (ao abrir "Detalhes"): le todo o
   // historico da pessoa e a cota do Spark nao comporta isso a cada carga.
   const loadAccumulated = useCallback(
@@ -101,6 +104,7 @@ export function useCycleTransactions(person: PersonType) {
     remove,
     refetch: fetchData,
     totalsCents,
+    cardSpendCents: cardSpendCentsValue,
     loadAccumulated,
   }
 }

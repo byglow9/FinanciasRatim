@@ -3,7 +3,7 @@ rules_version = '2';
 // Regras por dono (casal). O dono dos dados e o id do casal (claim "hid" no ID token),
 // nunca o uid de cada pessoa (D-02, D-03). Os dois logins do casal enxergam tudo (D-05):
 // a regra nao distingue "person". Tudo que nao esta listado aqui e negado por padrao.
-// Escrita em bankConnections e bankImports e so do servidor (Admin SDK ignora regras).
+// Escrita em bankConnections, bankImports e cards e so do servidor (Admin SDK ignora regras).
 service cloud.firestore {
   match /databases/{database}/documents {
     function isMember() {
@@ -32,7 +32,7 @@ service cloud.firestore {
 
     // Somente leitura para o cliente; a escrita e do servidor
     match /{col}/{id} {
-      allow read: if isMember() && col in ['bankConnections', 'bankImports'] && ownsExisting();
+      allow read: if isMember() && col in ['bankConnections', 'bankImports', 'cards'] && ownsExisting();
     }
   }
 }

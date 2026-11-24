@@ -43,7 +43,7 @@ const CLIENT_COLS = [
   'limitAlerts',
   'vintemInsights',
 ]
-const BANK_COLS = ['bankConnections', 'bankImports']
+const BANK_COLS = ['bankConnections', 'bankImports', 'cards']
 
 const [emuHost, emuPort] = (process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080').split(':')
 
@@ -165,7 +165,7 @@ describe('matriz de regras do Firestore', () => {
     await assertFails(getDocs(collection(ele, 'transactions', 'a1', 'sub')))
   })
 
-  test('bankConnections e bankImports: dono le; create, update e delete negados para o cliente', async () => {
+  test('bankConnections, bankImports e cards: dono le; create, update e delete negados para o cliente', async () => {
     for (const col of BANK_COLS) {
       for (const db of [ele, ela]) {
         await assertSucceeds(getDoc(doc(db, col, 'a1')))

@@ -32,22 +32,22 @@ Se algum cabeçalho divergir ou o bundle não trouxer as falas novas: parar e de
 
 ## 4. Resposta do dono na Tarefa 4
 
-Resposta literal: _(em branco, preenchida pelo executor depois do "done")_
+O dono rodou `npm run build` e `firebase deploy --only hosting:coinc --project financias-ratimbum` e colou a saída, com `hosting[coinc-financias]: release complete` e `Deploy complete!` (24/11/2026). O alvo `legacy` não foi publicado. A confirmação visual do passo 5 (Vintém no Login, erro, sem conexão, tema escuro) ainda não foi dada.
 
-## 5. Resultados (a preencher depois do deploy)
+## 5. Resultados (curl só de leitura, 24/11/2026)
 
-| Caminho | Status | cache-control | Esperado | Resultado |
-|---------|--------|---------------|----------|-----------|
-| `/` | | | 200 e `no-cache` | |
-| `/transacoes` | | | 200 e `no-cache` | |
-| `/metas` | | | 200 e `no-cache` | |
-| `/sw.js` | | | 200, `no-cache`, sem `immutable` | |
-| `/manifest.webmanifest` | | | 200 e `no-cache` | |
-| `/assets/<arquivo do HTML>` | | | `public, max-age=31536000, immutable` | |
-| `/icons/icon.svg` | | | 200, `image/svg+xml`, com `xmlns` | |
-| bundle do pré-cache do `/sw.js` | | | contém as três falas do Login novo | |
-| `https://financias-ratimbum.web.app/` | | | 200, sem `location` | |
+| Caminho | Status | cache-control | Resultado |
+|---------|--------|---------------|-----------|
+| `/` | 200 | `no-cache` | ok |
+| `/transacoes` | 200 | `no-cache` | ok |
+| `/metas` | 200 | `no-cache` | ok |
+| `/sw.js` | 200 | `no-cache`, sem `immutable` | ok |
+| `/manifest.webmanifest` | 200 | `no-cache` | ok |
+| `/assets/index-hNZGeM8S.js` | 200 | `public, max-age=31536000, immutable` | ok |
+| `/icons/icon.svg` | 200 | `image/svg+xml`, com `xmlns` | ok |
+| bundle `index-hNZGeM8S.js` (no pré-cache do `/sw.js`) | | | contém "Confere aí", "Sem internet por aqui" e "Acesso só para quem foi convidado." |
+| `https://financias-ratimbum.web.app/` | 200 | `no-cache, no-store, must-revalidate` | sem `location` (sem redirect) |
 
 ## 6. Status
 
-Tarefa 4: aguardando o deploy do dono.
+Conferências (a) a (e) aprovadas. Falta a confirmação visual do dono (passo 5) para fechar o plano.

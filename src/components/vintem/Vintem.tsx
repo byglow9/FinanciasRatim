@@ -1,10 +1,13 @@
 import { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { createVintemView, type VintemFreeze, type VintemViewHandle } from '@/lib/vintem/view'
+import { createVintemView, type VintemFreeze, type VintemLook, type VintemViewHandle } from '@/lib/vintem/view'
 import { ACCESSORY_SHAPES, COIN, EYE, FRONT, GROUND, PROFILE, VIEWBOX } from '@/lib/vintem/geometry'
 
 /** Os sete estados do Vintem (D-05b). */
 export type VintemState = 'neutro' | 'feliz' | 'triste' | 'bravo' | 'sonolento' | 'surpreso' | 'atento'
+
+/** Estados da variante `look="entrada"` (Login): so existem estes tres. */
+export type VintemEntradaState = 'neutro' | 'triste' | 'dormindo'
 
 /** Tamanhos: largura da arte; a altura segue a proporcao 6:5 do viewBox 240x200. */
 export const VINTEM_SIZES = {
@@ -18,7 +21,13 @@ export const VINTEM_SIZES = {
 export type VintemSize = keyof typeof VINTEM_SIZES
 
 export interface VintemProps {
-  state?: VintemState
+  /** Com `look="entrada"` valem neutro, triste e dormindo; nome fora da tabela do look vira neutro. */
+  state?: VintemState | VintemEntradaState
+  /**
+   * Variante do Vintem: `app` (padrao) ou `entrada` (Login: olhos simetricos, olhar neutro natural).
+   * Fixa por instancia, como o `uid`: so vale na montagem (nao troque sem remontar).
+   */
+  look?: VintemLook
   size?: VintemSize
   /** O olhar segue o ponteiro (padrao verdadeiro). */
   follow?: boolean
@@ -108,6 +117,7 @@ function Coin() {
  */
 export function Vintem({
   state = 'neutro',
+  look = 'app',
   size = 'hero',
   follow = true,
   decorative = true,
@@ -130,12 +140,20 @@ export function Vintem({
   useLayoutEffect(() => {
     latest.current = { state, follow, reduced: effectiveReduced }
   })
+  // O look e fixo por instancia (como o uid): lido so na montagem.
+  const lookRef = useRef(look)
 
   useLayoutEffect(() => {
     const svg = svgRef.current
     if (!svg) return
     const init = latest.current
-    const view = createVintemView(svg, { uid, state: init.state, follow: init.follow, reduced: init.reduced })
+    const view = createVintemView(svg, {
+      uid,
+      state: init.state,
+      look: lookRef.current,
+      follow: init.follow,
+      reduced: init.reduced,
+    })
     viewRef.current = view
     return () => {
       view.destroy()
@@ -174,7 +192,7 @@ export function Vintem({
   const art = (
     <svg
       ref={svgRef}
-      className={`vt block overflow-visible ${className ?? ''}`.trim()}
+      className={`vt block overflow-visible ${look === 'entrada' ? 'vt-entrada ' : ''}${className ?? ''}`.trim()}
       viewBox={VIEWBOX}
       width={dims.width}
       height={dims.height}

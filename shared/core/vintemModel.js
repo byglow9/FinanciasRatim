@@ -6,6 +6,7 @@
 
 import { Spring, SPRING_PARAMS, BLINK, blinkEnv } from './vintemSpring.js'
 import { STATE_KEYS, STATE_DEFAULTS, STATE_PARAMS, ACCESSORY_BY_STATE } from './vintemStates.js'
+import { ENTRADA_DEFAULTS, ENTRADA_PARAMS, ENTRADA_ACCESSORY } from './vintemEntrada.js'
 
 /** Quadro maximo do relogio simulado: aba voltando do fundo nunca explode. */
 const MAX_DT = 1 / 30
@@ -108,20 +109,40 @@ function mk(x, pr) {
 
 /** @type {Record<string, Readonly<Record<string, number>>>} */
 const MERGED = {}
+/** @type {Record<string, Readonly<Record<string, number>>>} */
+const MERGED_ENTRADA = {}
 
 /**
- * Parametros completos de um estado (padrao mais diferencas).
+ * Parametros completos de um estado (padrao mais diferencas). Na variante de entrada vale a
+ * tabela de entrada, e nome desconhecido (um estado forcado de reacao, por exemplo) vira neutro.
  * @param {string} name
+ * @param {boolean} [entrada]
  * @returns {Readonly<Record<string, number>>}
  */
-function paramsFor(name) {
-  let m = MERGED[name]
+function paramsFor(name, entrada = false) {
+  const cache = entrada ? MERGED_ENTRADA : MERGED
+  let m = cache[name]
   if (!m) {
-    const diff = /** @type {Record<string, Record<string, number>>} */ (/** @type {unknown} */ (STATE_PARAMS))[name]
-    m = Object.freeze({ ...STATE_DEFAULTS, ...(diff || {}) })
-    MERGED[name] = m
+    if (entrada) {
+      const tab = /** @type {Record<string, Record<string, number>>} */ (/** @type {unknown} */ (ENTRADA_PARAMS))
+      m = Object.freeze({ ...ENTRADA_DEFAULTS, ...(Object.hasOwn(tab, name) ? tab[name] : {}) })
+    } else {
+      const diff = /** @type {Record<string, Record<string, number>>} */ (/** @type {unknown} */ (STATE_PARAMS))[name]
+      m = Object.freeze({ ...STATE_DEFAULTS, ...(diff || {}) })
+    }
+    cache[name] = m
   }
   return m
+}
+
+/**
+ * O nome e um estado conhecido da tabela do look?
+ * @param {string} name
+ * @param {boolean} entrada
+ * @returns {boolean}
+ */
+function knownState(name, entrada) {
+  return entrada ? Object.hasOwn(ENTRADA_PARAMS, name) : !!STATE_PARAMS[/** @type {keyof typeof STATE_PARAMS} */ (name)]
 }
 
 /**
@@ -130,7 +151,8 @@ function paramsFor(name) {
  * @returns {{ period: number, amp: number }}
  */
 function breathOf(eff) {
-  if (eff === 'sonolento') return { period: 5.6, amp: 0.028 }
+  // dormindo (so na variante de entrada) respira como o sonolento
+  if (eff === 'sonolento' || eff === 'dormindo') return { period: 5.6, amp: 0.028 }
   if (eff === 'surpreso') return { period: 3.6, amp: 0.012 }
   return { period: 3.6, amp: 0.02 }
 }
@@ -218,6 +240,7 @@ export class VintemModel {
   /**
    * @param {{
    *   state?: string,
+   *   look?: 'app' | 'entrada',
    *   rand: () => number,
    *   world?: World,
    *   reduced?: () => boolean,
@@ -234,12 +257,15 @@ export class VintemModel {
     this._hostRect = o.hostRect || null
     this._onEvent = o.onEvent || null
     this.dead = false
+    /** Variante do Vintem: `app` (padrao) ou `entrada` (Login). Fixa por instancia. */
+    this.look = o.look === 'entrada' ? 'entrada' : 'app'
+    this._entrada = this.look === 'entrada'
     /** Pose de teste congelada (`freezeAt`): nada avanca e o movimento e tratado como reduzido. */
     this._frozen = false
     /** @type {number | null} */
     this._frozenTurn = null
     /** Estado de fundo. */
-    this.state = STATE_PARAMS[/** @type {keyof typeof STATE_PARAMS} */ (o.state || 'neutro')] ? o.state || 'neutro' : 'neutro'
+    this.state = knownState(o.state || 'neutro', this._entrada) ? o.state || 'neutro' : 'neutro'
     /** Overrides das reacoes (vazio em repouso). */
     this.ov = /** @type {Record<string, any>} */ ({})
     this._flash = /** @type {string | null} */ (null)
@@ -259,7 +285,8 @@ export class VintemModel {
     this._gT = 0
     this._gcT = 0
     this._gcx = 0
-    this._gcy = 0
+    // entrada: o olhar em repouso fica levemente abaixo do centro (home y 0,1 do sketch)
+    this._gcy = this._entrada ? 0.1 : 0
     this._tx = 0
     this._ty = 0
     this._forceGaze = false
@@ -272,7 +299,7 @@ export class VintemModel {
     this._dbl = false
     this._scheduleBlink()
 
-    const base = paramsFor(this.state)
+    const base = paramsFor(this.state, this._entrada)
     /** @type {Record<string, Spring>} */
     this._p = {}
     for (const k of STATE_KEYS) this._p[k] = mk(base[k], SPRING_PARAMS.pp)
@@ -322,7 +349,7 @@ export class VintemModel {
    * @param {string} s
    */
   setState(s) {
-    if (this.dead || s === this.state || !STATE_PARAMS[/** @type {keyof typeof STATE_PARAMS} */ (s)]) return
+    if (this.dead || s === this.state || !knownState(s, this._entrada)) return
     this.state = s
     this._sleepT = 0
     this._retargetExpression()
@@ -422,8 +449,15 @@ export class VintemModel {
    * @param {string} eff
    */
   _newGazeCenter(eff) {
-    const bias = eff === 'neutro' ? 0.15 : 0
     this._gcT = 1.1 + this.rand() * 2.2
+    if (this._entrada) {
+      // entrada: sem vies lateral; deriva curta em torno de home (x 0, y 0,1) como no sketch
+      this._gcx = (this.rand() * 2 - 1) * 0.25
+      this._gcy = 0.1 + (this.rand() * 2 - 1) * 0.175
+      this._emit('gaze-center', { x: this._gcx, y: this._gcy })
+      return
+    }
+    const bias = eff === 'neutro' ? 0.15 : 0
     this._gcx = bias + (this.rand() * 2 - 1) * (0.75 - bias)
     this._gcy = (this.rand() * 2 - 1) * 0.5
     this._emit('gaze-center', { x: this._gcx, y: this._gcy })
@@ -617,7 +651,7 @@ export class VintemModel {
 
   /** Aponta as molas de expressao para o estado mostrado agora (sem avancar o tempo). */
   _retargetExpression() {
-    const Z = paramsFor(this.effState())
+    const Z = paramsFor(this.effState(), this._entrada)
     for (const k of STATE_KEYS) this._p[k].t = Z[k]
   }
 
@@ -629,7 +663,7 @@ export class VintemModel {
   _targets(dt, rm) {
     const s = this._s
     const eff = this.effState()
-    const Z = paramsFor(eff)
+    const Z = paramsFor(eff, this._entrada)
     const ov = /** @type {Record<string, any>} */ (rm ? NO_OV : this.ov)
 
     // respiracao: fase propria, independente do piscar
@@ -704,7 +738,7 @@ export class VintemModel {
     s.px.t = gcx * 3 + (ov.px || 0)
     // a postura vertical vem do estado de fundo: o estado forcado de uma reacao
     // (surpreso, py -3) nao desloca o corpo, so a expressao muda
-    s.py.t = paramsFor(this.state).py + (ov.py || 0) + (sleepy ? s.droop.x * 5 : 0)
+    s.py.t = paramsFor(this.state, this._entrada).py + (ov.py || 0) + (sleepy ? s.droop.x * 5 : 0)
 
     // piscar: espera de 2 a 6 s (so conta depois de a piscada anterior acabar), dupla em 1 de 8
     if (!rm && dt > 0 && this._bNext > 0 && this.world.t - this._bStart > BLINK.total) {
@@ -752,7 +786,10 @@ export class VintemModel {
     else s.turn.t = turnTo
 
     // acessorios: entram com pop elastico (popIn) e saem sem excesso (popOut)
-    const stateAcc = ACCESSORY_BY_STATE[/** @type {keyof typeof ACCESSORY_BY_STATE} */ (eff)]
+    const accTab = /** @type {Record<string, string | null>} */ (
+      /** @type {unknown} */ (this._entrada ? ENTRADA_ACCESSORY : ACCESSORY_BY_STATE)
+    )
+    const stateAcc = (Object.hasOwn(accTab, eff) ? accTab[eff] : null) || null
     const main = stateAcc ? ACC_KEY[/** @type {keyof typeof ACC_KEY} */ (stateAcc)] : null
     const forced = ov.acc ? Object.keys(ov.acc)[0] : null
     for (const k of ACCESSORY_KEYS) {

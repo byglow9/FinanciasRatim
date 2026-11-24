@@ -3,6 +3,7 @@
 // passa por arredondamento que nunca escreve NaN nem infinito. React nunca participa.
 import { VintemModel, type VintemPose } from '@shared/core/vintemModel.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
+import { ENTRADA_EYE } from '@shared/core/vintemEntrada.js'
 import { ACCESSORY_ANCHORS, COIN, EYE, FLIP, FRONT, GROUND, PROFILE, TEAR } from './geometry'
 import { getPointer, registerInstance, setInstanceFollow, simWorld, wake } from './world'
 
@@ -147,8 +148,20 @@ function findParts(svg: SVGSVGElement, uid: string): Parts {
 
 // ---- desenho ----
 
+/** Variante do Vintem: `app` (padrao) ou `entrada` (Login, olhos simetricos do sketch 029). */
+export type VintemLook = 'app' | 'entrada'
+
 /** Um olho: porte do `eyeDraw` do sketch, com cobertura do piscar vinda da pose. */
-function drawEye(E: EyeParts, pose: VintemPose, cv: number, x: number, y: number, dir: number, k: number): number {
+function drawEye(
+  E: EyeParts,
+  pose: VintemPose,
+  cv: number,
+  x: number,
+  y: number,
+  dir: number,
+  k: number,
+  look: VintemLook = 'app',
+): number {
   const e = pose.e
   const rx0 = Math.max(e.ew, 6)
   const ry0 = Math.max(e.eh, 6)
@@ -167,12 +180,21 @@ function drawEye(E: EyeParts, pose: VintemPose, cv: number, x: number, y: number
 
   // palpebra de cima: cobre ate eyU; o piscar fecha por cobertura, nunca por escala do olho
   const cvT = cv + bc * (1 - cv)
-  const eyU = -ry + cvT * EYE.lidReach * ry
+  const entrada = look === 'entrada'
+  // entrada: a palpebra do sketch 029 vai de -ry-4 a 1,24 ry (cobre o olho todo quando fecha)
+  const eyU = entrada ? -ry - 4 + cvT * (2.24 * ry + 4) : -ry + cvT * EYE.lidReach * ry
   const tilt = dir * e.lt * (1 - bc)
   put(E.up, 'y', f2(eyU - 90))
   put(E.lidG, 'transform', `rotate(${f2(tilt)} 0 ${f2(eyU)})`)
-  put(E.lidl, 'd', `M${f2(-rx * 1.1)},${f2(eyU)}Q0,${f2(eyU + 2 + bc * 3)} ${f2(rx * 1.1)},${f2(eyU)}`)
-  put(E.lidl, 'opacity', f2(clamp(cvT * 14, 0, 1)))
+  if (entrada) {
+    // so o estado que fecha o olho (cv a partir de 0,9) mostra o traco escuro; piscada nao mostra
+    put(E.lidl, 'd', `M${f2(-13)},-3Q0,8 13,-3`)
+    put(E.lidl, 'stroke-width', '4')
+    put(E.lidl, 'opacity', f2(clamp((cv - 0.8) * 10, 0, 1)))
+  } else {
+    put(E.lidl, 'd', `M${f2(-rx * 1.1)},${f2(eyU)}Q0,${f2(eyU + 2 + bc * 3)} ${f2(rx * 1.1)},${f2(eyU)}`)
+    put(E.lidl, 'opacity', f2(clamp(cvT * 14, 0, 1)))
+  }
 
   // palpebra de baixo (bochecha subindo) e cobertura do piscar
   const cu = clamp(e.cu, 0, 1.05)
@@ -324,7 +346,7 @@ function drawAccessories(P: Parts, pose: VintemPose, T: number) {
 export type PoseDrawer = (pose: VintemPose) => void
 
 /** Cria o desenhista de um SVG ja montado (ids derivados de `uid`). */
-export function createDrawer(svg: SVGSVGElement, uid: string): PoseDrawer {
+export function createDrawer(svg: SVGSVGElement, uid: string, look: VintemLook = 'app'): PoseDrawer {
   const P = findParts(svg, uid)
 
   return (pose) => {
@@ -359,7 +381,7 @@ export function createDrawer(svg: SVGSVGElement, uid: string): PoseDrawer {
       put(P.front, 'display', 'inline')
       put(P.front, 'opacity', f2(1 - w))
       put(P.front, 'transform', `translate(${GROUND.x},0) scale(${f3(frontScale)},1) translate(${-GROUND.x},0)`)
-      drawFront(P, pose)
+      drawFront(P, pose, look)
     } else put(P.front, 'display', 'none')
 
     if (w > 0) {
@@ -374,7 +396,7 @@ export function createDrawer(svg: SVGSVGElement, uid: string): PoseDrawer {
 }
 
 /** Frente: orelhas, rosto (paralaxe do olhar), olhos e sobrancelhas. */
-function drawFront(P: Parts, pose: VintemPose) {
+function drawFront(P: Parts, pose: VintemPose, look: VintemLook) {
   const e = pose.e
   // orelhas: ancoradas na silhueta (atras do corpo), seguem o corpo com atraso
   const sxE = f3(Math.max(0.5, e.es < 1 ? e.es : 1))
@@ -388,6 +410,14 @@ function drawFront(P: Parts, pose: VintemPose) {
   put(P.face, 'transform', `translate(${f2(pose.look.x * FRONT.parallax.x)},${f2(pose.look.y * FRONT.parallax.y)})`)
   put(P.snoutG, 'transform', `translate(${FRONT.snout.cx},${FRONT.snout.cy})`)
 
+  if (look === 'entrada') {
+    // entrada: olhos do sketch 029 e sem sobrancelha (a expressao vem so da palpebra)
+    drawEye(P.eyeL, pose, e.cvL, GROUND.x - ENTRADA_EYE.dx, ENTRADA_EYE.y, 1, 1, look)
+    drawEye(P.eyeR, pose, e.cvR, GROUND.x + ENTRADA_EYE.dx, ENTRADA_EYE.y, -1, 1, look)
+    put(P.bL, 'display', 'none')
+    put(P.bR, 'display', 'none')
+    return
+  }
   const ex = EYE.dx
   const h = drawEye(P.eyeL, pose, e.cvL, GROUND.x - ex, EYE.y, 1, 1)
   drawEye(P.eyeR, pose, e.cvR, GROUND.x + ex, EYE.y, -1, 1)
@@ -461,6 +491,8 @@ export interface VintemViewHandle {
 export interface VintemViewOptions {
   uid: string
   state?: string
+  /** Variante: fixa por instancia (padrao `app`). */
+  look?: VintemLook
   follow?: boolean
   reduced?: boolean
 }
@@ -484,15 +516,17 @@ export function createVintemView(svg: SVGSVGElement, opts: VintemViewOptions): V
   let reduced = !!opts.reduced
   let follow = opts.follow !== false
 
+  const look: VintemLook = opts.look === 'entrada' ? 'entrada' : 'app'
   const model = new VintemModel({
     state: opts.state,
+    look,
     rand: mulberry32(newSeed()),
     world: simWorld,
     reduced: () => reduced,
     getPointer: () => (follow ? getPointer() : null),
     hostRect: () => svg.getBoundingClientRect(),
   })
-  const drawer = createDrawer(svg, opts.uid)
+  const drawer = createDrawer(svg, opts.uid, look)
   const draw = () => drawer(model.pose)
   draw()
   const unregister = registerInstance({ model, draw, host: svg, follow, reduced: () => reduced })

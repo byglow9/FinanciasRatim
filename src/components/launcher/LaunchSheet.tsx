@@ -12,17 +12,20 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CategoryPicker } from "@/components/launcher/CategoryPicker"
+import { CardPicker } from "@/components/launcher/CardPicker"
 import { useLaunch, type LaunchTab } from "@/contexts/LaunchContext"
 import { useArea } from "@/contexts/AreaContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCycle } from "@/contexts/CycleContext"
 import { useVintem } from "@/contexts/VintemContext"
 import { useCycleBudget } from "@/hooks/useCycleBudget"
+import { useCards } from "@/hooks/useCards"
 import { addTransaction, newTransactionId } from "@/services/transactions.service"
 import { addSavingsTransaction, newSavingsId } from "@/services/savings.service"
 import type { PersonType } from "@/types"
 import { withTimeout } from "@shared/core/async.js"
 import { categoryKind } from "@shared/core/categories.js"
+import { cardChoices, manualCardFields } from "@shared/core/cardManual.js"
 import { fromCents } from "@shared/core/ledger.js"
 import { formatMoney, shortDate } from "@shared/core/format.js"
 import { previewLaunch } from "@shared/core/budget.js"
@@ -39,6 +42,7 @@ const TAB_OPTIONS: { value: LaunchTab; label: string }[] = [
 const SAVE_TIMEOUT_MS = 8000
 
 type PiggyMode = "deposito" | "saque"
+type Payment = "conta" | "cartao"
 
 const PIGGY_OPTIONS: { value: PiggyMode; label: string }[] = [
   { value: "deposito", label: "Guardar" },
@@ -96,6 +100,8 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
   const [cents, setCents] = useState(0)
   const [pickedId, setPickedId] = useState<string | null>(null)
   const [piggyMode, setPiggyMode] = useState<PiggyMode>("deposito")
+  const [payment, setPayment] = useState<Payment>("conta")
+  const [pickedCardId, setPickedCardId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [description, setDescription] = useState("")
   const [dateInput, setDateInput] = useState(() => dateInputOf(zonedParts(new Date())))
@@ -116,10 +122,30 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
     categories.find((c) => c.id === "outros") ??
     categories[0]
 
+  // Cartoes do perfil (D-12): so a aba Gasto oferece cartao; a fatura e os limites sao do nucleo.
+  const { cards, loading: cardsLoading } = useCards()
+  const choices = cardChoices(cards, person)
+  const pickedStillThere = pickedCardId === null || choices.some((c) => c.id === pickedCardId)
+  // Escolha derivada: o cartao tocado quando ainda existe, senao o primeiro (com um so, vai direto).
+  const cardId = choices.find((c) => c.id === pickedCardId)?.id ?? choices[0]?.id
+  const onCard = tab === "gasto" && payment === "cartao" && !!cardId
+  const cardLabel = choices.find((c) => c.id === cardId)?.label ?? ""
+  const cardReason = cardsLoading ? "Carregando os cartões" : "Nenhum cartão conectado neste perfil"
+
+  // Cartao que sumiu (ou perfil sem cartao): o pagamento volta para Conta.
+  useEffect(() => {
+    if (payment === "cartao" && (choices.length === 0 || !pickedStillThere)) {
+      setPayment("conta")
+      setPickedCardId(null)
+    }
+  }, [payment, choices.length, pickedStillThere])
+
   // Troca de aba: categoria e campos de detalhe recomecam; o valor digitado se mantem.
   const changeTab = (next: LaunchTab) => {
     setTab(next)
     setPickedId(null)
+    setPayment("conta")
+    setPickedCardId(null)
     setDescription("")
     setNote("")
     setAttempted(false)
@@ -175,6 +201,8 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
       } else if (category) {
         const typedNote = note.trim()
         const txId = (docIds.current.tx ??= newTransactionId())
+        // Gasto no cartao so acrescenta cardId e cardKind; nunca billMonth, cardStatus nem source.
+        const cardFields = onCard ? manualCardFields(cardId) : null
         await withTimeout(
           addTransaction(
             {
@@ -187,12 +215,18 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
               categoryId: category.id,
               date,
               ...(typedNote ? { note: typedNote } : {}),
+              ...cardFields,
             },
             txId
           ),
           SAVE_TIMEOUT_MS
         )
-        message = tab === "gasto" ? `Gasto lançado em ${category.name}: ${money}` : `Receita lançada: ${money}`
+        if (tab === "gasto" && cardFields) {
+          message = `Gasto lançado no cartão ${cardLabel} em ${category.name}: ${money}`
+          detail = "Não baixa o saldo da conta; conta no Pode gastar."
+        } else {
+          message = tab === "gasto" ? `Gasto lançado em ${category.name}: ${money}` : `Receita lançada: ${money}`
+        }
       } else {
         return
       }
@@ -330,14 +364,41 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-bold text-muted-foreground">Categoria</p>
             <div className="flex gap-2">
-              <Chip tone="selected" icon={Landmark} onClick={() => undefined}>
-                Conta
-              </Chip>
-              <Chip tone="muted" icon={CreditCard} disabled onClick={() => undefined}>
-                Cartão (em breve)
-              </Chip>
+              {tab === "gasto" ? (
+                <>
+                  <Chip
+                    tone={onCard ? "neutral" : "selected"}
+                    icon={Landmark}
+                    pressed={!onCard}
+                    onClick={() => setPayment("conta")}
+                  >
+                    Conta
+                  </Chip>
+                  {/* Sem cartao no perfil o chip fica desabilitado e explica o motivo. */}
+                  <span title={choices.length === 0 ? cardReason : undefined} className="inline-flex">
+                    <Chip
+                      tone={onCard ? "selected" : choices.length === 0 ? "muted" : "neutral"}
+                      icon={CreditCard}
+                      pressed={onCard}
+                      disabled={choices.length === 0}
+                      onClick={() => setPayment("cartao")}
+                    >
+                      Cartão
+                      {choices.length === 0 ? <span className="sr-only"> ({cardReason})</span> : null}
+                    </Chip>
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
+          {onCard ? (
+            <>
+              <CardPicker choices={choices} value={cardId ?? ""} onChange={setPickedCardId} />
+              <p className="mt-1 text-xs font-normal text-muted-foreground">
+                Conta nos limites pela data da compra e não baixa o saldo até você pagar a fatura
+              </p>
+            </>
+          ) : null}
           {category ? (
             <CategoryPicker categories={categories} value={category.id} onChange={setPickedId} />
           ) : null}

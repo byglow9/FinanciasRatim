@@ -6,8 +6,8 @@ import { ACCESSORY_SHAPES, COIN, EYE, FRONT, GROUND, PROFILE, VIEWBOX } from '@/
 /** Os sete estados do Vintem (D-05b). */
 export type VintemState = 'neutro' | 'feliz' | 'triste' | 'bravo' | 'sonolento' | 'surpreso' | 'atento'
 
-/** Estados da variante `look="entrada"` (Login): so existem estes tres. */
-export type VintemEntradaState = 'neutro' | 'triste' | 'dormindo'
+/** Estados da variante `look="entrada"` (Login e onboarding): so existem estes seis. */
+export type VintemEntradaState = 'neutro' | 'triste' | 'dormindo' | 'atento' | 'surpreso' | 'feliz'
 
 /** Tamanhos: largura da arte; a altura segue a proporcao 6:5 do viewBox 240x200. */
 export const VINTEM_SIZES = {
@@ -21,7 +21,7 @@ export const VINTEM_SIZES = {
 export type VintemSize = keyof typeof VINTEM_SIZES
 
 export interface VintemProps {
-  /** Com `look="entrada"` valem neutro, triste e dormindo; nome fora da tabela do look vira neutro. */
+  /** Com `look="entrada"` valem neutro, triste, dormindo, atento, surpreso e feliz; nome fora da tabela do look vira neutro. */
   state?: VintemState | VintemEntradaState
   /**
    * Variante do Vintem: `app` (padrao) ou `entrada` (Login: olhos simetricos, olhar neutro natural).
@@ -50,6 +50,8 @@ export type VintemReaction = 'spend' | 'susto' | 'bronca' | 'festa' | 'wake'
 /** Controle imperativo do Vintem (React 19: `ref` como prop). */
 export interface VintemHandle {
   react: (kind: VintemReaction) => void
+  /** Olhar guiado (plano 05-23): x e y de -1 a 1 (cenas do onboarding). */
+  gazeTo: (x: number, y: number) => void
   /** Toque: desperta o sonolento (devolve true); senao so pisca. */
   touch: () => boolean
   /** Giro de lado: frente (falso) ou perfil (verdadeiro). */
@@ -182,6 +184,7 @@ export function Vintem({
     ref,
     () => ({
       react: (kind) => viewRef.current?.react(kind),
+      gazeTo: (x, y) => viewRef.current?.gazeTo(x, y),
       touch: () => viewRef.current?.touch() ?? false,
       setTurn: (on) => viewRef.current?.setTurn(on),
       svg: () => svgRef.current,

@@ -31,8 +31,9 @@ function run(world, seconds, each = () => {}) {
   }
 }
 
-test('os tres estados de entrada mesclados tem as chaves de STATE_KEYS, valores finitos e tabelas congeladas', () => {
-  assert.deepEqual([...ENTRADA_STATES], ['neutro', 'triste', 'dormindo'])
+test('os seis estados de entrada mesclados tem as chaves de STATE_KEYS, valores finitos e tabelas congeladas', () => {
+  // plano 05-23: atento, surpreso e feliz entram na variante de entrada (cenas do onboarding)
+  assert.deepEqual([...ENTRADA_STATES], ['neutro', 'triste', 'dormindo', 'atento', 'surpreso', 'feliz'])
   assert.ok(Object.isFrozen(ENTRADA_STATES))
   assert.ok(Object.isFrozen(ENTRADA_DEFAULTS))
   assert.ok(Object.isFrozen(ENTRADA_PARAMS))
@@ -115,9 +116,12 @@ test('com o look padrao o nome dormindo e recusado e o neutro do app nao muda', 
 })
 
 test('estado desconhecido na variante de entrada vira neutro', () => {
+  // plano 05-23: feliz agora existe na entrada; os desconhecidos passam a ser bravo e sonolento
   const { model } = make(5, { state: 'bravo' })
   assert.equal(model.state, 'neutro')
-  model.setState('feliz')
+  model.setState('sonolento')
+  assert.equal(model.state, 'neutro')
+  model.setState('bravo')
   assert.equal(model.state, 'neutro')
 })
 
@@ -149,7 +153,7 @@ test('o neutro do app ainda tem vies lateral no centro do olhar', () => {
   assert.ok(Math.max(...xs) > 0.4, 'o app deve continuar olhando alem de 0,25')
 })
 
-test('a pose de entrada fica finita em 20 s de repouso nos tres estados', () => {
+test('a pose de entrada fica finita em 20 s de repouso nos seis estados', () => {
   for (const state of ENTRADA_STATES) {
     const { world, model } = make(7, { state })
     run(world, 20, () => {
@@ -157,5 +161,108 @@ test('a pose de entrada fica finita em 20 s de repouso nos tres estados', () => 
       for (const k of STATE_KEYS) assert.ok(Number.isFinite(p.e[k]), `${state}.${k}`)
       assert.ok(Number.isFinite(p.look.x) && Number.isFinite(p.look.y))
     })
+  }
+})
+
+// ---- plano 05-23: atento, surpreso e feliz (numeros do POSE do sketch 029) ----
+
+test('atento: olho 20 por 19, pupila 0,58, palpebras 0,08, corpo esticado e suor', () => {
+  const m = merged('atento')
+  assert.equal(m.ew, 20)
+  assert.equal(m.eh, 19)
+  assert.equal(m.pr, 0.58)
+  assert.equal(m.by, -8)
+  assert.equal(m.sy, 1.12)
+  assert.equal(m.ea, 0)
+  assert.equal(m.es, 1.12)
+  assert.equal(m.cvL, 0.08)
+  assert.equal(m.cvR, 0.08)
+  assert.equal(ENTRADA_ACCESSORY.atento, 'sweat')
+})
+
+test('surpreso: olho 22 por 22, palpebras abertas, pupila 0,42 e exclamacao', () => {
+  const m = merged('surpreso')
+  assert.equal(m.ew, 22)
+  assert.equal(m.eh, 22)
+  assert.equal(m.cvL, 0)
+  assert.equal(m.cvR, 0)
+  assert.equal(m.pr, 0.42)
+  assert.equal(m.by, -13)
+  assert.equal(m.sy, 1.04)
+  assert.equal(m.py, -3)
+  assert.equal(m.ea, 26)
+  assert.equal(m.es, 1.2)
+  assert.equal(ENTRADA_ACCESSORY.surpreso, 'excl')
+})
+
+test('feliz: olhos em arco, corpo levemente erguido e faisca', () => {
+  const m = merged('feliz')
+  assert.equal(m.arc, 1)
+  assert.equal(m.by, -5)
+  assert.equal(m.sy, 1.02)
+  assert.equal(m.ea, 8)
+  assert.equal(m.es, 1.08)
+  assert.equal(ENTRADA_ACCESSORY.feliz, 'spark')
+})
+
+test('modelo de entrada: atento liga o suor, surpreso a exclamacao e feliz o arco com faisca', () => {
+  const a = make(21)
+  a.model.setState('atento')
+  assert.equal(a.model.state, 'atento')
+  run(a.world, 3)
+  assert.ok(a.model.pose.acc.sweat > 0.9, `sweat ${a.model.pose.acc.sweat}`)
+  assert.ok(a.model.pose.acc.excl < 0.05)
+
+  const s = make(22)
+  s.model.setState('surpreso')
+  assert.equal(s.model.state, 'surpreso')
+  run(s.world, 3)
+  assert.ok(s.model.pose.acc.excl > 0.9, `excl ${s.model.pose.acc.excl}`)
+  assert.ok(Math.abs(s.model.pose.e.ew - 22) < 0.2)
+
+  const f = make(23)
+  f.model.setState('feliz')
+  assert.equal(f.model.state, 'feliz')
+  run(f.world, 3)
+  assert.ok(f.model.pose.e.arc > 0.95, `arc ${f.model.pose.e.arc}`)
+  assert.ok(f.model.pose.acc.spark > 0.9, `spark ${f.model.pose.acc.spark}`)
+})
+
+test('reacao susto na entrada leva ao surpreso e volta ao estado de fundo', () => {
+  const { world, model } = make(31, { state: 'atento' })
+  run(world, 2)
+  model.react('susto')
+  assert.equal(model.effState(), 'surpreso')
+  run(world, 0.4)
+  assert.ok(model.pose.acc.excl > 0.5, `excl ${model.pose.acc.excl}`)
+  run(world, 3)
+  assert.equal(model.effState(), 'atento')
+  assert.ok(model.pose.acc.sweat > 0.9)
+  assert.ok(model.pose.acc.excl < 0.05)
+})
+
+test('reacao festa na entrada leva ao feliz com moedinhas e volta ao estado de fundo', () => {
+  const { world, model } = make(32, { state: 'neutro' })
+  run(world, 2)
+  model.react('festa')
+  assert.equal(model.effState(), 'feliz')
+  let maxCoins = 0
+  run(world, 1.5, () => {
+    const n = model.pose.coins ? model.pose.coins.length : 0
+    if (n > maxCoins) maxCoins = n
+  })
+  assert.ok(maxCoins > 0, 'sem moedinhas')
+  assert.ok(model.pose.e.arc > 0.9, `arc ${model.pose.e.arc}`)
+  run(world, 4)
+  assert.equal(model.effState(), 'neutro')
+  assert.ok(model.pose.e.arc < 0.05)
+})
+
+test('a simetria dos seis estados vale tambem na pose assentada do modelo', () => {
+  for (const state of ENTRADA_STATES) {
+    const { world, model } = make(41, { state })
+    run(world, 3)
+    assert.ok(Math.abs(model.pose.e.cvL - model.pose.e.cvR) < 1e-6, `${state}: cv`)
+    assert.ok(Math.abs(model.pose.e.ba) < 1e-6 && Math.abs(model.pose.e.bc) < 1e-6, `${state}: sobrancelha`)
   }
 })

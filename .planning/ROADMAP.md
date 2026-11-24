@@ -404,8 +404,50 @@ Plans:
   4. Uma compra pendente vira confirmada sem duplicar, mesmo quando o banco recria o identificador da transação
   5. Os vencimentos de fatura aparecem no Calendário e nos alertas
 
-**Plans**: TBD
+**Notas de execução:** a Central de Limites e Cartões foi removida pelo dono em 18/11 (quick `261118-mkh`), então o cartão ganha a rota `/cartoes`, com um resumo na Home (o dock continua com 8 destinos; atalho no dock é decisão do dono). O primeiro plano é o tracer (cartão Nubank real com limite, disponível, % usado e fatura atual vindos da Pluggy) e o plano 06-02 o confere em produção antes de qualquer expansão. Ordem de produção: índices, regras, servidor (push em main) e por último a hospedagem coinc; nenhuma regra restritiva nova na fase. O MeuPluggy atualiza cerca de 1 vez por dia: nenhuma promessa de tempo real. Parcelas N/M são heurística até haver uma compra parcelada real (D-06, D-07).
+
+**Plans**: 0/15 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 06-01-PLAN.md — Tracer: cartão Nubank da Pluggy ao documento cards, regra de leitura e a tela /cartoes com limite, disponível, % usado e fatura atual (CARD-02, CENT-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md — Gate do tracer: publicar regras, servidor e hospedagem, conferir com o app do Nubank e rodar de novo a sonda (CARD-01, CARD-02, CENT-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-03-PLAN.md — Núcleo: mês da fatura, fechamento e vencimento do dono, total por fatura e status aberta, fechada, paga, atrasada (CARD-08, CARD-02, CENT-03)
+- [ ] 06-04-PLAN.md — Núcleo: valor em reais (dólar), classificação, parcelas N/M por dado ou texto, "a sair" e reconciliação de pendente para confirmada (CARD-07, CARD-05, CARD-03)
+- [ ] 06-05-PLAN.md — Núcleo: saldo de caixa sem compras do cartão, detecção do pagamento da fatura e regressão do orçamento (CARD-03, CARD-04, CARD-06)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 06-06-PLAN.md — Servidor: compras do cartão com campos de cartão, adoção do legado, id recriado, remoção de pendente e totais por fatura (CARD-03, CARD-06, CARD-07, CARD-02)
+- [ ] 06-07-PLAN.md — Regras e índice do cartão, tipos, serviço e hooks useCards e useCardView (CARD-02, CARD-08, CENT-03)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 06-08-PLAN.md — Servidor: pagamento da fatura como transferência, cartão do dono (não do item), pagamentos ligados à fatura e script de reclassificação (CARD-04, CARD-06)
+- [ ] 06-09-PLAN.md — Configurações: cartão Contas e cartões com apelido, fechamento e vencimento (CARD-08, CARD-02)
+- [ ] 06-10-PLAN.md — Página /cartoes completa: fatura atual, status, mês a mês, próximas faturas, parcelas a vir e resumo na Home (CARD-02, CENT-03, CARD-08, CARD-05)
+- [ ] 06-11-PLAN.md — Transações: saldo de caixa sem compras do cartão, marcas e linha do total do cartão (CARD-06, CARD-03)
+- [ ] 06-13-PLAN.md — Vencimento da fatura no Calendário e no sino (CENT-04)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 06-12-PLAN.md — Folha de detalhe da fatura: compras por dia, parcelas, pagamentos e marcar como paga (CARD-05, CARD-04, CENT-03)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 06-14-PLAN.md — Gate de produção: índice, regras, servidor e hospedagem, datas do cartão, reclassificação e conferência com o Nubank (CARD-01 a CARD-08, CENT-03, CENT-04)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 06-15-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT com as decisões abertas (todos os requisitos da fase)
 
 ### Phase 7: Push e Vintém com IA
 
@@ -453,6 +495,6 @@ Plans:
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
-| 6. Cartão de crédito | 0/TBD | Not started | - |
+| 6. Cartão de crédito | 0/15 | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

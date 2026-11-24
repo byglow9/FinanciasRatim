@@ -42,7 +42,7 @@ key-decisions:
   - "Botão Entrar usa size circleLg para o raio total sem conflito com rounded-btn no tailwind-merge"
 requirements-completed: []
 requirements: [IDEN-08, IDEN-01, IDEN-06]
-status: aguardando deploy do dono
+status: complete
 completed: 2026-11-24
 commits: 3
 plan_head_before: e23c04fb3034e96921ff6f4c12611ce3a53f4c69
@@ -56,7 +56,7 @@ actuals:
 
 **Login com Vintém de entrada (olhos simétricos, neutro, triste e dormindo), wordmark COINC em paths da Sora 800 e avisos como fala do Vintém que não move o formulário; tarefas 1 a 3 prontas e verdes, aguardando o deploy do dono (tarefa 4).**
 
-Status: **aguardando deploy do dono**. A Tarefa 4 (checkpoint humano de publicação do site `coinc`) não foi executada: o agente não roda `firebase deploy` nem `firebase login`. STATE.md e ROADMAP.md não foram avançados porque o plano ainda não está concluído.
+Status: **complete**. A Tarefa 4 (checkpoint humano de publicação do site `coinc`) não foi executada: o agente não roda `firebase deploy` nem `firebase login`. STATE.md e ROADMAP.md não foram avançados porque o plano ainda não está concluído.
 
 ## O que foi feito
 
@@ -126,3 +126,5 @@ Depois do "done" e da linha "Deploy complete", o agente roda as conferências de
 
 - Arquivos criados e removidos conferidos (`vintemEntrada.js`, `CoincWordmark.tsx`, `VintemSay.tsx`, evidência presentes; `CoincMark.tsx` ausente).
 - Commits `344a86c4`, `1c54c144` e `5a632454` existem; `rev-list --count e23c04fb..HEAD` = 3 antes deste documento.
+
+Resposta do dono (24/11/2026): login publicado e aprovado ("o login ficou top"). Deploy conferido por curl em 05-22-DEPLOY-EVIDENCE.md.

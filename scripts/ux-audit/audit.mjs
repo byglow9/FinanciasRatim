@@ -16,6 +16,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const ALL_ROUTES = ['/', '/transacoes', '/contas-fixas', '/porquinho', '/metas', '/relatorios', '/configuracoes', '/calendario', '/casal']
 // Prazo de cada combinacao rota x viewport (navegar, medir e coletar).
 const COMBO_TIMEOUT_MS = 60000
+// Destinos do dock (NavRail): 9 com Cartoes (D-11). A espiada a 360px confere o total e o link Cartoes.
+const DOCK_DESTINATIONS = 9
 
 function parseArgs(argv) {
   const opts = { routes: [], viewports: [], reportOnly: false, smoke: false, expectH1: null, asserts: [], seed: 'full' }
@@ -222,12 +224,14 @@ function pageDockPeek() {
   if (!nav) return { found: false }
   nav.scrollLeft = 0
   const navRect = nav.getBoundingClientRect()
-  const items = [...nav.querySelectorAll('a[href]')].map((a) => a.getBoundingClientRect())
+  const links = [...nav.querySelectorAll('a[href]')]
+  const labels = links.map((a) => a.getAttribute('aria-label'))
+  const items = links.map((a) => a.getBoundingClientRect())
   const eps = 0.5
   const full = items.filter((r) => r.left >= navRect.left - eps && r.right <= navRect.right + eps).length
   const partialRight = items.filter((r) => r.left < navRect.right - eps && r.right > navRect.right + eps).length
   const firstCutLeft = items.length > 0 && items[0].left < navRect.left - eps
-  return { found: true, total: items.length, full, partialRight, firstCutLeft }
+  return { found: true, total: items.length, labels, full, partialRight, firstCutLeft }
 }
 
 async function applyRules(page, opts, viewport) {
@@ -241,8 +245,9 @@ async function checkDockPeek(page) {
   await page.evaluate(`document.querySelector('nav[aria-label="Navegação principal"]')?.scrollTo(0, 0)`)
   await sleep(200)
   const m = await page.evaluate(`(${pageDockPeek.toString()})()`)
-  const ok = m.found && m.full === 4 && m.partialRight === 1 && !m.firstCutLeft
-  return { ...m, expected: { full: 4, partialRight: 1, firstCutLeft: false }, ok }
+  const hasCards = m.found && Array.isArray(m.labels) && m.labels.includes('Cartões')
+  const ok = m.found && m.total === DOCK_DESTINATIONS && hasCards && m.full === 4 && m.partialRight === 1 && !m.firstCutLeft
+  return { ...m, expected: { total: DOCK_DESTINATIONS, label: 'Cartões', full: 4, partialRight: 1, firstCutLeft: false }, ok }
 }
 
 async function checkSmoke(page, opts, collected) {

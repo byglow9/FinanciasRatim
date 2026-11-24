@@ -620,7 +620,9 @@
   position: relative;
   isolation: isolate;
   display: flex;
-  flex: 1 1 auto;
+  /* Base zero: o conteudo (o celular inteiro) nao manda na altura; o palco ocupa o que sobra e o celular
+     fica cortado pela base dele. O piso e 21 rem; abaixo disso so a regiao do meio rola. */
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
   min-height: 21rem;

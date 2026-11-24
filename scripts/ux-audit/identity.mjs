@@ -4,7 +4,8 @@
 // Vite e Chrome so em 127.0.0.1 (porta 5194); so dados ficticios do seed; nada e lido de .env*; perfil temporario
 // do Chrome removido no fim.
 // Em MOCK o app abre logado: o Login e alcancado por /configuracoes e o botao "Sair da conta".
-// O localStorage e semeado com coinc:onboarding:v1 = 1 (o onboarding e do plano 05-14).
+// O localStorage e semeado com coinc:onboarding:v1 = 1 (o onboarding e dos planos 05-14 e 05-23); so o cenario 10
+// remove a marca para ver a tela 1 do onboarding antes do Login.
 // Cenarios (cada um em aba nova, nos dois tamanhos):
 //  1 /?origem=antigo: a URL perde o parametro, sessionStorage guarda a marca; o Login tem o H1 Coinc com o wordmark de
 //    cinco paths, exatamente um Vintem, nenhuma imagem do icone, titulo da aba Coinc, so os botoes Mostrar senha e
@@ -21,7 +22,10 @@
 //    com texto de contraste de pelo menos 4,5;
 //  8 movimento reduzido emulado: olhos simetricos no neutro (elipses e palpebras) e a fala so com fade;
 //  9 capturas dos quatro estados (normal, erro, sem conexao, endereco novo) nos dois temas em
-//    .planning/phases/05-identidade-coinki-pwa-e-onboarding/captures/login-novo-* (pasta ignorada pelo git).
+//    .planning/phases/05-identidade-coinki-pwa-e-onboarding/captures/login-novo-* (pasta ignorada pelo git);
+// 10 (plano 05-23) sem a marca coinc:onboarding:v1, a tela 1 do onboarding mostra o Vintem de entrada simetrico no
+//    neutro (a mesma leitura de olhos do cenario 8) e, depois de Pular, o Login do 05-22 aparece intacto, com a fala
+//    de endereco novo quando a entrada foi /?origem=antigo.
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/identity.mjs
 // Saida: uma linha JSON por verificacao e a linha final `FALHAS n`. Codigos: 0 ok, 1 alguma verificacao
 // falhou, 2 falha do script.
@@ -567,6 +571,41 @@ async function scenarioReduced(ctx) {
   await checkLayout(page, check, 'movimento-reduzido')
 }
 
+// cenario 10 (plano 05-23): onboarding novo antes do Login; o Login do 05-22 segue intacto depois de Pular.
+async function scenarioOnboarding(ctx, origin) {
+  const { page, check, navigate } = ctx
+  const id = origin ? 'cenario-10-origem-antiga' : 'cenario-10'
+  if (origin) await navigate('/?origem=antigo', READY_APP)
+  await navigate('/configuracoes', `${LOGOUT}`)
+  await page.evaluate(`localStorage.removeItem('coinc:onboarding:v1')`)
+  await page.evaluate(`(() => { const b = ${LOGOUT}; b.focus(); b.click() })()`)
+  const onb = await until(page, `document.querySelector('h1')?.textContent.trim() === 'Seu mês, num número'`, 6000)
+  check(`${id}-tela-1-do-onboarding-aparece-sem-a-marca`, onb, {})
+  if (!onb) return
+  await sleep(1200)
+  const v = await page.evaluate(READ_VINTEM)
+  const d = (a, b) => Math.abs(a - b)
+  check(`${id}-onboarding-um-so-vintem-de-entrada`, v !== null && (await page.evaluate(`document.querySelectorAll('svg.vt').length === 1 && document.querySelector('svg.vt').classList.contains('vt-entrada')`)), v ?? {})
+  check(`${id}-onboarding-elipses-dos-olhos-iguais-0.5px`, v !== null && d(v.L.rx, v.R.rx) <= 0.5 && d(v.L.ry, v.R.ry) <= 0.5, v ?? {})
+  check(`${id}-onboarding-palpebras-na-mesma-posicao-0.5px`, v !== null && d(v.L.upY, v.R.upY) <= 0.5, v ?? {})
+  // Em movimento normal o olho pode estar no overshoot de uma piscada (ate 6% em ry e 2,4% em rx): 1,2 de folga.
+  // A leitura exata de 21 por 18 (0,5) e do cenario 8, com movimento reduzido.
+  check(`${id}-onboarding-olho-largo-21-por-18-no-neutro`, v !== null && d(v.L.rx, 21) <= 1.2 && d(v.L.ry, 18) <= 1.2, v ?? {})
+  await page.evaluate(`(() => { const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Pular'); b.click() })()`)
+  const login = await until(page, FORM, 4000)
+  check(`${id}-pular-leva-ao-login`, login, {})
+  if (!login) return
+  await sleep(600)
+  const s = await page.evaluate(readLogin())
+  check(`${id}-login-intacto-h1-coinc-com-cinco-paths-e-um-vintem`, s.h1 === 'Coinc' && s.paths === 5 && s.vintems === 1, s)
+  check(`${id}-login-so-mostrar-senha-e-entrar`, s.buttons.join(',') === ['Entrar', 'Mostrar senha'].join(','), s)
+  if (origin) {
+    check(`${id}-login-com-a-fala-de-endereco-novo`, s.say !== null && s.say.includes(NOTICE_TITLE) && s.say.includes(NOTICE_TEXT), { say: s.say })
+  } else {
+    check(`${id}-login-sem-fala-na-abertura-normal`, s.say === null, { say: s.say })
+  }
+}
+
 /** Grava uma captura do estado atual no nome login-novo-<estado>-<tema>-<largura>.png. */
 async function capture(page, state, theme, viewport) {
   await sleep(1400)
@@ -619,6 +658,8 @@ async function main() {
       await inTab(chrome, 'sem-conexao', viewport, {}, results, scenarioOffline)
       await inTab(chrome, 'tema-escuro', viewport, dark, results, scenarioDark)
       await inTab(chrome, 'movimento-reduzido', viewport, { reducedMotion: true }, results, scenarioReduced)
+      await inTab(chrome, 'onboarding-antes-do-login', viewport, {}, results, (ctx) => scenarioOnboarding(ctx, false))
+      await inTab(chrome, 'onboarding-origem-antiga', viewport, {}, results, (ctx) => scenarioOnboarding(ctx, true))
       await inTab(chrome, 'capturas-claro', viewport, {}, results, scenarioCaptures('claro'))
       await inTab(chrome, 'capturas-escuro', viewport, dark, results, scenarioCaptures('escuro'))
     }

@@ -345,6 +345,8 @@ Convenção herdada: coluna centralizada `max-w-md` no onboarding e no login (ig
 
 ### S1. Onboarding de 3 telas (IDEN-08, D-16 a D-19)
 
+> **Substituída pelo plano 05-23 (sketch 029, D-20 a D-22).** O visual e a estrutura desta seção (painel com o Vintém calado, cartão de exemplo, três telas, "Passo N de 3") foram trocados por quatro telas: três de boas-vindas (Vintém de entrada falando num balão, celular com print real do app) e a de adicionar à tela inicial, com "Passo N de 4". O portão, a chave `coinc:onboarding:v1`, o replay e as regras de acessibilidade abaixo continuam valendo. O restante do texto fica como histórico.
+
 **Quando aparece.** Antes do login, **só na primeira abertura de cada aparelho**. O portão fica em `ProtectedRoute`, depois do estado `loading` do `AuthContext` (nunca pisca o onboarding enquanto a sessão carrega) e antes do `LoginForm`:
 
 | Situação | Resultado |

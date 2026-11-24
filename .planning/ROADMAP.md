@@ -307,7 +307,7 @@ Plans:
 
 ### Phase 5: Identidade Coinc, PWA e onboarding
 
-**Goal:** O app passa a se chamar Coinc em coinc-financias.web.app, adicionável à tela inicial do celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding de 3 telas e login)
+**Goal:** O app passa a se chamar Coinc em coinc-financias.web.app, adicionável à tela inicial do celular, com tema que segue o aparelho, visual novo em todas as telas e uma entrada nova (onboarding curto e login)
 **Mode:** mvp
 **Depends on:** Phase 1, Phase 3 (paleta e navegação decididas nos mockups)
 **Requirements**: IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08
@@ -315,10 +315,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. O usuário abre coinc-financias.web.app, vê o nome Coinc em todas as telas e consegue entrar; o site antigo redireciona direto para o novo, sem página de aviso (D-04)
-  2. O usuário adiciona o Coinc à tela inicial a partir dos passos para Android e iPhone, que ficam na terceira tela do onboarding e também em Ajustes, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
+  2. O usuário adiciona o Coinc à tela inicial a partir dos passos para Android e iPhone, que ficam na última tela do onboarding e também em Ajustes, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
   3. Depois de um novo deploy, o app atualiza sozinho ao abrir, sem aviso e sem tela branca, e nunca troca de versão no meio de um lançamento (D-14)
   4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
-  5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding de 3 telas e por um login novo no visual do Coinc
+  5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding curto e por um login novo no visual do Coinc
 
 **Plans**: 16/23 plans executed
 **UI hint**: yes

@@ -70,7 +70,10 @@ test('REQUIREMENTS: redirect direto, atualizacao sozinha, tema automatico e pass
   assert.ok(!i4.includes('aviso para atualizar'), 'IDEN-04 ainda promete aviso para atualizar')
 
   assert.ok(iden('IDEN-05').includes('Automático'), 'IDEN-05 sem "Automático"')
-  assert.ok(iden('IDEN-03').includes('terceira tela'), 'IDEN-03 sem "terceira tela"')
+  // Plano 05-23 (S29-09, D-20 a D-22): o onboarding passou a quatro telas; os passos ficam na ultima.
+  assert.ok(iden('IDEN-03').includes('última tela'), 'IDEN-03 sem "última tela"')
+  assert.ok(!iden('IDEN-03').includes('terceira tela'), 'IDEN-03 ainda diz "terceira tela"')
+  assert.ok(iden('IDEN-08').includes('onboarding curto'), 'IDEN-08 sem "onboarding curto"')
 })
 
 test('ROADMAP Phase 5: sem pesquisa de nome como pre-requisito, ID ocupado pergunta ao dono, 302 antes de 301', () => {
@@ -94,9 +97,10 @@ test('ROADMAP Phase 5: criterios 1 e 3 sem aviso, com redirect direto e atualiza
   assert.ok(!c3[0].includes('aviso para atualizar'), 'criterio 3 ainda promete aviso para atualizar')
 })
 
-test('ROADMAP Phase 5: o bloco Plans lista 05-01 ate 05-21', () => {
+test('ROADMAP Phase 5: o bloco Plans lista 05-01 ate 05-21 e tambem 05-23', () => {
   const s = phase5()
-  for (let n = 1; n <= 21; n++) {
+  // Plano 05-23: o plano do onboarding do sketch 029 entra no bloco Plans.
+  for (const n of [...Array.from({ length: 21 }, (_, i) => i + 1), 23]) {
     const id = `05-${String(n).padStart(2, '0')}-PLAN.md`
     assert.ok(s.includes(id), `bloco Plans sem ${id}`)
   }

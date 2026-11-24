@@ -63,12 +63,12 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 - [ ] **IDEN-01**: O app se chama Coinc em todas as telas, e o endereço público é coinc-financias.web.app, no mesmo projeto do Firebase
 - [ ] **IDEN-02**: O site antigo redireciona direto para o novo, sem página de aviso, e os domínios autorizados do login e as origens permitidas do servidor incluem o novo
-- [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na terceira tela do onboarding e em Ajustes
+- [ ] **IDEN-03**: Usuário adiciona o Coinc à tela inicial do celular (manifest, ícones incluindo o maskable, service worker) e vê os passos para Android e iPhone na última tela do onboarding e em Ajustes
 - [ ] **IDEN-04**: O app atualiza sozinho ao abrir, sem aviso e sem tela branca depois de um deploy, e nunca no meio de um lançamento
 - [ ] **IDEN-05**: O tema é Automático (segue o celular), Claro ou Escuro, escolhido por aparelho nos Ajustes
 - [ ] **IDEN-06**: Usuário vê o novo visual (cores, tipografia e componentes escolhidos por mockups) em todas as telas
 - [x] **IDEN-07**: A navegação no celular é a escolhida nos mockups, com a Central de Limites e Cartões e as Contas Fixas acessíveis
-- [ ] **IDEN-08**: Usuário vê um onboarding curto de 3 telas e um login novo no visual do Coinc
+- [ ] **IDEN-08**: Usuário vê um onboarding curto (três telas de boas-vindas e a de adicionar à tela inicial) e um login novo no visual do Coinc
 
 ### Redesign das abas e UX mobile (UX)
 

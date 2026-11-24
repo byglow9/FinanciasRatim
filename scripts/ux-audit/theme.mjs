@@ -441,8 +441,12 @@ const AUDIT_SCREENS = [
   { id: 'onboarding-1', path: '/configuracoes', entry: 'onboarding', step: 0 },
   { id: 'onboarding-2', path: '/configuracoes', entry: 'onboarding', step: 1 },
   { id: 'onboarding-3', path: '/configuracoes', entry: 'onboarding', step: 2 },
+  { id: 'onboarding-4', path: '/configuracoes', entry: 'onboarding', step: 3 },
   { id: 'falha', path: '/', entry: 'falha' },
 ]
+
+/** Titulos das quatro telas do onboarding (plano 05-23). */
+const ONBOARDING_TITLES = ['Seu mês, num número', 'Um teto por categoria', 'Tudo no calendário', 'Coinc na tela inicial']
 
 /** Semeia o mock, a marca do onboarding e o tema do combo em CADA documento novo. */
 function auditBootSource(theme) {
@@ -692,12 +696,19 @@ async function prepareScreen(page, screen) {
     if (!(await waitUntil(page, LOGOUT))) throw new Error('botao Sair da conta nao achado')
     if (screen.entry === 'onboarding') await page.evaluate(`localStorage.removeItem('coinc:onboarding:v1')`)
     await page.evaluate(`(() => { const b = ${LOGOUT}; b.click() })()`)
-    const target = screen.entry === 'login' ? `document.querySelector('input[type="password"]')` : `document.querySelector('h1')?.textContent.trim() === 'Veja quanto ainda pode gastar'`
+    // Plano 05-23: o onboarding tem quatro telas (sketch 029); a primeira abre com este titulo.
+    const target = screen.entry === 'login' ? `document.querySelector('input[type="password"]')` : `document.querySelector('h1')?.textContent.trim() === ${JSON.stringify(ONBOARDING_TITLES[0])}`
     if (!(await waitUntil(page, target))) throw new Error(`tela ${screen.id} nao abriu`)
     for (let i = 0; i < (screen.step ?? 0); i++) {
       const before = await page.evaluate(`document.querySelector('h1')?.textContent`)
       if (!(await clickByText(page, 'Continuar'))) throw new Error('Continuar nao achado')
       await waitUntil(page, `document.querySelector('h1')?.textContent !== ${JSON.stringify(before)}`, 4000)
+    }
+    if (screen.entry === 'onboarding') {
+      if (!(await waitUntil(page, `document.querySelector('h1')?.textContent.trim() === ${JSON.stringify(ONBOARDING_TITLES[screen.step ?? 0])}`, 4000))) throw new Error(`titulo da tela ${screen.id} nao bateu`)
+      // Espera a fala terminar de digitar (ou o movimento reduzido) e o roteiro da cena chegar ao fim.
+      await waitUntil(page, `(() => { const b = document.querySelector('[data-say]'); if (!b) return true; return Number(b.dataset.typed) >= b.querySelector('[data-say-full]').textContent.length })()`, 9000)
+      await sleep(screen.step === 1 || screen.step === 2 ? 4500 : 1500)
     }
     await sleep(500)
   }

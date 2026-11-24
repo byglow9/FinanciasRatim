@@ -23,6 +23,8 @@ const SCREENS = [
   ["'onboarding-1'", 'onboarding-1'],
   ["'onboarding-2'", 'onboarding-2'],
   ["'onboarding-3'", 'onboarding-3'],
+  // Plano 05-23: o onboarding passou a quatro telas (S29-09).
+  ["'onboarding-4'", 'onboarding-4'],
   ["'falha'", 'falha'],
 ]
 

@@ -1,8 +1,12 @@
-// Guarda estatica do onboarding de 3 telas (IDEN-08, IDEN-03, D-12, D-16 a D-19, P-02, P-03, P-05).
+// Guarda estatica do onboarding de quatro telas (IDEN-08, IDEN-03, D-12, D-17, D-18, P-02, P-03, P-05).
+// Plano 05-23: o visual e a estrutura vem do sketch 029 (D-20 a D-22, que substituem D-16 e D-19): o
+// Vintem de entrada fala num balao, o celular mostra o print real do tema e a ultima tela traz os passos.
 // Rodar: node --test test/static/phase5-onboarding.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code, exists, read, scaleProblems, touchProblems } from './helpers/phase3-1.js'
+import fs from 'node:fs'
+import path from 'node:path'
+import { ROOT, code, exists, read, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const ONB = 'src/components/onboarding/Onboarding.tsx'
 const LIB = 'src/lib/onboarding.ts'
@@ -10,37 +14,57 @@ const ROUTE = 'src/components/auth/ProtectedRoute.tsx'
 const CARD = 'src/components/settings/AppCard.tsx'
 const AUTH = 'src/contexts/AuthContext.tsx'
 const AUDIT = 'scripts/ux-audit/onboarding.mjs'
-const FILES = [ONB, LIB, ROUTE, CARD]
+const SCENES = 'src/components/onboarding/onboardingScenes.ts'
+const PARTS = 'src/components/onboarding/OnboardingParts.tsx'
+const WELCOME = 'src/components/onboarding/WelcomeScene.tsx'
+const NEW_FILES = [SCENES, PARTS, WELCOME]
+const SHELL_FILES = [ONB, ...NEW_FILES]
+const FILES = [ONB, LIB, ROUTE, CARD, ...NEW_FILES]
+const PRINTS_DIR = 'src/assets/onboarding'
+const PRINT_NAMES = ['home', 'limites', 'calendario'].flatMap((n) => [`${n}-claro`, `${n}-escuro`])
 
 test('os arquivos do onboarding existem', () => {
   for (const f of [...FILES, AUDIT]) assert.ok(exists(f), `${f} ausente`)
 })
 
-test('Onboarding tem os seis textos de titulo e corpo do contrato (D-16)', () => {
-  const src = code(ONB)
+test('os textos das quatro telas vem do sketch 029 e a ultima nao diz instalar (S29-11, D-11)', () => {
+  const src = code(SCENES)
   for (const text of [
-    'Veja quanto ainda pode gastar',
-    'Em um número só, você vê o que ainda dá para gastar no mês, já descontando as contas fixas.',
-    'Limites e o Vintém',
-    'Defina um limite para cada categoria. O Vintém, seu porquinho, avisa quando você está chegando perto.',
-    'Adicionar à tela inicial',
-    'Deixe o Coinc na tela do celular e abra como um app, em tela cheia.',
+    'Seu mês, num número',
+    'Oi, eu sou o Vintém! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.',
+    'Um teto por categoria',
+    'Dê um teto para cada categoria. Se você chegar perto, eu aviso antes de estourar.',
+    'Tudo no calendário',
+    'As contas fixas e os eventos ficam no calendário. Eu aviso antes de vencer.',
+    'Coinc na tela inicial',
+    'Abre em tela cheia, como um app.',
   ]) {
-    assert.ok(src.includes(`'${text}'`), `Onboarding sem "${text}"`)
+    assert.ok(src.includes(`'${text}'`), `onboardingScenes sem "${text}"`)
   }
+  assert.equal((src.match(/^\s+id: '[a-z0-9]+',$/gm) ?? []).length, 4, 'o onboarding tem quatro telas (S29-09)')
+  assert.doesNotMatch(src, /instal/i, 'o titulo da ultima tela nunca diz instalar (D-11)')
+  // As telas antigas do 05-14 (cartao "Pode gastar" com valor ficticio) nao existem mais.
+  for (const f of SHELL_FILES) {
+    const c = code(f)
+    for (const old of ['R$ 1.240', 'Veja quanto ainda pode gastar', 'Limites e o Vintém', 'Exemplo', 'Clapperboard']) {
+      assert.ok(!c.includes(old), `${f} ainda tem "${old}" do visual antigo`)
+    }
+  }
+  assert.doesNotMatch(code(ONB), /<Chip\b|<Progress\b|bg-card p-4"[\s\S]{0,80}<Vintem/, 'cartao antigo atras do Vintem')
 })
 
-test('Onboarding tem os botoes e as props do contrato, com Pular nas tres telas', () => {
+test('Onboarding tem os botoes e as props do contrato, com Pular, Agora nao e Fechar na barra comum (S29-15)', () => {
   const src = code(ONB)
-  for (const text of ['Pular', 'Voltar', 'Continuar', 'Entrar', 'Concluir', 'Fechar']) {
-    assert.ok(src.includes(`'${text}'`) || src.includes(`"${text}"`), `Onboarding sem "${text}"`)
+  for (const text of ['Pular', 'Agora não', 'Voltar', 'Continuar', 'Entrar', 'Concluir', 'Fechar']) {
+    assert.ok(src.includes(`'${text}'`) || src.includes(`>${text}<`) || new RegExp(`^\\s*${text}$`, 'm').test(src), `Onboarding sem "${text}"`)
   }
-  // Um unico botao de saida no topo, fora da condicao da tela: vale nas tres telas.
-  assert.match(src, /\{replay \? 'Fechar' : 'Pular'\}/, 'Pular/Fechar fora da barra comum a todas as telas')
+  // Um unico botao de saida no topo, fora da condicao da tela: vale em todas as telas.
+  assert.match(src, /\{replay \? 'Fechar' : isLast \? 'Agora não' : 'Pular'\}/, 'barra comum sem Fechar, Agora nao e Pular')
   assert.match(src, /mode: OnboardingMode/, 'sem a prop mode')
   assert.match(src, /'first' \| 'replay'/, 'mode sem first e replay')
   assert.match(src, /onFinish/, 'sem onFinish')
-  assert.match(src, /aria-label="Voltar"/, 'Voltar sem nome acessivel')
+  assert.match(src, /tabIndex=\{step === 0 \? -1 : undefined\}/, 'Voltar da tela 1 deve sair do foco')
+  assert.match(src, /step === 0 && 'invisible'/, 'Voltar da tela 1 deve ficar invisivel')
 })
 
 test('role dialog, aria-modal e o rotulo so existem no ramo replay', () => {
@@ -55,30 +79,107 @@ test('role dialog, aria-modal e o rotulo so existem no ramo replay', () => {
   assert.match(src, /FOCUSABLE/, 'replay sem foco preso')
 })
 
-test('titulo focavel, descricao e passo sr-only', () => {
+test('titulo focavel, descricao e Passo N de 4 sr-only', () => {
   const src = code(ONB)
   assert.match(src, /tabIndex=\{-1\}/, 'titulo sem tabIndex={-1}')
   assert.match(src, /aria-describedby=/, 'titulo sem aria-describedby')
-  assert.match(src, /Passo \$\{step \+ 1\} de \$\{SCREENS\.length\}/, 'sem o texto Passo N de 3')
+  assert.match(src, /Passo \$\{step \+ 1\} de \$\{SCENES\.length\}/, 'sem o texto Passo N de SCENES.length')
   assert.match(src, /className="sr-only"/, 'Passo sem sr-only')
   assert.match(src, /<h1\b/, 'sem H1')
+  assert.match(src, /font-display text-\[28px\] font-bold leading-\[1\.2\]/, 'titulo fora do estilo de 28/700')
 })
 
-test('Vintem unico, decorativo, calado e com os tres estados (D-19)', () => {
+test('quatro pontos de progresso e o botao principal de 56 px', () => {
   const src = code(ONB)
-  assert.equal((src.match(/<Vintem\b/g) ?? []).length, 1, 'deve haver exatamente uma ocorrencia de <Vintem')
-  const tag = /<Vintem\b[^>]*\/>/.exec(src)
+  assert.match(src, /SCENES\.map\(\(s, index\)/, 'os pontos nao seguem SCENES (quatro)')
+  assert.match(src, /h-1\.5 rounded-full/, 'ponto fora do contrato')
+  assert.match(src, /index === step \? 'w-5 bg-action' : 'w-1\.5 bg-input'/, 'ponto ativo fora do contrato')
+  assert.doesNotMatch(src, /transition/, 'os pontos nao tem transicao')
+  assert.match(src, /h-14 w-full bg-action text-action-text/, 'botao principal fora do contrato')
+})
+
+test('um Vintem de entrada por cena, decorativo e sem seguir o ponteiro; nenhum na casca (S29-16)', () => {
+  const scene = code(WELCOME)
+  assert.equal((scene.match(/<Vintem\b/g) ?? []).length, 1, 'WelcomeScene deve ter exatamente um <Vintem')
+  const tag = /<Vintem\b[^>]*\/>/.exec(scene)
   assert.ok(tag, 'tag do Vintem nao encontrada')
+  assert.match(tag[0], /look="entrada"/, 'Vintem sem look="entrada"')
   assert.match(tag[0], /\bdecorative\b/, 'Vintem sem decorative')
-  assert.match(tag[0], /\bfollow\b/, 'Vintem sem follow')
-  assert.doesNotMatch(tag[0], /key=/, 'o Vintem nao pode ter key (nunca remonta)')
-  assert.doesNotMatch(src, /onTap|VintemBalloon|VintemInlineRow|VintemContext|useVintem|VintemProvider/, 'o Vintem do onboarding nao fala')
-  for (const state of ['neutro', 'atento', 'feliz']) assert.ok(src.includes(`'${state}'`), `sem o estado ${state}`)
-  // O Vintem fica fora de qualquer trecho com key (o que remontaria a instancia entre as telas).
-  const before = src.slice(0, src.indexOf('<Vintem'))
-  const lastKey = before.lastIndexOf('key={step}')
-  const lastClose = before.lastIndexOf('</div>')
-  assert.ok(lastKey < 0 || lastClose > lastKey, 'o Vintem esta dentro de um trecho com key={step}')
+  assert.match(tag[0], /follow=\{false\}/, 'Vintem sem follow={false}')
+  assert.match(tag[0], /size="stage"/, 'Vintem sem size="stage"')
+  assert.doesNotMatch(code(ONB), /<Vintem\b/, 'a casca nao monta Vintem: cada cena monta o seu')
+  // A cena e remontada por passo, com key.
+  assert.match(code(ONB), /<WelcomeScene key=\{step\}/, 'cena sem key por passo')
+  for (const f of SHELL_FILES) {
+    assert.doesNotMatch(code(f), /onTap|VintemBalloon|VintemInlineRow|VintemContext|useVintem|VintemProvider/, `${f}: o Vintem do onboarding nao usa contexto nem balao do app`)
+    assert.doesNotMatch(code(f), /\bfetch\(|https?:\/\/|XMLHttpRequest/, `${f}: sem rede nem URL externa (T-05-23-01)`)
+  }
+  // O Vintem esta dentro de um trecho aria-hidden (decorativo e nao focavel).
+  assert.match(scene, /className="onb-vintem" aria-hidden="true"/, 'Vintem fora do trecho aria-hidden')
+  // Os estados do roteiro existem e a fala nao acompanha o ponteiro.
+  for (const state of ['neutro', 'atento', 'feliz']) assert.ok(code(SCENES).includes(`'${state}'`), `sem o estado ${state}`)
+  assert.match(scene, /react\('susto'\)/, 'tela 2 sem o susto')
+  assert.match(scene, /react\('festa'\)/, 'tela 3 sem a festa')
+  assert.match(scene, /gazeTo/, 'sem olhar guiado')
+})
+
+test('o roteiro so liga temporizadores na montagem, apaga ao desmontar e some com movimento reduzido', () => {
+  const scene = code(WELCOME)
+  assert.match(scene, /if \(reduced\) return/, 'cena liga temporizador com movimento reduzido')
+  assert.match(scene, /clearTimeout/, 'cena nao apaga os temporizadores')
+  assert.match(scene, /clearInterval/, 'cena nao apaga o intervalo do olhar')
+  assert.match(scene, /useState<SceneState>\(reduced \? scene\.finalState : 'neutro'\)/, 'cena reduzida nao nasce na pose final')
+  assert.match(scene, /data-scene=\{scene\.id\}/, 'sem data-scene')
+  assert.match(scene, /data-vintem-state=\{vstate\}/, 'sem data-vintem-state')
+  const parts = code(PARTS)
+  assert.match(parts, /if \(reduced\) return/, 'balao ou lente com temporizador no movimento reduzido')
+  assert.match(parts, /const typed = reduced \? text\.length : count/, 'balao reduzido sem a fala inteira')
+})
+
+test('balao: texto completo para leitor de tela, espacador invisivel de altura e texto digitado por cima', () => {
+  const src = code(PARTS)
+  assert.match(src, /<span className="sr-only" data-say-full>/, 'balao sem o texto completo em sr-only')
+  assert.match(src, /aria-hidden="true" className="invisible block"/, 'balao sem espacador invisivel')
+  assert.match(src, /data-say-typed/, 'balao sem o texto digitado')
+  assert.match(src, /anim-vintem-say/, 'balao sem a entrada anim-vintem-say')
+  assert.match(src, /bg-action[^"]*text-action-text/, 'balao fora do verde de acao')
+  assert.doesNotMatch(src, /dangerouslySetInnerHTML|innerHTML/, 'balao com HTML bruto')
+})
+
+test('prints: seis WebP importados de @/assets/onboarding, trocados por tema, ate 60 KB e fora de public/', () => {
+  const src = code(PARTS)
+  for (const name of PRINT_NAMES) {
+    assert.ok(src.includes(`'@/assets/onboarding/${name}.webp'`), `OnboardingParts sem o import de ${name}`)
+    const file = path.join(ROOT, PRINTS_DIR, `${name}.webp`)
+    assert.ok(fs.existsSync(file), `${name}.webp ausente`)
+    assert.ok(fs.statSync(file).size <= 60 * 1024, `${name}.webp passa de 60 KB`)
+    assert.ok(!exists(`public/${name}.webp`) && !exists(`public/onboarding/${name}.webp`), `${name}.webp em public/`)
+  }
+  assert.match(src, /useTheme\(\)/, 'o print nao acompanha o tema')
+  assert.match(src, /resolved === 'escuro'/, 'print sem a troca claro e escuro')
+  assert.match(src, /alt=""/, 'print com alt')
+  assert.match(src, /aria-hidden="true"/, 'moldura sem aria-hidden')
+  assert.match(src, /draggable=\{false\}/, 'print arrastavel')
+  assert.match(src, /decoding="sync"/, 'print sem decoding sync')
+  const vite = read('vite.config.ts')
+  assert.doesNotMatch(vite, /webp/, 'o pre-cache nao lista webp (D-15): so a casca')
+})
+
+test('aneis e lente: retangulos do print em porcentagem, lente com Progress e tom de aviso a partir de 80%', () => {
+  const src = code(PARTS)
+  assert.match(src, /\/ PRINT_SIZE\.w\) \* 100/, 'anel sem conversao em porcentagem')
+  assert.match(src, /<Progress\b/, 'lente sem Progress')
+  assert.match(src, /tone=\{hot \? 'warn' : 'ok'\}/, 'lente sem o tom de aviso')
+  assert.match(src, /text-warn-ink/, 'lente sem o texto de aviso')
+  assert.match(src, /Intl\.NumberFormat\('pt-BR'/, 'lente sem Intl.NumberFormat pt-BR')
+  // Sem requestAnimationFrame: a guarda do laco unico da Fase 4 so o permite em world.ts, ArcGauge e useSectionReveal.
+  assert.doesNotMatch(src, /requestAnimationFrame/, 'contagem com requestAnimationFrame fora do laco unico')
+  assert.match(src, /performance\.now\(\)/, 'contagem por tempo decorrido')
+  const cenas = code(SCENES)
+  assert.match(cenas, /HOME_RING: PrintRect = \[40, 236, 310, 112\]/, 'anel do Pode gastar fora das coordenadas do sketch')
+  for (const d of ['{ day: 8, cx: 36, cy: 316 }', '{ day: 14, cx: 354, cy: 316 }', '{ day: 19, cx: 247, cy: 368 }', '{ day: 23, cx: 88, cy: 420 }']) {
+    assert.ok(cenas.includes(d), `onboardingScenes sem ${d}`)
+  }
 })
 
 test('markOnboardingSeen so no caminho first e nunca na montagem', () => {
@@ -91,16 +192,21 @@ test('markOnboardingSeen so no caminho first e nunca na montagem', () => {
   }
 })
 
-test('movimento reduzido, passos de instalacao e animacao so por botoes (D-12)', () => {
+test('movimento reduzido, passos na ultima tela e navegacao so por botoes (D-12)', () => {
   const src = code(ONB)
   assert.match(src, /useReducedMotion/, 'sem useReducedMotion')
-  assert.match(src, /<InstallSteps\s*\/>/, 'tela 3 sem InstallSteps')
+  assert.match(src, /reduced=\{reduced\}/, 'a cena nao recebe o movimento reduzido')
+  assert.match(src, /<InstallSteps\s*\/>/, 'ultima tela sem os passos de adicionar')
   assert.match(src, /anim-onboarding-in/, 'sem a classe de entrada')
   assert.doesNotMatch(src, /onTouch|onPointer|onDrag|drag=|swipe/i, 'sem gesto de arrastar entre telas')
   const css = read('src/index.css')
   assert.match(css, /\.anim-onboarding-in\s*\{[^}]*onboarding-in 200ms ease-out/, 'index.css sem a animacao de 200 ms')
   const reduced = /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\n\}\n/.exec(css)
   assert.ok(reduced && /\.anim-onboarding-in[\s\S]*?fade-100 100ms/.test(reduced[0]), 'sem a variante de fade de 100 ms no movimento reduzido')
+  // Plano 05-23: a queda do Vintem e o brilho viram so fade com movimento reduzido.
+  assert.match(css, /\.onb-drop\s*\{[^}]*onb-drop 520ms/, 'index.css sem a queda do Vintem (520 ms)')
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.onb-drop,\s*\.onb-halo \{\s*animation: fade-100 100ms ease-out !important/, 'sem o fade da queda no movimento reduzido')
+  assert.match(css, /\.onb-ring,\s*\.onb-lens \{\s*transition: none !important/, 'aneis e lente com transicao no movimento reduzido')
 })
 
 test('regiao do meio rola so na vertical, com barra e rodape parados', () => {
@@ -150,13 +256,23 @@ test('AppCard tem Rever a apresentacao em modo replay', () => {
   assert.doesNotMatch(src, /markOnboardingSeen|readOnboardingSeen/, 'o replay nao toca na marca')
 })
 
-test('arquivos novos sem hex, sem emoji, na escala 12/16/28/56 e com alvos de toque de 44 px', () => {
+test('arquivos do onboarding sem hex, sem emoji, na escala 12/16/28/56 e com alvos de toque de 44 px', () => {
   assert.deepEqual(scaleProblems(FILES), [])
   assert.deepEqual(touchProblems(FILES), [])
-  for (const f of [ONB, ROUTE, CARD]) {
+  for (const f of [ONB, ROUTE, CARD, ...NEW_FILES]) {
     assert.doesNotMatch(code(f), /#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(\d/, `${f} com cor literal`)
     assert.doesNotMatch(code(f), /gradient/, `${f} com degrade`)
   }
+})
+
+test('index.css tem o bloco do plano 05-23 com as variaveis do celular e do anel nos dois temas', () => {
+  const css = read('src/index.css')
+  for (const v of ['--onb-bezel', '--onb-bezline', '--onb-ring', '--onb-marker', '--onb-marker-ink']) {
+    assert.ok(css.includes(`${v}:`), `index.css sem ${v}`)
+  }
+  assert.match(css, /--onb-bezel: #0e1311;/, 'celular do tema claro')
+  assert.match(css, /\.dark \{\s*--onb-bezel: #1b2822;/, 'celular do tema escuro')
+  assert.match(css, /\.onb-halo \{[^}]*radial-gradient/, 'o degrade do onboarding vive em index.css')
 })
 
 test('o executor onboarding.mjs cobre os cenarios, a porta 5193 e termina em FALHAS n', () => {

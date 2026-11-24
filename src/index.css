@@ -592,3 +592,188 @@
     animation: fade-100 100ms ease-out !important;
   }
 }
+
+/* ---- Plano 05-23: onboarding do sketch 029 (Vintem de entrada falando, celular com print real). ----
+   Fora do bloco .vt e sem mexer nos tokens. Todas as cores do onboarding moram aqui. */
+:root {
+  --onb-bezel: #0e1311;
+  --onb-bezline: rgba(255, 255, 255, 0.08);
+  --onb-ring: #f0b43c;
+  --onb-marker: #f0b43c;
+  --onb-marker-ink: #3a2605;
+}
+
+.dark {
+  --onb-bezel: #1b2822;
+  --onb-bezline: rgba(255, 255, 255, 0.16);
+}
+
+/* Palco das tres cenas: celular, Vintem e balao em colunas. As larguras (Vintem e celular) mandam nas
+   medidas; o celular fica cortado pela base do palco. `100vw - 70px` e a mesma conta do sketch (a coluna
+   do onboarding ocupa a largura toda abaixo de 448 px). */
+.onb-stage {
+  --onb-vw: clamp(120px, 42vw, 168px);
+  --onb-pw: min(clamp(272px, 77vw, 300px), calc(100vw - 70px));
+  --onb-sh: calc(var(--onb-pw) * var(--onb-shift, 0));
+  /* Quanto do corte do print vale: 0 em telas altas, 1 a 640 de altura ou menos. */
+  --onb-k: 0;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  min-height: 21rem;
+  overflow: hidden;
+  padding-top: 6px;
+}
+
+.onb-stage > * {
+  flex: none;
+}
+
+@media (min-height: 721px) and (max-height: 800px) {
+  .onb-stage {
+    --onb-k: 0.5;
+  }
+}
+
+@media (max-height: 720px) {
+  .onb-stage {
+    --onb-k: 1;
+  }
+}
+
+/* O Vintem em pe na borda de cima do celular (10% da largura dele menos 1 px de sobreposicao). */
+.onb-vintem {
+  position: relative;
+  width: var(--onb-vw);
+  margin-top: 14px;
+  margin-bottom: calc(var(--onb-vw) * -0.1 - 1px);
+  left: var(--onb-sh);
+}
+
+.onb-drop {
+  position: relative;
+  z-index: 3;
+  animation: onb-drop 520ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes onb-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-120%);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(4%);
+  }
+  78% {
+    transform: translateY(-1.5%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Brilho atras do Vintem (1,6 vez a largura dele); so aqui vive o degrade do onboarding. */
+.onb-halo {
+  position: absolute;
+  z-index: 1;
+  left: -30%;
+  top: calc(var(--onb-vw) * -0.49);
+  width: 160%;
+  height: calc(var(--onb-vw) * 1.5);
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-action) 13%, transparent), transparent);
+  animation: onb-halo-in 600ms ease-out 900ms backwards;
+}
+
+.dark .onb-halo {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-action) 14%, transparent), transparent);
+}
+
+@keyframes onb-halo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Rabicho do balao: aponta o Vintem pela deslocacao da cena e nunca sai das bordas arredondadas. */
+.onb-tail {
+  left: calc(clamp(28px, calc(50% + var(--onb-tail, 0px)), calc(100% - 28px)) - 8px);
+}
+
+/* Celular: moldura limpa com o print real; o vidro corta o print e as camadas em cima dele. */
+.onb-phone {
+  width: var(--onb-pw, 162px);
+  padding: 6px;
+  border-radius: 34px;
+  background: var(--onb-bezel);
+  box-shadow:
+    0 0 0 1px var(--onb-bezline),
+    0 28px 48px -18px rgba(15, 42, 26, 0.4),
+    0 10px 20px -10px rgba(0, 0, 0, 0.28);
+}
+
+.onb-glass {
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--color-background);
+}
+
+/* Camada do print e dos aneis: sobe junto o quanto a tela baixa pedir (pixels do print vezes a escala). */
+.onb-layer {
+  transform: translateY(calc(var(--onb-k, 0) * var(--onb-crop, 0) * (var(--onb-pw, 162px) - 12px) / 390 * -1));
+}
+
+/* Anel de destaque: entra por opacidade e escala; sem animacao no movimento reduzido (regra global). */
+.onb-ring {
+  position: absolute;
+  border: 2.5px solid var(--onb-ring);
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--onb-ring) 25%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out;
+}
+
+.onb-ring[data-on='true'] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Lente do limite sobre a linha de Alimentacao. */
+.onb-lens {
+  z-index: 3;
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out;
+}
+
+.onb-lens[data-on='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb-drop,
+  .onb-halo {
+    animation: fade-100 100ms ease-out !important;
+  }
+
+  .onb-ring,
+  .onb-lens {
+    transition: none !important;
+  }
+}

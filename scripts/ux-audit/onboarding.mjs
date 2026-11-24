@@ -209,7 +209,9 @@ async function inTab(chrome, name, viewport, opts, results, fn) {
 
 const KEY = 'coinc:onboarding:v1'
 const SMOKE = process.argv.includes('--smoke')
-const T = ['Veja quanto ainda pode gastar', 'Limites e o Vintém', 'Adicionar à tela inicial']
+// Plano 05-23: quatro telas (S29-09, sketch 029).
+const T = ['Seu mês, num número', 'Um teto por categoria', 'Tudo no calendário', 'Coinc na tela inicial']
+const SAY1 = 'Oi, eu sou o Vintém! Eu cuido das suas contas e digo quanto ainda dá para gastar no mês.'
 const T1 = T[0]
 const DIALOG = `document.querySelector('[role="dialog"][aria-label="Apresentação do Coinc"]')`
 const ROOT = `(document.querySelector('main') || ${DIALOG})`
@@ -286,13 +288,32 @@ function readLayout() {
   })()`
 }
 
-// cenario 0 (smoke): portao e Pular.
+// cenario 0 (smoke): portao, tela 1 nova e Pular.
 async function scenarioGate({ page, check, navigate }) {
   const reached = await reachOnboarding(page, navigate)
   check('portao-sem-sessao-e-sem-marca-mostra-a-tela-1', reached, {})
   if (!reached) return
   const buttons = await page.evaluate(`[...document.querySelectorAll('main button')].filter((b) => b.checkVisibility({ visibilityProperty: true })).map((b) => (b.getAttribute('aria-label') || b.textContent).trim())`)
   check('portao-botoes-pular-e-continuar-sem-voltar-visivel', buttons.includes('Pular') && buttons.includes('Continuar') && !buttons.includes('Voltar'), { buttons })
+  const t1 = await page.evaluate(`(() => {
+    const img = document.querySelector('main img')
+    const say = document.querySelector('[data-say-full]')
+    return {
+      h1: ${h1Text},
+      vintems: document.querySelectorAll('main svg.vt.vt-entrada').length,
+      imgLoaded: !!img && img.complete && img.naturalWidth > 0,
+      imgSrc: img ? img.currentSrc : null,
+      say: say ? say.textContent.trim() : null,
+      sayHidden: !!say && say.classList.contains('sr-only'),
+      dots: document.querySelectorAll('main .sticky [aria-hidden="true"] > span').length,
+      step: document.querySelector('main p.sr-only')?.textContent.trim() ?? null,
+    }
+  })()`)
+  check('portao-tela-1-titulo-seu-mes-num-numero', t1.h1 === T1, t1)
+  check('portao-tela-1-um-so-vintem-de-entrada', t1.vintems === 1, t1)
+  check('portao-tela-1-print-carregado-com-o-nome-do-tema', t1.imgLoaded && /home-claro/.test(t1.imgSrc ?? ''), t1)
+  check('portao-tela-1-fala-completa-em-sr-only', t1.say === SAY1 && t1.sayHidden, t1)
+  check('portao-tela-1-quatro-pontos-e-passo-1-de-4', t1.dots === 4 && t1.step === 'Passo 1 de 4', t1)
   check('portao-nao-grava-a-marca-ao-montar', (await readKey(page)) === null, {})
   check('portao-sem-login-por-tras', !(await page.evaluate(`!!${FORM}`)), {})
   await click(page, 'Pular')

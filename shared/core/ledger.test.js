@@ -1,6 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { toCents, fromCents, monthTotals, accumulatedBalance, weeklySpend, weeklySpendForCycle } from './ledger.js'
+import {
+  toCents,
+  fromCents,
+  monthTotals,
+  accumulatedBalance,
+  weeklySpend,
+  weeklySpendForCycle,
+  isOnCardTx,
+} from './ledger.js'
 import { cycleOf } from './cycle.js'
 
 const tx = (type, amount, iso) => ({ type, amount, date: new Date(iso) })
@@ -181,4 +189,80 @@ test('weeklySpendForCycle atravessa a virada do ano (ciclo 15/12 a 14/01)', () =
   assert.equal(r.weeksRemaining, 3)
   assert.equal(r.saldoCiclo, 270)
   assert.equal(r.maxWeeklySpend, 90)
+})
+
+// Semantica de caixa do cartao (Fase 6: CARD-03, CARD-04, CARD-06, D-12)
+const cardTx = (type, amount, iso, cardKind, extra = {}) => ({ type, amount, date: new Date(iso), cardKind, ...extra })
+
+test('isOnCardTx so vale para cardKind purchase ou refund', () => {
+  assert.equal(isOnCardTx({ cardKind: 'purchase' }), true)
+  assert.equal(isOnCardTx({ cardKind: 'refund' }), true)
+  assert.equal(isOnCardTx({ cardKind: 'payment' }), false)
+  assert.equal(isOnCardTx({}), false)
+  assert.equal(isOnCardTx(null), false)
+})
+
+test('monthTotals ignora compra do cartao e conta o pagamento da fatura que saiu da conta', () => {
+  const r = monthTotals([
+    tx('entrada', 1000, '2026-11-02T15:00:00Z'),
+    tx('saida', 200, '2026-11-03T15:00:00Z'),
+    cardTx('saida', 500, '2026-11-04T15:00:00Z', 'purchase'),
+    cardTx('saida', 181.41, '2026-11-05T15:00:00Z', 'payment', { transfer: true }),
+  ])
+  assert.equal(r.entradas, 1000)
+  assert.equal(r.saidas, 381.41)
+  assert.equal(r.saldo, 618.59)
+})
+
+test('monthTotals ignora o estorno do cartao (entrada)', () => {
+  const r = monthTotals([
+    tx('entrada', 1000, '2026-11-02T15:00:00Z'),
+    cardTx('entrada', 50, '2026-11-04T15:00:00Z', 'refund', { transfer: true }),
+  ])
+  assert.deepEqual(r, { entradas: 1000, saidas: 0, saldo: 1000 })
+})
+
+test('accumulatedBalance aplica a regra de caixa: compra fora, pagamento dentro', () => {
+  const list = [
+    tx('entrada', 1000, '2026-10-02T15:00:00Z'),
+    cardTx('saida', 300, '2026-10-10T15:00:00Z', 'purchase'),
+    cardTx('entrada', 20, '2026-10-11T15:00:00Z', 'refund', { transfer: true }),
+    cardTx('saida', 280, '2026-11-07T15:00:00Z', 'payment', { transfer: true }),
+  ]
+  assert.equal(accumulatedBalance(list, new Date('2026-10-31T15:00:00Z')), 1000)
+  assert.equal(accumulatedBalance(list, new Date('2026-11-30T15:00:00Z')), 720)
+})
+
+test('weeklySpend e weeklySpendForCycle contam a compra do cartao e ignoram transferencia', () => {
+  const now = new Date('2026-11-09T15:00:00Z')
+  const list = [
+    tx('entrada', 3000, '2026-11-02T15:00:00Z'),
+    cardTx('saida', 400, '2026-11-05T15:00:00Z', 'purchase'),
+    cardTx('saida', 400, '2026-11-08T15:00:00Z', 'payment', { transfer: true }),
+    cardTx('entrada', 30, '2026-11-08T16:00:00Z', 'refund', { transfer: true }),
+  ]
+  const w = weeklySpend({ transactions: list, now, month: month(11) })
+  assert.equal(w.saldoMensal, 2600)
+  assert.equal(w.maxWeeklySpend, 650)
+  const c = weeklySpendForCycle({ transactions: list, cycle: cycleOf(now, 1), now })
+  assert.equal(c.saldoCiclo, 2600)
+  assert.equal(c.maxWeeklySpend, 650)
+})
+
+test('lancamentos sem cardKind e sem transfer seguem como antes', () => {
+  const list = [tx('entrada', 100, '2026-11-02T15:00:00Z'), tx('saida', 30, '2026-11-03T15:00:00Z')]
+  assert.deepEqual(monthTotals(list), { entradas: 100, saidas: 30, saldo: 70 })
+  assert.equal(accumulatedBalance(list, new Date('2026-12-01T00:00:00Z')), 70)
+})
+
+test('compra lancada a mao no cartao (D-12) e tratada como qualquer compra do cartao', () => {
+  const manual = cardTx('saida', 90, '2026-11-04T15:00:00Z', 'purchase', { cardId: 'acc-1' })
+  assert.equal(manual.source, undefined)
+  assert.equal(manual.bankImportId, undefined)
+  const r = monthTotals([tx('entrada', 500, '2026-11-02T15:00:00Z'), manual])
+  assert.deepEqual(r, { entradas: 500, saidas: 0, saldo: 500 })
+  assert.equal(accumulatedBalance([manual], new Date('2026-12-01T00:00:00Z')), 0)
+  const now = new Date('2026-11-09T15:00:00Z')
+  const w = weeklySpend({ transactions: [tx('entrada', 500, '2026-11-02T15:00:00Z'), manual], now, month: month(11) })
+  assert.equal(w.saldoMensal, 410)
 })

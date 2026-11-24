@@ -6,7 +6,21 @@
 import { DEFAULT_TZ, monthRangeOf, zonedParts } from './time.js'
 import { daysBetweenParts } from './cycle.js'
 
-/** @typedef {{ type: string, amount: number, date: Date }} LedgerTx */
+/**
+ * cardKind marca o lancamento do cartao: purchase, refund ou payment. Pagamento
+ * de fatura e estorno carregam transfer true.
+ * @typedef {{ type: string, amount: number, date: Date, cardKind?: string, transfer?: boolean }} LedgerTx
+ */
+
+/**
+ * Compra ou estorno do cartao: nao mexe no saldo da conta (CARD-06). Vale para
+ * a compra importada e para a lancada a mao (D-12), sem olhar a origem.
+ * @param {{ cardKind?: string } | null | undefined} tx
+ * @returns {boolean}
+ */
+export function isOnCardTx(tx) {
+  return !!tx && (tx.cardKind === 'purchase' || tx.cardKind === 'refund')
+}
 
 /**
  * Reais para centavos inteiros.
@@ -27,16 +41,42 @@ export function fromCents(cents) {
 }
 
 /**
- * Saldo em centavos: entrada soma, saida subtrai.
+ * Soma simples em centavos: entrada soma, saida subtrai.
+ * @param {LedgerTx[]} transactions
+ * @returns {number}
+ */
+function netCents0(transactions) {
+  let sum = 0
+  for (const t of transactions) {
+    sum += t.type === 'entrada' ? toCents(t.amount) : -toCents(t.amount)
+  }
+  return sum
+}
+
+/**
+ * Saldo de caixa em centavos: entrada soma, saida subtrai, compra e estorno do
+ * cartao ficam fora (CARD-06); o pagamento da fatura, que saiu da conta, conta.
  * @param {LedgerTx[]} transactions
  * @returns {number}
  */
 function netCents(transactions) {
   let sum = 0
   for (const t of transactions) {
+    if (isOnCardTx(t)) continue
     sum += t.type === 'entrada' ? toCents(t.amount) : -toCents(t.amount)
   }
   return sum
+}
+
+/**
+ * Saldo de gasto em centavos (projecao semanal): a compra do cartao conta na
+ * data da compra (CARD-03) e a transferencia, como o pagamento da fatura e o
+ * estorno, fica fora para nao contar duas vezes (CARD-04).
+ * @param {LedgerTx[]} transactions
+ * @returns {number}
+ */
+function spendNetCents(transactions) {
+  return netCents0(transactions.filter((t) => t.transfer !== true))
 }
 
 /**
@@ -48,6 +88,7 @@ export function monthTotals(transactions) {
   let entradas = 0
   let saidas = 0
   for (const t of transactions) {
+    if (isOnCardTx(t)) continue
     if (t.type === 'entrada') entradas += toCents(t.amount)
     else saidas += toCents(t.amount)
   }
@@ -90,7 +131,7 @@ export function weeklySpend({ transactions, now, month, tz = DEFAULT_TZ }) {
     now.getTime() < range.start.getTime() ? range.start : now.getTime() > range.end.getTime() ? range.end : now
   const daysRemaining = range.daysInMonth - zonedParts(reference, tz).day + 1
   const weeksRemaining = Math.ceil(daysRemaining / 7)
-  const saldoCents = netCents(inMonth)
+  const saldoCents = spendNetCents(inMonth)
   return {
     daysRemaining,
     weeksRemaining,
@@ -120,7 +161,7 @@ export function weeklySpendForCycle({ transactions, cycle, now, tz = DEFAULT_TZ 
   const reference = now.getTime() < startMs ? cycle.start : now.getTime() > endMs ? cycle.end : now
   const daysRemaining = daysBetweenParts(zonedParts(reference, tz), cycle.endParts) + 1
   const weeksRemaining = Math.ceil(daysRemaining / 7)
-  const saldoCents = netCents(inCycle)
+  const saldoCents = spendNetCents(inCycle)
   return {
     daysRemaining,
     weeksRemaining,

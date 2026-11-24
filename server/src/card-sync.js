@@ -147,7 +147,8 @@ export async function syncCardTransactions(
   const existingDocs = new Map()
   for (const doc of existingSnap.docs) {
     const d = doc.data()
-    if (d.bankImportId) existingDocs.set(doc.id, d)
+    // Pagamento da fatura ligado ao cartao (06-08) nao e compra: nunca entra na reconciliacao.
+    if (d.bankImportId && d.cardKind !== 'payment') existingDocs.set(doc.id, d)
   }
   const knownBankIds = new Set([...existingDocs.values()].map((d) => d.bankImportId))
 

@@ -7,6 +7,7 @@ import {
   normalize,
   DUPLICATE_WINDOW_DAYS,
 } from '../../shared/core/classify.js'
+import { ownerHasCard, reconcileCardPayments } from './card-payments.js'
 import { refreshCardAggregates, syncCardSnapshot, syncCardTransactions } from './card-sync.js'
 import {
   DEFAULT_CATEGORY_DEFS,
@@ -125,7 +126,19 @@ export async function syncConnection(db, pluggy, connection) {
     }
     const item = await pluggy.fetchItem(itemId)
     const { results: accounts } = await pluggy.fetchAccounts(itemId)
-    const hasCreditCard = accounts.some((a) => a.type === 'CREDIT')
+    // "Tem cartao" vale para o dono todo (CARD-04): o banco que paga a fatura do Nubank e outro
+    // item, sem conta CREDIT, e o pagamento nao pode entrar como gasto comum.
+    // Item com conta CREDIT ja diz que ha cartao; so os demais consultam o dono. Falha na consulta
+    // nunca derruba a importacao do banco (so a mensagem vai para o log e para o resumo).
+    let hasCreditCard = accounts.some((a) => a.type === 'CREDIT')
+    if (!hasCreditCard) {
+      try {
+        hasCreditCard = await ownerHasCard(db, ownerId)
+      } catch (err) {
+        console.warn(`[sync] cartao do dono nao consultado no item ${itemId}:`, err?.message ?? String(err))
+        summary.cardPaymentError = err?.message ?? String(err)
+      }
+    }
 
     const importFrom = connection.importFrom?.toDate?.() ?? new Date(Date.now() - 30 * DAY_MS)
     const dateFrom = importFrom.toISOString().slice(0, 10)
@@ -226,6 +239,8 @@ export async function syncConnection(db, pluggy, connection) {
           }
         }
 
+        // Pagamento da fatura vindo da conta: transferencia vinculada, fora dos gastos (D-05).
+        const isPayment = entry.cardKind === 'payment' && status === 'imported'
         const date = Timestamp.fromDate(entry.date)
         const transactionId = `bank_${tx.id}`
 
@@ -249,6 +264,7 @@ export async function syncConnection(db, pluggy, connection) {
           matchedTransactionId,
           transactionId: status === 'imported' ? transactionId : null,
           createdAt: Timestamp.now(),
+          ...(isPayment ? { cardKind: 'payment', transfer: true } : {}),
         })
         ops++
 
@@ -268,6 +284,7 @@ export async function syncConnection(db, pluggy, connection) {
             bankName,
             bankDescription: entry.description,
             originalDescription: entry.raw,
+            ...(isPayment ? { cardKind: 'payment', transfer: true } : {}),
           })
           ops++
         }
@@ -280,6 +297,17 @@ export async function syncConnection(db, pluggy, connection) {
         }
       }
       if (ops) await batch.commit()
+    }
+
+    // Liga os pagamentos da fatura (cartao, texto na conta, transferencia propria de valor exato)
+    // a fatura certa. Falha aqui nunca derruba a importacao: so a mensagem vai ao log e ao resumo.
+    // Se o cartao ja falhou nesta rodada, nao ha o que ligar (e nao repete o aviso).
+    try {
+      if (!summary.cardError) await reconcileCardPayments(db, { ownerId })
+    } catch (err) {
+      const message = err?.message ?? String(err)
+      console.warn(`[sync] pagamentos de fatura nao ligados no item ${itemId}:`, message)
+      summary.cardPaymentError = message
     }
 
     await ref.set(

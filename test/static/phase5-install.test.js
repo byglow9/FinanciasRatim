@@ -5,6 +5,9 @@ import assert from 'node:assert/strict'
 import { code, exists, read, scaleProblems, touchProblems } from './helpers/phase3-1.js'
 
 const STEPS = 'src/components/onboarding/InstallSteps.tsx'
+// Plano 05-23 (D-11, D-22): a cena de adicionar do onboarding e a casca tambem nunca dizem instalar.
+const SCENE = 'src/components/onboarding/InstallScene.tsx'
+const SHELL = 'src/components/onboarding/Onboarding.tsx'
 const CARD = 'src/components/settings/AppCard.tsx'
 const PAGE = 'src/pages/SettingsPage.tsx'
 const AUDIT = 'scripts/ux-audit/install.mjs'
@@ -56,7 +59,7 @@ test('InstallSteps tem seletor Aparelho, lista ordenada e icones decorativos', (
 })
 
 test('o texto da interface nunca diz instalar fora da citacao do menu do Chrome', () => {
-  for (const f of [STEPS, CARD]) {
+  for (const f of [STEPS, CARD, SCENE, SHELL]) {
     const src = code(f).replaceAll('Instalar app', '')
     assert.doesNotMatch(src, /instalar/i, `${f}: "instalar" fora da citacao do menu do Chrome`)
     assert.doesNotMatch(src, /\binstale\b/i, `${f}: "Instale"`)
@@ -106,9 +109,9 @@ test('SettingsPage: AppCard depois de Notificacoes e antes de Sair da conta, ord
 })
 
 test('HTML bruto, escala, emoji e alvos de toque limpos nos arquivos novos', () => {
-  assert.deepEqual(scaleProblems([STEPS, CARD]), [])
-  assert.deepEqual(touchProblems([STEPS, CARD]), [])
-  for (const f of [STEPS, CARD]) {
+  assert.deepEqual(scaleProblems([STEPS, CARD, SCENE]), [])
+  assert.deepEqual(touchProblems([STEPS, CARD, SCENE]), [])
+  for (const f of [STEPS, CARD, SCENE]) {
     assert.doesNotMatch(code(f), /#[0-9a-fA-F]{3,8}\b/, `${f}: hex literal`)
   }
 })

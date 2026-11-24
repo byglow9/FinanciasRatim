@@ -15,7 +15,10 @@ interface Step {
   after?: string
 }
 
-const DEVICE_OPTIONS: { value: PwaPlatform; label: string }[] = [
+// Plano 05-23: exportados para a cena de adicionar do onboarding usar os mesmos textos e opcoes (os
+// literais continuam neste arquivo, que a guarda do 05-11 le).
+// eslint-disable-next-line react-refresh/only-export-components
+export const DEVICE_OPTIONS: { value: PwaPlatform; label: string }[] = [
   { value: 'android', label: 'Android' },
   { value: 'iphone', label: 'iPhone' },
 ]
@@ -49,8 +52,8 @@ const STEPS: Record<PwaPlatform, Step[]> = {
   ],
 }
 
-const ADDED_TEXT = 'Adicionado. Procure o ícone do Coinc na tela inicial.'
-const ALREADY_APP_TEXT = 'Você já está usando o Coinc como app.'
+export const ADDED_TEXT = 'Adicionado. Procure o ícone do Coinc na tela inicial.'
+export const ALREADY_APP_TEXT = 'Você já está usando o Coinc como app.'
 
 interface InstallStepsProps {
   /** Chamado depois que o navegador confirma a adição (usado pelo onboarding). */

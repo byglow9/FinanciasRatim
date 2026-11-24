@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft } from 'lucide-react'
-import { InstallSteps } from '@/components/onboarding/InstallSteps'
+import { InstallScene } from '@/components/onboarding/InstallScene'
 import { WelcomeScene } from '@/components/onboarding/WelcomeScene'
 import { ONBOARDING_SCENES } from '@/components/onboarding/onboardingScenes'
 import { Button } from '@/components/ui/button'
+import { usePwaInstall } from '@/hooks/usePwaInstall'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { markOnboardingSeen } from '@/lib/onboarding'
 import { cn } from '@/lib/utils'
@@ -40,6 +41,8 @@ export function Onboarding({ mode, onFinish }: OnboardingProps) {
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const reduced = useReducedMotion()
+  // Ja como app (tela cheia): a ultima tela mostra "Voce ja esta usando o Coinc como app." e o botao vira Entrar.
+  const { isStandalone: isApp } = usePwaInstall()
   const rootRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const mounted = useRef(false)
@@ -131,7 +134,7 @@ export function Onboarding({ mode, onFinish }: OnboardingProps) {
             Voltar
           </Button>
           <Button type="button" variant="ghost" className="min-h-11 px-3 text-muted-foreground" onClick={finish}>
-            {replay ? 'Fechar' : isLast ? 'Agora não' : 'Pular'}
+            {replay ? 'Fechar' : isLast && !isApp ? 'Agora não' : 'Pular'}
           </Button>
         </div>
       </div>
@@ -151,12 +154,7 @@ export function Onboarding({ mode, onFinish }: OnboardingProps) {
             {scene.title}
           </h1>
           {isLast ? (
-            <div className="space-y-4 px-4 pt-4">
-              <p className="text-center text-base font-normal leading-[1.4] text-muted-foreground">{scene.say}</p>
-              <div className="rounded-card bg-card p-4">
-                <InstallSteps />
-              </div>
-            </div>
+            <InstallScene reduced={reduced} />
           ) : (
             <WelcomeScene key={step} index={step as 0 | 1 | 2} reduced={reduced} />
           )}
@@ -179,7 +177,7 @@ export function Onboarding({ mode, onFinish }: OnboardingProps) {
           className="h-14 w-full bg-action text-action-text"
           onClick={isLast ? finish : () => go(step + 1, 'forward')}
         >
-          {isLast ? (replay ? 'Concluir' : 'Entrar') : 'Continuar'}
+          {isLast ? (replay ? 'Concluir' : isApp ? 'Entrar' : 'Já adicionei') : 'Continuar'}
         </Button>
       </div>
     </div>

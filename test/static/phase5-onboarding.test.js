@@ -17,7 +17,9 @@ const AUDIT = 'scripts/ux-audit/onboarding.mjs'
 const SCENES = 'src/components/onboarding/onboardingScenes.ts'
 const PARTS = 'src/components/onboarding/OnboardingParts.tsx'
 const WELCOME = 'src/components/onboarding/WelcomeScene.tsx'
-const NEW_FILES = [SCENES, PARTS, WELCOME]
+const INSTALL = 'src/components/onboarding/InstallScene.tsx'
+const STEPS = 'src/components/onboarding/InstallSteps.tsx'
+const NEW_FILES = [SCENES, PARTS, WELCOME, INSTALL]
 const SHELL_FILES = [ONB, ...NEW_FILES]
 const FILES = [ONB, LIB, ROUTE, CARD, ...NEW_FILES]
 const PRINTS_DIR = 'src/assets/onboarding'
@@ -55,11 +57,14 @@ test('os textos das quatro telas vem do sketch 029 e a ultima nao diz instalar (
 
 test('Onboarding tem os botoes e as props do contrato, com Pular, Agora nao e Fechar na barra comum (S29-15)', () => {
   const src = code(ONB)
-  for (const text of ['Pular', 'Agora não', 'Voltar', 'Continuar', 'Entrar', 'Concluir', 'Fechar']) {
+  for (const text of ['Pular', 'Agora não', 'Voltar', 'Continuar', 'Já adicionei', 'Entrar', 'Concluir', 'Fechar']) {
     assert.ok(src.includes(`'${text}'`) || src.includes(`>${text}<`) || new RegExp(`^\\s*${text}$`, 'm').test(src), `Onboarding sem "${text}"`)
   }
   // Um unico botao de saida no topo, fora da condicao da tela: vale em todas as telas.
-  assert.match(src, /\{replay \? 'Fechar' : isLast \? 'Agora não' : 'Pular'\}/, 'barra comum sem Fechar, Agora nao e Pular')
+  assert.match(src, /\{replay \? 'Fechar' : isLast && !isApp \? 'Agora não' : 'Pular'\}/, 'barra comum sem Fechar, Agora nao e Pular (Pular quando ja e app)')
+  // Plano 05-23 (S29-15, D-12): o botao principal da ultima tela e Ja adicionei (Entrar quando ja e app, Concluir no replay).
+  assert.match(src, /isLast \? \(replay \? 'Concluir' : isApp \? 'Entrar' : 'Já adicionei'\) : 'Continuar'/, 'botao principal da ultima tela fora do contrato')
+  assert.match(src, /usePwaInstall\(\)/, 'a casca nao sabe se ja e app')
   assert.match(src, /mode: OnboardingMode/, 'sem a prop mode')
   assert.match(src, /'first' \| 'replay'/, 'mode sem first e replay')
   assert.match(src, /onFinish/, 'sem onFinish')
@@ -121,6 +126,41 @@ test('um Vintem de entrada por cena, decorativo e sem seguir o ponteiro; nenhum 
   assert.match(scene, /react\('susto'\)/, 'tela 2 sem o susto')
   assert.match(scene, /react\('festa'\)/, 'tela 3 sem a festa')
   assert.match(scene, /gazeTo/, 'sem olhar guiado')
+})
+
+test('InstallScene: mesmos textos e mesmo hook do 05-11, passos tocaveis e Adicionar agora so com canPrompt (D-11, D-12, D-22)', () => {
+  const src = code(INSTALL)
+  assert.match(src, /usePwaInstall\(\)/, 'cena sem usePwaInstall')
+  assert.match(src, /import \{ ADDED_TEXT, ALREADY_APP_TEXT, DEVICE_OPTIONS \} from '@\/components\/onboarding\/InstallSteps'/, 'cena sem os textos compartilhados')
+  assert.match(src, /\{canPrompt \? \(\s*<Button[\s\S]*?Adicionar agora/, 'Adicionar agora fora da condicao canPrompt')
+  assert.equal((src.match(/Adicionar agora/g) ?? []).length, 1, 'Adicionar agora deve aparecer uma vez')
+  assert.match(src, /outcome === 'accepted'/, 'so o resultado aceito mostra o texto de adicionado')
+  assert.match(src, /ALREADY_APP_TEXT/, 'sem o texto de ja e app')
+  assert.match(src, /ariaLabel="Aparelho"/, 'seletor sem ariaLabel="Aparelho"')
+  assert.match(src, /aria-pressed=\{on\}/, 'passos sem aria-pressed')
+  assert.match(src, /data-platform=\{device\}/, 'sem data-platform')
+  assert.match(src, /data-step=\{step\}/, 'sem data-step')
+  for (const text of [
+    'Abra o menu do Chrome', 'Adicionar à tela inicial', 'Confirme em Adicionar',
+    'Compartilhar, no Safari', 'Adicionar à Tela de Início', 'Toque em Adicionar',
+  ]) assert.ok(src.includes(`'${text}'`), `InstallScene sem o passo "${text}"`)
+  assert.match(src, /min-h-11 w-full/, 'passo sem alvo de 44 px')
+  // Um so Vintem de entrada, decorativo e sem seguir o ponteiro.
+  assert.equal((src.match(/<Vintem\b/g) ?? []).length, 1, 'InstallScene deve ter exatamente um <Vintem')
+  const tag = /<Vintem\b[^>]*\/>/.exec(src)
+  assert.ok(tag, 'tag do Vintem nao encontrada')
+  assert.match(tag[0], /look="entrada"/)
+  assert.match(tag[0], /\bdecorative\b/)
+  assert.match(tag[0], /follow=\{false\}/)
+  // Avanco automatico unico, cancelado no primeiro toque e desligado com movimento reduzido.
+  assert.match(src, /if \(reduced \|\| isStandalone\) return/, 'temporizadores ligados com movimento reduzido')
+  assert.match(src, /stopAuto\(\)/, 'o toque nao encerra o avanco automatico')
+  assert.match(src, /AUTO_AT = \[1\.2, 4\.3, 7\.4\]/, 'tempos do avanco automatico')
+  assert.doesNotMatch(src, /setInterval/, 'avanco automatico em laco')
+  assert.doesNotMatch(src, /disabled=\{[^}]*(step|reduced)/, 'botao desabilitado esperando animacao')
+  // A casca exporta os mesmos textos que Ajustes usa.
+  const steps = code(STEPS)
+  for (const name of ['ADDED_TEXT', 'ALREADY_APP_TEXT', 'DEVICE_OPTIONS']) assert.match(steps, new RegExp(`export const ${name}\\b`), `InstallSteps sem export de ${name}`)
 })
 
 test('o roteiro so liga temporizadores na montagem, apaga ao desmontar e some com movimento reduzido', () => {
@@ -196,7 +236,8 @@ test('movimento reduzido, passos na ultima tela e navegacao so por botoes (D-12)
   const src = code(ONB)
   assert.match(src, /useReducedMotion/, 'sem useReducedMotion')
   assert.match(src, /reduced=\{reduced\}/, 'a cena nao recebe o movimento reduzido')
-  assert.match(src, /<InstallSteps\s*\/>/, 'ultima tela sem os passos de adicionar')
+  assert.match(src, /<InstallScene reduced=\{reduced\} \/>/, 'ultima tela sem a cena de adicionar a tela inicial')
+  assert.doesNotMatch(src, /InstallSteps/, 'a casca nao usa mais InstallSteps (so Ajustes)')
   assert.match(src, /anim-onboarding-in/, 'sem a classe de entrada')
   assert.doesNotMatch(src, /onTouch|onPointer|onDrag|drag=|swipe/i, 'sem gesto de arrastar entre telas')
   const css = read('src/index.css')
@@ -206,7 +247,7 @@ test('movimento reduzido, passos na ultima tela e navegacao so por botoes (D-12)
   // Plano 05-23: a queda do Vintem e o brilho viram so fade com movimento reduzido.
   assert.match(css, /\.onb-drop\s*\{[^}]*onb-drop 520ms/, 'index.css sem a queda do Vintem (520 ms)')
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.onb-drop,\s*\.onb-halo \{\s*animation: fade-100 100ms ease-out !important/, 'sem o fade da queda no movimento reduzido')
-  assert.match(css, /\.onb-ring,\s*\.onb-lens \{\s*transition: none !important/, 'aneis e lente com transicao no movimento reduzido')
+  assert.match(css, /\.onb-ring,\s*\.onb-lens,\s*\.onb-marker,\s*\.onb-sheet \{\s*transition: none !important/, 'aneis, lente, marcador e folhas com transicao no movimento reduzido')
 })
 
 test('regiao do meio rola so na vertical, com barra e rodape parados', () => {
@@ -249,9 +290,10 @@ test('src/lib/onboarding.ts: so presenca, try e catch, falha conta como visto', 
   assert.match(src, /setItem\(KEY, '1'\)/, 'grava 1')
 })
 
-test('AppCard tem Rever a apresentacao em modo replay', () => {
+test('AppCard tem Rever a apresentacao em modo replay (As telas de boas-vindas, D-17)', () => {
   const src = code(CARD)
-  for (const text of ['Rever a apresentação', 'As 3 telas de boas-vindas']) assert.ok(src.includes(text), `AppCard sem "${text}"`)
+  for (const text of ['Rever a apresentação', 'As telas de boas-vindas']) assert.ok(src.includes(text), `AppCard sem "${text}"`)
+  assert.doesNotMatch(src, /As 3 telas/, 'AppCard ainda diz 3 telas')
   assert.match(src, /<Onboarding mode="replay"/, 'AppCard sem mode="replay"')
   assert.doesNotMatch(src, /markOnboardingSeen|readOnboardingSeen/, 'o replay nao toca na marca')
 })

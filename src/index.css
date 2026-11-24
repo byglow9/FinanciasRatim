@@ -766,6 +766,53 @@
   transform: none;
 }
 
+/* Tela de adicionar a tela inicial: a largura do celular segue a altura que sobra (proporcao 390 por 844,
+   no maximo 184 px; a 360 por 640 fica perto de 150 px). */
+.onb-install {
+  --onb-pw: min(184px, calc((100dvh - 340px) * 0.462 + 12px));
+}
+
+.onb-install-vintem {
+  width: min(80%, 122px);
+  margin-bottom: 4px;
+}
+
+/* Marcador numerado do passo: anda entre as posicoes do print em 300 ms. */
+.onb-marker {
+  position: absolute;
+  z-index: 6;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--onb-marker);
+  color: var(--onb-marker-ink);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--onb-marker) 38%, transparent);
+  transition:
+    left 300ms ease-out,
+    top 300ms ease-out;
+}
+
+/* Folhas da interface do navegador desenhada por cima do print (menu e confirmacao). */
+.onb-sheet {
+  z-index: 4;
+  opacity: 0;
+  transform: var(--onb-sheet-from, none);
+  pointer-events: none;
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out;
+}
+
+.onb-sheet[data-on='true'] {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .onb-drop,
   .onb-halo {
@@ -773,7 +820,9 @@
   }
 
   .onb-ring,
-  .onb-lens {
+  .onb-lens,
+  .onb-marker,
+  .onb-sheet {
     transition: none !important;
   }
 }

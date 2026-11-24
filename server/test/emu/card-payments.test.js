@@ -3,10 +3,16 @@
 // Rodar: npm run test:emu
 import { test, describe, beforeEach, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { Timestamp } from 'firebase-admin/firestore'
 import { initAdmin } from '../../scripts/lib/admin.js'
 import { syncConnection } from '../../src/sync.js'
 import { ownerHasCard, reconcileCardPayments } from '../../src/card-payments.js'
+import { reclassifyCardPayments, runReclassify } from '../../scripts/reclassify-card-payments.js'
 import { resetEmulators } from './_helpers.js'
 
 const HID = 'casal-aaaa-0001'
@@ -297,5 +303,180 @@ describe('pagamento da fatura', () => {
     assert.equal(pay.bankImportId, 'tx-pay-1')
     const buy = (await db.collection('transactions').doc('bank_tx-compra').get()).data()
     assert.equal(buy.cardKind, 'purchase')
+  })
+})
+
+// ---- Script do dono: reclassificar os pagamentos de fatura antigos (06-08, Task 3) ----
+
+const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../scripts/reclassify-card-payments.js')
+const SECRET_TEXT = 'PAGAMENTO DE FATURA SEGREDO-XYZ'
+
+describe('reclassificacao dos pagamentos de fatura antigos', () => {
+  let admin
+  let db
+  let dir
+
+  before(() => {
+    admin = initAdmin()
+    assert.equal(admin.mode, 'emulator')
+    db = admin.db
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reclassify-'))
+  })
+
+  after(async () => {
+    fs.rmSync(dir, { recursive: true, force: true })
+    await admin.app.delete()
+  })
+
+  beforeEach(async () => {
+    await resetEmulators()
+  })
+
+  const oldTx = (id, over = {}) =>
+    db.collection('transactions').doc(id).set({
+      ownerId: HID,
+      source: 'bank',
+      type: 'saida',
+      amount: 123.45,
+      description: 'Pagamento de fatura',
+      originalDescription: SECRET_TEXT,
+      bankDescription: 'Pagamento de fatura',
+      date: ts('2026-10-20T15:00:00Z'),
+      ...over,
+    })
+  const seedCard = (ownerId = HID, id = 'acc-credit') =>
+    db.collection('cards').doc(id).set({ ownerId, accountId: id, billTotals: {} })
+  const get = async (id) => (await db.collection('transactions').doc(id).get()).data()
+
+  function backupFile(name, { ageHours = 1, drop } = {}) {
+    const collections = { transactions: [{ id: 't', data: {} }], bankImports: [], settings: [] }
+    if (drop) delete collections[drop]
+    const file = path.join(dir, name)
+    fs.writeFileSync(file, JSON.stringify({
+      meta: { exportedAt: new Date(Date.now() - ageHours * 3_600_000).toISOString(), version: 1 },
+      collections,
+    }))
+    return file
+  }
+
+  function runCli(args) {
+    const res = spawnSync(process.execPath, [SCRIPT, ...args], { env: process.env, encoding: 'utf8' })
+    return { code: res.status, out: `${res.stdout}\n${res.stderr}` }
+  }
+
+  test('ensaio nao grava e devolve so a contagem; --apply marca; rodar de novo nao altera nada', async () => {
+    await seedCard()
+    await oldTx('bank_a')
+    await oldTx('bank_b', { originalDescription: undefined, bankDescription: 'Pagamento da fatura do cartao' })
+
+    const dry = await reclassifyCardPayments(db, HID)
+    assert.deepEqual(dry, { examined: 2, matched: 2, updated: 0 })
+    assert.equal((await get('bank_a')).transfer, undefined)
+
+    const applied = await reclassifyCardPayments(db, HID, { apply: true })
+    assert.deepEqual(applied, { examined: 2, matched: 2, updated: 2 })
+    for (const id of ['bank_a', 'bank_b']) {
+      const d = await get(id)
+      assert.equal(d.transfer, true)
+      assert.equal(d.cardKind, 'payment')
+      assert.equal(d.amount, 123.45) // so os dois campos mudam
+    }
+
+    const again = await reclassifyCardPayments(db, HID, { apply: true })
+    assert.deepEqual(again, { examined: 0, matched: 0, updated: 0 })
+  })
+
+  test('gasto comum, compra do cartao e lancamento de outro casal nao sao tocados', async () => {
+    await seedCard()
+    await oldTx('bank_gasto', { originalDescription: 'RESTAURANTE SABOR', bankDescription: 'Restaurante Sabor', description: 'Restaurante' })
+    await oldTx('bank_manual', { source: 'manual' })
+    await oldTx('bank_entrada', { type: 'entrada' })
+    await oldTx('bank_compra', { cardKind: 'purchase', cardId: 'acc-credit' })
+    await oldTx('bank_outro', { ownerId: OTHER })
+    const res = await reclassifyCardPayments(db, HID, { apply: true })
+    assert.deepEqual(res, { examined: 1, matched: 0, updated: 0 })
+    for (const id of ['bank_gasto', 'bank_manual', 'bank_entrada', 'bank_compra', 'bank_outro']) {
+      assert.equal((await get(id)).transfer, undefined, id)
+    }
+    assert.equal((await get('bank_compra')).cardKind, 'purchase')
+  })
+
+  test('dono sem cartao: nada e reclassificado, mesmo com cartao de outro casal', async () => {
+    await seedCard(OTHER, 'acc-outro')
+    await oldTx('bank_a')
+    const res = await reclassifyCardPayments(db, HID, { apply: true })
+    assert.deepEqual(res, { examined: 0, matched: 0, updated: 0 })
+    assert.equal((await get('bank_a')).transfer, undefined)
+    await assert.rejects(() => reclassifyCardPayments(db, ''), /hid/)
+  })
+
+  test('muitos lancamentos: grava em lotes e conta tudo', async () => {
+    await seedCard()
+    for (let i = 0; i < 450; i++) await oldTx(`bank_m${i}`)
+    const res = await reclassifyCardPayments(db, HID, { apply: true })
+    assert.deepEqual(res, { examined: 450, matched: 450, updated: 450 })
+    assert.equal((await db.collection('transactions').where('cardKind', '==', 'payment').get()).size, 450)
+  })
+
+  test('linha de comando sem --hid falha com mensagem; a saida nunca traz descricao, valor ou id', async () => {
+    const noHid = runCli([])
+    assert.notEqual(noHid.code, 0)
+    assert.match(noHid.out, /--hid/)
+
+    await seedCard()
+    await oldTx('bank_segredo-id-777')
+    const dry = runCli(['--hid', HID])
+    assert.equal(dry.code, 0, dry.out)
+    assert.match(dry.out, /dry-run/)
+    assert.match(dry.out, /encontrados: 1/)
+    for (const secret of [SECRET_TEXT, 'SEGREDO', '123.45', '123,45', 'segredo-id-777', HID]) {
+      assert.ok(!dry.out.includes(secret), `a saida nao pode conter ${secret}`)
+    }
+    assert.equal((await get('bank_segredo-id-777')).transfer, undefined)
+  })
+
+  test('--apply sem --backup, ou com copia recusada, nao grava nada e sai com erro', async () => {
+    await seedCard()
+    await oldTx('bank_a')
+
+    const noBackup = runCli(['--hid', HID, '--apply'])
+    assert.notEqual(noBackup.code, 0)
+    assert.match(noBackup.out, /--backup/)
+
+    const old = runCli(['--hid', HID, '--apply', '--backup', backupFile('velho.json', { ageHours: 30 })])
+    assert.notEqual(old.code, 0)
+    assert.match(old.out, /mais de 24 horas/)
+
+    const missing = runCli(['--hid', HID, '--apply', '--backup', path.join(dir, 'nao-existe.json')])
+    assert.notEqual(missing.code, 0)
+
+    const noColl = runCli(['--hid', HID, '--apply', '--backup', backupFile('sem-colecao.json', { drop: 'bankImports' })])
+    assert.notEqual(noColl.code, 0)
+
+    assert.equal((await get('bank_a')).transfer, undefined)
+    // a mesma regra vale chamando a funcao do script diretamente
+    await assert.rejects(() => runReclassify({ db, hid: HID, apply: true }), /obrigatoria/)
+    await assert.rejects(
+      () => runReclassify({ db, hid: HID, apply: true, backup: backupFile('velho2.json', { ageHours: 48 }) }),
+      /mais de 24 horas/
+    )
+    assert.equal((await get('bank_a')).transfer, undefined)
+  })
+
+  test('com copia valida aplica; o ensaio nao exige copia', async () => {
+    await seedCard()
+    await oldTx('bank_a')
+
+    const dry = runCli(['--hid', HID, '--dry-run'])
+    assert.equal(dry.code, 0, dry.out)
+    assert.equal((await get('bank_a')).transfer, undefined)
+
+    const applied = runCli(['--hid', HID, '--apply', '--backup', backupFile('bom.json')])
+    assert.equal(applied.code, 0, applied.out)
+    assert.match(applied.out, /atualizados: 1/)
+    assert.ok(!applied.out.includes(SECRET_TEXT))
+    const d = await get('bank_a')
+    assert.equal(d.transfer, true)
+    assert.equal(d.cardKind, 'payment')
   })
 })

@@ -7,7 +7,10 @@
 //    ignorando transferencia verdadeira (P-05); dinheiro sempre em centavos;
 //  - o calor e percentil dos dias gastadores do PROPRIO ciclo (heatLevels), e
 //    no modo "agenda" todo dia e "none";
-//  - sem relogio implicito: `now` entra como argumento, so para isToday.
+//  - sem relogio implicito: `now` entra como argumento, so para isToday;
+//  - vencimento de fatura de cartao (cardBillItems) e desenhado como conta, mas
+//    nunca soma em saldo, gasto nem calor, e calendarSummary nao o recebe: a
+//    compra do cartao ja conta como gasto na data da compra (CARD-03, CENT-04).
 
 import { billStatus } from './billGroups.js'
 import { addDaysToParts, daysBetweenParts } from './cycle.js'
@@ -169,6 +172,7 @@ import { zonedParts } from './time.js'
  *   now: Date,
  *   transactions?: CalendarTx[],
  *   billItems?: CalendarBillItem[],
+ *   cardBillItems?: CalendarBillItem[],
  *   savings?: CalendarSavings[],
  *   contributions?: CalendarContribution[],
  *   notes?: CalendarNote[],
@@ -298,6 +302,7 @@ export function buildDayModels(input) {
     now,
     transactions = [],
     billItems = [],
+    cardBillItems = [],
     savings = [],
     contributions = [],
     notes = [],
@@ -353,7 +358,8 @@ export function buildDayModels(input) {
     }
 
     // Conta so na data da ocorrencia do ciclo (billsForCycle), nunca pelo numero do dia.
-    for (const b of billItems) {
+    // O vencimento da fatura do cartao entra junto, so como item e pontinho de conta.
+    for (const b of [...billItems, ...cardBillItems]) {
       const o = b.occurrence
       const draft = drafts.get(keyOfParts(o))
       if (draft === undefined) continue

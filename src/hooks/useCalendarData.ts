@@ -11,6 +11,7 @@ import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCycleTransactions } from '@/hooks/useCycleTransactions'
 import { useCycleBills } from '@/hooks/useCycleBills'
+import { useCards } from '@/hooks/useCards'
 import { getSavingsTransactions } from '@/services/savings.service'
 import { getContributionsInRange } from '@/services/goalContributions.service'
 import { getGoals } from '@/services/goals.service'
@@ -18,6 +19,7 @@ import { getNotes } from '@/services/notes.service'
 import { getEventsInRange } from '@/services/events.service'
 import { getEventCategories } from '@/services/eventCategories.service'
 import { buildDayModels, calendarSummary } from '@shared/core/calendarModel.js'
+import { cardBillEvents } from '@shared/core/cardCalendar.js'
 import type { CalendarContribution, CalendarMode } from '@shared/core/calendarModel.js'
 import { isInCycle } from '@shared/core/cycle.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
@@ -53,6 +55,8 @@ export function useCalendarData(person: PersonType, mode: CalendarMode) {
   const tx = useCycleTransactions(person)
   const bills = useCycleBills(person)
   const cycle = tx.cycle
+  // Vencimento da fatura do cartao: so cards e cardSettings, nunca as compras (cota de leituras).
+  const cardsData = useCards()
 
   const loadKey = `${person}:${cycle.key}:${cycle.salaryDay}`
 
@@ -123,6 +127,27 @@ export function useCalendarData(person: PersonType, mode: CalendarMode) {
   const events = current?.events ?? NO_EVENTS
   const eventCategories = current?.eventCategories ?? NO_CATEGORIES
 
+  const cardBillItems = useMemo(
+    () =>
+      cardBillEvents({
+        cards: cardsData.cards
+          .filter((c) => c.person === person)
+          .map((c) => ({
+            id: c.id,
+            displayName: c.displayName,
+            name: c.name,
+            billTotals: c.billTotals,
+            payments: c.payments,
+            closingDay: c.settings?.closingDay ?? null,
+            dueDay: c.settings?.dueDay ?? null,
+            paidMonths: c.settings?.paidMonths ?? [],
+          })),
+        cycle,
+        now: today,
+      }),
+    [cardsData.cards, person, cycle, today]
+  )
+
   const dayModels = useMemo(
     () =>
       buildDayModels({
@@ -131,13 +156,14 @@ export function useCalendarData(person: PersonType, mode: CalendarMode) {
         now: today,
         transactions: tx.transactions,
         billItems: bills.items,
+        cardBillItems,
         savings,
         contributions,
         notes,
         events,
         eventCategories,
       }),
-    [mode, cycle, today, tx.transactions, bills.items, savings, contributions, notes, events, eventCategories]
+    [mode, cycle, today, tx.transactions, bills.items, cardBillItems, savings, contributions, notes, events, eventCategories]
   )
 
   const summary = useMemo(

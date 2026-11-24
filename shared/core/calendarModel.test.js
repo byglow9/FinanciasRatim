@@ -443,3 +443,49 @@ test('dayAriaLabel: dia, hoje, itens e saldo, omitindo o que nao se aplica', () 
   const mar = buildDayModels({ mode: 'financeiro', cycle: cycleOf(at('2026-03-10T15:00:00Z'), 1), now: NOW })
   assert.equal(dayAriaLabel(mar.get('2026-03-01'), 'financeiro'), '1 de mar\u00e7o')
 })
+
+// Vencimento da fatura do cartao (06-13, CENT-04): item de conta sem efeito em saldo, gasto ou calor.
+const CARD_BILL = {
+  billId: 'card-acc1-2026-11',
+  name: 'Fatura Nubank',
+  dueDay: 14,
+  occurrence: { year: 2026, month: 11, day: 14 },
+  plannedCents: 18141,
+  paid: false,
+  paidCents: 0,
+  costCents: 18141,
+}
+
+test('cardBillItems: vencimento da fatura vira item de conta no dia, com pontinho pendente ou pago', () => {
+  const models = build({ cardBillItems: [CARD_BILL] })
+  const day = models.get('2026-11-14')
+  assert.equal(day.items.length, 1)
+  assert.equal(day.items[0].kind, 'bill')
+  assert.equal(day.items[0].title, 'Fatura Nubank')
+  assert.equal(day.items[0].amountCents, 18141)
+  assert.equal(day.items[0].status, 'overdue')
+  assert.deepEqual(day.dots, [{ kind: 'bill-pending' }])
+  const paid = build({ cardBillItems: [{ ...CARD_BILL, paid: true }] }).get('2026-11-14')
+  assert.equal(paid.items[0].status, 'paid')
+  assert.deepEqual(paid.dots, [{ kind: 'bill-paid' }])
+  // fora do ciclo e ignorado
+  const out = build({ cardBillItems: [{ ...CARD_BILL, occurrence: { year: 2026, month: 12, day: 14 } }] })
+  assert.ok([...out.values()].every((d) => d.items.length === 0))
+})
+
+test('cardBillItems: nao altera saldo, gasto nem calor do dia', () => {
+  const txs = [tx('saida', 50, '2026-11-14T15:00:00Z'), tx('entrada', 10, '2026-11-15T15:00:00Z')]
+  const base = build({ transactions: txs }).get('2026-11-14')
+  const withCard = build({ transactions: txs, cardBillItems: [CARD_BILL] }).get('2026-11-14')
+  assert.equal(withCard.netCents, base.netCents)
+  assert.equal(withCard.spentCents, base.spentCents)
+  assert.equal(withCard.heat, base.heat)
+  assert.equal(withCard.items.length, base.items.length + 1)
+})
+
+test('cardBillItems: calendarSummary sem os itens do cartao nao os conta como a pagar', () => {
+  const summary = calendarSummary({ transactions: [], billItems: [] })
+  assert.equal(summary.toPayCents, 0)
+  // o resumo so conta o que recebe: o item do cartao nao entra por nenhum outro caminho
+  assert.deepEqual(calendarSummary({ transactions: [], billItems: [{ ...CARD_BILL, paid: true }] }).toPayCents, 0)
+})

@@ -2,7 +2,7 @@
 phase: "5"
 slug: "identidade-coinki-pwa-e-onboarding"
 status: partial
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-11-23"
 ---
@@ -36,7 +36,7 @@ created: "2026-11-23"
 
 ## Per-Task Verification Map
 
-Preenchido pelo planejador (23 planos, 59 tarefas) a partir da tabela "Requisito -> teste" de `05-RESEARCH.md` (IDEN-01 a IDEN-06 e IDEN-08), uma linha por tarefa. O comando é o `<automated>` do plano, sem o prefixo `. ./scripts/dev-env.sh &&` (todo comando roda depois dele) e abreviado quando o plano encadeia vários. "File Exists" ❌ W0 = o teste ou o executor nasce na própria tarefa (tracer-first); "n/a" = portão humano (`checkpoint:human-action` ou `checkpoint:decision`), cuja conferência é feita pelo agente em leitura depois da resposta do dono. O plano 05-20 atualizou a coluna Status e fechou a Wave 0; `nyquist_compliant` fica `false` até o dono decidir a exceção do OINC no escuro (item 13 de `05-UAT-ROTEIRO.md`).
+Preenchido pelo planejador (23 planos, 59 tarefas) a partir da tabela "Requisito -> teste" de `05-RESEARCH.md` (IDEN-01 a IDEN-06 e IDEN-08), uma linha por tarefa. O comando é o `<automated>` do plano, sem o prefixo `. ./scripts/dev-env.sh &&` (todo comando roda depois dele) e abreviado quando o plano encadeia vários. "File Exists" ❌ W0 = o teste ou o executor nasce na própria tarefa (tracer-first); "n/a" = portão humano (`checkpoint:human-action` ou `checkpoint:decision`), cuja conferência é feita pelo agente em leitura depois da resposta do dono. O plano 05-20 atualizou a coluna Status e fechou a Wave 0; `nyquist_compliant` virou `true` em 24/11/2026: o dono aceitou o OINC como está no escuro (item 13 de `05-UAT-ROTEIRO.md`).
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
@@ -134,7 +134,7 @@ Cada item nasce na primeira tarefa do plano indicado (tracer-first: o teste é c
 | Login novo (sketch 029) no ar antes do redirect | IDEN-01, IDEN-08 | Credencial do dono; o gosto do Login é do dono | Plano 05-22: o dono olha as capturas, publica só `hosting:coinc` e confere o Login no celular; o agente confere por `curl` em leitura |
 | Redirect do site antigo (302) e decisão opcional do 301 (decidido: manter o 302, plano 05-21) | IDEN-02 | Credencial do dono; 301 é irreversível nos aparelhos | Planos 05-19 e 05-21: o dono publica só `hosting:legacy`; o agente confere por `curl` |
 | Roteiro de UAT em aparelho (Android, iPhone, atualização A para B, tema padrão Claro e OLED, splash, as quatro telas do onboarding, nome OINC, site antigo no celular, amigo) | IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08 | Aparelho real e dois deploys | `05-UAT-ROTEIRO.md` (plano 05-20), itens 1 a 12 |
-| OINC no tema Escuro: autoteste por pixels da Fase 4 com `--theme escuro` termina em `FALHAS 4` (método feito para fundo claro) | IDEN-06 | Decisão do dono: aceitar o OINC como está no escuro ou abrir plano de redesenho | `05-UAT-ROTEIRO.md` item 13 |
+| OINC no tema Escuro: autoteste por pixels da Fase 4 com `--theme escuro` termina em `FALHAS 4` (método feito para fundo claro) | IDEN-06 | Decidido em 24/11/2026: o dono aceitou o OINC como está no escuro, sem plano de redesenho | `05-UAT-ROTEIRO.md` item 13 |
 
 ---
 
@@ -179,6 +179,10 @@ As quatro falhas de `--theme escuro` (limiar da máscara 199 e 277, esclera 718,
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [x] Feedback latency < 30s (comando rápido)
-- [ ] `nyquist_compliant: true` set in frontmatter (aguardando a decisão do dono sobre o OINC no escuro; vira `true` se aceitar a exceção, sem outra mudança)
+- [x] `nyquist_compliant: true` set in frontmatter (dono aceitou a exceção do OINC no escuro em 24/11/2026)
 
 **Approval:** parcial. Tudo verde, exceto o autoteste por pixels do OINC no escuro, e os itens de aparelho em `05-UAT-ROTEIRO.md`.
+
+## Decisão do dono (24/11/2026)
+
+O dono aceitou o OINC como está no tema Escuro. O autoteste por pixels com `--theme escuro` fica como limite conhecido do método (feito para fundo claro); não haverá plano de redesenho.

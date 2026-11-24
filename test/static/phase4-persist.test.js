@@ -24,9 +24,9 @@ test('firestore.rules lista vintemInsights em clientCollections() e fora da exce
   assert.doesNotMatch(exception[0], /vintemInsights/, 'vintemInsights nao pode entrar na excecao de resource == null')
 })
 
-test('firestore.indexes.json continua com exatamente 19 indices e nenhum de vintemInsights', () => {
+test('firestore.indexes.json tem exatamente 20 indices (19 mais o das compras do cartao) e nenhum de vintemInsights', () => {
   const { indexes } = JSON.parse(read('firestore.indexes.json'))
-  assert.equal(indexes.length, 19, 'a leitura e so por igualdades: nenhum indice novo')
+  assert.equal(indexes.length, 20, 'o unico indice acrescentado depois e o das compras do cartao (06-07); vintemInsights nao tem')
   assert.deepEqual(
     indexes.filter((i) => i.collectionGroup === 'vintemInsights'),
     [],

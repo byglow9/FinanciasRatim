@@ -13,6 +13,8 @@ interface TotalsCents {
 
 interface TransactionTotalsProps {
   totalsCents: TotalsCents
+  /** Comprado no cartao no ciclo (compras menos estornos), em centavos, vindo do nucleo. Fica fora do saldo. */
+  cardSpendCents?: number
   /** Saldo acumulado ate o fim do ciclo, em centavos. So e chamado com Detalhes aberto. */
   loadAccumulated: () => Promise<number>
   /** Muda a cada lancamento, edicao ou exclusao: o acumulado guardado fica velho e e pedido de novo. */
@@ -32,7 +34,12 @@ const exact = (cents: number) => formatMoney(cents, { decimals: 'always' })
  * O saldo total acumulado le todo o historico, entao so e pedido ao abrir Detalhes.
  * Troque a `key` do componente quando mudar a pessoa ou o ciclo.
  */
-export function TransactionTotals({ totalsCents, loadAccumulated, dataVersion }: TransactionTotalsProps) {
+export function TransactionTotals({
+  totalsCents,
+  cardSpendCents = 0,
+  loadAccumulated,
+  dataVersion,
+}: TransactionTotalsProps) {
   const panelId = useId()
   const [open, setOpen] = useState(false)
   // Resultado guardado junto da versao dos dados: com outra versao ele e velho e conta como nao carregado (WR-04).
@@ -88,6 +95,11 @@ export function TransactionTotals({ totalsCents, loadAccumulated, dataVersion }:
     { id: 'saldo', label: 'Saldo do ciclo', value: exact(saldo) },
     { id: 'acumulado', label: 'Saldo total acumulado', value: accumulatedText },
   ]
+  // Linha do cartao so existe quando ha compra no cartao no ciclo; o valor vem do nucleo.
+  const hasCardSpend = cardSpendCents > 0
+  if (hasCardSpend) {
+    details.splice(3, 0, { id: 'cartao', label: 'Compras no cartão (fora do saldo)', value: exact(cardSpendCents) })
+  }
 
   return (
     <div className="rounded-[22px] bg-card px-4 pt-4">
@@ -108,6 +120,11 @@ export function TransactionTotals({ totalsCents, loadAccumulated, dataVersion }:
           />
         </span>
       </button>
+      {hasCardSpend ? (
+        <p className="pb-3 text-center text-xs font-normal text-muted-foreground">
+          Compras no cartão: {exact(cardSpendCents)}, fora do saldo até você pagar a fatura
+        </p>
+      ) : null}
       <Collapsible open={open} id={panelId}>
         <dl className="space-y-2 border-t border-border py-3">
           {details.map((row) => (

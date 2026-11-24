@@ -30,7 +30,7 @@ export function TransactionsPage() {
   const { show } = useToast()
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
-  const { cycle, transactions, loading, error, update, remove, refetch, totalsCents, loadAccumulated } =
+  const { cycle, transactions, loading, error, update, remove, refetch, totalsCents, cardSpendCents, loadAccumulated } =
     useCycleTransactions(person)
 
   // O Sheet de acoes fica montado enquanto a animacao de saida roda, entao a linha escolhida
@@ -112,6 +112,7 @@ export function TransactionsPage() {
         <TransactionTotals
           key={`${person}:${cycle.key}`}
           totalsCents={totalsCents}
+          cardSpendCents={cardSpendCents}
           loadAccumulated={loadAccumulated}
           dataVersion={dataVersion}
         />

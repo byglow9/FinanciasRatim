@@ -1,5 +1,6 @@
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CreditCard } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
+import { Chip } from '@/components/ui/chip'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { iconComponent } from '@/lib/categoryIcons'
 import { cn } from '@/lib/utils'
@@ -22,8 +23,20 @@ function signedAmount(transaction: Pick<Transaction, 'type' | 'amount'>): string
     : formatMoney(-cents, { decimals: 'always' })
 }
 
+/** Marcas textuais do cartao: o dono ve a compra sem confundir com saida de dinheiro da conta (CARD-06). */
+function cardMarks(transaction: Pick<Transaction, 'cardKind' | 'cardStatus'>): { label: string; tone: 'neutral' | 'muted' }[] {
+  if (transaction.cardKind === 'purchase') {
+    const marks: { label: string; tone: 'neutral' | 'muted' }[] = [{ label: 'Cartão', tone: 'neutral' }]
+    if (transaction.cardStatus === 'pending') marks.push({ label: 'Pendente', tone: 'muted' })
+    return marks
+  }
+  if (transaction.cardKind === 'payment') return [{ label: 'Pagamento de fatura', tone: 'neutral' }]
+  if (transaction.cardKind === 'refund') return [{ label: 'Estorno no cartão', tone: 'neutral' }]
+  return []
+}
+
 /**
- * Linha de uma transacao: icone da categoria, descricao, categoria e valor com sinal.
+ * Linha de uma transacao: icone da categoria, descricao, categoria, marcas do cartao e valor com sinal.
  * Tocar abre as acoes (Editar e Apagar) no Sheet da pagina. Todo texto entra como texto React.
  */
 export function TransactionRow({ transaction, onSelect }: TransactionRowProps) {
@@ -34,6 +47,7 @@ export function TransactionRow({ transaction, onSelect }: TransactionRowProps) {
   const DirectionIcon = entrada ? ArrowDownLeft : ArrowUpRight
   const categoryName = categoryDisplayName(transaction, categoryDefs)
   const description = transaction.description
+  const marks = cardMarks(transaction)
 
   return (
     <button
@@ -47,6 +61,15 @@ export function TransactionRow({ transaction, onSelect }: TransactionRowProps) {
           {description}
         </span>
         <span className="block truncate text-xs font-normal text-muted-foreground">{categoryName}</span>
+        {marks.length > 0 ? (
+          <span className="mt-1 flex flex-wrap items-center gap-1">
+            {marks.map((mark) => (
+              <Chip key={mark.label} tone={mark.tone} icon={mark.label === 'Cartão' ? CreditCard : undefined}>
+                {mark.label}
+              </Chip>
+            ))}
+          </span>
+        ) : null}
       </span>
       <span
         className={cn(

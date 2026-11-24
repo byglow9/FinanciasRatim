@@ -317,7 +317,7 @@ Plans:
   1. O usuário abre coinc-financias.web.app, vê o nome Coinc em todas as telas e consegue entrar; o site antigo redireciona direto para o novo, sem página de aviso (D-04)
   2. O usuário adiciona o Coinc à tela inicial a partir dos passos para Android e iPhone, que ficam na última tela do onboarding e também em Ajustes, e o app abre em tela cheia com o ícone próprio (inclusive o maskable)
   3. Depois de um novo deploy, o app atualiza sozinho ao abrir, sem aviso e sem tela branca, e nunca troca de versão no meio de um lançamento (D-14)
-  4. O tema é Automático (segue o celular), com Claro e Escuro nos Ajustes, escolhido por aparelho
+  4. O tema padrão é Claro, com Automático (segue o celular) e Escuro como opções nos Ajustes, escolhido por aparelho
   5. O usuário vê as cores, a tipografia e os componentes novos em todas as telas e passa por um onboarding curto e por um login novo no visual do Coinc
 
 **Plans**: 16/23 plans executed

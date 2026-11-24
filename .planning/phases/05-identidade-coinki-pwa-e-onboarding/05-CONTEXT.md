@@ -28,7 +28,8 @@ Fora desta fase: cartão (Fase 6), push (Fase 7), Casal multiusuário (Fase 8), 
 
 ### Tema escuro
 - **D-07:** Direção de cor: o **verde do tema claro fica mais claro** do que o atual e o **tema escuro usa um verde bem escuro** (fundo verde-quase-preto). Sem rosa (a paleta Noite não entra). Valores exatos (hex, contraste) são do UI-SPEC da fase, medidos pelo teste de contraste existente (`test/static/palette-contrast.test.js`).
-- **D-08:** Seletor nos Ajustes com **três opções: Automático (padrão, segue o celular), Claro, Escuro**.
+- **D-08:** Seletor nos Ajustes com **três opções: Automático (segue o celular), Claro, Escuro**. **Padrão: Claro** (creme, `#f5ecdb`), mesmo que o celular esteja no escuro; sem valor guardado, ou com valor inválido, o app é claro, e Automático só vale quando guardado exatamente como `auto`.
+  - **Revisada pelo dono em 24/11/2026:** a versão original dizia "Automático (padrão, segue o celular)"; o dono trocou o padrão para Claro. As três opções continuam existindo e guardadas por aparelho na chave `coinc:tema:v1`.
 - **D-09:** A escolha fica **por aparelho, no localStorage**, aplicada antes do primeiro desenho (sem piscar o tema errado).
 - **D-10:** A fase **revisa todas as telas e gráficos no escuro**: Recharts, arco do medidor, alertas, Vintém sobre fundo escuro, estados vazios e de erro.
 

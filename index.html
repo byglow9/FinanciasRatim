@@ -7,10 +7,11 @@
       /* Tema antes do primeiro desenho (D-09). Mesma chave e mesmas cores de shared/core/theme.js,
          comparadas por teste (test/static/phase5-theme.test.js). Sincrono, JS antigo, sem dependencia. */
       (function () {
-        var pref = 'auto'
+        /* Padrao claro (D-08 revisada em 24/11/2026): 'auto' (segue o celular) so vale se guardado exatamente assim. */
+        var pref = 'claro'
         try {
           var stored = localStorage.getItem('coinc:tema:v1')
-          if (stored === 'claro' || stored === 'escuro') pref = stored
+          if (stored === 'auto' || stored === 'claro' || stored === 'escuro') pref = stored
         } catch (e) {}
         var dark = pref === 'escuro'
         if (pref === 'auto') {

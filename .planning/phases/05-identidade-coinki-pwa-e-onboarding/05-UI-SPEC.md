@@ -27,7 +27,7 @@ created: "2026-11-23"
 | ROADMAP (Fase 5), REQUIREMENTS IDEN-01 e IDEN-02, PROJECT.md | "Coinki" e `coinki.web.app` viram **Coinc** e `coinc-financias.web.app`; o site antigo **redireciona direto**, sem aviso (D-04) |
 | ROADMAP critério 3 e REQUIREMENTS IDEN-04 | De "recebe um aviso para atualizar" para "atualiza sozinho ao abrir, sem aviso e sem tela branca" (D-14) |
 | ROADMAP critério 2 e IDEN-03 | A tela com os passos é a 3ª do onboarding **e** a folha "Adicionar à tela inicial" em Ajustes (P-02) |
-| REQUIREMENTS IDEN-05 | Três opções: Automático (padrão), Claro, Escuro, por aparelho (D-08, D-09) |
+| REQUIREMENTS IDEN-05 | Três opções: Automático, Claro (padrão), Escuro, por aparelho (D-08 revisada em 24/11/2026, D-09) |
 
 ---
 
@@ -51,7 +51,7 @@ created: "2026-11-23"
 | D-04, D-05 | Site antigo redireciona direto; login refeito uma vez; aviso curto **na tela de login** é aceito (S2), página de aviso não |
 | D-06 | Domínio novo em Auth e `ALLOWED_ORIGINS`; cabeçalhos do Hosting sem cache imutável em `/sw.js` (infra, ver "Atualização") |
 | D-07 | Verde do tema claro **mais claro** e tema escuro em **verde bem escuro**, sem rosa (Color) |
-| D-08, D-09 | Seletor Automático/Claro/Escuro nos Ajustes, por aparelho em `localStorage`, aplicado antes do primeiro desenho (Mecânica do tema, S3) |
+| D-08, D-09 | Seletor Automático/Claro/Escuro nos Ajustes (padrão Claro, D-08 revisada em 24/11/2026), por aparelho em `localStorage`, aplicado antes do primeiro desenho (Mecânica do tema, S3) |
 | D-10 | Revisão de todas as telas e gráficos no escuro (S6) |
 | D-11, D-12 | Texto "Adicionar à tela inicial", nunca "instalar"; passos na 3ª tela do onboarding (S1, S4) |
 | D-13 | Ícone com 5 versões em sketch (Identidade do app) |
@@ -264,12 +264,12 @@ Sobrescritas no escuro (bloco `.dark .vt` em `index.css`; o resto da paleta do `
 
 ## Mecânica do tema
 
-Preferência: `'auto' | 'claro' | 'escuro'`, guardada em `localStorage` na chave **`coinc:tema:v1`** (ausente = `auto`). Por aparelho: nada vai para o Firestore (D-09).
+Preferência: `'auto' | 'claro' | 'escuro'`, guardada em `localStorage` na chave **`coinc:tema:v1`** (ausente ou inválida = `claro`, o padrão, D-08 revisada pelo dono em 24/11/2026; `auto` só vale guardado exatamente assim). Por aparelho: nada vai para o Firestore (D-09).
 
-1. **Antes do primeiro desenho.** Um `<script>` síncrono e inline em `index.html`, antes do CSS e do bundle, resolve o tema e escreve no `<html>`: classe `dark` (ou nenhuma), `style.colorScheme` (`dark` ou `light`) e o `content` do único `<meta name="theme-color">` (`#0a1510` no escuro, `#f5ecdb` no claro). Resolução: `escuro` -> escuro; `claro` -> claro; senão `matchMedia('(prefers-color-scheme: dark)').matches`. Tudo em `try/catch`: falha de leitura = `auto`.
+1. **Antes do primeiro desenho.** Um `<script>` síncrono e inline em `index.html`, antes do CSS e do bundle, resolve o tema e escreve no `<html>`: classe `dark` (ou nenhuma), `style.colorScheme` (`dark` ou `light`) e o `content` do único `<meta name="theme-color">` (`#0a1510` no escuro, `#f5ecdb` no claro). Resolução: `escuro` -> escuro; `auto` -> `matchMedia('(prefers-color-scheme: dark)').matches`; qualquer outro valor (inclusive ausente) -> claro. Tudo em `try/catch`: falha de leitura = `claro`.
 2. **`index.html`.** `<meta name="color-scheme" content="light dark">` (hoje `only light`); `<title>Coinc</title>`; remover as três metas `Cache-Control/Pragma/Expires` só se o cabeçalho do Hosting já cobre (infra, D-06).
 3. **CSS.** `:root { color-scheme: light }` e `.dark { color-scheme: dark }` (hoje `only light`). Os tokens em hex hoje em `@theme inline` passam para um bloco `@theme { ... }` **sem** `inline`, para a classe `.dark` poder reescrevê-los; os tokens `hsl(var(--x))` continuam em `@theme inline`. O bloco `.dark` (em `@layer base`) redefine **todos** os tokens da tabela do tema escuro com a mesma sintaxe do claro (tripletes HSL e `--color-*: #hex`). Camadas: `@layer base` vence `@layer theme`, então não há disputa de especificidade.
-4. **Em tempo de execução (`useTheme`).** Aplica a escolha na hora (sem animação de transição de cor), grava a chave, atualiza `meta theme-color`; em `auto` assina `matchMedia('(prefers-color-scheme: dark)')` e acompanha o sistema com o app aberto; escuta o evento `storage` para sincronizar abas.
+4. **Em tempo de execução (`useTheme`).** Aplica a escolha na hora (sem animação de transição de cor), grava a chave, atualiza `meta theme-color`; só em `auto` assina `matchMedia('(prefers-color-scheme: dark)')` e acompanha o sistema com o app aberto; escuta o evento `storage` para sincronizar abas.
 5. **Guarda de paridade (teste novo).** Todo token do tema claro tem equivalente no `.dark`, exceto os de lista fechada que não mudam entre temas (`--color-sand`, `--color-sage` e `--radius*`). O teste de contraste (`palette-contrast.test.js`) passa a medir os **dois** temas (ver "Testes").
 
 ---
@@ -422,7 +422,7 @@ O fluxo de autenticação **não muda** (guarda `phase3-1-login.test.js`: `useAu
 | 2 | `sun` 20 | Claro | Sempre claro |
 | 3 | `moon` 20 | Escuro | Sempre escuro |
 
-- Cada linha: `<button role="radio" aria-checked>`, largura total, `min-h-14`, `bg-surface-2`, raio 16, padding 12 16, intervalo 8. Direita: bolinha de 24 px (vazia = borda 2 px `--input`; marcada = `bg-action` com `check` branco 16). A linha marcada ganha também borda de 2 px `--color-action` (não depende só da bolinha). Setas, Home e End movem e ativam (como `VintemToneCard`); só a opção ativa é tabulável. Padrão marcado: **Automático**.
+- Cada linha: `<button role="radio" aria-checked>`, largura total, `min-h-14`, `bg-surface-2`, raio 16, padding 12 16, intervalo 8. Direita: bolinha de 24 px (vazia = borda 2 px `--input`; marcada = `bg-action` com `check` branco 16). A linha marcada ganha também borda de 2 px `--color-action` (não depende só da bolinha). Setas, Home e End movem e ativam (como `VintemToneCard`); só a opção ativa é tabulável. Padrão marcado: **Claro** (D-08 revisada em 24/11/2026); Automático segue o celular, mas só quando o dono o escolhe.
 - **Aplica na hora**, sem botão de salvar e sem toast (a própria tela muda). Não depende de rede.
 - **Somente leitura NÃO desabilita** o seletor: é preferência do aparelho, não dado do casal (diferente do tom do Vintém).
 - Em `auto`, mudar o tema do celular com o app aberto muda o app na hora.
@@ -571,7 +571,7 @@ Applicable state considerations resolved: 13 covered, 5 backstop, 3 unresolved
 | loading | Tema antes do primeiro desenho | ✅ covered | Script inline síncrono aplica classe, `color-scheme` e `theme-color` antes do CSS; sem piscar o tema errado |
 | error | Login sem conexão | ✅ covered | `Notice` danger "Sem conexão. Conecte-se à internet para entrar."; o `signIn` não é chamado |
 | error | Falha ao abrir (trecho não carrega depois do deploy) | ✅ covered | Uma recarga automática protegida por `sessionStorage`; depois `BootError` com "Tentar de novo" |
-| error | `localStorage` indisponível | ✅ covered | Onboarding tratado como visto; tema cai em `auto` |
+| error | `localStorage` indisponível | ✅ covered | Onboarding tratado como visto; tema cai em `claro` (padrão) |
 | partial | App já adicionado à tela inicial | ✅ covered | `Notice` "Você já está usando o Coinc como app." no lugar dos passos |
 | partial | Navegador sem `beforeinstallprompt` (iPhone, Firefox) | ✅ covered | Só os passos; "Adicionar agora" não renderiza |
 | partial | Sessão existente ao abrir o onboarding | ✅ covered | Pula o onboarding e grava a chave em silêncio (P-05) |
@@ -618,7 +618,7 @@ Guardas estáticas em `test/static/phase5-*.test.js` com o helper compartilhado;
 | 9 | **Ícone:** a versão escolhida respeita as proibições (sem moeda, sem texto, 2 olhos >= 28) e a zona segura de raio 204,8 no maskable; o autoteste do sketch termina em `FALHAS 0` |
 | 10 | **Onboarding:** 3 telas; "Pular" nas três; chave `coinc:onboarding:v1` gravada só em Pular/Entrar; Vintém montado uma vez e com `decorative`, sem `onTap` nem balão; estado por tela `neutro`, `atento`, `feliz`; modo `replay` não grava a chave |
 | 11 | **Layout a 360x640 e 390x844** (auditoria): onboarding e login sem rolagem horizontal; telas 1 e 2 sem rolagem vertical; todo alvo >= 43,5 px; foco no `h1` ao trocar de tela |
-| 12 | **Tema:** `useTheme` aplica antes do desenho (teste com `localStorage` semeado), escolhe por `auto` o do sistema, acompanha mudança do sistema só em `auto`, falha de `localStorage` cai em `auto`; o seletor não desabilita em somente leitura |
+| 12 | **Tema:** `useTheme` aplica antes do desenho (teste com `localStorage` semeado), sem valor guardado é claro mesmo com o sistema escuro, escolhe o do sistema só com `auto` guardado, acompanha mudança do sistema só em `auto`, falha de `localStorage` cai em `claro`; o seletor não desabilita em somente leitura |
 | 13 | **Estático:** só 12/16/28/56 e 400/700 nas telas da fase; sem emoji; `LoginForm.tsx` sem `gradient` e com `CoincMark`; textos de passos usam "Adicionar à tela inicial" e não "Instalar" fora da citação do menu do Chrome |
 | 14 | **Atualização:** helper puro de decisão (achou versão -> `ativar agora` / `esperar` / `nada`) com casos: nos 3 s da abertura sem nada em andamento, em uso, com `Sheet` aberto, ao ir para segundo plano, `vite:preloadError` uma vez e depois erro |
 | 15 | **Auditoria de tema (`theme.mjs`):** todas as rotas e sobreposições da S6 nos dois temas, sem violação de (a) a (e) |

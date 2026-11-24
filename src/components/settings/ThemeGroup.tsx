@@ -18,7 +18,8 @@ const OPTIONS: ThemeOption[] = [
 ]
 
 /**
- * Grupo "Tema" do cartão Aparência (UI-SPEC S3, D-08, D-09): Automático, Claro e Escuro.
+ * Grupo "Tema" do cartão Aparência (UI-SPEC S3, D-08 revisada em 24/11/2026, D-09): Automático, Claro e Escuro.
+ * O padrão é Claro; Automático (segue o tema do celular) é opção, só vale se o dono escolher.
  * É preferência do aparelho, não dado do casal: aplica na hora, sem botão de salvar, sem aviso e sem rede,
  * e por isso nunca fica desabilitado em somente leitura (P-13).
  * Radiogroup: setas, Home e End movem e ativam; só a opção marcada é tabulável.

@@ -3,7 +3,7 @@
 // So 127.0.0.1; nada lido de .env*; perfil temporario do Chrome removido no fim; nenhuma dependencia nova.
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/theme.mjs --smoke
 //   --smoke  so o primeiro desenho: escuro forcado no aparelho nasce pintado, sem piscar o tema errado.
-//   sem flag todos os cenarios (smoke mais o seletor de Ajustes e o modo Automatico).
+//   sem flag todos os cenarios (smoke mais o seletor de Ajustes, o padrao Claro e o modo Automatico).
 //   --audit  (plano 05-15, D-10, IDEN-06) todas as rotas e telas de entrada nos dois temas e nos dois tamanhos,
 //            cinco verificacoes (rolagem horizontal, contraste, bloco claro no escuro, hex em src, alvo de toque)
 //            e uma captura por tela e tema. Filtros: --route R, --theme claro|escuro, --viewport LxA,
@@ -267,13 +267,21 @@ async function scenarioSelector(ctx) {
   let g = await page.evaluate(READ_GROUP)
   check('seletor: o grupo Tema do aplicativo existe com tres radios', g.found && g.names.length === 3, g.names.join(','))
   check('seletor: ordem Automatico, Claro, Escuro', g.names.join(',') === 'Automático,Claro,Escuro', g.names.join(','))
-  check('seletor: Automatico vem marcado por padrao e so ele e tabulavel', g.checked.join(',') === 'true,false,false' && g.tabbable === 1, g.checked.join(','))
+  check('seletor: Claro vem marcado por padrao e so ele e tabulavel', g.checked.join(',') === 'false,true,false' && g.tabbable === 1, g.checked.join(','))
   check('seletor: subtitulo novo e sem a nota antiga', g.subtitle && !g.oldNote)
   check('seletor: nenhum radio desabilitado', !g.disabled)
   check('seletor: todo alvo do cartao tem pelo menos 43,5 px', g.small.length === 0, g.small.join(' | '))
   let s = await page.evaluate(READ_STATE)
-  check('seletor: sistema claro e Automatico deixam a pagina clara', s.dark === false)
+  check('seletor: sistema claro e sem chave deixam a pagina clara', s.dark === false)
   check('seletor: sem rolagem horizontal a 360x640', s.scrollW <= s.clientW, `${s.scrollW} x ${s.clientW}`)
+
+  // Padrao claro (D-08 revisada em 24/11/2026): sem chave, o sistema escuro nao escurece o app.
+  await setSystemTheme(page, 'dark')
+  await navigate(page, `${ORIGIN}/configuracoes#aparencia`, { reload: true })
+  g = await page.evaluate(READ_GROUP)
+  s = await page.evaluate(READ_STATE)
+  check('padrao: sem chave e com o sistema escuro a pagina fica clara e Claro vem marcado', s.dark === false && s.meta === LIGHT_META && s.stored === null && g.checked.join(',') === 'false,true,false', `${s.dark} ${s.meta} ${s.stored} ${g.checked.join(',')}`)
+  await setSystemTheme(page, 'light')
 
   // Escuro: na hora, grava e sobrevive ao recarregamento antes do primeiro filho de #root.
   await clickRadio(page, 'Escuro')
@@ -328,14 +336,12 @@ async function scenarioKeyboardAndStorage(ctx) {
   await page.evaluate(`document.querySelector(${JSON.stringify(GROUP_SEL + ' [role="radio"][aria-checked="true"]')}).focus()`)
   await sleep(100)
 
-  await pressKey(page, 'ArrowDown')
   let g = await page.evaluate(READ_GROUP)
-  let s = await page.evaluate(READ_STATE)
-  check('teclado: seta para baixo move e ativa Claro', g.checked.join(',') === 'false,true,false' && g.focusedName === 1 && s.stored === 'claro', `${g.checked.join(',')} foco ${g.focusedName} ${s.stored}`)
-  await pressKey(page, 'End')
+  check('teclado: o foco inicial esta em Claro, o padrao', g.checked.join(',') === 'false,true,false', g.checked.join(','))
+  await pressKey(page, 'ArrowDown')
   g = await page.evaluate(READ_GROUP)
-  s = await page.evaluate(READ_STATE)
-  check('teclado: End vai para Escuro e liga a classe dark', g.checked.join(',') === 'false,false,true' && s.dark === true && s.stored === 'escuro', `${g.checked.join(',')} ${s.dark} ${s.stored}`)
+  let s = await page.evaluate(READ_STATE)
+  check('teclado: seta para baixo move e ativa Escuro e liga a classe dark', g.checked.join(',') === 'false,false,true' && g.focusedName === 2 && s.dark === true && s.stored === 'escuro', `${g.checked.join(',')} foco ${g.focusedName} ${s.dark} ${s.stored}`)
   await pressKey(page, 'ArrowDown')
   g = await page.evaluate(READ_GROUP)
   check('teclado: seta para baixo no ultimo volta ao primeiro', g.checked.join(',') === 'true,false,false', g.checked.join(','))
@@ -345,6 +351,10 @@ async function scenarioKeyboardAndStorage(ctx) {
   await pressKey(page, 'Home')
   g = await page.evaluate(READ_GROUP)
   check('teclado: Home volta a Automatico', g.checked.join(',') === 'true,false,false' && g.tabbable === 1, g.checked.join(','))
+  await pressKey(page, 'ArrowDown')
+  g = await page.evaluate(READ_GROUP)
+  s = await page.evaluate(READ_STATE)
+  check('teclado: seta para baixo move e ativa Claro', g.checked.join(',') === 'false,true,false' && g.focusedName === 1 && s.stored === 'claro', `${g.checked.join(',')} foco ${g.focusedName} ${s.stored}`)
 
   // Outra aba do mesmo aparelho grava a chave; o evento storage chega nesta aba.
   const fireStorage = (value) =>
@@ -364,7 +374,7 @@ async function scenarioKeyboardAndStorage(ctx) {
   await fireStorage('xyz')
   await sleep(200)
   g = await page.evaluate(READ_GROUP)
-  check('storage: valor desconhecido vale Automatico', g.checked.join(',') === 'true,false,false', g.checked.join(','))
+  check('storage: valor desconhecido vale Claro, o padrao', g.checked.join(',') === 'false,true,false', g.checked.join(','))
 
   check('teclado e storage: nenhuma excecao nem console.error', ctx.collected.exceptions.length === 0 && ctx.collected.consoleErrors.length === 0, [...ctx.collected.exceptions, ...ctx.collected.consoleErrors].join(' | '))
 }

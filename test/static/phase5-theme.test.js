@@ -76,21 +76,26 @@ test('script inline: claro desliga mesmo com o sistema escuro', () => {
 test('script inline: auto segue o sistema nos dois sentidos', () => {
   assert.deepEqual(run({ stored: 'auto', systemDark: true }), { dark: true, colorScheme: 'dark', themeColor: '#0a1510' })
   assert.deepEqual(run({ stored: 'auto', systemDark: false }), { dark: false, colorScheme: 'light', themeColor: '#f5ecdb' })
-  assert.deepEqual(run({ stored: null, systemDark: true }).dark, true, 'sem chave vale auto')
 })
 
-test('script inline: localStorage lancando cai no sistema; matchMedia lancando cai em claro', () => {
-  assert.equal(run({ storageThrows: true, systemDark: true }).dark, true)
+test('script inline: sem valor guardado o padrao e claro, mesmo com o sistema escuro (D-08 revisada)', () => {
+  assert.deepEqual(run({ stored: null, systemDark: true }), { dark: false, colorScheme: 'light', themeColor: '#f5ecdb' })
+  assert.deepEqual(run({ stored: null, systemDark: false }), { dark: false, colorScheme: 'light', themeColor: '#f5ecdb' })
+  assert.deepEqual(run({ stored: 'auto', systemDark: true }).dark, true, 'auto guardado segue o sistema')
+})
+
+test('script inline: localStorage lancando cai no padrao claro; matchMedia lancando cai em claro', () => {
+  assert.equal(run({ storageThrows: true, systemDark: true }).dark, false)
   assert.equal(run({ storageThrows: true, systemDark: false }).dark, false)
   assert.deepEqual(run({ stored: 'auto', mediaThrows: true }), { dark: false, colorScheme: 'light', themeColor: '#f5ecdb' })
   assert.deepEqual(run({ storageThrows: true, mediaThrows: true }).dark, false)
   assert.equal(run({ stored: 'escuro', mediaThrows: true }).dark, true, 'escuro forcado nao depende do matchMedia')
 })
 
-test('script inline: valor desconhecido vale auto (T-05-06-01)', () => {
-  for (const stored of ['xyz', 'Escuro', 'ESCURO', ' escuro', 'dark', '']) {
+test('script inline: valor desconhecido vale claro, nunca auto (T-05-06-01)', () => {
+  for (const stored of ['xyz', 'Escuro', 'ESCURO', ' escuro', 'Auto', 'AUTO', ' auto', 'auto ', 'dark', '']) {
     assert.equal(run({ stored, systemDark: false }).dark, false, `"${stored}" com sistema claro`)
-    assert.equal(run({ stored, systemDark: true }).dark, true, `"${stored}" com sistema escuro`)
+    assert.equal(run({ stored, systemDark: true }).dark, false, `"${stored}" com sistema escuro`)
   }
 })
 
@@ -122,6 +127,14 @@ test('useTheme nao importa servico nem contexto de dados e nao tem hex literal (
   assert.match(src, /addEventListener\('storage'/, 'sincroniza abas pelo evento storage')
   assert.match(src, /prefers-color-scheme: dark/)
   assert.match(src, /useSyncExternalStore/)
+})
+
+test('useTheme: o padrao (sem valor, falha de leitura, servidor) e o claro, nunca auto', () => {
+  const src = code('src/hooks/useTheme.ts')
+  assert.match(src, /THEME_DEFAULT/, 'usa a constante do padrao')
+  assert.doesNotMatch(src, /return 'auto'/, 'nenhum retorno de auto como padrao')
+  assert.doesNotMatch(src, /getServerPref = \(\): ThemePref => 'auto'/)
+  assert.match(src, /getServerPref = \(\): ThemePref => THEME_DEFAULT/)
 })
 
 test('AreaContext nao forca mais o tema claro', () => {

@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react'
-import { THEME_KEY, normalizeTheme, resolveTheme, themeColorFor } from '@shared/core/theme.js'
+import { THEME_DEFAULT, THEME_KEY, normalizeTheme, resolveTheme, themeColorFor } from '@shared/core/theme.js'
 import type { ThemePref, ThemeResolved } from '@shared/core/theme.js'
 
-// Tema do aparelho (D-08, D-09): preferencia 'auto' | 'claro' | 'escuro' em localStorage, so neste
-// aparelho. Nada aqui toca em servico, contexto de dados nem rede. O script inline do index.html ja
+// Tema do aparelho (D-08 revisada em 24/11/2026, D-09): preferencia 'auto' | 'claro' | 'escuro' em
+// localStorage, so neste aparelho; o padrao (sem valor guardado) e 'claro'. Nada aqui toca em servico, contexto de dados nem rede. O script inline do index.html ja
 // pintou a pagina antes do primeiro desenho; este modulo assume dali em diante.
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
@@ -14,7 +14,7 @@ function readStored(): ThemePref {
   try {
     return normalizeTheme(localStorage.getItem(THEME_KEY))
   } catch {
-    return 'auto'
+    return THEME_DEFAULT
   }
 }
 
@@ -113,7 +113,7 @@ function subscribe(onChange: () => void): () => void {
 
 const getPref = (): ThemePref => pref
 const getResolved = (): ThemeResolved => resolveTheme(pref, systemDark())
-const getServerPref = (): ThemePref => 'auto'
+const getServerPref = (): ThemePref => THEME_DEFAULT
 const getServerResolved = (): ThemeResolved => 'claro'
 
 /** Preferencia escolhida, tema resolvido e a troca. Snapshots sao textos primitivos estaveis. */

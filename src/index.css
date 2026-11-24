@@ -525,3 +525,70 @@
     outline-offset: 2px;
   }
 }
+
+/* ---- Plano 05-22: Login do sketch 029 (fundo liso, Vintem de entrada, fala no lugar dos avisos). ----
+   Fora do bloco .vt da Fase 4 e sem mexer nos tokens. */
+
+/* Palco do Vintem do Login: a largura do Vintem (--vw) manda nas medidas do palco e do brilho. */
+.entrada-stage {
+  --vw: clamp(120px, 42vw, 168px);
+  position: relative;
+  height: calc(var(--vw) * 0.7334 + 10px);
+}
+
+.entrada-vintem {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: var(--vw);
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/* Brilho suave atras do Vintem: so aqui vive o degrade do Login (o arquivo do Login nao o usa). */
+.entrada-halo {
+  position: absolute;
+  top: calc(var(--vw) * -0.5167 + 10px);
+  left: 50%;
+  width: calc(var(--vw) * 1.6);
+  height: calc(var(--vw) * 1.4);
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-action) 13%, transparent), transparent);
+}
+
+.dark .entrada-halo {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-action) 14%, transparent), transparent);
+}
+
+/* Zzz suave do Vintem de entrada (valores do sketch 029). */
+.vt.vt-entrada {
+  --vintem-z: #7f9a8a;
+}
+
+.dark .vt.vt-entrada {
+  --vintem-z: #a8c5b4;
+}
+
+/* Fala do Vintem: fade com subida de 8 px e escala 0,94; com movimento reduzido so o fade. */
+@keyframes vintem-say-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.anim-vintem-say {
+  animation: vintem-say-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-vintem-say {
+    animation: fade-100 100ms ease-out !important;
+  }
+}

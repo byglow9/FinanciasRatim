@@ -17,6 +17,7 @@ import { ReportsPage } from '@/pages/ReportsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { CalendarPage } from '@/pages/CalendarPage'
 import { CouplePage } from '@/pages/CouplePage'
+import { CardsPage } from '@/pages/CardsPage'
 import { VintemTestPage } from '@/pages/VintemTestPage'
 
 function AnimatedRoutes() {
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
         <Route path="/configuracoes" element={<SettingsPage />} />
         <Route path="/calendario" element={<CalendarPage />} />
         <Route path="/casal" element={<CouplePage />} />
+        <Route path="/cartoes" element={<CardsPage />} />
         <Route path="/vintem-teste" element={<VintemTestPage />} />
       </Routes>
     </div>

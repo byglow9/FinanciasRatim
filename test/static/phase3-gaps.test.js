@@ -103,8 +103,8 @@ test('Central de Limites removida: sem arquivos, sem rota e dock de 8 destinos s
   assert.ok(!exists('src/components/dashboard/CentralSummaryCard.tsx'))
   const app = code('src/App.tsx')
   assert.doesNotMatch(app, /\/limites|LimitsPage/)
-  // 9 rotas da casca mais a rota oculta /vintem-teste da Fase 4 (D-17).
-  assert.equal([...app.matchAll(/<Route\s+path=/g)].length, 10)
+  // 9 rotas da casca, a rota oculta /vintem-teste da Fase 4 (D-17) e /cartoes da Fase 6.
+  assert.equal([...app.matchAll(/<Route\s+path=/g)].length, 11)
   const dock = code('src/components/layout/NavRail.tsx')
   assert.doesNotMatch(dock, /\bGauge\b/)
   assert.equal([...dock.matchAll(/\{ href: '/g)].length, 8)

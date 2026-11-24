@@ -403,10 +403,13 @@ Plans:
   3. Uma compra no cartão conta nos limites pela data da compra, e o saldo da conta não cai até o pagamento da fatura, que é tratado como transferência vinculada à fatura e nunca como gasto
   4. Uma compra pendente vira confirmada sem duplicar, mesmo quando o banco recria o identificador da transação
   5. Os vencimentos de fatura aparecem no Calendário e nos alertas
+  6. O cartão tem atalho próprio no dock (9º destino, ícone de cartão, rótulo acessível "Cartões") que abre `/cartoes`, sem rolagem horizontal da página e sem alvo menor que 44px em 360px, e a Home continua com o resumo do cartão (D-11)
+  7. O usuário lança um gasto manual como Cartão (escolhe o cartão quando há mais de um): ele conta nos limites pela data da compra, entra na fatura do mês pelo fechamento, não baixa o saldo e, quando a compra chega do banco, os dois viram um só lançamento (D-12)
+  8. Todo o histórico do cartão que o MeuPluggy devolve é importado, sem corte por idade e sem duplicar lançamentos manuais antigos, e qualquer reclassificação em massa dos dados existentes só acontece depois de ensaio e cópia de segurança (D-13)
 
-**Notas de execução:** a Central de Limites e Cartões foi removida pelo dono em 18/11 (quick `261118-mkh`), então o cartão ganha a rota `/cartoes`, com um resumo na Home (o dock continua com 8 destinos; atalho no dock é decisão do dono). O primeiro plano é o tracer (cartão Nubank real com limite, disponível, % usado e fatura atual vindos da Pluggy) e o plano 06-02 o confere em produção antes de qualquer expansão. Ordem de produção: índices, regras, servidor (push em main) e por último a hospedagem coinc; nenhuma regra restritiva nova na fase. O MeuPluggy atualiza cerca de 1 vez por dia: nenhuma promessa de tempo real. Parcelas N/M são heurística até haver uma compra parcelada real (D-06, D-07).
+**Notas de execução:** a Central de Limites e Cartões foi removida pelo dono em 18/11 (quick `261118-mkh`), então o cartão ganha a rota `/cartoes`, com um resumo na Home (o dock ganha o 9º destino Cartões, decisão D-11 do dono em 24/11, e a Home continua com o resumo). O primeiro plano é o tracer (cartão Nubank real com limite, disponível, % usado e fatura atual vindos da Pluggy) e o plano 06-02 o confere em produção antes de qualquer expansão. Ordem de produção: índices, regras, servidor (push em main) e hospedagem coinc; depois, com o servidor no ar, o histórico completo do cartão por script do dono, com ensaio e cópia de segurança (D-13); nenhuma regra restritiva nova na fase. O MeuPluggy atualiza cerca de 1 vez por dia: nenhuma promessa de tempo real. Parcelas N/M são heurística até haver uma compra parcelada real (D-06, D-07). Decisões do dono de 24/11 (D-11 a D-14): o chip Cartão do lançamento manual funciona e a compra manual é adotada pela compra do banco sem duplicar (D-12); o histórico do cartão é importado inteiro, sem o limite de 40 dias, com ensaio e cópia de segurança antes de qualquer reclassificação em massa (D-13); sem tempo real, Casal e Relatórios contam a compra do cartão como gasto na data da compra e o "Marcar como paga" na fatura fica (D-14).
 
-**Plans**: 0/15 plans executed
+**Plans**: 0/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -422,30 +425,38 @@ Plans:
 
 - [ ] 06-03-PLAN.md — Núcleo: mês da fatura, fechamento e vencimento do dono, total por fatura e status aberta, fechada, paga, atrasada (CARD-08, CARD-02, CENT-03)
 - [ ] 06-04-PLAN.md — Núcleo: valor em reais (dólar), classificação, parcelas N/M por dado ou texto, "a sair" e reconciliação de pendente para confirmada (CARD-07, CARD-05, CARD-03)
-- [ ] 06-05-PLAN.md — Núcleo: saldo de caixa sem compras do cartão, detecção do pagamento da fatura e regressão do orçamento (CARD-03, CARD-04, CARD-06)
+- [ ] 06-05-PLAN.md — Núcleo: saldo de caixa sem compras do cartão, detecção do pagamento da fatura e regressão do orçamento, do Casal e dos Relatórios (CARD-03, CARD-04, CARD-06)
+- [ ] 06-16-PLAN.md — Dock com o 9º destino Cartões e auditor de espiada a 360px (CENT-03, CARD-02)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-06-PLAN.md — Servidor: compras do cartão com campos de cartão, adoção do legado, id recriado, remoção de pendente e totais por fatura (CARD-03, CARD-06, CARD-07, CARD-02)
+- [ ] 06-06-PLAN.md — Servidor: compras do cartão com campos de cartão, adoção do legado, id recriado, remoção de pendente e totais por fatura, com o histórico inteiro sem limite de idade (CARD-03, CARD-06, CARD-07, CARD-02)
 - [ ] 06-07-PLAN.md — Regras e índice do cartão, tipos, serviço e hooks useCards e useCardView (CARD-02, CARD-08, CENT-03)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 06-08-PLAN.md — Servidor: pagamento da fatura como transferência, cartão do dono (não do item), pagamentos ligados à fatura e script de reclassificação (CARD-04, CARD-06)
+- [ ] 06-08-PLAN.md — Servidor: pagamento da fatura como transferência, cartão do dono (não do item), pagamentos ligados à fatura e script de reclassificação com ensaio e cópia de segurança (CARD-04, CARD-06)
 - [ ] 06-09-PLAN.md — Configurações: cartão Contas e cartões com apelido, fechamento e vencimento (CARD-08, CARD-02)
 - [ ] 06-10-PLAN.md — Página /cartoes completa: fatura atual, status, mês a mês, próximas faturas, parcelas a vir e resumo na Home (CARD-02, CENT-03, CARD-08, CARD-05)
 - [ ] 06-11-PLAN.md — Transações: saldo de caixa sem compras do cartão, marcas e linha do total do cartão (CARD-06, CARD-03)
 - [ ] 06-13-PLAN.md — Vencimento da fatura no Calendário e no sino (CENT-04)
+- [ ] 06-17-PLAN.md — Lançamento manual: chip Cartão habilitado, escolha do cartão e gravação com cardId e cardKind (CARD-03, CARD-06)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
 - [ ] 06-12-PLAN.md — Folha de detalhe da fatura: compras por dia, parcelas, pagamentos e marcar como paga (CARD-05, CARD-04, CENT-03)
+- [ ] 06-18-PLAN.md — Servidor: adoção do lançamento manual pela compra do banco, sem duplicar e sem limite de idade (CARD-07, CARD-03, CARD-06)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 06-14-PLAN.md — Gate de produção: índice, regras, servidor e hospedagem, datas do cartão, reclassificação e conferência com o Nubank (CARD-01 a CARD-08, CENT-03, CENT-04)
+- [ ] 06-19-PLAN.md — Servidor: histórico completo do cartão com ensaio, cópia de segurança obrigatória e marcador que pausa o sync automático (CARD-07, CARD-06, CARD-03)
+- [ ] 06-20-PLAN.md — Auditoria de layout a 360px: /cartoes, dock de 9 destinos e folha de lançamento com o cartão, nos dois temas (CENT-03, CARD-02)
 
 **Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 06-14-PLAN.md — Gate de produção: índice, regras, servidor e hospedagem, datas do cartão, histórico completo e reclassificação com ensaio e cópia de segurança, e conferência com o Nubank (CARD-01 a CARD-08, CENT-03, CENT-04)
+
+**Wave 9** *(blocked on Wave 8 completion)*
 
 - [ ] 06-15-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT com as decisões abertas (todos os requisitos da fase)
 
@@ -495,6 +506,6 @@ Plans:
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
-| 6. Cartão de crédito | 0/15 | Not started | - |
+| 6. Cartão de crédito | 0/20 | Not started | - |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

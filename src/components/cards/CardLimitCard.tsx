@@ -1,17 +1,13 @@
 import { CreditCard } from 'lucide-react'
 import { IconCircle } from '@/components/ui/icon-circle'
 import { Progress, type ProgressTone } from '@/components/ui/progress'
+import { moneyOrDash as money } from '@/lib/cardLabels'
 import type { Card } from '@/services/cards.service'
-import { cardLimitView } from '@shared/core/cards.js'
-import { formatMoney, shortDate } from '@shared/core/format.js'
+import type { cardLimitView } from '@shared/core/cards.js'
+import { shortDate } from '@shared/core/format.js'
 import { zonedParts } from '@shared/core/time.js'
 
-const DASH = '—'
-
-/** Valor em reais ou traco quando a Pluggy nao entregou o dado (nunca R$ 0,00 inventado). */
-function money(cents: number | null): string {
-  return cents === null ? DASH : formatMoney(cents, { decimals: 'always' })
-}
+export type CardLimit = ReturnType<typeof cardLimitView>
 
 /** MASTERCARD vira Mastercard; texto simples, sem logotipo. */
 function title(text: string | null): string {
@@ -34,11 +30,11 @@ function lastRead(date: Date | null): string {
 
 /**
  * Cartao de credito com limite total, disponivel, quanto ja foi usado e a fatura atual. So exibe
- * o que cardLimitView entrega. Sem promessa de tempo real: o MeuPluggy atualiza cerca de 1 vez por dia.
+ * o que o limite de useCardView (cardLimitView) entrega. Sem promessa de tempo real: o MeuPluggy
+ * atualiza cerca de 1 vez por dia (D-05).
  */
-export function CardLimitCard({ card }: { card: Card }) {
-  const view = cardLimitView(card)
-  const name = card.name || 'Cartão de crédito'
+export function CardLimitCard({ card, limit: view }: { card: Card & { displayName?: string }; limit: CardLimit }) {
+  const name = card.displayName || card.name || 'Cartão de crédito'
   const kind = [title(card.brand), title(card.level)].filter(Boolean).join(' ')
 
   return (

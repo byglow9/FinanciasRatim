@@ -96,11 +96,11 @@ Preenchido pelo planejador (23 planos, 59 tarefas) a partir da tabela "Requisito
 | 05-20-01 | 20 | 13 | IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08 | T-05-20-02 | Guarda transversal: chaves fechadas, sem HTML bruto, artefatos por requisito | estático | `node --test test/static/phase5-final.test.js && npm run test:static` | ❌ W0 | ✅ green |
 | 05-20-02 | 20 | 13 | IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08 | T-05-20-01, T-05-20-02 | Suíte e executores verdes, Vintém no escuro, mapa fechado só com tudo verde | suíte completa | cadeia da tarefa: test:static, test:core:tz, test:server, build, lint e os executores theme, pwa, install, onboarding, identity, icon-sketch e vintem nos dois temas | ✅ | ⚠️ verde, exceto o autoteste do OINC no escuro (exceção registrada, ver Evidência de fechamento) |
 | 05-20-03 | 20 | 13 | IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08 | T-05-20-04 | Itens manuais reunidos para o verificador | estático | `test -s .planning/phases/05-identidade-coinki-pwa-e-onboarding/05-UAT-ROTEIRO.md && node --test test/static/phase5-final.test.js` | ❌ W0 | ✅ green |
-| 05-21-01 | 21 | 14 | IDEN-02 | T-05-21-01 | Decisão 302 ou 301 é do dono (one-way) | decisão humana | precondição: evidência do plano 05-19 com 302 ao vivo | n/a | ⏳ decisão futura do dono (não bloqueia o fechamento) |
-| 05-21-02 | 21 | 14 | IDEN-02 | T-05-21-02 | Só o campo type muda; destino fixo e guarda de um só redirect intactos | estático | `node --test test/static/phase5-hosting.test.js test/static/firestore-config.test.js` | ✅ | ⏳ decisão futura do dono (não bloqueia o fechamento) |
-| 05-21-03 | 21 | 14 | IDEN-02 | T-05-21-01 | 301 só se escolhido; conferido por curl com destino fixo | portão humano e curl | `curl -sI https://financias-ratimbum.web.app/` (agente, em leitura) | n/a | ⏳ decisão futura do dono (não bloqueia o fechamento) |
+| 05-21-01 | 21 | 14 | IDEN-02 | T-05-21-01 | Decisão 302 ou 301 é do dono (one-way) | decisão humana | precondição: evidência do plano 05-19 com 302 ao vivo | n/a | ✅ decidido em 24/11/2026: manter o 302 (05-21-DEPLOY-EVIDENCE.md; sem mudança de arquivo nem deploy) |
+| 05-21-02 | 21 | 14 | IDEN-02 | T-05-21-02 | Só o campo type muda; destino fixo e guarda de um só redirect intactos | estático | `node --test test/static/phase5-hosting.test.js test/static/firestore-config.test.js` | ✅ | ✅ decidido em 24/11/2026: manter o 302 (05-21-DEPLOY-EVIDENCE.md; sem mudança de arquivo nem deploy) |
+| 05-21-03 | 21 | 14 | IDEN-02 | T-05-21-01 | 301 só se escolhido; conferido por curl com destino fixo | portão humano e curl | `curl -sI https://financias-ratimbum.web.app/` (agente, em leitura) | n/a | ✅ decidido em 24/11/2026: manter o 302 (05-21-DEPLOY-EVIDENCE.md; sem mudança de arquivo nem deploy) |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky · ⏳ depende de decisão futura*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
 ---
 
@@ -132,7 +132,7 @@ Cada item nasce na primeira tarefa do plano indicado (tracer-first: o teste é c
 | `ALLOWED_ORIGINS` no Railway e domínio no login do Firebase | IDEN-02 | Credencial do dono | Plano 05-17: o dono edita; o agente confere por `curl` (401, 403, preflight) |
 | Deploy do site novo e login no endereço novo | IDEN-01 | Credencial e conta do dono | Plano 05-18: o dono publica só `hosting:coinc` e entra; o agente confere cabeçalhos ao vivo |
 | Login novo (sketch 029) no ar antes do redirect | IDEN-01, IDEN-08 | Credencial do dono; o gosto do Login é do dono | Plano 05-22: o dono olha as capturas, publica só `hosting:coinc` e confere o Login no celular; o agente confere por `curl` em leitura |
-| Redirect do site antigo (302) e decisão opcional do 301 | IDEN-02 | Credencial do dono; 301 é irreversível nos aparelhos | Planos 05-19 e 05-21: o dono publica só `hosting:legacy`; o agente confere por `curl` |
+| Redirect do site antigo (302) e decisão opcional do 301 (decidido: manter o 302, plano 05-21) | IDEN-02 | Credencial do dono; 301 é irreversível nos aparelhos | Planos 05-19 e 05-21: o dono publica só `hosting:legacy`; o agente confere por `curl` |
 | Roteiro de UAT em aparelho (Android, iPhone, atualização A para B, tema padrão Claro e OLED, splash, as quatro telas do onboarding, nome OINC, site antigo no celular, amigo) | IDEN-01, IDEN-02, IDEN-03, IDEN-04, IDEN-05, IDEN-06, IDEN-08 | Aparelho real e dois deploys | `05-UAT-ROTEIRO.md` (plano 05-20), itens 1 a 12 |
 | OINC no tema Escuro: autoteste por pixels da Fase 4 com `--theme escuro` termina em `FALHAS 4` (método feito para fundo claro) | IDEN-06 | Decisão do dono: aceitar o OINC como está no escuro ou abrir plano de redesenho | `05-UAT-ROTEIRO.md` item 13 |
 
@@ -140,7 +140,7 @@ Cada item nasce na primeira tarefa do plano indicado (tracer-first: o teste é c
 
 ## Evidência de fechamento (plano 05-20, 24/11/2026)
 
-Ambiente `. ./scripts/dev-env.sh` (Node 22.23.5). Estado real: onboarding de quatro telas, Login do sketch 029, tema padrão Claro, mascote exibido como OINC, redirect 302 do site antigo no ar.
+Ambiente `. ./scripts/dev-env.sh` (Node 22.23.5). Estado real: onboarding de quatro telas, Login do sketch 029, tema padrão Claro, mascote exibido como OINC, redirect 302 do site antigo no ar e mantido (plano 05-21 decidiu não migrar para 301).
 
 | Comando | Resultado |
 |---------|-----------|

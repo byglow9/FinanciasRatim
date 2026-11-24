@@ -6,7 +6,7 @@ Gerado pelo plano 05-20 em 24/11/2026, no estado real de fechamento da fase:
 - Login do sketch 029 (OINC de entrada, wordmark COINC, avisos como fala do OINC);
 - tema **padrão Claro** (creme), com Automático e Escuro como opções em Ajustes (D-08 revisada);
 - o mascote aparece ao usuário como **OINC** (D-25; os identificadores do código seguem `vintem*`);
-- site novo `https://coinc-financias.web.app` no ar; site antigo `https://financias-ratimbum.web.app` já responde **302** com destino fixo `https://coinc-financias.web.app/?origem=antigo` (plano 05-19). O 301 permanente é decisão futura do dono (plano 05-21).
+- site novo `https://coinc-financias.web.app` no ar; site antigo `https://financias-ratimbum.web.app` já responde **302** com destino fixo `https://coinc-financias.web.app/?origem=antigo` (plano 05-19). O plano 05-21 já decidiu **manter o 302** (o dono não vai mais usar o endereço antigo); o 301 só entra se você pedir.
 
 O agente já provou por teste, auditoria em Chrome e `curl` tudo o que dá para provar sem aparelho. Este roteiro é o que sobra para você. Cada item diz o que fazer, o que esperar e o que ele cobre. Marque `[x]` e anote qualquer incômodo ao lado.
 
@@ -65,7 +65,7 @@ Convenção: "Claro" é o creme (`#f5ecdb`); "Escuro" é o verde bem escuro (`#0
 
 - [ ] **10. Dock do tema claro (P-01).** Olhe a dock do Claro no aparelho. O plano 05-16 registrou sua resposta ("quero o verde mais claro mesmo") como **igualar**: a dock do Claro é o verde de ação `#2f6f3e`. Confirme que ficou como você queria ou peça outro ajuste.
 - [ ] **11. Projeto do amigo (A9, Fase 8).** O `firebase deploy` dele pelo alvo `hosting` do `firebase.json` falha até aplicar os alvos nesse projeto (`financias-xrd`): o `hosting` virou uma lista com os alvos `coinc` e `legacy`. Decida como ele publica hoje (alvo próprio, `firebase.json` à parte ou aplicar os alvos). Nota completa em `05-08-HOSTING-NOTES.md`.
-- [ ] **12. Redirect permanente (plano 05-21).** O site antigo está em **302** (não fica guardado no navegador, fácil de reverter). Depois de usar o endereço novo no celular por alguns dias, decida se vira **301**; ele fica guardado nos navegadores por tempo indeterminado e dificulta reverter. Se não decidir, nada muda.
+- [x] **12. Redirect permanente (plano 05-21).** Decidido em 24/11/2026: **manter o 302** (reversível na hora pelo histórico de versões do Hosting; o 301 ficaria guardado nos navegadores). Nada a fazer; se um dia quiser o 301, o caminho está em `05-21-DEPLOY-EVIDENCE.md`.
 
 ---
 

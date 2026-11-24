@@ -13,6 +13,7 @@ import {
   BILL_STATUSES,
   sumBillTotals,
   cardBillStatus,
+  groupBills,
 } from './cardBills.js'
 
 // Meio-dia em Sao Paulo (15:00 UTC): nunca cruza a virada do dia em UTC nem em Tokyo.
@@ -225,4 +226,112 @@ test('cardBillStatus: sem fechamento ou vencimento o status e null', () => {
 test('cardBillStatus: fatura vazia nao vira paga por pago zero', () => {
   assert.deepEqual(status('2026-12-10', { totalCents: 0, paidCents: 0 }), { status: 'fechada', remainingCents: 0 })
   assert.equal(status('2026-12-20', { totalCents: 0, paidCents: 0 }).status, 'fechada')
+})
+
+const GROUP = { closingDay: 7, dueDay: 14, now: at('2026-11-24') }
+
+test('groupBills: as seis compras reais viram a fatura 2026-12 de 181,41', () => {
+  const { bills, unassignedCents } = groupBills({ txs: SIX, ...GROUP })
+  assert.equal(unassignedCents, 0)
+  assert.equal(bills.length, 1)
+  const [b] = bills
+  assert.equal(b.billMonth, '2026-12')
+  assert.deepEqual(b.closeParts, { year: 2026, month: 12, day: 7 })
+  assert.deepEqual(b.dueParts, { year: 2026, month: 12, day: 14 })
+  assert.equal(b.totalCents, 18141)
+  assert.equal(b.paidCents, 0)
+  assert.equal(b.remainingCents, 18141)
+  assert.equal(b.count, 6)
+  assert.equal(b.pendingCount, 6)
+  assert.equal(b.status, 'aberta')
+  assert.equal(b.isCurrent, true)
+  assert.equal(b.isNext, false)
+  assert.equal(b.items.length, 6)
+  assert.ok(b.items.every((i) => i.origin === 'bank'))
+  // itens em ordem decrescente de data
+  assert.equal(b.items[0].id, 'c5')
+  assert.equal(b.items[5].id, 'c0')
+})
+
+test('groupBills: dois meses em ordem crescente e pagamento ligado a fatura', () => {
+  const nov = { id: 'n1', cardKind: 'purchase', cardStatus: 'posted', billMonth: '2026-11', amount: 250, date: at('2026-10-20'), bankImportId: 'b' }
+  const input = { txs: [...SIX, nov], payments: [{ billMonth: '2026-11', cents: 25000 }, { billMonth: '2026-09', cents: 99999 }], ...GROUP }
+  const { bills } = groupBills(input)
+  assert.deepEqual(bills.map((b) => b.billMonth), ['2026-11', '2026-12'])
+  const [n, d] = bills
+  assert.equal(n.status, 'paga')
+  assert.equal(n.paidCents, 25000)
+  assert.equal(n.remainingCents, 0)
+  assert.equal(n.pendingCount, 0)
+  assert.equal(d.status, 'aberta')
+  // sem pagamento, a de novembro (fechada em 07/11 e vencida em 14/11) fica atrasada
+  const unpaid = groupBills({ txs: [...SIX, nov], ...GROUP }).bills[0]
+  assert.equal(unpaid.status, 'atrasada')
+  assert.equal(unpaid.remainingCents, 25000)
+  // marcada como paga pelo dono
+  const marked = groupBills({ txs: [...SIX, nov], paidMonths: ['2026-11'], ...GROUP }).bills[0]
+  assert.equal(marked.status, 'paga')
+})
+
+test('groupBills: sem fechamento agrupa so pelo mes da Pluggy e deixa datas e status null', () => {
+  const { bills } = groupBills({ txs: SIX, now: at('2026-11-24') })
+  assert.equal(bills.length, 1)
+  assert.equal(bills[0].billMonth, '2026-12')
+  assert.equal(bills[0].totalCents, 18141)
+  assert.equal(bills[0].closeParts, null)
+  assert.equal(bills[0].dueParts, null)
+  assert.equal(bills[0].status, null)
+  assert.equal(bills[0].isCurrent, false)
+  // so fechamento, sem vencimento: fechamento aparece, status segue null
+  const half = groupBills({ txs: SIX, closingDay: 7, now: at('2026-11-24') }).bills[0]
+  assert.deepEqual(half.closeParts, { year: 2026, month: 12, day: 7 })
+  assert.equal(half.dueParts, null)
+  assert.equal(half.status, null)
+})
+
+test('groupBills: marca a fatura aberta e a seguinte, e faturas futuras entram como futura', () => {
+  const jan = { id: 'j1', cardKind: 'purchase', cardStatus: 'pending', billMonth: '2027-01', amount: 80, date: at('2026-12-20'), bankImportId: 'b' }
+  const mar = { id: 'm1', cardKind: 'purchase', cardStatus: 'pending', billMonth: '2027-03', amount: 10, date: at('2027-02-20'), bankImportId: 'b' }
+  const { bills } = groupBills({ txs: [...SIX, jan, mar], ...GROUP })
+  assert.deepEqual(bills.map((b) => [b.billMonth, b.status, b.isCurrent, b.isNext]), [
+    ['2026-12', 'aberta', true, false],
+    ['2027-01', 'futura', false, true],
+    ['2027-03', 'futura', false, false],
+  ])
+})
+
+test('groupBills: pagamento nunca entra no total, na contagem nem nos itens', () => {
+  const pay = { id: 'p1', cardKind: 'payment', billMonth: '2026-12', amount: 500, date: at('2026-11-20') }
+  const refund = { id: 'r1', cardKind: 'refund', cardStatus: 'posted', billMonth: '2026-12', amount: 11.41, date: at('2026-11-21'), bankImportId: 'b' }
+  const { bills } = groupBills({ txs: [...SIX, pay, refund], ...GROUP })
+  const [b] = bills
+  assert.equal(b.totalCents, 18141 - 1141)
+  assert.equal(b.count, 6)
+  assert.deepEqual(b.items.map((i) => i.cardKind).filter((k) => k === 'payment'), [])
+  assert.equal(b.items.length, 7)
+  assert.equal(b.items.find((i) => i.id === 'r1').amountCents, -1141)
+})
+
+test('groupBills: compra lancada a mao entra pelo mes derivado e e marcada como manual (D-12)', () => {
+  const manual = { id: 'man1', cardKind: 'purchase', amount: 40, date: at('2026-11-08'), description: 'Padaria' }
+  const { bills, unassignedCents } = groupBills({ txs: [...SIX, manual], ...GROUP })
+  assert.equal(unassignedCents, 0)
+  const [b] = bills
+  assert.equal(b.totalCents, 18141 + 4000)
+  assert.equal(b.count, 7)
+  assert.equal(b.pendingCount, 6)
+  const item = b.items.find((i) => i.id === 'man1')
+  assert.equal(item.origin, 'manual')
+  assert.equal(item.billSource, 'derived')
+  assert.equal(b.items.find((i) => i.id === 'c0').origin, 'bank')
+  // sem fechamento informado ela vai para unassignedCents e fica fora da lista
+  const semFechamento = groupBills({ txs: [manual], now: at('2026-11-24') })
+  assert.deepEqual(semFechamento.bills, [])
+  assert.equal(semFechamento.unassignedCents, 4000)
+})
+
+test('groupBills: entrada fora do tipo devolve resultado vazio sem lancar', () => {
+  assert.deepEqual(groupBills(undefined), { bills: [], unassignedCents: 0 })
+  assert.deepEqual(groupBills({ txs: null }), { bills: [], unassignedCents: 0 })
+  assert.deepEqual(groupBills({ txs: [null, 1, {}], payments: 'x', paidMonths: 3, ...GROUP }), { bills: [], unassignedCents: 0 })
 })

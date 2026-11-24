@@ -258,3 +258,137 @@ export function cardBillStatus({ billMonth, totalCents, paidCents, overridePaid,
   if (remaining > 0 && daysBetweenParts(due, today) > 0) return { status: 'atrasada', remainingCents: remaining }
   return { status: 'fechada', remainingCents: remaining }
 }
+
+/**
+ * Item de fatura (compra ou estorno). `origin` e `manual` para o lancamento que
+ * nao vem do banco (sem bankImportId e sem source 'bank', D-12) e `bank` nos demais.
+ * @typedef {{
+ *   id: string | null, date: Date | null, description: string, amountCents: number,
+ *   cardKind: string, cardStatus: string | null, origin: 'bank' | 'manual',
+ *   billSource: 'pluggy' | 'derived', tx: any,
+ * }} CardBillItem
+ */
+
+/**
+ * @typedef {{
+ *   billMonth: string, closeParts: DateParts | null, dueParts: DateParts | null,
+ *   totalCents: number, paidCents: number, remainingCents: number,
+ *   count: number, pendingCount: number, status: CardBillStatus | null,
+ *   isCurrent: boolean, isNext: boolean, items: CardBillItem[],
+ * }} CardBill
+ */
+
+/**
+ * @param {any} tx
+ * @returns {'bank' | 'manual'}
+ */
+function originOf(tx) {
+  return tx.bankImportId || tx.source === 'bank' ? 'bank' : 'manual'
+}
+
+/**
+ * Instante de uma data de lancamento para ordenar (null vira o menor valor).
+ * @param {unknown} value
+ * @returns {number}
+ */
+function timeOf(value) {
+  if (value == null || value === '') return Number.NEGATIVE_INFINITY
+  const d = value instanceof Date ? value : typeof value === 'string' || typeof value === 'number' ? new Date(value) : null
+  return d && !Number.isNaN(d.getTime()) ? d.getTime() : Number.NEGATIVE_INFINITY
+}
+
+/**
+ * Agrupa os lancamentos do cartao por mes da fatura (da Pluggy ou derivado do
+ * fechamento) com fechamento, vencimento, total e status. Sem fechamento ou
+ * vencimento agrupa so pelo mes da Pluggy e deixa datas e status null (CARD-08
+ * depende do dono informar, D-09). Lancamento sem mes e sem como derivar fica
+ * fora da lista e volta somado em `unassignedCents`. Nao cria fatura vazia: so
+ * existe fatura onde ha lancamento.
+ * `count` conta compras (estorno entra no total e nos itens, nao na contagem);
+ * `pendingCount` conta compras com cardStatus pending.
+ * @param {{
+ *   txs?: unknown, payments?: unknown, paidMonths?: unknown, closingDay?: unknown,
+ *   dueDay?: unknown, now?: Date, tz?: string,
+ * }} [input]
+ * @returns {{ bills: CardBill[], unassignedCents: number }}
+ */
+export function groupBills({ txs, payments, paidMonths, closingDay, dueDay, now, tz = DEFAULT_TZ } = {}) {
+  const list = Array.isArray(txs) ? txs : []
+  const { totals, unassignedCents } = sumBillTotals(list, { closingDay, tz })
+
+  /** @type {Map<string, CardBillItem[]>} */
+  const itemsByBill = new Map()
+  /** @type {Record<string, { count: number, pending: number }>} */
+  const counts = {}
+  for (const tx of list) {
+    const cents = signedCents(tx)
+    if (cents === null) continue
+    const { billMonth, source } = billMonthOf({ billMonth: tx.billMonth, date: tx.date, closingDay, tz })
+    if (billMonth === null) continue
+    const item = /** @type {CardBillItem} */ ({
+      id: typeof tx.id === 'string' ? tx.id : null,
+      date: tx.date instanceof Date ? tx.date : null,
+      description: typeof tx.description === 'string' ? tx.description : '',
+      amountCents: cents,
+      cardKind: tx.cardKind,
+      cardStatus: typeof tx.cardStatus === 'string' ? tx.cardStatus : null,
+      origin: originOf(tx),
+      billSource: source === 'pluggy' ? 'pluggy' : 'derived',
+      tx,
+    })
+    const bucket = itemsByBill.get(billMonth) ?? []
+    bucket.push(item)
+    itemsByBill.set(billMonth, bucket)
+    const c = counts[billMonth] ?? (counts[billMonth] = { count: 0, pending: 0 })
+    if (tx.cardKind === 'purchase') {
+      c.count++
+      if (tx.cardStatus === 'pending') c.pending++
+    }
+  }
+
+  /** @type {Record<string, number>} */
+  const paidByBill = {}
+  if (Array.isArray(payments)) {
+    for (const p of payments) {
+      if (!p || !parseBillMonth(p.billMonth) || typeof p.cents !== 'number' || !Number.isFinite(p.cents)) continue
+      paidByBill[p.billMonth] = (paidByBill[p.billMonth] ?? 0) + p.cents
+    }
+  }
+  const marked = new Set(Array.isArray(paidMonths) ? paidMonths : [])
+
+  const open = now ? openBillMonth(now, closingDay, tz) : null
+  const next = open ? shiftBillMonth(open, 1) : null
+
+  const bills = [...itemsByBill.keys()].sort().map((billMonth) => {
+    const totalCents = totals[billMonth] ?? 0
+    const paidCents = paidByBill[billMonth] ?? 0
+    const { status, remainingCents } = cardBillStatus({
+      billMonth,
+      totalCents,
+      paidCents,
+      overridePaid: marked.has(billMonth),
+      now,
+      closingDay,
+      dueDay,
+      tz,
+    })
+    const items = /** @type {CardBillItem[]} */ (itemsByBill.get(billMonth))
+      .slice()
+      .sort((a, b) => timeOf(b.date) - timeOf(a.date) || String(b.id).localeCompare(String(a.id)))
+    return /** @type {CardBill} */ ({
+      billMonth,
+      closeParts: closingPartsOf(billMonth, closingDay),
+      dueParts: duePartsOf(billMonth, closingDay, dueDay),
+      totalCents,
+      paidCents,
+      remainingCents,
+      count: counts[billMonth]?.count ?? 0,
+      pendingCount: counts[billMonth]?.pending ?? 0,
+      status,
+      isCurrent: billMonth === open,
+      isNext: billMonth === next,
+      items,
+    })
+  })
+  return { bills, unassignedCents }
+}

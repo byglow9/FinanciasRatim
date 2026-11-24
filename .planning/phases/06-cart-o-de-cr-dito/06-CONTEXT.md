@@ -1,7 +1,7 @@
 # Phase 6: Cartão de crédito - Context
 
 **Gathered:** 2026-11-24
-**Status:** Ready for research (portão CARD-01 aberto: falta a nova sonda com o Nubank)
+**Status:** Ready for research (portão CARD-01 respondido pela sonda de 24/11: ver D-06)
 
 <domain>
 ## Phase Boundary
@@ -17,6 +17,8 @@ O usuário acompanha o cartão como conta própria (fatura, limite, vencimento e
 - **D-03:** **Parcelas contra o limite** (decisão do dono, 24/11/2026): a **parcela do mês conta** no limite; o total restante das parcelas aparece separado como "a sair nas próximas faturas". Compra à vista conta pela **data da compra** (CARD-03).
 - **D-04:** Se o MeuPluggy não devolver fatura, vale CARD-08: o sistema calcula a fatura pelos dias de fechamento e vencimento informados pelo usuário.
 - **D-05 (restrições herdadas):** o servidor só lê o que a Pluggy já guardou; o MeuPluggy atualiza ~1x/dia (ciclo ~11:46) e não aceita atualização manual (ver `.planning/debug/webhook-pluggy-tempo-real.md`). Nenhuma promessa de tempo real para o cartão. Transferência entre contas do mesmo CPF vira `review/self_transfer` (pagamento de fatura deve seguir CARD-04: transferência vinculada à fatura, nunca gasto).
+- **D-06 (resultado da sonda, 24/11/2026, item `792a3230` = MeuPluggy com o Nubank; arquivo `06-CARD-PROBE-792a3230.md`):** o Nubank entrou como **item separado** (cada banco do MeuPluggy vira um item), com 1 conta BANK e 1 conta **CREDIT** (Mastercard Gold, ACTIVE). O que o MeuPluggy entrega para o cartão: `creditLimit` e `availableCreditLimit` (números), `brand`, `level`, `status`, `isLimitFlexible`, `disaggregatedCreditLimits`. O que **não** entrega: `balanceDueDate`, `balanceCloseDate` e `minimumPayment` vêm `null`; `bills` (faturas) volta **vazio** (fetch ok, 0 faturas). Transações do cartão: 6 em 90 dias, **todas PENDING**, tipo DEBIT, `paymentType` SINGLE, todas com `billForecastDate` (mês da fatura prevista) e `billPostDate`, **nenhuma** com `installmentNumber`, `totalInstallments`, `billId` ou `purchaseDate`. Consequências de escopo: limite disponível vem da Pluggy; **fatura aberta = soma das compras agrupadas por `billForecastDate`**; **fechamento e vencimento vêm do usuário (CARD-08 vira o caminho principal)**; faturas fechadas, pagas e atrasadas **não** vêm da Pluggy e precisam ser inferidas (pagamento da fatura na conta, CARD-04); parcelas N/M **não confirmadas** (a amostra não tinha compra parcelada): reavaliar com uma compra parcelada real antes de prometer CARD-05, com heurística como reserva.
+- **D-07:** A amostra é pequena (6 compras, item recém-conectado, histórico pode ser curto). Antes de fechar o modelo, repetir a sonda após o próximo ciclo (25/11 ~11:46) e, se possível, com uma compra parcelada no Nubank.
 </decisions>
 
 <canonical_refs>

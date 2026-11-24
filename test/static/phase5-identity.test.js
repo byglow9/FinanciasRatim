@@ -11,7 +11,6 @@ import { ROOT, code, exists, read, scaleProblems, touchProblems } from './helper
 const LOGIN = 'src/components/auth/LoginForm.tsx'
 const WORDMARK = 'src/components/brand/CoincWordmark.tsx'
 const SAY = 'src/components/vintem/VintemSay.tsx'
-const OLD_MARK = 'src/components/brand/CoincMark.tsx'
 const ORIGIN = 'src/lib/legacyOrigin.ts'
 const MAIN = 'src/main.tsx'
 const AUDIT = 'scripts/ux-audit/identity.mjs'
@@ -148,10 +147,12 @@ test('Login: so os fundos permitidos, sem o termo do degrade e ProtectedRoute co
   assert.match(code('src/components/auth/ProtectedRoute.tsx'), /<LoginForm \/>/)
 })
 
-test('CoincMark: img do icone do app, 56 por 56, decorativa (alt vazio)', () => {
-  const src = code(OLD_MARK)
-  assert.match(src, /<img src="\/icons\/icon\.svg" alt="" className="h-14 w-14 rounded-2xl" \/>/)
+test('CoincMark saiu (nada o usa mais) e o icone do app segue em public/icons/icon.svg', () => {
+  // 05-22 (D-23): o Login deixou de usar a imagem do icone; o manifest e o favicon seguem usando o arquivo.
+  assert.ok(!exists('src/components/brand/CoincMark.tsx'), 'CoincMark.tsx ainda existe')
   assert.ok(exists('public/icons/icon.svg'), 'icone do app ausente')
+  const files = [...listText('src'), 'index.html']
+  assert.deepEqual(files.filter((f) => read(f).includes('CoincMark')), [])
 })
 
 test('legacyOrigin: igualdade estrita, replaceState, sem innerHTML, sessionStorage em try, valor nunca devolvido', () => {
@@ -179,8 +180,8 @@ test('main.tsx chama captureLegacyOrigin antes do createRoot e a ordem de import
 })
 
 test('escala 12/16/28/56 e alvos de 44px limpos nos arquivos novos', () => {
-  assert.deepEqual(scaleProblems([LOGIN, WORDMARK, SAY, OLD_MARK]), [])
-  assert.deepEqual(touchProblems([LOGIN, WORDMARK, SAY, OLD_MARK]), [])
+  assert.deepEqual(scaleProblems([LOGIN, WORDMARK, SAY]), [])
+  assert.deepEqual(touchProblems([LOGIN, WORDMARK, SAY]), [])
 })
 
 test('public/piggy.svg e public/vite.svg nao existem e nada os referencia', () => {

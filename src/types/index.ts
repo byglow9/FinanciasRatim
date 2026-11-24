@@ -17,8 +17,27 @@ export interface Transaction {
   note?: string
   // Documentos importados do banco ja trazem o campo.
   source?: 'bank'
+  // Compra de cartao (Fase 6): cardId e o id do documento cards (accountId da Pluggy).
+  cardId?: string
+  cardKind?: 'purchase' | 'refund' | 'payment'
+  cardStatus?: 'pending' | 'posted'
+  // Mes da fatura (AAAA-MM) e quem o definiu; null quando so o fechamento do dono pode derivar.
+  billMonth?: string | null
+  billMonthSource?: 'pluggy' | 'derived'
+  installment?: { n: number; total: number; source: 'pluggy' | 'inferred' } | null
+  // Compra em moeda estrangeira: o valor em reais ja esta em amount.
+  currency?: { code: string; originalCents: number } | null
   date: Date
   createdAt: Date
+}
+
+// Configuracao do cartao que so o dono informa (cardSettings/{accountId}); o sync nunca a escreve.
+export interface CardSettings {
+  accountId: string
+  closingDay: number | null // 1-31
+  dueDay: number | null // 1-31
+  nickname: string
+  paidMonths: string[] // AAAA-MM
 }
 
 export interface FixedExpense {

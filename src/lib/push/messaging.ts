@@ -23,12 +23,14 @@ const SUPPORT_MS = 3000
 const PING_MS = 1500
 const REGISTER_MS = 60000
 const FID_MS = 10000
+const ACTIVATION_MS = 5000
 
 let registration: ServiceWorkerRegistration | null = null
 let state: PrimeState = { status: 'preparando', waiting: false }
 let inflight: Promise<PrimeState> | null = null
 const listeners = new Set<() => void>()
 
+let watching = false
 let listening = false
 let outcome: boolean | null = null
 let waiter: ((ok: boolean) => void) | null = null
@@ -146,6 +148,27 @@ function configReason(): 'nao-configurado' | 'nao-suportado' | null {
   return null
 }
 
+/**
+ * Escuta a troca do worker por ate ACTIVATION_MS e refaz o preparo quando a versao nova assume,
+ * para o botao habilitar sozinho. So escuta: quem ativa e a politica de atualizacao do app ou o toque.
+ */
+function watchActivation(): void {
+  if (watching) return
+  watching = true
+  const container = navigator.serviceWorker
+  const stop = () => {
+    watching = false
+    clearTimeout(timer)
+    container.removeEventListener('controllerchange', onChange)
+  }
+  const onChange = () => {
+    stop()
+    void Promise.resolve(inflight).then(() => primePush())
+  }
+  const timer = setTimeout(stop, ACTIVATION_MS)
+  container.addEventListener('controllerchange', onChange)
+}
+
 async function runPrime(): Promise<PrimeState> {
   const blocked = configReason()
   if (blocked) return setState(blocked)
@@ -154,11 +177,17 @@ async function runPrime(): Promise<PrimeState> {
   const reg = await withTimeout(navigator.serviceWorker.ready, READY_MS)
   if (!reg) return setState('falhou')
   registration = reg
-  if (reg.waiting) return setState('atualizando', true)
-  const active = reg.active
-  if (active && (await pingWorker(active, PING_MS))) return setState('pronto')
+  if (reg.waiting) {
+    watchActivation()
+    return setState('atualizando', true)
+  }
+  let ready = reg.active ? await pingWorker(reg.active, PING_MS) : false
+  // Sem resposta com um worker ainda instalando: uma segunda tentativa, nunca mais que isso.
+  if (!ready && reg.installing) ready = reg.active ? await pingWorker(reg.active, PING_MS) : false
+  if (ready) return setState('pronto')
   void reg.update().catch(() => undefined)
-  return setState('atualizando')
+  watchActivation()
+  return setState('atualizando', Boolean(reg.waiting))
 }
 
 /**
@@ -185,7 +214,10 @@ export async function enablePush(): Promise<PushResult> {
   }
   if (state.status !== 'pronto' || !registration) {
     // O toque do usuario e o consentimento para ativar a versao que esperava.
-    registration?.waiting?.postMessage({ type: 'SKIP_WAITING' })
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      watchActivation()
+    }
     void primePush()
     return { ok: false, reason: 'atualizando' }
   }

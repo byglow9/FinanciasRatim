@@ -8,7 +8,7 @@ import { Notice } from '@/components/ui/notice'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 import { SettingsCard } from '@/components/settings/SettingsCard'
-import { enablePush, getPrimeState, primePush, subscribePrime, type PushReason } from '@/lib/push/messaging'
+import { enablePush, getPrimeState, primePush, subscribePrime, type PrimeStatus, type PushReason } from '@/lib/push/messaging'
 import { sendTestPush } from '@/services/push.service'
 
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
@@ -22,6 +22,14 @@ const REASON_TEXT: Record<PushReason, string> = {
   'permissao-negada': 'Permissão negada. Libere as notificações nas configurações do aparelho.',
   atualizando: 'O app está se atualizando. Tente de novo em instantes.',
   falhou: 'Não foi possível ativar os avisos. Confira a conexão e tente de novo.',
+}
+const PRIME_TEXT: Record<PrimeStatus, string | null> = {
+  preparando: null,
+  pronto: null,
+  atualizando: REASON_TEXT.atualizando,
+  'nao-configurado': REASON_TEXT['nao-configurado'],
+  'nao-suportado': REASON_TEXT['nao-suportado'],
+  falhou: null,
 }
 const TEST_SENT = 'Aviso de teste enviado.'
 const TEST_FAILED = 'Não foi possível enviar o teste.'
@@ -67,6 +75,14 @@ export function NotificationsCard() {
   useEffect(() => {
     void primePush()
   }, [])
+
+  // Com versao em espera o toque e o consentimento para ativa-la; sem ela, espera o preparo terminar.
+  const canActivate =
+    prime.status !== 'preparando' && (prime.status !== 'atualizando' || prime.waiting)
+  const notice =
+    pushMessage === REASON_TEXT.atualizando && prime.status === 'pronto'
+      ? null
+      : (pushMessage ?? PRIME_TEXT[prime.status])
 
   const activate = async () => {
     if (readOnly || pushLock.current) return
@@ -161,7 +177,7 @@ export function NotificationsCard() {
             size="sm"
             className="flex-1"
             onClick={() => void activate()}
-            disabled={readOnly || pushBusy !== null || prime.status === 'preparando'}
+            disabled={readOnly || pushBusy !== null || !canActivate}
             aria-busy={pushBusy === 'ativar'}
           >
             Ativar avisos
@@ -178,9 +194,9 @@ export function NotificationsCard() {
             Testar aviso
           </Button>
         </div>
-        {pushMessage ? (
+        {notice ? (
           <p role="status" className="text-xs font-normal text-muted-foreground">
-            {pushMessage}
+            {notice}
           </p>
         ) : null}
       </div>

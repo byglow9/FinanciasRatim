@@ -102,3 +102,23 @@ test('toda espera do preparo tem prazo: promessas manuais sempre trazem setTimeo
   }
   assert.match(src, /withTimeout\(\s*register\(/, 'register sem prazo')
 })
+
+test('depois da ativacao o preparo escuta controllerchange com prazo e so le o estado', () => {
+  const src = code(MESSAGING)
+  const watch = body(src, 'watchActivation')
+  assert.match(watch, /controllerchange/)
+  assert.match(watch, /setTimeout\(/, 'a escuta da troca de worker precisa de prazo')
+  assert.doesNotMatch(watch, /SKIP_WAITING|postMessage/, 'a escuta nunca ativa nada')
+  assert.match(body(src, 'runPrime'), /watchActivation\(\)/)
+  assert.match(body(src, 'enablePush'), /watchActivation\(\)/)
+})
+
+test('erro vira so o motivo: nenhum catch repassa a mensagem do SDK e nada e lancado com dado do aparelho', () => {
+  for (const file of [MESSAGING, SERVICE, CARD]) {
+    const src = code(file)
+    assert.doesNotMatch(src, /\.message\b/, `${file} repassa mensagem de erro`)
+    assert.doesNotMatch(src, /new Error\([^)]*(fid|token|vapid)/i, `${file} poe dado do aparelho em erro`)
+  }
+  const card = code(CARD)
+  assert.doesNotMatch(card, /getLocalFid|localStorage/, 'o cartao nao mostra nem le o FID')
+})

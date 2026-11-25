@@ -347,6 +347,9 @@ describe('script do historico do cartao (D-13)', () => {
   test('dono sem conexao com cartao: nada acontece e a saida diz isso', async () => {
     await db.collection('bankConnections').doc('item-banco-aaa').set({ ownerId: HID, person: 'ela', status: 'UPDATED' })
     await db.collection('bankConnections').doc('item-cartao-bbb').set({ ownerId: OTHER, person: 'ela', status: 'UPDATED' })
+    // a copia precisa trazer as duas colecoes exigidas
+    await db.collection('transactions').doc('manual-privado-1').set(manual(HID, 45.67))
+    await db.collection('bankImports').doc('importacao-antiga').set({ ownerId: HID, person: 'ela', status: 'ignored', date: at })
     const before = await snapshotOf(db)
     for (const argv of [['--hid', HID], ['--hid', HID, '--apply', '--backup', await backup()]]) {
       const res = await cli(argv)

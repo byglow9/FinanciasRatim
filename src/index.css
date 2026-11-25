@@ -471,15 +471,15 @@
 }
 
 @keyframes peek-vintem {
-  0% { transform: translate(calc(var(--peek-dir, 1) * 120px), 90px) rotate(calc(var(--peek-dir, 1) * 10deg)) scale(0.9); opacity: 0; }
-  55% { transform: translate(calc(var(--peek-dir, 1) * -14px), -10px) rotate(calc(var(--peek-dir, 1) * -28deg)) scale(1.02); opacity: 1; }
-  75% { transform: translate(calc(var(--peek-dir, 1) * 4px), 3px) rotate(calc(var(--peek-dir, 1) * -18deg)) scale(1); }
-  100% { transform: translate(0, 0) rotate(calc(var(--peek-dir, 1) * -20deg)) scale(1); opacity: 1; }
+  0% { transform: translate(calc(var(--peek-dir, 1) * 140px), 30px) rotate(calc(var(--peek-dir, 1) * -40deg)) scale(0.9); opacity: 0; }
+  55% { transform: translate(calc(var(--peek-dir, 1) * -14px), -10px) rotate(calc(var(--peek-dir, 1) * -84deg)) scale(1.02); opacity: 1; }
+  75% { transform: translate(calc(var(--peek-dir, 1) * 4px), 3px) rotate(calc(var(--peek-dir, 1) * -66deg)) scale(1); }
+  100% { transform: translate(0, 0) rotate(calc(var(--peek-dir, 1) * -72deg)) scale(1); opacity: 1; }
 }
 
 @keyframes peek-bob {
-  0%, 100% { transform: translate(0, 0) rotate(calc(var(--peek-dir, 1) * -20deg)); }
-  50% { transform: translate(calc(var(--peek-dir, 1) * -3px), -5px) rotate(calc(var(--peek-dir, 1) * -17deg)); }
+  0%, 100% { transform: translate(0, 0) rotate(calc(var(--peek-dir, 1) * -72deg)); }
+  50% { transform: translate(calc(var(--peek-dir, 1) * -3px), -5px) rotate(calc(var(--peek-dir, 1) * -68deg)); }
 }
 
 @keyframes peek-bubble {
@@ -554,7 +554,7 @@
 
   .anim-peek-vintem {
     animation: none !important;
-    transform: rotate(calc(var(--peek-dir, 1) * -20deg));
+    transform: rotate(calc(var(--peek-dir, 1) * -72deg));
   }
 
   .anim-peek-bubble {

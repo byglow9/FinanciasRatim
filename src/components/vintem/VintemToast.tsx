@@ -45,7 +45,7 @@ export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastB
       </div>
       {/* Vintem grande, inclinado na diagonal, com metade do corpo para fora da borda da tela. */}
       <div
-        className={cn('pointer-events-none absolute bottom-[-22px]', left ? '-left-16' : '-right-16')}
+        className={cn('pointer-events-none absolute bottom-[-8px]', left ? '-left-20' : '-right-20')}
         aria-hidden="true"
       >
         <div className="anim-peek-vintem [&_ellipse[id$=-shadow]]:hidden">

@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -13,6 +14,7 @@ import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
 import type { VintemHandle, VintemReaction } from '@/components/vintem/Vintem'
 import { VintemToastBody } from '@/components/vintem/VintemToast'
 import { useToast } from '@/components/ui/toast'
+import { askVintem, ASK_TIMEOUT_REACTION_MS, type AskArgs } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -23,6 +25,7 @@ import { CHEER_MS, launchRaw, reactionForLaunch } from '@shared/core/vintemMood.
 import { PHRASES, SITUATION_META } from '@shared/core/vintemPhrases.js'
 import { mulberry32 } from '@shared/core/vintemSpring.js'
 import { useArea } from './AreaContext'
+import { useAuth } from './AuthContext'
 import { useCycle } from './CycleContext'
 
 // Provedor do Vintem: tom do casal, registro do slot do arco, fala, regiao viva e reacao a lancamento.
@@ -49,6 +52,19 @@ export interface PhraseArgs {
 
 export interface SpeakArgs extends PhraseArgs {
   /** Verdadeiro so para fala provocada por evento ou toque; a de entrada nunca e anunciada. */
+  announce?: boolean
+}
+
+export interface SpeakAiArgs {
+  /** O que se pede a IA: so a situacao (lista fechada) e a categoria; nunca texto nem valor. */
+  ai: AskArgs
+  /** Reserva do banco de frases, usada sempre que a IA nao entrega a tempo. */
+  fallback: SpeakArgs
+}
+
+export interface SpeakTextArgs {
+  text: string
+  situation: string
   announce?: boolean
 }
 
@@ -79,6 +95,10 @@ export interface VintemContextType {
   speak: (args: SpeakArgs) => boolean
   /** Mesmo sorteio, sem tocar na fala atual (linhas em linha dos planos seguintes). */
   pickPhrase: (args: PhraseArgs) => { id: string; text: string } | null
+  /** Mostra no balao um texto pronto (fala da IA), como texto React simples. */
+  speakText: (args: SpeakTextArgs) => void
+  /** Tenta a IA e, sem texto a tempo, fala com o banco de frases. Nunca lanca. */
+  speakAi: (args: SpeakAiArgs) => Promise<void>
   dismiss: () => void
   /** Ref do handle do Vintem do arco (nulo fora da Home). */
   slot: RefObject<VintemHandle | null>
@@ -142,12 +162,15 @@ function writeRecent(recent: Recent): void {
 }
 
 export function VintemProvider({ children }: { children: ReactNode }) {
-  const { settings, categoryDefs, personConfigFor } = useArea()
+  const { settings, categoryDefs, personConfigFor, readOnly } = useArea()
   const { viewPerson, now } = useCycle()
   const { pathname } = useLocation()
   const tone = vintemToneOf(settings)
   const slot = useRef<VintemHandle | null>(null)
   const toast = useToast()
+  const { user } = useAuth()
+  // So a pessoa logada, no proprio perfil e fora do somente leitura pede fala a IA (D-14).
+  const canAsk = user !== null && user.person === viewPerson && !readOnly
 
   const [speech, setSpeech] = useState<Speech | null>(null)
   const [announced, setAnnounced] = useState('')
@@ -162,6 +185,13 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     setSpeech(null)
     setAnnounced('')
   }
+
+  // Escopo atual (rota e perfil) para conferir depois de esperar a IA.
+  const scopeKey = `${pathname}|${viewPerson}`
+  const scopeRef = useRef(scopeKey)
+  useEffect(() => {
+    scopeRef.current = scopeKey
+  }, [scopeKey])
 
   const registerSlot = useCallback((handle: VintemHandle | null) => {
     slot.current = handle
@@ -207,28 +237,74 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     setAnnounced('')
   }, [])
 
-  // Entrega a reacao: na Home no Vintem do arco e no balao (anunciada); fora dela, no toast claro do
-  // Vintem, que entra na fila depois do toast de sucesso. Sem frase no banco nao ha toast.
-  const deliver = useCallback(
-    (reaction: VintemReaction, situation: string, raw: SlotsRaw) => {
-      const handle = slot.current
-      if (handle !== null) {
-        handle.react(reaction)
-        speak({ situation, raw, announce: true })
-        return
-      }
-      const chosen = draw({ situation, raw })
-      if (chosen !== null) {
-        const spot = nextPeekSpot()
-        toast.show('', {
-          custom: <VintemToastBody text={chosen.text} reaction={reaction} side={spot.side} />,
-          durationMs: VINTEM_TOAST_MS,
-          side: spot.side,
-          high: spot.high,
-        })
+  const speakText = useCallback(({ text, situation, announce = false }: SpeakTextArgs): void => {
+    popCounter.current += 1
+    setSpeech({ id: `ia-${popCounter.current}`, text, situation, popKey: popCounter.current })
+    setAnnounced(announce ? text : '')
+  }, [])
+
+  // Pergunta a IA; devolve o texto, ou null para usar o banco, ou 'stale' se a tela mudou durante a espera.
+  const askGuarded = useCallback(
+    async (ai: AskArgs): Promise<string | null | 'stale'> => {
+      if (!canAsk) return null
+      const startedIn = scopeRef.current
+      const text = await askVintem(ai)
+      if (scopeRef.current !== startedIn) return 'stale'
+      return text
+    },
+    [canAsk],
+  )
+
+  const speakAi = useCallback(
+    async ({ ai, fallback }: SpeakAiArgs): Promise<void> => {
+      try {
+        const text = await askGuarded(ai)
+        if (text === 'stale') return
+        if (text !== null) {
+          speakText({ text, situation: fallback.situation, announce: fallback.announce })
+          return
+        }
+        speak(fallback)
+      } catch {
+        speak(fallback)
       }
     },
-    [speak, draw, toast],
+    [askGuarded, speakText, speak],
+  )
+
+  // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo) ou do banco. Na Home
+  // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de
+  // sucesso. Sem frase no banco nao ha toast. Nunca lanca.
+  const deliver = useCallback(
+    async (reaction: VintemReaction, situation: string, raw: SlotsRaw, ai?: AskArgs): Promise<void> => {
+      try {
+        slot.current?.react(reaction)
+        let aiText: string | null = null
+        if (ai !== undefined) {
+          const answer = await askGuarded(ai)
+          if (answer === 'stale') return
+          aiText = answer
+        }
+        if (slot.current !== null) {
+          if (aiText !== null) speakText({ text: aiText, situation, announce: true })
+          else speak({ situation, raw, announce: true })
+          return
+        }
+        const text = aiText ?? draw({ situation, raw })?.text ?? null
+        if (text !== null) {
+          const spot = nextPeekSpot()
+          toast.show('', {
+            custom: <VintemToastBody text={text} reaction={reaction} side={spot.side} />,
+            durationMs: VINTEM_TOAST_MS,
+            side: spot.side,
+            high: spot.high,
+          })
+        }
+      } catch {
+        // Melhor esforco: a fala nunca atrapalha o lancamento.
+      }
+    },
+    [askGuarded, speakText, speak, draw, toast],
   )
 
   const onLaunched = useCallback(
@@ -261,7 +337,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         if (result.situation === 'limite-estourou' && core.excessCents !== undefined) {
           raw.valorCents = core.excessCents
         }
-        deliver(result.reaction, result.situation, raw)
+        const ai: AskArgs | undefined =
+          kind === 'gasto' || kind === 'receita'
+            ? {
+                situation: 'lancamento',
+                categoryId: kind === 'gasto' ? categoryId : null,
+                timeoutMs: ASK_TIMEOUT_REACTION_MS,
+              }
+            : undefined
+        await deliver(result.reaction, result.situation, raw, ai)
       } catch {
         // Melhor esforco: a reacao nunca atrapalha o lancamento e nada de valor ou nome vai a log.
       }
@@ -272,7 +356,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const onGoal = useCallback(
     ({ valorCents }: { valorCents: number }): void => {
       try {
-        deliver('festa', 'meta-batida', { valorCents })
+        void deliver('festa', 'meta-batida', { valorCents })
         setCheer({ kind: 'meta-batida', untilMs: Date.now() + CHEER_MS })
       } catch {
         // Melhor esforco: a festa nunca atrapalha o aporte e nada de valor ou nome vai a log.
@@ -282,8 +366,21 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<VintemContextType>(
-    () => ({ tone, speech, speak, pickPhrase: draw, dismiss, slot, registerSlot, onLaunched, onGoal, cheer }),
-    [tone, speech, speak, draw, dismiss, registerSlot, onLaunched, onGoal, cheer],
+    () => ({
+      tone,
+      speech,
+      speak,
+      pickPhrase: draw,
+      speakText,
+      speakAi,
+      dismiss,
+      slot,
+      registerSlot,
+      onLaunched,
+      onGoal,
+      cheer,
+    }),
+    [tone, speech, speak, draw, speakText, speakAi, dismiss, registerSlot, onLaunched, onGoal, cheer],
   )
 
   return (

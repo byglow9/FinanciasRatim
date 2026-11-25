@@ -151,6 +151,30 @@ test('o primeiro cartao tem fatura aberta e a anterior paga, em qualquer dia do 
   }
 })
 
+// ---- auditores de layout e de tema ----
+
+test('o auditor de layout lista /cartoes e aceita a semente cards', () => {
+  const audit = code('scripts/ux-audit/audit.mjs')
+  const routes = /const ALL_ROUTES = \[([^\]]*)\]/.exec(audit)
+  assert.ok(routes && routes[1].includes("'/cartoes'"), '/cartoes fora de ALL_ROUTES')
+  assert.match(audit, /kind !== 'full' && kind !== 'empty' && kind !== 'cards'/)
+  assert.match(audit, /use full, empty ou cards/)
+})
+
+test('o auditor de tema tem a tela cartoes e semeia o cartao', () => {
+  const theme = code('scripts/ux-audit/theme.mjs')
+  assert.match(theme, /\{ id: 'contas-fixas', path: '\/contas-fixas' \},\s*\{ id: 'cartoes', path: '\/cartoes' \},/)
+  const boot = /function auditBootSource\(theme\) \{[\s\S]*?\n\}\n/.exec(theme)
+  assert.ok(boot && boot[0].includes("buildSeed('cards')"), 'auditBootSource sem a semente cards')
+})
+
+test('os auditores nao ganharam excecao para o cartao', () => {
+  const theme = code('scripts/ux-audit/theme.mjs')
+  const block = theme.slice(theme.indexOf('const AUDIT_EXCEPTIONS = ['), theme.indexOf('const sel = {'))
+  const ids = [...block.matchAll(/\bid: '([a-z0-9-]+)'/g)].map((m) => m[1])
+  assert.deepEqual(ids, ['widget-pluggy', 'cor-de-categoria-de-evento', 'balao-do-vintem', 'controle-desabilitado'])
+})
+
 test('a semente do cartao nao traz numero de conferencia, nome de banco nem identificador real', () => {
   const seed = buildSeed('cards', NOW)
   const txs = list(seed, 'transactions').filter((t) => t.cardId)

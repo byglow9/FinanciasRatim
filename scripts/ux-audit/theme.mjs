@@ -438,6 +438,7 @@ const AUDIT_SCREENS = [
   { id: 'transacoes', path: '/transacoes' },
   { id: 'calendario', path: '/calendario' },
   { id: 'contas-fixas', path: '/contas-fixas' },
+  { id: 'cartoes', path: '/cartoes' },
   { id: 'casal', path: '/casal' },
   { id: 'relatorios-categorias', path: '/relatorios', tab: 'Categorias' },
   { id: 'relatorios-comparacao', path: '/relatorios', tab: 'Comparação' },
@@ -460,7 +461,8 @@ const ONBOARDING_TITLES = ['Seu mês, num número', 'Um teto por categoria', 'Tu
 
 /** Semeia o mock, a marca do onboarding e o tema do combo em CADA documento novo. */
 function auditBootSource(theme) {
-  const seed = buildSeed('full')
+  // Com o cartao presente, para a Home, Transacoes, Calendario e Configuracoes serem medidas com ele.
+  const seed = buildSeed('cards')
   return `(() => { try {
     for (const k of Object.keys(localStorage)) if (k.startsWith('db::') || k.startsWith('doc::')) localStorage.removeItem(k)
     const seed = ${JSON.stringify(seed)}

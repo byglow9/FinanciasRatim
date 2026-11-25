@@ -2,7 +2,7 @@
 // Auditoria de layout em modo MOCK (Chrome sem janela + protocolo CDP). Sem dependencias novas.
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/audit.mjs --route / --viewport 360x640 --report-only
 // Flags: --route <caminho> (repetivel) | --routes all  --viewport LxA (repetivel) --smoke --expect-h1 <texto>
-//        --report-only --assert dock-peek --seed full|empty
+//        --report-only --assert dock-peek --seed full|empty|cards
 // Saida: uma linha JSON por rota e viewport. Codigos: 0 ok, 1 violacoes, 2 falha do proprio script.
 import { spawn } from 'node:child_process'
 import { connect, launchChrome } from './cdp.mjs'
@@ -13,7 +13,7 @@ const ORIGIN = `http://127.0.0.1:${PORT}`
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Rotas autenticadas do app (src/App.tsx, dentro de ProtectedRoute).
-const ALL_ROUTES = ['/', '/transacoes', '/contas-fixas', '/porquinho', '/metas', '/relatorios', '/configuracoes', '/calendario', '/casal']
+const ALL_ROUTES = ['/', '/transacoes', '/contas-fixas', '/porquinho', '/metas', '/relatorios', '/configuracoes', '/calendario', '/casal', '/cartoes']
 // Prazo de cada combinacao rota x viewport (navegar, medir e coletar).
 const COMBO_TIMEOUT_MS = 60000
 // Destinos do dock (NavRail): 9 com Cartoes (D-11). A espiada a 360px confere o total e o link Cartoes.
@@ -48,7 +48,9 @@ function parseArgs(argv) {
       opts.asserts.push(name)
     } else if (arg === '--seed') {
       const kind = next()
-      if (kind !== 'full' && kind !== 'empty') throw new Error(`seed invalido: ${kind} (use full ou empty)`)
+      if (kind !== 'full' && kind !== 'empty' && kind !== 'cards') {
+        throw new Error(`seed invalido: ${kind} (use full, empty ou cards)`)
+      }
       opts.seed = kind
     }
     else throw new Error(`flag desconhecida: ${arg}`)

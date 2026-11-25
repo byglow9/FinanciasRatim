@@ -158,9 +158,12 @@ function nextUtcMidnight(t) {
  *   config: { timeoutMs: number, totalBudgetMs: number },
  *   now?: () => Date,
  *   log?: { log?: (line: string) => void, warn?: (line: string) => void },
+ *   gate?: (args: { providerId: string }) => Promise<{ ok: boolean }>,
  * }} deps
+ * `gate` e o freio global por provedor do 07-12 (teto diario proprio no Firestore): negado, o
+ * provedor e pulado sem rede e fica fora do resto do dia UTC.
  */
-export function createChain({ providers, config, now = () => new Date(), log = console }) {
+export function createChain({ providers, config, now = () => new Date(), log = console, gate = undefined }) {
   /** @type {Map<string, { disabled: boolean, blockedUntil: number }>} */
   const state = new Map()
   /** @type {Map<string, { calls: number, ok: number, fail: Record<string, number> }>} */
@@ -226,9 +229,25 @@ export function createChain({ providers, config, now = () => new Date(), log = c
       const st = /** @type {{ disabled: boolean, blockedUntil: number }} */ (state.get(p.id))
       if (st.disabled || st.blockedUntil > t) continue
 
+      if (gate) {
+        let allowed = { ok: false }
+        try {
+          allowed = await gate({ providerId: p.id })
+        } catch {
+          allowed = { ok: false }
+        }
+        if (!allowed.ok) {
+          st.blockedUntil = nextUtcMidnight(now().getTime())
+          countFail(p.id, 'teto-proprio')
+          continue
+        }
+      }
+      const left = config.totalBudgetMs - (now().getTime() - startedAt)
+      if (left <= 0) break
+
       const c = /** @type {{ calls: number, ok: number, fail: Record<string, number> }} */ (counts.get(p.id))
       c.calls += 1
-      const r = await p.call({ messages, maxTokens, temperature, timeoutMs: Math.min(config.timeoutMs, remaining) })
+      const r = await p.call({ messages, maxTokens, temperature, timeoutMs: Math.min(config.timeoutMs, left) })
       line(p.id, r)
       if (!r.ok) {
         countFail(p.id, brake(p.id, r, now().getTime()))
@@ -246,6 +265,20 @@ export function createChain({ providers, config, now = () => new Date(), log = c
     return { ok: false }
   }
 
+  /**
+   * Ha ao menos um provedor que a cadeia tentaria agora (nao desligado nem em pausa)? Serve para a
+   * fala nao gastar o teto da pessoa quando nenhuma chamada real vai acontecer.
+   * @returns {boolean}
+   */
+  function available() {
+    const t = now().getTime()
+    for (const p of providers) {
+      const st = /** @type {{ disabled: boolean, blockedUntil: number }} */ (state.get(p.id))
+      if (!st.disabled && st.blockedUntil <= t) return true
+    }
+    return false
+  }
+
   /** Contagens para o dono diagnosticar. Nunca guarda texto. */
   function stats() {
     /** @type {Record<string, { calls: number, ok: number, fail: Record<string, number>, disabled: boolean, paused: boolean }>} */
@@ -258,5 +291,5 @@ export function createChain({ providers, config, now = () => new Date(), log = c
     return out
   }
 
-  return { complete, stats }
+  return { complete, stats, available }
 }

@@ -92,6 +92,12 @@ export function readAiConfig(env = process.env, log = console) {
     dailyCapPerUser: intOf(e.AI_DAILY_CAP_PER_USER, 100, { min: 0 }),
     cacheTtlHours: intOf(e.AI_CACHE_TTL_HOURS, 24),
     cacheVariants: intOf(e.AI_CACHE_VARIANTS, 3),
+    // Teto diario proprio por provedor (dia UTC, 07-12): ausente ou zero = so o freio por 429.
+    providerCaps: {
+      cloudflare: intOf(e.AI_PROVIDER_CAP_CLOUDFLARE, 0, { min: 0 }),
+      groq: intOf(e.AI_PROVIDER_CAP_GROQ, 0, { min: 0 }),
+      xai: intOf(e.AI_PROVIDER_CAP_XAI, 0, { min: 0 }),
+    },
     requireProfanity: boolOf(e.AI_REQUIRE_PROFANITY, true),
     openPerDay: intOf(e.AI_OPEN_PER_DAY, 3, { min: 0 }),
     peekPerDay: intOf(e.AI_PEEK_PER_DAY, 6, { min: 0 }),

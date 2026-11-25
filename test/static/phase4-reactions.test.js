@@ -49,14 +49,15 @@ test('GoalsPage so chama onGoal quando o aporte fecha a meta e mostra o Vintem s
 test('toast.tsx tem o item custom claro, Esc e o rotulo do Vintem, e o toast comum segue com fundo de acao', () => {
   const src = code(TOAST)
   assert.match(src, /custom\?: React\.ReactNode/, 'ToastOptions sem custom')
-  assert.ok(src.includes('bg-surface-2') && src.includes('border-border'), 'item custom sem superficie clara com borda')
+  const body = code(VINTEM_TOAST)
+  assert.ok(body.includes('bg-surface-2') && body.includes('border-border'), 'balao do Vintem sem superficie clara com borda')
   assert.ok(src.includes('Escape'), 'item custom sem Esc')
   assert.ok(src.includes('aria-label="Dispensar fala do OINC"'), 'sem o rotulo "Dispensar fala do OINC"')
   assert.ok(src.includes('aria-label="Fechar aviso"') && src.includes('bg-action'), 'o toast comum perdeu o fundo de acao')
   // O item custom nunca usa fundo de acao nem fundo escuro (o corpo oliva do Vintem sumiria).
   const custom = src.slice(src.indexOf('if (isCustom)'), src.indexOf('return (', src.indexOf('if (isCustom)') + 20) + 900)
   assert.ok(!/bg-action|bg-primary|bg-black|bg-foreground/.test(custom.split('Fechar aviso')[0]), 'item custom com fundo escuro')
-  assert.match(src, /h-11 w-11[^"]*"[\s\S]{0,200}<X /, 'botao x do custom sem h-11 w-11')
+  assert.match(custom, /onClick=\{onDismiss\}/, 'tocar na fala do Vintem deve dispensar (sem botao x)')
   assert.ok(src.includes('bottom-[calc(92px+env(safe-area-inset-bottom))]'), 'o conteiner inferior do toast mudou')
 })
 
@@ -65,7 +66,7 @@ test('VintemToast: fala em texto React, sem line-clamp, sem HTML bruto e Vintem 
   assert.ok(!/line-clamp/.test(src), 'a fala do toast nunca e truncada')
   assert.ok(!/dangerouslySetInnerHTML|innerHTML/.test(src), 'HTML bruto na fala do toast')
   assert.match(src, /\{text\}/, 'a fala deve entrar como texto React')
-  assert.match(src, /size="gauge"/, 'Vintem do toast espia em tamanho grande (gauge)')
+  assert.match(src, /size="empty"/, 'Vintem do toast espia em tamanho grande (empty)')
   assert.match(src, /follow=\{false\}/, 'Vintem do toast nao deve seguir o cursor')
   assert.ok(!/<button/.test(src), 'o Vintem do toast nao e interativo')
   assert.match(src, /\.react\(reaction\)/, 'o toast nao roda a reacao em miniatura')

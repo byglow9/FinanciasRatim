@@ -82,19 +82,19 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`pointer-events-auto relative ${leaving ? "anim-peek-out" : ""}`}
+        role="button"
+        tabIndex={0}
+        aria-label="Dispensar fala do OINC"
+        onClick={onDismiss}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            onDismiss()
+          }
+        }}
+        className={`pointer-events-auto relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${leaving ? "anim-peek-out" : ""}`}
       >
         {item.custom}
-        <button
-          type="button"
-          aria-label="Dispensar fala do OINC"
-          onClick={onDismiss}
-          className="absolute -left-4 -top-4 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface-2 shadow-float">
-            <X className="h-4 w-4" aria-hidden="true" />
-          </span>
-        </button>
       </div>
     )
   }

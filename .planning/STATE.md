@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 06
 current_phase_name: Cartão de crédito
 status: executing
-stopped_at: Completed 06-08-PLAN.md
-last_updated: "2026-11-25T01:01:43.042Z"
+stopped_at: Completed 06-12-PLAN.md
+last_updated: "2026-11-25T01:11:46.082Z"
 last_activity: 2026-11-24
 last_activity_desc: Phase 06 execution started
-state_head: 3a9e4c32f576b82a1bfa82ce1baa368fe8e55a03
+state_head: f04e5dd519bdc50d91c624243ab02b7d03446296
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 129
-  completed_plans: 123
+  completed_plans: 124
   percent: 22
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 06 (Cartão de crédito) — EXECUTING
-Plan: 9 of 20
+Plan: 10 of 20
 Status: Ready to execute
 Last activity: 2026-11-24 — Phase 06 execution started
 
@@ -147,6 +147,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 5 P16 | 75min | 3 tasks | 8 files |
 | Phase 06 P01 | ~25min | 3 tasks | 16 files |
 | Phase 06 P08 | 12min (fechamento) | 3 tasks | 9 files |
+| Phase 06 P12 | 9min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -222,6 +223,7 @@ Recent decisions affecting current work:
 - [Phase 5]: [Phase 5] 05-16: texto verde sobre painel escuro usa text-ok-ink; --overlays audita 14 sobreposicoes (56 combinacoes, FALHAS 0); Dialog sem consumidor e montado pelo modulo real
 - [Phase 06]: 06-08: ligacao de pagamento so alcanca faturas do mes anterior a janela de 90 dias em diante; pagamento que sai da janela continua em cards.payments
 - [Phase 06]: 06-08: saida que e o outro lado do credito de um cartao fica reservada a esse cartao
+- [Phase 06]: 06-12: total do dia da fatura vem de billDayGroups no nucleo; fatura paga pela deteccao e sem marca do dono nao oferece botao
 
 ### Pending Todos
 
@@ -254,8 +256,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-25T01:01:40.839Z
-Stopped at: Completed 06-08-PLAN.md
+Last session: 2026-11-25T01:11:44.693Z
+Stopped at: Completed 06-12-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

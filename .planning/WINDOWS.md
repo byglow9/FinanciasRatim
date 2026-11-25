@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 3
 waived_count: 0
 fixed_count: 0
-total_count: 2
-last_updated: 2026-11-25T01:01:23.671Z
+total_count: 3
+last_updated: 2026-11-25T01:11:36.461Z
 ---
 
 # Broken Windows Ledger
@@ -17,6 +17,7 @@ last_updated: 2026-11-25T01:01:23.671Z
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 06 | unrun-verify | server/test/emu/card-payments.test.js |  | 06-08: npm run test:emu e test:rules nao rodaram (sem JDK 11 e firebase-tools); nao publicar antes | open |  | 2026-11-25T01:01:20.175Z |  |
 | 2 | 06 | unmet-truth | shared/core/classify.js |  | 06-08: isCardBillPayment casa 'pagamento de fatura' de conta de consumo; esses gastos sairiam dos limites (T-06-28) | open |  | 2026-11-25T01:01:23.671Z |  |
+| 3 | 06 | unrun-verify | vite.config.ts |  | 06-12: npm run build nao rodou (vite-plugin-pwa ausente em node_modules) | open |  | 2026-11-25T01:11:36.461Z |  |
 
 ````json
 [
@@ -43,6 +44,19 @@ last_updated: 2026-11-25T01:01:23.671Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-11-25T01:01:23.671Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 3,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": "vite.config.ts",
+    "line": null,
+    "description": "06-12: npm run build nao rodou (vite-plugin-pwa ausente em node_modules)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-25T01:11:36.461Z",
     "resolved_at": null,
     "milestone": null
   }

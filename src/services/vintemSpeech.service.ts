@@ -5,6 +5,8 @@ import { MOCK } from '@/lib/mockStorage'
 // quando houver, o id da categoria: nunca texto, valor, resumo nem descricao (D-16, IA-02). O servidor
 // monta o resumo, chama a IA e valida. Qualquer falha devolve null em silencio e o Vintem fala com o
 // banco de frases; nada aqui lanca nem registra nada.
+// As frequencias da fala espontanea e o prazo das reacoes vem do servidor (GET /api/vintem/hints); os
+// numeros daqui sao so a reserva para quando nao ha resposta.
 
 /** Situacoes aceitas pelo servidor. */
 export type AskSituation = 'lancamento' | 'limite' | 'sync' | 'abertura' | 'espiar'
@@ -67,4 +69,79 @@ export async function askVintem({ situation, categoryId, timeoutMs }: AskArgs): 
   } catch {
     return null
   }
+}
+
+/** O que o servidor diz sobre quando perguntar e quanto esperar. */
+export interface VintemHints {
+  peekMinMs: number
+  peekMaxMs: number
+  peekPerDay: number
+  openPerDay: number
+  reactionTimeoutMs: number
+}
+
+/** Reserva usada sem servidor, em MOCK ou quando a consulta falha. */
+export const DEFAULT_HINTS: Readonly<VintemHints> = Object.freeze({
+  peekMinMs: 6 * 60_000,
+  peekMaxMs: 15 * 60_000,
+  peekPerDay: 6,
+  openPerDay: 3,
+  reactionTimeoutMs: ASK_TIMEOUT_REACTION_MS,
+})
+
+// Uma resposta boa vale pela carga inteira do app; falha nao fica guardada, para tentar de novo depois.
+let loadedHints: VintemHints | null = null
+let loadingHints: Promise<VintemHints> | null = null
+
+/** Inteiro vindo do servidor, a partir de `min`; qualquer outra coisa vale a reserva. */
+function whole(value: unknown, fallback: number, min = 1): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= min ? value : fallback
+}
+
+async function requestHints(signal: AbortSignal): Promise<VintemHints | null> {
+  const token = await auth?.currentUser?.getIdToken()
+  if (!token) return null
+  const res = await fetch(`${API_URL}/api/vintem/hints`, { headers: { Authorization: `Bearer ${token}` }, signal })
+  if (!res.ok) return null
+  const data: unknown = await res.json()
+  if (data === null || typeof data !== 'object') return null
+  const sent = data as Partial<Record<keyof VintemHints, unknown>>
+  const peekMinMs = whole(sent.peekMinMs, DEFAULT_HINTS.peekMinMs)
+  return {
+    peekMinMs,
+    peekMaxMs: Math.max(peekMinMs, whole(sent.peekMaxMs, DEFAULT_HINTS.peekMaxMs)),
+    peekPerDay: whole(sent.peekPerDay, DEFAULT_HINTS.peekPerDay, 0),
+    openPerDay: whole(sent.openPerDay, DEFAULT_HINTS.openPerDay, 0),
+    reactionTimeoutMs: whole(sent.reactionTimeoutMs, DEFAULT_HINTS.reactionTimeoutMs),
+  }
+}
+
+async function loadHints(): Promise<VintemHints> {
+  try {
+    const signal = AbortSignal.timeout(ASK_TIMEOUT_OPEN_MS)
+    const found = await Promise.race([requestHints(signal), deadline(signal)])
+    if (found === null) return DEFAULT_HINTS
+    loadedHints = found
+    return found
+  } catch {
+    return DEFAULT_HINTS
+  }
+}
+
+/** Hints do servidor (uma vez por carga) ou a reserva. Nunca lanca. */
+export function getVintemHints(): Promise<VintemHints> {
+  if (loadedHints !== null) return Promise.resolve(loadedHints)
+  if (MOCK || !API_URL) return Promise.resolve(DEFAULT_HINTS)
+  loadingHints ??= loadHints().finally(() => {
+    loadingHints = null
+  })
+  return loadingHints
+}
+
+/**
+ * Prazo que o app espera a IA nas reacoes a lancamento e a limite: o dos hints, quando ja chegaram.
+ * Sincrono de proposito: a reacao nunca espera a consulta dos hints.
+ */
+export function getReactionTimeoutMs(): number {
+  return loadedHints?.reactionTimeoutMs ?? ASK_TIMEOUT_REACTION_MS
 }

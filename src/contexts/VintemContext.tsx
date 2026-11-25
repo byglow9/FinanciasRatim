@@ -14,7 +14,13 @@ import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
 import type { VintemHandle, VintemReaction } from '@/components/vintem/Vintem'
 import { VintemToastBody } from '@/components/vintem/VintemToast'
 import { useToast } from '@/components/ui/toast'
-import { askVintem, ASK_TIMEOUT_OPEN_MS, ASK_TIMEOUT_REACTION_MS, type AskArgs } from '@/services/vintemSpeech.service'
+import {
+  askVintem,
+  ASK_TIMEOUT_OPEN_MS,
+  getReactionTimeoutMs,
+  getVintemHints,
+  type AskArgs,
+} from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -177,6 +183,10 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   // So a pessoa logada, no proprio perfil e fora do somente leitura pede fala a IA (D-14).
   const canAsk = user !== null && user.person === viewPerson && !readOnly
+  // Os hints trazem o prazo das reacoes: pedidos cedo, para ja estarem aqui no primeiro lancamento.
+  useEffect(() => {
+    if (canAsk) void getVintemHints()
+  }, [canAsk])
 
   const [speech, setSpeech] = useState<Speech | null>(null)
   const [announced, setAnnounced] = useState('')
@@ -298,16 +308,16 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     [askGuarded, speakText, speak],
   )
 
-  // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo) ou do banco. Na Home
+  // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo dos hints) ou do banco. Na Home
   // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de
   // sucesso. Sem frase no banco nao ha toast. Nunca lanca.
   const deliver = useCallback(
-    async (reaction: VintemReaction, situation: string, raw: SlotsRaw, ai?: AskArgs): Promise<void> => {
+    async (reaction: VintemReaction, situation: string, raw: SlotsRaw, ai?: Omit<AskArgs, 'timeoutMs'>): Promise<void> => {
       try {
         slot.current?.react(reaction)
         let aiText: string | null = null
         if (ai !== undefined) {
-          const answer = await askGuarded(ai)
+          const answer = await askGuarded({ ...ai, timeoutMs: getReactionTimeoutMs() })
           if (answer === 'stale') return
           aiText = answer
         }
@@ -366,12 +376,11 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         }
         // As tres situacoes de limite pedem a fala de limite; o resto do gasto e a receita, a de lancamento.
         const limitSituation = LIMIT_SITUATIONS.has(result.situation)
-        const ai: AskArgs | undefined =
+        const ai: Omit<AskArgs, 'timeoutMs'> | undefined =
           kind === 'gasto' || kind === 'receita'
             ? {
                 situation: limitSituation ? 'limite' : 'lancamento',
                 categoryId: kind === 'gasto' ? categoryId : null,
-                timeoutMs: ASK_TIMEOUT_REACTION_MS,
               }
             : undefined
         await deliver(result.reaction, result.situation, raw, ai)

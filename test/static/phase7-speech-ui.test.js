@@ -2,7 +2,8 @@
 // Rodar: node --test test/static/phase7-speech-ui.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code } from './helpers/phase3-1.js'
+import ts from 'typescript'
+import { code, read } from './helpers/phase3-1.js'
 
 const SERVICE = 'src/services/vintemSpeech.service.ts'
 const CONTEXT = 'src/contexts/VintemContext.tsx'
@@ -183,4 +184,113 @@ test('a fala da IA e anunciada uma vez so e speakAi nunca lanca, com reserva do 
   const launched = body(src, 'onLaunched')
   assert.match(launched, /await deliver\(/, 'onLaunched nao espera o deliver (que nunca lanca)')
   assert.match(launched, /catch \{/, 'onLaunched perdeu o catch')
+})
+
+// ---------------------------------------------------------------------------------------------
+// Prazo das reacoes configuravel no servidor (07-16): o valor de GET /hints chega as reacoes.
+// O servico e executado de verdade (transpilado), com Firebase, ambiente e fetch falsos.
+// ---------------------------------------------------------------------------------------------
+
+function runService({ api = 'https://api.exemplo.test', mock = false, fetchImpl, user = { token: 'tok-1' } } = {}) {
+  const source = read(SERVICE).replace(/import\.meta\.env/g, '__env')
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  })
+  const calls = []
+  const fakeFetch = async (url, init) => {
+    calls.push({ url: String(url), init })
+    return fetchImpl(url, init)
+  }
+  const auth = {
+    get currentUser() {
+      return user.token ? { getIdToken: async () => user.token } : null
+    },
+  }
+  const modules = { '@/lib/firebase': { auth }, '@/lib/mockStorage': { MOCK: mock } }
+  const exports = {}
+  const require = (name) => modules[name] ?? assert.fail(`import nao esperado no servico: ${name}`)
+  new Function('exports', 'require', '__env', 'fetch', outputText)(exports, require, { VITE_BANK_API_URL: api }, fakeFetch)
+  return { service: exports, calls, user }
+}
+
+const json = (data, status = 200) => async () => new Response(JSON.stringify(data), { status })
+const SENT = { peekMinMs: 120000, peekMaxMs: 240000, peekPerDay: 4, openPerDay: 2, reactionTimeoutMs: 3300 }
+const FALLBACK = { peekMinMs: 360000, peekMaxMs: 900000, peekPerDay: 6, openPerDay: 3, reactionTimeoutMs: 2500 }
+
+test('getReactionTimeoutMs devolve o valor que veio dos hints do servidor', async () => {
+  const { service, calls } = runService({ fetchImpl: json(SENT) })
+  assert.equal(service.getReactionTimeoutMs(), 2500, 'antes dos hints vale o padrao')
+  assert.deepEqual({ ...(await service.getVintemHints()) }, SENT)
+  assert.equal(service.getReactionTimeoutMs(), 3300, 'o valor dos hints nao chegou as reacoes')
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].url, 'https://api.exemplo.test/api/vintem/hints')
+  assert.equal(calls[0].init.headers.Authorization, 'Bearer tok-1')
+  // Uma vez por carga do app.
+  await service.getVintemHints()
+  assert.equal(calls.length, 1)
+})
+
+test('pedidos simultaneos dos hints dividem uma consulta so', async () => {
+  const { service, calls } = runService({ fetchImpl: json(SENT) })
+  await Promise.all([service.getVintemHints(), service.getVintemHints()])
+  assert.equal(calls.length, 1)
+})
+
+test('sem servidor ou em MOCK o prazo e 2500 e os hints sao a reserva, sem rede', async () => {
+  for (const options of [{ api: '' }, { mock: true }]) {
+    const { service, calls } = runService({ ...options, fetchImpl: json(SENT) })
+    assert.deepEqual({ ...(await service.getVintemHints()) }, FALLBACK)
+    assert.equal(service.getReactionTimeoutMs(), 2500)
+    assert.equal(calls.length, 0)
+  }
+})
+
+test('erro de rede, 5xx e corpo inesperado nunca lancam; a falha nao fica guardada', async () => {
+  const answers = [
+    async () => {
+      throw new Error('rede')
+    },
+    json({ error: 'x' }, 500),
+    json(null),
+    json(SENT),
+  ]
+  const { service, calls } = runService({ fetchImpl: () => answers.shift()() })
+  for (let i = 0; i < 3; i += 1) {
+    assert.deepEqual({ ...(await service.getVintemHints()) }, FALLBACK)
+    assert.equal(service.getReactionTimeoutMs(), 2500)
+  }
+  await service.getVintemHints()
+  assert.equal(service.getReactionTimeoutMs(), 3300)
+  assert.equal(calls.length, 4)
+})
+
+test('sem ID token os hints sao a reserva e a consulta acontece quando ele existir', async () => {
+  const user = { token: null }
+  const { service, calls } = runService({ fetchImpl: json(SENT), user })
+  assert.deepEqual({ ...(await service.getVintemHints()) }, FALLBACK)
+  assert.equal(calls.length, 0)
+  user.token = 'tok-2'
+  await service.getVintemHints()
+  assert.equal(service.getReactionTimeoutMs(), 3300)
+})
+
+test('campo invalido nos hints vale a reserva, e o maximo nunca fica abaixo do minimo', async () => {
+  const { service } = runService({
+    fetchImpl: json({ peekMinMs: 700000, peekMaxMs: 1000, peekPerDay: -1, openPerDay: '9', reactionTimeoutMs: 0 }),
+  })
+  assert.deepEqual({ ...(await service.getVintemHints()) }, { ...FALLBACK, peekMinMs: 700000, peekMaxMs: 700000 })
+  assert.equal(service.getReactionTimeoutMs(), 2500)
+})
+
+test('deliver usa getReactionTimeoutMs, sem prazo fixo nas reacoes, e os hints sao pedidos cedo', () => {
+  const src = code(CONTEXT)
+  assert.match(
+    body(src, 'deliver'),
+    /askGuarded\(\{ \.\.\.ai, timeoutMs: getReactionTimeoutMs\(\) \}\)/,
+    'deliver nao usa o prazo dos hints',
+  )
+  assert.match(src, /getReactionTimeoutMs,[\s\S]*?\} from '@\/services\/vintemSpeech\.service'/)
+  assert.ok(!/ASK_TIMEOUT_REACTION_MS/.test(src), 'prazo fixo de reacao no contexto')
+  assert.ok(!/timeoutMs:/.test(body(src, 'onLaunched')), 'onLaunched fixa o prazo da reacao')
+  assert.match(src, /if \(canAsk\) void getVintemHints\(\)/, 'os hints nao sao pedidos antes do primeiro lancamento')
 })

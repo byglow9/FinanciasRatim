@@ -2,6 +2,7 @@
 // Chaves: `db::<colecao>` guarda uma lista; `doc::<chave>` guarda um documento. Datas em string ISO,
 // como o ramo MOCK de cada servico espera (ele faz new Date(...) na leitura).
 // So dados inventados aqui: nada de .env, Firestore, backup ou dado real.
+import { openBillMonth, shiftBillMonth } from '../../shared/core/cardBills.js'
 import { DEFAULT_CATEGORY_DEFS } from '../../shared/core/categories.js'
 
 const COLLECTIONS = [
@@ -16,7 +17,12 @@ const COLLECTIONS = [
   'eventCategories',
   'limitAlerts',
   'vintemInsights',
+  'cards',
+  'cardSettings',
 ]
+
+// So entram na semente `cards`: full e empty continuam com as mesmas chaves de sempre.
+const CARD_COLLECTIONS = ['cards', 'cardSettings']
 
 const catId = (name) => DEFAULT_CATEGORY_DEFS.find((d) => d.name === name)?.id ?? 'outros'
 
@@ -261,18 +267,132 @@ function buildSettings() {
   }
 }
 
+// Cartao (plano 06-20): tudo inventado. Dois cartoes do mesmo perfil, com fechamento e vencimento fixos.
+const CARD_A = { id: 'seed-card-a', nickname: 'Principal', closingDay: 25, dueDay: 5 }
+const CARD_B = { id: 'seed-card-b', nickname: 'Reserva para as viagens', closingDay: 10, dueDay: 17 }
+
+/** Cartoes, configuracao e compras sinteticas, com datas relativas a `now`. */
+function buildCardData(now) {
+  const today = now.getDate()
+  const dayAgo = (back) => localDay(now, Math.max(1, today - back)).toISOString()
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15, 12, 0, 0, 0).toISOString()
+  const created = now.toISOString()
+  const openA = openBillMonth(now, CARD_A.closingDay)
+  const prevA = shiftBillMonth(openA, -1)
+  const openB = openBillMonth(now, CARD_B.closingDay)
+
+  // Lancamento de cartao; sem os extras do banco e o que a pessoa lanca a mao.
+  const tx = (id, cardId, amount, description, category, date, extra) => ({
+    id,
+    person: 'ele',
+    type: 'saida',
+    amount,
+    description,
+    category,
+    categoryId: catId(category),
+    date,
+    createdAt: created,
+    cardId,
+    cardKind: 'purchase',
+    ...extra,
+  })
+  // Compra que veio do banco: origem, bankImportId e mes da fatura da Pluggy.
+  const bank = (id, cardId, amount, description, category, date, billMonth, extra = {}) =>
+    tx(id, cardId, amount, description, category, date, {
+      source: 'bank',
+      bankImportId: `${id}-imp`,
+      cardStatus: 'posted',
+      billMonth,
+      billMonthSource: 'pluggy',
+      ...extra,
+    })
+
+  const a = CARD_A.id
+  const transactions = [
+    // Fatura aberta do cartao A: soma 1800,00.
+    bank('seed-c01', a, 120, 'Mercado de exemplo', 'Alimentacao', dayAgo(0), openA, { cardStatus: 'pending' }),
+    bank('seed-c02', a, 66, 'Servico internacional de exemplo', 'Servicos', dayAgo(1), openA, {
+      currency: { code: 'USD', originalCents: 1200 },
+    }),
+    bank('seed-c03', a, 150, 'Loja de moveis parc 2/6', 'Moradia', dayAgo(2), openA, {
+      installment: { n: 2, total: 6, source: 'inferred' },
+    }),
+    bank('seed-c04', a, 240, 'Eletronicos de exemplo', 'Outros', dayAgo(3), openA, {
+      installment: { n: 3, total: 10, source: 'pluggy' },
+    }),
+    // Lancada a mao: sem origem banco e sem mes de fatura (derivado pelo fechamento).
+    tx('seed-c05', a, 45, 'Lanche lancado a mao', 'Alimentacao', dayAgo(0)),
+    bank('seed-c06', a, 1214, 'Pacote de viagem de exemplo com um nome bem comprido para testar a quebra', 'Lazer', dayAgo(4), openA),
+    bank('seed-c07', a, 35, 'Estorno de exemplo', 'Outros', dayAgo(1), openA, {
+      type: 'entrada',
+      cardKind: 'refund',
+      transfer: true,
+    }),
+    // Fatura anterior (1500,00) e o pagamento dela.
+    bank('seed-c08', a, 1500, 'Compras do mes anterior', 'Outros', lastMonth, prevA),
+    bank('seed-c09', a, 1500, 'Pagamento de fatura', 'Outros', dayAgo(2), prevA, { cardKind: 'payment', transfer: true }),
+    // Cartao B: a fatura do banco fica acima das compras listadas (aviso de diferenca).
+    bank('seed-c10', CARD_B.id, 310, 'Passagem de exemplo', 'Transporte', dayAgo(2), openB),
+  ]
+
+  const card = (id, name, limits, extra) => ({
+    id,
+    itemId: 'seed-item-card',
+    person: 'ele',
+    name,
+    brand: 'MASTERCARD',
+    level: 'GOLD',
+    status: 'ACTIVE',
+    ...limits,
+    syncedAt: created,
+    unassignedCents: 0,
+    historyBaselineAt: null,
+    ...extra,
+  })
+  const cards = [
+    card(a, 'Cartao Exemplo', { creditLimitCents: 500000, availableLimitCents: 320000, balanceCents: 180000 }, {
+      billTotals: { [prevA]: 150000, [openA]: 180000 },
+      pendingCount: 1,
+      firstPurchaseAt: lastMonth,
+      lastPurchaseAt: dayAgo(0),
+      payments: [{ id: 'seed-pay1', billMonth: prevA, cents: 150000, atMs: Date.parse(dayAgo(2)), source: 'bank-text' }],
+    }),
+    card(CARD_B.id, 'Cartao Reserva', { creditLimitCents: 250000, availableLimitCents: 210000, balanceCents: 40000 }, {
+      billTotals: { [openB]: 31000 },
+      pendingCount: 0,
+      firstPurchaseAt: dayAgo(2),
+      lastPurchaseAt: dayAgo(2),
+      payments: [],
+    }),
+  ]
+
+  const cardSettings = [CARD_A, CARD_B].map(({ id, nickname, closingDay, dueDay }) => ({
+    accountId: id,
+    nickname,
+    closingDay,
+    dueDay,
+    paidMonths: [],
+  }))
+
+  return { cards, cardSettings, transactions }
+}
+
 /**
  * Mapa chave -> texto JSON, pronto para localStorage.setItem.
- * `full`: dados do ciclo corrente; `empty`: listas vazias (o app cria as configuracoes padrao).
- * @param {'full' | 'empty'} kind
+ * `full`: dados do ciclo corrente; `empty`: listas vazias (o app cria as configuracoes padrao);
+ * `cards`: a full mais dois cartoes, a configuracao deles e as compras do cartao.
+ * @param {'full' | 'empty' | 'cards'} kind
  * @param {Date} [now]
  */
 export function buildSeed(kind, now = new Date()) {
-  if (kind !== 'full' && kind !== 'empty') throw new Error(`seed invalido: ${kind} (use full ou empty)`)
+  if (kind !== 'full' && kind !== 'empty' && kind !== 'cards') {
+    throw new Error(`seed invalido: ${kind} (use full, empty ou cards)`)
+  }
 
-  const lists = Object.fromEntries(COLLECTIONS.map((name) => [name, []]))
+  const names = COLLECTIONS.filter((name) => kind === 'cards' || !CARD_COLLECTIONS.includes(name))
+  const lists = Object.fromEntries(names.map((name) => [name, []]))
   const seed = {}
-  if (kind === 'full') {
+  if (kind !== 'empty') {
     Object.assign(lists, {
       transactions: buildTransactions(now),
       fixedExpenses: buildFixedExpenses(now),
@@ -285,6 +405,12 @@ export function buildSeed(kind, now = new Date()) {
       eventCategories: buildEventCategories(now),
     })
     seed['doc::settings::main'] = JSON.stringify(buildSettings())
+  }
+  if (kind === 'cards') {
+    const cardData = buildCardData(now)
+    lists.cards = cardData.cards
+    lists.cardSettings = cardData.cardSettings
+    lists.transactions = [...lists.transactions, ...cardData.transactions]
   }
   for (const [name, items] of Object.entries(lists)) seed[`db::${name}`] = JSON.stringify(items)
   return seed

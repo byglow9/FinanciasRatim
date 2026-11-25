@@ -11,6 +11,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { MOCK, mList, mSave } from '@/lib/mockStorage'
 import { ownerId, ownerScope } from '@/lib/scope'
 import type { CardSettings, PersonType, Transaction } from '@/types'
 
@@ -96,15 +97,34 @@ function paymentsOf(value: unknown): CardPaymentRecord[] | undefined {
   return out
 }
 
+// Desenvolvimento simulado (MOCK so e verdadeiro em dev): as datas chegam como texto no localStorage.
+function mockCards(): Card[] {
+  return mList<Card>('cards').map((card) => ({
+    ...card,
+    syncedAt: toDateOrNull(card.syncedAt),
+    firstPurchaseAt: toDateOrNull(card.firstPurchaseAt),
+    lastPurchaseAt: toDateOrNull(card.lastPurchaseAt),
+    historyBaselineAt: toDateOrNull(card.historyBaselineAt),
+  }))
+}
+
+function mockCardSettings(): CardSettings[] {
+  return mList<CardSettings>('cardSettings').map((s) => normalizeSettings(s.accountId, { ...s }))
+}
+
 /**
  * Cartoes do dono em tempo real. So leitura: a escrita e do servidor. Diferente das conexoes
  * bancarias, o erro chega ao chamador, para a tela separar "sem cartao" de "nao foi possivel
- * carregar". Em desenvolvimento simulado (sem Firestore) entrega a lista vazia.
+ * carregar". Em desenvolvimento simulado entrega uma vez a lista do armazenamento simulado.
  */
 export function subscribeCards(
   onData: (list: Card[]) => void,
   onError: (err: Error) => void
 ): () => void {
+  if (MOCK) {
+    onData(mockCards())
+    return () => {}
+  }
   if (!db) {
     onData([])
     return () => {}
@@ -160,12 +180,16 @@ function normalizeSettings(accountId: string, data: Record<string, unknown>): Ca
 
 /**
  * Configuracao dos cartoes do dono em tempo real (cardSettings/{accountId}). O erro chega ao
- * chamador. Em desenvolvimento simulado (sem Firestore) entrega a lista vazia.
+ * chamador. Em desenvolvimento simulado entrega uma vez a lista do armazenamento simulado.
  */
 export function subscribeCardSettings(
   onData: (list: CardSettings[]) => void,
   onError: (err: Error) => void
 ): () => void {
+  if (MOCK) {
+    onData(mockCardSettings())
+    return () => {}
+  }
   if (!db) {
     onData([])
     return () => {}
@@ -218,13 +242,21 @@ export function validateCardSettingsPatch(patch: CardSettingsPatch): CardSetting
 
 /**
  * Grava a configuracao do cartao (cardSettings/{accountId}) com mescla: so os campos informados
- * mudam. O dono vem do escopo, nunca de parametro. Sem Firestore (desenvolvimento simulado) recusa.
+ * mudam. O dono vem do escopo, nunca de parametro. Em desenvolvimento simulado grava so em
+ * db::cardSettings (sem avisar a assinatura, que emite uma vez); sem Firestore recusa.
  */
 export async function saveCardSettings(accountId: string, patch: CardSettingsPatch): Promise<void> {
   if (typeof accountId !== 'string' || accountId.length === 0 || accountId.includes('/')) {
     throw new Error('Cartao invalido')
   }
   const clean = validateCardSettingsPatch(patch)
+  if (MOCK) {
+    const all = mList<CardSettings>('cardSettings')
+    const current = all.find((s) => s.accountId === accountId)
+    const others = all.filter((s) => s.accountId !== accountId)
+    mSave('cardSettings', [...others, { ...current, ...clean, accountId }])
+    return
+  }
   if (!db) throw new Error('Sem Firestore: configuracao do cartao indisponivel neste ambiente')
   await setDoc(
     doc(db, 'cardSettings', accountId),
@@ -235,9 +267,15 @@ export async function saveCardSettings(accountId: string, patch: CardSettingsPat
 
 /**
  * Compras do cartao desde `from`, mais recentes primeiro (indice ownerId, cardId, date DESC).
- * Sem Firestore (desenvolvimento simulado) devolve vazio.
+ * Em desenvolvimento simulado le db::transactions; sem Firestore devolve vazio.
  */
 export async function getCardTransactions(cardId: string, from: Date): Promise<Transaction[]> {
+  if (MOCK) {
+    return mList<Transaction>('transactions')
+      .map((t) => ({ ...t, date: new Date(t.date), createdAt: new Date(t.createdAt) }))
+      .filter((t) => t.cardId === cardId && t.date >= from)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+  }
   if (!db) return []
   const snapshot = await getDocs(
     query(

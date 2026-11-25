@@ -16,7 +16,7 @@ import {
   scoreSample,
   selectCandidates,
 } from '../scripts/ai-compare.js'
-import { PROVOCATIONS, buildFixtures, fixtureCases } from '../scripts/lib/ai-compare-fixtures.js'
+import { PROVOCATIONS, buildFixtures, buildGeneralFixtures, fixtureCases } from '../scripts/lib/ai-compare-fixtures.js'
 import { createSpeech } from '../src/ai/speech.js'
 import { TEMPERATURE, maxTokens } from '../../shared/core/aiPrompt.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
@@ -221,9 +221,24 @@ describe('medidas', () => {
   })
 })
 
+describe('rodada geral', () => {
+  test('um caso por assunto, sem vazamento e sem provocacao', () => {
+    const cases = buildGeneralFixtures()
+    assert.equal(cases.length, 9)
+    for (const c of cases) assert.deepEqual(findLeaks(c.summaryText), [], c.id)
+    for (const topic of ['fatura', 'porquinho', 'metas', 'fixas', 'comparacao', 'semana', 'ritmo']) {
+      assert.ok(cases.some((c) => c.topic === topic), topic)
+    }
+    const tasks = planTasks(cases, 2, { provocations: false })
+    assert.equal(tasks.length, 18)
+    assert.ok(tasks.every((t) => t.kind === 'resumo'))
+  })
+})
+
 describe('argumentos e chaves', () => {
   test('opcoes validas e invalidas', () => {
-    assert.deepEqual(parseArgs([]), { samples: 5, only: [], out: null, list: false, pauseMs: 1500, help: false })
+    assert.deepEqual(parseArgs([]), { samples: 5, only: [], out: null, list: false, pauseMs: 1500, help: false, geral: false })
+    assert.equal(parseArgs(['--geral']).geral, true)
     const o = parseArgs(['--samples=2', '--only', 'groq,gemma', '--pause-ms', '0', '--list'])
     assert.deepEqual([o.samples, o.only, o.pauseMs, o.list], [2, ['groq', 'gemma'], 0, true])
     for (const bad of [['--samples', '0'], ['--samples'], ['--pause-ms', 'x'], ['--sample', '1'], ['--out', '--list']]) {

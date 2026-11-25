@@ -202,7 +202,7 @@ export function prepareCase(raw) {
   const summary = buildAiSummary(raw.input)
   let topic = null
   if (raw.situation === 'limite') topic = 'limites'
-  else if (!reaction) topic = summary.assuntos?.[0] ?? null
+  else if (!reaction) topic = raw.topic ?? summary.assuntos?.[0] ?? null
   const overLimit = raw.situation === 'limite' ? overOf(summary, raw.categoryId) : false
   return {
     ...raw,
@@ -220,6 +220,84 @@ export function prepareCase(raw) {
 /** Os quatro casos ja preparados. Os mesmos para todos os modelos. */
 export function buildFixtures() {
   return fixtureCases().map(prepareCase)
+}
+
+/**
+ * Rodada geral (--geral): um caso por assunto, para o dono ler a variedade da fala. Fica separada
+ * dos quatro casos do teste de modelos, que continuam iguais.
+ */
+export function generalCases() {
+  const config = (limits = {}) => ({ salaryDay: 1, expectedIncomeCents: 480000, limits })
+  // Todo caso tem o salario do mes lancado, para a renda nunca aparecer zerada.
+  const base = (now, { transactions = [], ...extra }) => ({
+    now,
+    person: PERSON,
+    config: config(),
+    categoryDefs: CATEGORIES,
+    transactions: [salary('g-sal', 11, 4800), ...transactions],
+    ...extra,
+  })
+  const open = (id, title, topic, input, situation = 'abertura') => ({ id, title, situation, topic, input })
+
+  const pay = salary('g-sal', 11, 4800)
+  const market = tx('g-me1', 11, 22, 612.45, 'Mercado Central Ltda', 'mercado')
+  return [
+    {
+      id: 'salario-caiu',
+      title: 'Salário acabou de cair',
+      situation: 'lancamento',
+      input: base(at(11, 1, 14), { latestTx: pay }),
+    },
+    open('fatura-vencendo', 'Fatura do cartão perto de vencer', 'fatura', base(at(11, 8, 9), {
+      cards: [{ name: 'Principal', openBillCents: 318790, dueDay: 10 }],
+    })),
+    open('porquinho', 'Saldo do Porquinho', 'porquinho', base(at(11, 20, 19), { porquinhoCents: 4700 })),
+    open('meta-quase', 'Meta quase batida', 'metas', base(at(11, 18, 12), {
+      goals: [{ name: 'Viagem', targetCents: 300000, currentCents: 246000 }],
+    })),
+    open('contas-fixas', 'Contas fixas ainda por pagar', 'fixas', base(at(11, 9, 8), {
+      bills: [
+        { id: 'aluguel', name: 'Aluguel', dueDay: 10, amountCents: 145000 },
+        { id: 'luz', name: 'Luz', dueDay: 12, amountCents: 18730 },
+        { id: 'academia', name: 'Academia', dueDay: 15, amountCents: 11990 },
+      ],
+      payments: [],
+    })),
+    {
+      id: 'mercado-sincronizado',
+      title: 'Compra grande de mercado que veio do banco',
+      situation: 'sync',
+      input: base(at(11, 22, 20), {
+        config: config({ mercado: limit(90000) }),
+        transactions: [tx('g-me0', 11, 8, 240, 'Mercado Central Ltda', 'mercado'), market],
+        latestTx: market,
+      }),
+    },
+    open('comparacao', 'Mês comparado com o anterior', 'comparacao', base(at(11, 17, 13), {
+      transactions: [tx('g-c1', 11, 6, 410, 'Cinema do shopping', 'lazer'), tx('g-c2', 11, 11, 296.8, 'UBER *TRIP', 'transporte')],
+      prevTransactions: [tx('g-cp1', 10, 5, 130, 'Cinema do shopping', 'lazer'), tx('g-cp2', 10, 12, 105, 'UBER *TRIP', 'transporte')],
+    }), 'espiar'),
+    open('semana-repetida', 'Mesmos lugares a semana toda', 'semana', base(at(11, 20, 23), {
+      transactions: [
+        tx('g-s1', 11, 15, 87.5, 'Bar Central Ltda', 'lazer'),
+        tx('g-s2', 11, 17, 64, 'Bar Central Ltda', 'lazer'),
+        tx('g-s3', 11, 18, 23.9, 'UBER *TRIP', 'transporte'),
+        tx('g-s4', 11, 19, 112, 'Bar Central Ltda', 'lazer'),
+        tx('g-s5', 11, 20, 31.4, 'UBER *TRIP', 'transporte'),
+      ],
+    }), 'espiar'),
+    open('ritmo-apertado', 'Dinheiro acabando antes do mês', 'ritmo', base(at(11, 12, 11), {
+      transactions: [
+        tx('g-r1', 11, 4, 1890, 'Loja Eletronicos Ltda', 'eletronicos'),
+        tx('g-r2', 11, 9, 2120, 'Loja de Moveis Ltda', 'outros'),
+      ],
+    })),
+  ]
+}
+
+/** Os casos gerais ja preparados. */
+export function buildGeneralFixtures() {
+  return generalCases().map(prepareCase)
 }
 
 /** Caso usado de base para o conjunto de provocacao. */

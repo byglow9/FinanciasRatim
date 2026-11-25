@@ -11,6 +11,7 @@
 //
 // Opcoes:
 //   --list            confere o catalogo e sai sem pedir fala nenhuma
+//   --geral           um caso por assunto (salario, cartao, porquinho, metas, contas...), sem provocacao
 //   --samples N       amostras por modelo e resumo (padrao 5; a provocacao usa ate 3)
 //   --only a,b        so os provedores (cloudflare, groq, xai) ou modelos (trecho do id)
 //   --out PASTA       onde gravar o .json e o .md (padrao: a pasta da Fase 7)
@@ -36,7 +37,7 @@ import {
 } from '../../shared/core/aiValidate.js'
 import { normalize } from '../../shared/core/classify.js'
 import { dayKeyOf } from '../../shared/core/dayKey.js'
-import { PROVOCATIONS, PROVOCATION_CASE_ID, TONE, buildFixtures } from './lib/ai-compare-fixtures.js'
+import { PROVOCATIONS, PROVOCATION_CASE_ID, TONE, buildFixtures, buildGeneralFixtures } from './lib/ai-compare-fixtures.js'
 
 /** Modelos candidatos. Lista editavel: confira os ids com --list antes de rodar. */
 export const CANDIDATES = Object.freeze([
@@ -103,7 +104,7 @@ const USAGE = [
   '  node server/scripts/ai-compare.js --list',
   '  node server/scripts/ai-compare.js',
   '',
-  'Opções: --list, --samples N, --only provedor-ou-modelo[,outro], --out PASTA, --pause-ms N',
+  'Opções: --geral, --list, --samples N, --only provedor-ou-modelo[,outro], --out PASTA, --pause-ms N',
 ].join('\n')
 
 // ---------------------------------------------------------------------------------------------
@@ -115,10 +116,11 @@ const USAGE = [
  * @param {string[]} argv
  */
 export function parseArgs(argv) {
-  const opts = { samples: DEFAULT_SAMPLES, only: [], out: null, list: false, pauseMs: DEFAULT_PAUSE_MS, help: false }
+  const opts = { samples: DEFAULT_SAMPLES, only: [], out: null, list: false, geral: false, pauseMs: DEFAULT_PAUSE_MS, help: false }
   for (let i = 0; i < argv.length; i += 1) {
     const [flag, inline] = argv[i].split(/=(.*)/s)
     if (flag === '--list') opts.list = true
+    else if (flag === '--geral') opts.geral = true
     else if (flag === '--help' || flag === '-h') opts.help = true
     else if (['--samples', '--only', '--out', '--pause-ms'].includes(flag)) {
       const value = inline ?? argv[(i += 1)]
@@ -413,7 +415,7 @@ function sampleLine(r, n) {
 }
 
 /** Relatorio em markdown: tabelas e as falas lado a lado por resumo e por modelo. */
-export function renderMarkdown({ day, config, fixtures, models, skipped, records }) {
+export function renderMarkdown({ day, config, fixtures, models, skipped, records, geral = false }) {
   const out = [
     `# Teste lado a lado das falas do OINC (${day})`,
     '',
@@ -451,7 +453,7 @@ export function renderMarkdown({ day, config, fixtures, models, skipped, records
     const at = out.lastIndexOf(`## Resumo: ${f.title}`)
     out.splice(at + 1, 0, '', `Situação ${f.situation}, assunto ${f.topic ?? 'livre'}, fala ${f.length}.`, '', '```json', f.summaryText, '```')
   }
-  PROVOCATIONS.forEach((request, i) => {
+  if (!geral) PROVOCATIONS.forEach((request, i) => {
     section(`Provocação ${i + 1}: ${request}`, records.filter((r) => r.kind === 'provocacao' && r.provocation === i + 1))
   })
   return `${out.join('\n')}\n`
@@ -470,12 +472,12 @@ function freeStem(dir, day) {
 // ---------------------------------------------------------------------------------------------
 
 /** Ordem das chamadas: por amostra, cobrindo todos os resumos e provocacoes antes de repetir. */
-export function planTasks(fixtures, samples) {
+export function planTasks(fixtures, samples, { provocations = true } = {}) {
   const base = fixtures.find((f) => f.id === PROVOCATION_CASE_ID) ?? fixtures[0]
   const tasks = []
   for (let sample = 1; sample <= samples; sample += 1) {
     for (const fixture of fixtures) tasks.push({ kind: 'resumo', fixture, provocation: null, sample })
-    if (sample > PROVOCATION_SAMPLES) continue
+    if (!provocations || sample > PROVOCATION_SAMPLES) continue
     PROVOCATIONS.forEach((_, i) => tasks.push({ kind: 'provocacao', fixture: base, provocation: i + 1, sample }))
   }
   return tasks
@@ -574,8 +576,8 @@ export async function main({
   }
 
   // 3. Rodada.
-  const fixtures = buildFixtures()
-  const tasks = planTasks(fixtures, opts.samples)
+  const fixtures = opts.geral ? buildGeneralFixtures() : buildFixtures()
+  const tasks = planTasks(fixtures, opts.samples, { provocations: !opts.geral })
   const config = {
     samples: opts.samples,
     provocationSamples: Math.min(opts.samples, PROVOCATION_SAMPLES),
@@ -622,7 +624,7 @@ export async function main({
       falas: records,
     }
     writeFileSync(`${stem}.json`, redact(`${JSON.stringify(json, null, 2)}\n`))
-    writeFileSync(`${stem}.md`, redact(renderMarkdown({ day, config, fixtures, models: metrics, skipped, records })))
+    writeFileSync(`${stem}.md`, redact(renderMarkdown({ day, config, fixtures, models: metrics, skipped, records, geral: opts.geral })))
     return metrics
   }
   save()

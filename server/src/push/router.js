@@ -38,7 +38,7 @@ export function createPushRouter({ db, send, now = () => new Date(), limiter = n
       const ref = db.collection('pushRegistrations').doc(fid)
       const existing = await ref.get()
       if (existing.exists && existing.data().ownerId !== hid) {
-        return res.status(409).json({ error: 'Aparelho ja registrado' })
+        return res.status(409).json({ error: 'Aparelho ja cadastrado' })
       }
       const at = now()
       await ref.set(
@@ -52,6 +52,45 @@ export function createPushRouter({ db, send, now = () => new Date(), limiter = n
         },
         { merge: true }
       )
+      res.json({ ok: true })
+    })
+  )
+
+  // O aparelho consta para a pessoa do token? Base do estado "inscricao perdida".
+  // So conta como registrado quando o casal e a pessoa do documento batem com o token.
+  router.get(
+    '/status',
+    handle(async (req, res) => {
+      const { hid, person } = req.owner
+      if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+      const fid = req.query?.fid
+      if (typeof fid !== 'string' || !FID_RE.test(fid)) {
+        return res.status(400).json({ error: 'FID invalido' })
+      }
+      const snap = await db.collection('pushRegistrations').doc(fid).get()
+      const registered = snap.exists && snap.data().ownerId === hid && snap.data().person === person
+      const devices = await db
+        .collection('pushRegistrations')
+        .where('ownerId', '==', hid)
+        .where('person', '==', person)
+        .get()
+      res.json({ registered, devices: devices.docs.length })
+    })
+  )
+
+  // Remove o registro do proprio casal. Idempotente e sem revelar se o FID existe em outro casal.
+  router.post(
+    '/unregister',
+    handle(async (req, res) => {
+      const { hid, person } = req.owner
+      if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+      const fid = req.body?.fid
+      if (typeof fid !== 'string' || !FID_RE.test(fid)) {
+        return res.status(400).json({ error: 'FID invalido' })
+      }
+      const ref = db.collection('pushRegistrations').doc(fid)
+      const snap = await ref.get()
+      if (snap.exists && snap.data().ownerId === hid) await ref.delete()
       res.json({ ok: true })
     })
   )

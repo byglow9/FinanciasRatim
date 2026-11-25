@@ -239,6 +239,97 @@ describe('push', () => {
     assert.equal(again.status, 200)
   })
 
+  const status = (token, fid) =>
+    call(`/api/push/status${fid === undefined ? '' : `?fid=${encodeURIComponent(fid)}`}`, { method: 'GET', token })
+  const unregister = (token, fid) => call('/api/push/unregister', { token, body: fid === undefined ? {} : { fid } })
+
+  test('registro: 409 do outro casal nao altera o documento e a mensagem e fixa', async () => {
+    await register('tok-a-ele', FID_A_ELE)
+    const before = { ...db.store.get(`pushRegistrations/${FID_A_ELE}`) }
+    clock.t += 60_000
+    const res = await register('tok-b-ele', FID_A_ELE, { 'user-agent': 'Mozilla/5.0 (Linux; Android 14)' })
+    assert.equal(res.status, 409)
+    assert.deepEqual(await res.json(), { error: 'Aparelho ja cadastrado' })
+    assert.deepEqual(db.store.get(`pushRegistrations/${FID_A_ELE}`), before)
+  })
+
+  test('registro: troca de pessoa no mesmo aparelho atualiza e mantem createdAt', async () => {
+    await register('tok-a-ele', FID_A_ELE, { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)' })
+    const first = db.store.get(`pushRegistrations/${FID_A_ELE}`)
+    clock.t += 60_000
+    const res = await register('tok-a-ela', FID_A_ELE, { 'user-agent': 'Mozilla/5.0 (Linux; Android 14)' })
+    assert.equal(res.status, 200)
+    const doc = db.store.get(`pushRegistrations/${FID_A_ELE}`)
+    assert.equal(doc.person, 'ela')
+    assert.equal(doc.uid, 'u-a-ela')
+    assert.equal(doc.ownerId, 'casalA')
+    assert.equal(doc.platform, 'android')
+    assert.deepEqual(doc.createdAt, first.createdAt)
+    assert.ok(doc.updatedAt > first.updatedAt)
+  })
+
+  test('registro: plataforma so ios, android ou desktop e o User-Agent nunca e gravado', async () => {
+    const cases = [
+      ['Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)', 'ios'],
+      ['Mozilla/5.0 (Linux; Android 14; Pixel 8)', 'android'],
+      ['Mozilla/5.0 (X11; Linux x86_64) Chrome/130', 'desktop'],
+      [undefined, 'desktop'],
+    ]
+    for (const [ua, expected] of cases) {
+      db.store.clear()
+      await register('tok-a-ele', FID_A_ELE, ua ? { 'user-agent': ua } : { 'user-agent': '' })
+      const doc = db.store.get(`pushRegistrations/${FID_A_ELE}`)
+      assert.equal(doc.platform, expected, String(ua))
+      assert.ok(['ios', 'android', 'desktop'].includes(doc.platform))
+      assert.ok(!JSON.stringify(doc).includes('Mozilla'))
+    }
+  })
+
+  test('status: verdadeiro para a pessoa dona, falso para a outra pessoa e para outro casal', async () => {
+    await register('tok-a-ele', FID_A_ELE)
+    assert.deepEqual(await (await status('tok-a-ele', FID_A_ELE)).json(), { registered: true, devices: 1 })
+    assert.deepEqual(await (await status('tok-a-ela', FID_A_ELE)).json(), { registered: false, devices: 0 })
+    assert.deepEqual(await (await status('tok-b-ele', FID_A_ELE)).json(), { registered: false, devices: 0 })
+    assert.deepEqual(await (await status('tok-a-ele', 'fidInexistente01')).json(), { registered: false, devices: 1 })
+  })
+
+  test('status: conta os aparelhos da pessoa e so os dela', async () => {
+    await register('tok-a-ele', FID_A_ELE)
+    await register('tok-a-ele', FID_A_ELE_2)
+    await register('tok-a-ela', FID_A_ELA)
+    await register('tok-b-ele', FID_B_ELE)
+    assert.deepEqual(await (await status('tok-a-ele', FID_A_ELE_2)).json(), { registered: true, devices: 2 })
+    assert.deepEqual(await (await status('tok-a-ela', FID_A_ELA)).json(), { registered: true, devices: 1 })
+    assert.deepEqual(await (await status('tok-b-ele', FID_B_ELE)).json(), { registered: true, devices: 1 })
+  })
+
+  test('unregister: apaga o proprio; de outro casal nao apaga; ambos e o inexistente respondem 200', async () => {
+    await register('tok-a-ele', FID_A_ELE)
+    const alheio = await unregister('tok-b-ele', FID_A_ELE)
+    assert.equal(alheio.status, 200)
+    assert.deepEqual(await alheio.json(), { ok: true })
+    assert.equal(db.store.has(`pushRegistrations/${FID_A_ELE}`), true, 'de outro casal nao apaga')
+    const proprio = await unregister('tok-a-ele', FID_A_ELE)
+    assert.equal(proprio.status, 200)
+    assert.deepEqual(await proprio.json(), { ok: true })
+    assert.equal(db.store.has(`pushRegistrations/${FID_A_ELE}`), false)
+    const again = await unregister('tok-a-ele', FID_A_ELE)
+    assert.equal(again.status, 200)
+    assert.deepEqual(await again.json(), { ok: true })
+  })
+
+  test('FID invalido da 400 em register, status e unregister; sem token 401; sem pessoa 403', async () => {
+    for (const fid of ['curto', 'tem espaco aqui!', 'x'.repeat(65), 123, undefined]) {
+      assert.equal((await register('tok-a-ele', fid)).status, 400, `register ${String(fid)}`)
+      assert.equal((await unregister('tok-a-ele', fid)).status, 400, `unregister ${String(fid)}`)
+      if (typeof fid !== 'number') assert.equal((await status('tok-a-ele', fid)).status, 400, `status ${String(fid)}`)
+    }
+    assert.equal((await status(undefined, FID_A_ELE)).status, 401)
+    assert.equal((await unregister(undefined, FID_A_ELE)).status, 401)
+    assert.equal((await status('tok-sempessoa', FID_A_ELE)).status, 403)
+    assert.equal((await unregister('tok-sempessoa', FID_A_ELE)).status, 403)
+  })
+
   const getPrefs = (token) => call('/api/push/prefs', { method: 'GET', token })
   const putPrefs = (token, body) => call('/api/push/prefs', { method: 'PUT', token, body })
 

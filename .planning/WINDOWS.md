@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 6
+open_count: 9
 waived_count: 0
 fixed_count: 0
-total_count: 6
-last_updated: 2026-11-25T01:27:04.031Z
+total_count: 9
+last_updated: 2026-11-25T01:39:22.357Z
 ---
 
 # Broken Windows Ledger
@@ -21,6 +21,9 @@ last_updated: 2026-11-25T01:27:04.031Z
 | 4 | 06 | unrun-verify | server/test/emu/card-sync.test.js |  | 06-18: npm run test:emu e test:rules nao rodaram (sem JDK 11 e firebase-tools); nao publicar antes | open |  | 2026-11-25T01:26:58.845Z |  |
 | 5 | 06 | unmet-truth | server/src/card-sync.js |  | 06-18: adocao grava sem ensaio nem copia de seguranca; o portao historyBaselineAt e do 06-19 (D-13); nao publicar sozinho | open |  | 2026-11-25T01:27:01.536Z |  |
 | 6 | 06 | unmet-truth | server/src/sync.js |  | 06-18: findDuplicate da conta BANK ainda compara com manuais lancados como Cartao (so valor e data) e pode esconder uma saida em review/duplicate | open |  | 2026-11-25T01:27:04.031Z |  |
+| 7 | 06 | unrun-verify | server/test/emu/card-history.test.js |  | 06-19: npm run test:emu e test:rules nao rodaram (sem JDK 11 e firebase-tools); nao publicar nem rodar card-history.js em producao antes | open |  | 2026-11-25T01:39:17.411Z |  |
+| 8 | 06 | unmet-truth | server/scripts/card-history.js |  | 06-19: nao existe restauracao da copia em producao (importAll so no emulador); decidir antes de aplicar o historico | open |  | 2026-11-25T01:39:19.945Z |  |
+| 9 | 06 | unmet-truth | server/src/card-sync.js |  | 06-19: compras ja importadas ou retidas pelo 06-06 nao sao adotadas nem recriadas pela aplicacao; o ensaio so conta | open |  | 2026-11-25T01:39:22.357Z |  |
 
 ````json
 [
@@ -99,6 +102,45 @@ last_updated: 2026-11-25T01:27:04.031Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-11-25T01:27:04.031Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 7,
+    "kind": "unrun-verify",
+    "phase": "06",
+    "file": "server/test/emu/card-history.test.js",
+    "line": null,
+    "description": "06-19: npm run test:emu e test:rules nao rodaram (sem JDK 11 e firebase-tools); nao publicar nem rodar card-history.js em producao antes",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-25T01:39:17.411Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 8,
+    "kind": "unmet-truth",
+    "phase": "06",
+    "file": "server/scripts/card-history.js",
+    "line": null,
+    "description": "06-19: nao existe restauracao da copia em producao (importAll so no emulador); decidir antes de aplicar o historico",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-25T01:39:19.945Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 9,
+    "kind": "unmet-truth",
+    "phase": "06",
+    "file": "server/src/card-sync.js",
+    "line": null,
+    "description": "06-19: compras ja importadas ou retidas pelo 06-06 nao sao adotadas nem recriadas pela aplicacao; o ensaio so conta",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-25T01:39:22.357Z",
     "resolved_at": null,
     "milestone": null
   }

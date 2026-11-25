@@ -61,6 +61,15 @@ export function createPushRouter({ db, send, now = () => new Date(), limiter = n
       const { hid, person } = req.owner
       if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
 
+      // Freio de enxurrada (T-07-02): 1 teste por minuto por usuario; a chave e o uid do token.
+      if (limiter) {
+        const gate = limiter.take(req.owner.uid)
+        if (!gate.ok) {
+          res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
+          return res.status(429).json({ error: 'Aguarde um minuto para testar de novo' })
+        }
+      }
+
       const snap = await db
         .collection('pushRegistrations')
         .where('ownerId', '==', hid)

@@ -83,7 +83,8 @@ describe('push', () => {
     db.store.clear()
     messaging.sent.length = 0
     messaging.fail.clear()
-    clock.t = 1_700_000_000_000
+    // O limitador e do app e persiste entre os testes: cada teste comeca dois minutos depois.
+    clock.t += 120_000
   })
 
   const call = (path, { method = 'POST', token, body, headers = {} } = {}) =>
@@ -216,6 +217,26 @@ describe('push', () => {
     assert.deepEqual(await res.json(), { sent: 0 })
     assert.equal(db.store.has(`pushRegistrations/${FID_A_ELE}`), false)
     assert.equal(db.store.has(`pushRegistrations/${FID_A_ELE_2}`), true)
+  })
+
+  test('o segundo teste do mesmo usuario no mesmo minuto recebe 429; outro usuario passa', async () => {
+    await register('tok-a-ele', FID_A_ELE)
+    await register('tok-a-ela', FID_A_ELA)
+    const first = await call('/api/push/test', { token: 'tok-a-ele' })
+    assert.equal(first.status, 200)
+    clock.t += 20_000
+    const second = await call('/api/push/test', { token: 'tok-a-ele' })
+    assert.equal(second.status, 429)
+    assert.deepEqual(await second.json(), { error: 'Aguarde um minuto para testar de novo' })
+    assert.equal(second.headers.get('retry-after'), '40')
+    assert.equal(messaging.sent.length, 1, 'o bloqueado nao chega ao FCM')
+    // outra pessoa no mesmo minuto nao e afetada
+    const other = await call('/api/push/test', { token: 'tok-a-ela' })
+    assert.equal(other.status, 200)
+    // passado o minuto, o primeiro usuario volta a poder testar
+    clock.t += 40_000
+    const again = await call('/api/push/test', { token: 'tok-a-ele' })
+    assert.equal(again.status, 200)
   })
 })
 

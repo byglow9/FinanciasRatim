@@ -1,10 +1,13 @@
-import { test, describe, beforeEach } from 'node:test'
+import { test, describe, beforeEach, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { cycleOf } from '../../shared/core/cycle.js'
 import { DEFAULT_CATEGORY_DEFS } from '../../shared/core/categories.js'
 import { DEFAULT_PUSH_PREFS } from '../../shared/core/pushPrefs.js'
 import { PUSH_PHRASES, buildPushPayload } from '../../shared/core/vintemPhrasesPush.js'
 import { createNotifier, readMaxPerDay } from '../src/push/notifier.js'
+import { createApp } from '../src/app.js'
+import { createPushFeature } from '../src/push/index.js'
+import { createFakeFirestore } from './_fake-firestore.js'
 
 // Notificador com repo e sender falsos em memoria. O repo falso imita o contrato do repo.js:
 // filtra por casal e pessoa, e claimEvent falha (false) quando o marcador ja existe.
@@ -461,5 +464,104 @@ describe('notificador de limites: silencio, tipos, teto e falhas', () => {
     const [a, b] = await Promise.all([notifier.deliverHeld(), notifier.deliverHeld()])
     assert.equal(a.sent + b.sent, 2)
     assert.equal(sender.calls.length, 1)
+  })
+})
+
+// POST /api/limits/check pelo app Express, com o notificador real sobre o Firestore e o FCM falsos.
+describe('POST /api/limits/check', () => {
+  const ORIGIN = 'https://app.exemplo.test'
+  const CLAIMS = {
+    'tok-a-ele': { uid: 'u-a-ele', hid: 'casalA', person: 'ele' },
+    'tok-a-ela': { uid: 'u-a-ela', hid: 'casalA', person: 'ela' },
+    'tok-semhid': { uid: 'u-sem' },
+  }
+  const verifyToken = async (token) => {
+    if (!CLAIMS[token]) throw new Error('token invalido')
+    return CLAIMS[token]
+  }
+  let server
+  let base
+  let db
+  let sentMessages
+  let clock
+
+  const post = (token, body, headers = {}) =>
+    fetch(`${base}/api/limits/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: ORIGIN, ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+
+  before(async () => {
+    db = createFakeFirestore()
+    sentMessages = []
+    clock = { t: NOW.getTime() }
+    const messaging = {
+      async sendEach(messages) {
+        sentMessages.push(...messages)
+        return { responses: messages.map(() => ({ success: true })) }
+      },
+    }
+    // O Firestore falso nao tem orderBy nem count: o repo real do emulador e provado em emu/push-events.
+    const feature = createPushFeature({ db, messaging, now: () => new Date(clock.t), env: {} })
+    feature.notifier.evaluateLimits = async (args) => {
+      sentMessages.push({ check: args })
+      return { events: 0, claimed: 0, sent: 0 }
+    }
+    const app = createApp({ verifyToken, db, pluggy: {}, sync: {}, origins: [ORIGIN], features: [feature] })
+    await new Promise((resolve) => {
+      server = app.listen(0, resolve)
+    })
+    base = `http://127.0.0.1:${server.address().port}`
+  })
+
+  after(async () => {
+    await new Promise((resolve) => server.close(resolve))
+  })
+
+  const checks = () => sentMessages.filter((m) => m.check).map((m) => m.check)
+
+  test('sem token a rota responde 401', async () => {
+    assert.equal((await post(null, {})).status, 401)
+  })
+
+  test('casal e pessoa vem so do token, o corpo nao muda nada, e o FID valido e repassado', async () => {
+    const res = await post('tok-a-ele', { fid: 'fidAparelho00001', person: 'ela', hid: 'casalB' })
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { ok: true })
+    assert.deepEqual(checks().at(-1), { hid: 'casalA', person: 'ele', excludeFid: 'fidAparelho00001' })
+  })
+
+  test('sem corpo ou sem FID o check roda sem excluir aparelho', async () => {
+    const before = checks().length
+    assert.equal((await post('tok-a-ela')).status, 200)
+    assert.deepEqual(checks().at(-1), { hid: 'casalA', person: 'ela', excludeFid: undefined })
+    assert.equal(checks().length, before + 1)
+  })
+
+  test('FID invalido responde 400 e nao roda o check', async () => {
+    const before = checks().length
+    for (const fid of ['curto', 'tem espaco aqui!!', 42, '../../x']) {
+      assert.equal((await post('tok-a-ele', { fid })).status, 400)
+    }
+    assert.equal(checks().length, before)
+  })
+
+  test('token sem pessoa nao passa', async () => {
+    const res = await post('tok-semhid', {})
+    assert.ok(res.status === 401 || res.status === 403)
+  })
+
+  test('o limite de pedidos por minuto por uid responde 429 e libera depois da janela', async () => {
+    // O uid u-a-ela ja fez 1 pedido acima; completa 10 e o 11o e recusado.
+    for (let i = 0; i < 9; i++) assert.equal((await post('tok-a-ela', {})).status, 200)
+    const blocked = await post('tok-a-ela', {})
+    assert.equal(blocked.status, 429)
+    assert.ok(Number(blocked.headers.get('retry-after')) >= 1)
+    // Outro uid nao e afetado.
+    assert.equal((await post('tok-a-ele', {})).status, 200)
+    // Passada a janela, volta a aceitar.
+    clock.t += 61_000
+    assert.equal((await post('tok-a-ela', {})).status, 200)
   })
 })

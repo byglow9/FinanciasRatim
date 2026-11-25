@@ -20,6 +20,7 @@ import {
   type LimitAlertDraft,
 } from '@/services/limitAlerts.service'
 import { loadCycleInputs } from '@/lib/cycleData'
+import { checkLimits } from '@/services/limitsCheck.service'
 import { buildBudgetView } from '@shared/core/budget.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import {
@@ -94,7 +95,12 @@ async function runEvaluation(
     const known = new Set(stored.map((a) => a.id))
     const drafts = thresholdsToFire(view.spend.rows, known, { person, cycleKey: cycle.key })
     const created = await createAll(drafts, person)
-    return created ? await getLimitAlerts(person) : stored
+    if (created) {
+      // Alerta novo no app: o servidor confere e avisa no celular (PUSH-02). Melhor-esforco.
+      void checkLimits()
+      return await getLimitAlerts(person)
+    }
+    return stored
   } catch {
     // Melhor-esforco: sem registrar valor nem nome de categoria.
     return stored

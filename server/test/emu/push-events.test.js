@@ -246,4 +246,72 @@ describe('notificador de limites no emulador', () => {
     await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele', excludeFid: FID_ELE_1 })
     assert.deepEqual(messaging.sent.map((m) => m.fid), [FID_ELE_2])
   })
+
+  // D-07, PUSH-04: o marcador e o create() do Firestore, nao a memoria do processo.
+  test('varios checks simultaneos sobre o mesmo gasto enviam uma notificacao so', async () => {
+    const instances = Array.from({ length: 6 }, () => buildNotifier())
+    await Promise.all(instances.map((n) => n.evaluateLimits({ hid: 'casalA', person: 'ele' })))
+    // Uma notificacao = uma mensagem por aparelho do Ele, sem repeticao.
+    assert.deepEqual(messaging.sent.map((m) => m.fid).sort(), [FID_ELE_1, FID_ELE_2])
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`).sort(), ['100:enviado', '80:silencioso'])
+  })
+
+  test('o mesmo notificador chamado duas vezes ao mesmo tempo tambem envia uma vez', async () => {
+    const notifier = buildNotifier()
+    await Promise.all([
+      notifier.evaluateLimits({ hid: 'casalA', person: 'ele' }),
+      notifier.evaluateLimits({ hid: 'casalA', person: 'ele' }),
+    ])
+    assert.equal(messaging.sent.length, 2)
+  })
+
+  test('um notificador novo sobre o mesmo banco (reinicio do servidor) nao reenvia', async () => {
+    await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.equal(messaging.sent.length, 2)
+    // Instancias novas de tudo: repo, sender e notificador, sem nenhuma memoria do processo anterior.
+    const restarted = createNotifier({
+      repo: createRepo({ db }),
+      sender: createSender({ db, messaging }),
+      now: () => new Date(clock.t),
+    })
+    const out = await restarted.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.equal(out.sent, 0)
+    assert.equal(messaging.sent.length, 2)
+    // Nem o marcador pendente ou o enviado volta a ser reivindicado na mao.
+    const repo = createRepo({ db })
+    for (const m of await markers()) assert.equal(await repo.claimEvent(m.id, { ownerId: 'casalA' }), false)
+  })
+
+  test('o marcador apagado por falha transitoria volta a poder ser reivindicado', async () => {
+    const repo = createRepo({ db })
+    const id = 'casalA__limite__ele__2026-11__lazer__100'
+    assert.equal(await repo.claimEvent(id, { ownerId: 'casalA', status: 'enviando' }), true)
+    assert.equal(await repo.claimEvent(id, { ownerId: 'casalA', status: 'enviando' }), false)
+    await repo.deleteEvent(id)
+    assert.equal(await repo.claimEvent(id, { ownerId: 'casalA', status: 'enviando' }), true)
+  })
+
+  test('o create() falha de verdade quando o documento existe; qualquer outro erro sobe', async () => {
+    // Documento existente no emulador: o create() real recusa e vira falso (nunca lanca).
+    await db.collection('pushEvents').doc('casalA__limite__existente').set({ ownerId: 'casalA' })
+    const repo = createRepo({ db })
+    await assert.rejects(() => db.collection('pushEvents').doc('casalA__limite__existente').create({ ownerId: 'casalA' }))
+    assert.equal(await repo.claimEvent('casalA__limite__existente', { ownerId: 'casalA' }), false)
+
+    // Outro erro (por exemplo permissao negada) nao pode ser confundido com "ja existe".
+    const boom = (code) => ({
+      collection: () => ({
+        doc: () => ({
+          create: async () => {
+            const err = new Error('falha')
+            err.code = code
+            throw err
+          },
+        }),
+      }),
+    })
+    await assert.rejects(() => createRepo({ db: boom(7), prefsStore: {} }).claimEvent('x', {}))
+    await assert.rejects(() => createRepo({ db: boom(14), prefsStore: {} }).claimEvent('x', {}))
+    assert.equal(await createRepo({ db: boom(6), prefsStore: {} }).claimEvent('x', {}), false)
+  })
 })

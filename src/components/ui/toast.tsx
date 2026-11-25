@@ -76,7 +76,7 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`pointer-events-auto relative ${leaving ? "anim-peek-out" : "anim-peek-in"}`}
+        className={`pointer-events-auto relative ${leaving ? "anim-peek-out" : ""}`}
       >
         {item.custom}
         <button

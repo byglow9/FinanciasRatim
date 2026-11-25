@@ -11,6 +11,7 @@ import {
   STYLE_EXAMPLES,
   SPOKEN_EXAMPLES,
   COMIC_ANGLES,
+  SCENARIOS,
   TONES,
   SITUATIONS,
   LENGTHS,
@@ -58,8 +59,8 @@ test('tracer: os dados vao entre as marcas e a mensagem de sistema diz que o blo
 })
 
 test('tracer: o tamanho pedido aparece nas duas mensagens e o limite de tokens segue o tamanho', () => {
-  assert.match(messages({ length: 'curta' })[1].content, /uma ou duas frases curtinhas, com até 140 caracteres/)
-  assert.match(messages({ length: 'longa' })[1].content, /duas frases, com até 260 caracteres/)
+  assert.match(messages({ length: 'curta' })[1].content, /até três frases curtinhas, com até 140 caracteres/)
+  assert.match(messages({ length: 'longa' })[1].content, /quatro frases curtas, com até 260 caracteres/)
   assert.equal(maxTokens('curta'), 120)
   assert.equal(maxTokens('longa'), 200)
   assert.equal(TEMPERATURE, 0.9)
@@ -276,4 +277,14 @@ test('a mensagem de sistema nao depende do resumo (dado nunca vira instrucao)', 
   const a = ask({ summaryText: '{"a":1}' })[0].content
   const b = ask({ summaryText: '{"b":2}' })[0].content
   assert.equal(a, b)
+})
+
+test('cenas por assunto: todo assunto tem repertorio, e a reacao separa entrada de gasto', () => {
+  for (const key of [...TOPICS.filter((t) => t !== 'x'), 'entrada', 'gasto']) assert.ok(SCENARIOS[key]?.length >= 10, key)
+  for (const scene of Object.values(SCENARIOS).flat()) assert.doesNotMatch(scene, /\d|[\u2014\u2013]/, scene)
+  const cena = (extra) => messages({ topic: null, ...extra })[1].content.match(/Cena para se inspirar[^:]*: (.*)\./)[1]
+  assert.ok(SCENARIOS.entrada.includes(cena({ summaryText: '{"ultimoLancamento":{"movimento":"entrada"}}' })))
+  assert.ok(SCENARIOS.gasto.includes(cena({ summaryText: '{"ultimoLancamento":{"movimento":"gasto"}}' })))
+  assert.notEqual(cena({ topic: 'fatura', seed: 0 }), cena({ topic: 'fatura', seed: 1 }))
+  assert.doesNotMatch(messages({ tone: 'suave' })[1].content, /Cena para se inspirar/)
 })

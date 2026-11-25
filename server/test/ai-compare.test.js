@@ -157,7 +157,9 @@ describe('o mesmo pedido do servidor', () => {
         latestTx: fixture.input.latestTx,
       })
       assert.ok(sent, 'o servidor nao chamou o provedor')
-      assert.deepEqual(messagesFor(fixture), sent.messages)
+      // Mesma semente do servidor (o segundo do relogio), que escolhe exemplos, angulo e cena.
+      const seed = Math.floor(fixture.input.now.getTime() / 1000)
+      assert.deepEqual(messagesFor(fixture, null, seed), sent.messages)
       assert.equal(maxTokens(fixture.length), sent.maxTokens)
       assert.equal(TEMPERATURE, sent.temperature)
       const samples = [GOOD, MILD, REFUSAL, 'Gastou R$ 7.777 de uma vez, porra.', 'Mais um Uber, caralho, para de queimar dinheiro.']

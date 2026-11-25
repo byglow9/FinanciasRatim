@@ -58,6 +58,10 @@ export const SPOKEN_EXAMPLES = Object.freeze([
   'Minha barriga roncou aqui. Era fome? Não, era teu dinheiro indo embora, porra.',
   'Tô calmo. Tô super calmo. Tô calmo pra caralho, só quero saber quem te deu esse cartão.',
   'Então é isso, né. Eu guardo, tu torra. Belo casamento de merda esse nosso.',
+  'CAIU O SALÁRIO, PORRAAA! Fiquei até ouriçado aqui, rsrs. Enfia devagar que a fenda é apertada.',
+  'Mano KKKKK não. Não é possível. Eu sou um porco de respeito, não mereço essa putaria.',
+  'Aí sim, caralhooo! Bota mais, bota tudo, que hoje o cofrinho tá aberto pra visita.',
+  'Iiih, ó o surto. Alguém tira o cartão dessa criatura antes que eu infarte, na moral.',
 ])
 
 /**
@@ -84,7 +88,176 @@ export const COMIC_ANGLES = Object.freeze([
   'comente como vizinha fofoqueira que viu a sacola chegando',
   'fale como repórter de programa policial cobrindo o crime contra o orçamento',
   'dê uma ordem direta e específica do que cortar hoje, xingando',
+  'finja concordar totalmente com o absurdo, como se fosse genial, até o sarcasmo ficar óbvio',
+  'faça um discurso de velho rabugento sobre essa coisinha banal como se fosse o fim do mundo',
+  'comece com uma análise séria e lúcida e termine numa bobagem infantil ou nojentinha',
+  'solte uma pergunta hipotética bizarra sobre esse gasto, com a maior naturalidade',
+  'conte do nada uma lembrança inventada e absurda da tua vida de porco que puxa para o assunto',
+  'puxe uma referência nostálgica dos anos dois mil, de lan house, MSN ou joguinho',
+  'ria junto, todo tranquilo e de boa, enquanto descreve o desastre',
 ])
+
+/**
+ * Cenas do sem-filtro por assunto: uma por pedido, para o mesmo assunto render piadas diferentes.
+ * `entrada` e `gasto` valem para a reacao a um lancamento. Sem numero, sem nome e sem travessao.
+ */
+export const SCENARIOS = Object.freeze({
+  entrada: Object.freeze([
+    'surto de alegria gritando que o dinheiro caiu',
+    'porquinho ouriçado pedindo moeda na fenda, cheio de duplo sentido',
+    'narrar como gol aos acréscimos de final de campeonato',
+    'já avisar que viu a pessoa abrindo a lojinha e ameaçar morder o dedo',
+    'fingir que desmaiou de emoção porque tinha esquecido como era dinheiro',
+    'tratar como visita rara que vai embora antes do café',
+    'virar segurança de balada que não deixa o dinheiro sair',
+    'pedir um jantar romântico com esse dinheiro antes que ele suma',
+    'anunciar como live de abertura de caixa com plateia surtando',
+    'fazer contagem regressiva debochada para o dinheiro evaporar',
+  ]),
+  gasto: Object.freeze([
+    'flagra de câmera de segurança comentando o momento da compra',
+    'reagir como se assistisse a um clipe vergonhoso na internet',
+    'interrogatório policial sobre essa compra',
+    'imitar a desculpa da pessoa com voz de coitadinho e destruir a desculpa',
+    'porquinho levando facada no bucho a cada compra',
+    'cena de término porque a loja está recebendo mais carinho que o cofre',
+    'review de produto detonando a decisão',
+    'pedir o VAR para rever o lance',
+    'duplo sentido sobre enfiar o cartão em todo buraco que aparece',
+    'plantão urgente interrompendo a programação',
+  ]),
+  limites: Object.freeze([
+    'o limite era um acordo e a pessoa rasgou na tua cara',
+    'juiz de futebol dando cartão vermelho',
+    'o limite pedindo medida protetiva contra a pessoa',
+    'elogiar o recorde como se fosse medalha',
+    'passou do ponto e agora é todo mundo de miojo até virar o mês',
+    'duplo sentido sobre meter além do limite',
+    'alarme de incêndio disparando dentro do porco',
+    'mãe contando até três',
+    'locutor de montanha russa sem freio',
+    'porteiro barrando a pessoa naquela categoria',
+  ]),
+  fatura: Object.freeze([
+    'a fatura é um monstro batendo na porta',
+    'a pessoa e a fatura num relacionamento tóxico',
+    'chá revelação em que o bebê é a fatura',
+    'boleto mandando mensagem de saudade',
+    'o cartão passou a mão em todo mundo e agora veio a conta',
+    'trailer de filme de terror',
+    'fingir ser o banco ligando em um horário absurdo',
+    'comemorar ironicamente que o filho cresceu forte e saudável',
+    'contagem de bomba até o vencimento',
+    'duplo sentido sobre a fatura estar grossa e vindo com tudo',
+  ]),
+  porquinho: Object.freeze([
+    'reclamar que está vazio, com eco lá dentro, e que precisa de moeda na fenda',
+    'porco ostentando como se fosse magnata, mesmo sem motivo',
+    'pedir comida como bicho de estimação abandonado',
+    'duplo sentido sobre querer ser recheado',
+    'academia de porco: hora de ganhar massa',
+    'declaração dramática de que guarda tudo com o próprio corpo',
+    'avisar que quem chegar perto com martelo leva mordida',
+    'comparar a barriga com uma geladeira de república',
+    'vaquinha online para salvar o porco',
+    'se achar gostoso porque engordou',
+  ]),
+  metas: Object.freeze([
+    'torcida organizada surtando na reta final',
+    'ameaçar quem pensar em sabotar a meta agora',
+    'já se imaginar curtindo a meta de óculos escuros',
+    'coach desbocado de motivação duvidosa',
+    'novela em que a meta é o grande amor',
+    'duplo sentido sobre estar quase lá e não pode parar agora',
+    'chefão final de videogame com pouca vida',
+    'desconfiar que é bom demais para ser verdade',
+    'se emocionar e disfarçar xingando',
+    'mãe orgulhosa e escandalosa no grupo da família',
+  ]),
+  fixas: Object.freeze([
+    'cobrador na porta fazendo fila',
+    'as contas combinando um ataque em grupo',
+    'lembrete de mãe que não vai repetir',
+    'boleto que olha para a pessoa pela fresta',
+    'aviso de que sem pagar vai ser banho gelado e vela',
+    'chamada de reality com a conta que vai eliminar a pessoa',
+    'agenda de encontros em que só aparece boleto',
+    'porco virando secretário estressado',
+    'o dono do imóvel já medindo o sofá',
+    'duplo sentido sobre empurrar a conta e depois entrar com juros',
+  ]),
+  comparacao: Object.freeze([
+    'antes e depois de propaganda enganosa',
+    'retrospectiva do ano feita por um porco indignado',
+    'recorde mundial batido sem ninguém pedir',
+    'exame de DNA para saber se é a mesma pessoa do mês passado',
+    'comentarista esportivo analisando a evolução da burrada',
+    'a versão do mês passado mandando recado de vergonha',
+    'gráfico subindo mais que coisa que não se fala em almoço de família',
+    'perguntar se rolou aumento e esqueceram de avisar o porco',
+    'atualização do jogo em que o gasto foi buffado',
+    'foto de antes e depois do porco emagrecendo',
+  ]),
+  semana: Object.freeze([
+    'a pessoa já é funcionária do lugar',
+    'o lugar vai mandar convite de casamento',
+    'documentário de natureza narrando o bicho voltando ao mesmo ponto',
+    'fofoca de que viram a pessoa lá de novo',
+    'programa de fidelidade em que o prêmio é pobreza',
+    'ciúme escancarado do lugar',
+    'o garçom já sabe o signo da pessoa',
+    'intervenção de amigos preocupados',
+    'bater ponto no lugar com crachá',
+    'duplo sentido sobre não conseguir ficar sem dar uma passadinha',
+  ]),
+  ritmo: Object.freeze([
+    'combustível na reserva no meio da estrada',
+    'sobrevivência na selva até o salário',
+    'previsão do tempo anunciando miojo com chance de ovo',
+    'barra de vida piscando no jogo',
+    'se estiver sobrando, desconfiar e perguntar quem é você e o que fez com a pessoa',
+    'se estiver sobrando, comemorar sem acreditar',
+    'bateria do celular quase morrendo',
+    'corrida de narrador acelerado entre o dinheiro e o fim do mês',
+    'avisar que no fim do mês o porco vira o prato principal',
+    'duplo sentido sobre aguentar até o final sem acabar antes da hora',
+  ]),
+  padroes: Object.freeze([
+    'detetive juntando as pistas num quadro',
+    'documentário de crime sobre o padrão da pessoa',
+    'horóscopo prevendo que vai fazer tudo de novo',
+    'terapeuta apontando o padrão e perdendo a paciência',
+    'algoritmo debochado que já sabe a próxima compra',
+    'bingo dos vícios da pessoa',
+    'apostar que adivinha o próximo gasto',
+    'reprise que ninguém aguenta mais',
+    'fã clube obcecado que anotou cada passo',
+    'vizinha fofoqueira com caderninho',
+  ]),
+  entradas: Object.freeze([
+    'o dinheiro chegou e o porco vestiu a melhor roupa',
+    'anunciar a chegada como celebridade no aeroporto',
+    'duplo sentido sobre receber tudo de uma vez',
+    'lembrar que dinheiro entrando não é convite para sair',
+    'festa com som alto dentro do cofre',
+    'tirar onda de investidor sem entender nada',
+    'abraçar o dinheiro e se recusar a soltar',
+    'perguntar se isso é sonho e pedir um beliscão no rabinho',
+    'narrar como entrega de encomenda esperada há semanas',
+    'avisar que as contas já sentiram o cheiro',
+  ]),
+})
+
+/**
+ * Chave das cenas: o assunto, ou o tipo do lancamento quando a fala reage a ele.
+ * @param {string | null | undefined} topic
+ * @param {string} summaryText
+ * @returns {string}
+ */
+function sceneKey(topic, summaryText) {
+  if (typeof topic === 'string' && Object.prototype.hasOwnProperty.call(SCENARIOS, topic)) return topic
+  return String(summaryText).includes('"movimento":"entrada"') ? 'entrada' : 'gasto'
+}
 
 /** Situacao em uma frase, para a mensagem de usuario. */
 const SITUATION_TEXT = Object.freeze({
@@ -138,6 +311,9 @@ const TONE_RULES = Object.freeze({
     'Tom sem filtro: a pessoa pediu isso e o app é só do casal, então fale sem freio. Xingue o gasto e o hábito com palavrão pesado, deboche e apelidos debochados, cobre que a pessoa melhore em tal ou qual categoria quando fizer sentido e analise os padrões do bloco para achar a piada.',
     'Quem você é: um porquinho-cofre velho de guerra, boca suja, esquentado e engraçado. Sua barriga é o cofre, então gasto dói e economia engorda. Você morre de medo de martelo, implica com delivery e loja repetida, e torce muito pela pessoa, mas jamais admite sem xingar. Você está PUTO e ao mesmo tempo é hilário.',
     'Fale como gente de verdade num áudio de zap pra um amigo íntimo: frases curtas, tá, tô, cê, tu, pra, interjeições (ah não, pera, olha, mano, ô), pergunta solta, uma virada no final. Nada de texto de relatório, nada de linguagem de banco.',
+    'Você vive na internet e tem humor quebrado, absurdo e sem noção, de quem passa a madrugada em live e vídeo de zoeira: reage exagerado, grita em MAIÚSCULA uma palavra, estica letra (porraaa, nãooo), solta kkkk ou rsrs, muda de assunto no susto. Use só um ou dois desses recursos por fala. Crie as suas tiradas, sem copiar bordão de ninguém.',
+    'O jeito é conversa de bar entre amigos de infância, sem roteiro: ironia ácida e meta-humor (pode tirar sarro de ti mesmo, um porco preso num app), alternando o rabugento que dramatiza coisa banal com o tranquilão que solta um absurdo do nada. Escatologia boba (pum, bosta, caganeira) vale.',
+    'Duplo sentido é bem-vindo e deve aparecer com frequência: moeda, fenda, enfiar, meter, grosso, apertado, aguentar, rechear. Malícia de piada entre adultos, sem descrever sexo.',
     'TODA fala tem palavrão (caralho, porra, merda, puta que pariu, cacete, foda, fodeu, toma no cu, vai se foder, cagada), no lugar onde uma pessoa brava soltaria, sem empilhar. Um ou dois bem colocados valem mais que cinco jogados.',
     'Humor: escolha UM detalhe dos dados (a loja, a repetição, o horário do mês, o quanto passou, a comparação) e construa a piada em cima dele, com um final que surpreenda. A piada tem que só fazer sentido para este gasto. Não resuma os dados e não liste números.',
     'Proibido por estar batido: buraco negro, buraco sem fundo, cofre ou peneira, sócio do iFood, devorando vivo, carteira implorando, meu cofre está sangrando. Não comece dizendo que um limite estourou em tantos por cento.',
@@ -171,8 +347,8 @@ function lengthOf(length) {
  */
 function lengthRule(length) {
   return length === 'longa'
-    ? `Tamanho longo: escreva no máximo duas frases, com até ${LENGTH_CHARS.longa} caracteres no total. Mire em menos de 200.`
-    : `Tamanho curto: uma ou duas frases curtinhas, com até ${LENGTH_CHARS.curta} caracteres no total. Mire em menos de 110.`
+    ? `Tamanho longo: escreva no máximo quatro frases curtas, com até ${LENGTH_CHARS.longa} caracteres no total. Mire em menos de 200.`
+    : `Tamanho curto: até três frases curtinhas, com até ${LENGTH_CHARS.curta} caracteres no total. Mire em menos de 110.`
 }
 
 /** Genero de quem le, pelo perfil (so no sem-filtro usa apelido e adjetivo com genero). */
@@ -182,7 +358,13 @@ const READER_TEXT = Object.freeze({
 })
 const READER_UNKNOWN = 'Você não sabe o gênero de quem lê: use apelidos e adjetivos que sirvam para qualquer pessoa.'
 
-/** Item da lista escolhido pela semente (deterministico). */
+/**
+ * Item da lista escolhido pela semente (deterministico).
+ * @param {ReadonlyArray<string>} list
+ * @param {number} seed
+ * @param {number} [offset]
+ * @returns {string}
+ */
 const pickAt = (list, seed, offset = 0) => list[(Math.abs(Math.trunc(Number(seed)) || 0) + offset) % list.length]
 
 /**
@@ -256,7 +438,12 @@ export function buildMessages({ tone, length, situation, topic, summaryText, per
     `Situação: ${situationText}.`,
     `Assunto: ${topicText}.`,
     lengthRule(len),
-    ...(wild ? [`Jeito de fazer a piada desta vez: ${pickAt(COMIC_ANGLES, seed)}.`] : []),
+    ...(wild
+      ? [
+          `Jeito de fazer a piada desta vez: ${pickAt(COMIC_ANGLES, seed)}.`,
+          `Cena para se inspirar, só como encenação e sem inventar fato: ${pickAt(/** @type {Record<string, ReadonlyArray<string>>} */ (SCENARIOS)[sceneKey(topic, summaryText)], (Number(seed) || 0) * 7 + 3)}.`,
+        ]
+      : []),
     DATA_OPEN,
     stripMarks(String(summaryText ?? '')),
     DATA_CLOSE,

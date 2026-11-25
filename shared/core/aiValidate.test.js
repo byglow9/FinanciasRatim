@@ -98,17 +98,26 @@ test('idioma: ingles e texto sem cara de portugues reprovam', () => {
   assert.equal(reason('Porra, de novo?'), 'ok')
 })
 
-test('tamanho: curta ate 140 caracteres e 2 frases; longa ate 280 e 3 frases', () => {
-  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 140, sentences: 2 })
-  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 280, sentences: 3 })
+test('tamanho: curta ate 140 caracteres e 4 frases; longa ate 280 e 5 frases', () => {
+  // Fala surtada usa frases curtinhas: o que segura o tamanho sao os caracteres.
+  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 140, sentences: 4 })
+  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 280, sentences: 5 })
   const longoCurta = `Você gastou demais ${'e de novo '.repeat(14)}hoje.`
   assert.ok(longoCurta.length > 140)
   assert.equal(reason(longoCurta), 'tamanho')
-  assert.equal(reason('Você gastou demais. De novo. Que absurdo.'), 'tamanho')
-  assert.equal(reason('Você gastou demais. De novo.'), 'ok')
-  const quatro = 'Você gastou demais. De novo. Que absurdo. Para com isso.'
-  assert.equal(reason(quatro, { ...base, length: 'longa' }), 'tamanho')
+  assert.equal(reason('Você gastou demais. De novo. Que absurdo. Para com isso.'), 'ok')
+  const cinco = 'Você gastou demais. De novo. Que absurdo. Para com isso. Sério.'
+  assert.equal(reason(cinco), 'tamanho')
+  assert.equal(reason(cinco, { ...base, length: 'longa' }), 'ok')
+  assert.equal(reason(`${cinco} Chega.`, { ...base, length: 'longa' }), 'tamanho')
   assert.equal(reason(`Você gastou demais ${'e de novo '.repeat(30)}hoje.`, { ...base, length: 'longa' }), 'tamanho')
+})
+
+test('palavrao esticado ou gritado conta como sem filtro', () => {
+  const exige = { ...base, tone: 'sem-filtro', edgy: true, requireProfanity: true }
+  for (const text of ['Você gastou de novo, PORRAAA, para com isso.', 'Você gastou de novo, caralhooo, kkkk.']) {
+    assert.equal(reason(text, exige), 'ok', text)
+  }
 })
 
 test('dado-proibido: FORBIDDEN_DATA e 4 ou mais digitos fora de valor em reais e percentual', () => {

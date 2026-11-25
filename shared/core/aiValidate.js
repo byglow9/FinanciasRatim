@@ -31,8 +31,8 @@ import { AI_TELLS, FORBIDDEN_DATA, PROFANITY } from './phraseRules.js'
 
 /** Limites por tamanho da situacao (D-15). */
 export const LENGTH_LIMITS = Object.freeze({
-  curta: Object.freeze({ chars: 140, sentences: 2 }),
-  longa: Object.freeze({ chars: 280, sentences: 3 }),
+  curta: Object.freeze({ chars: 140, sentences: 4 }),
+  longa: Object.freeze({ chars: 280, sentences: 5 }),
 })
 
 // ---------------------------------------------------------------------------------------------

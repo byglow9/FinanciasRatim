@@ -9,6 +9,7 @@ import { createBudget } from '../../src/ai/budget.js'
 import { createCache } from '../../src/ai/cache.js'
 import { createChain, createProviders } from '../../src/ai/providers.js'
 import { createSpeech } from '../../src/ai/speech.js'
+import { TOPICS } from '../../../shared/core/aiSummary.js'
 import { resetEmulators } from './_helpers.js'
 
 const NOW = new Date('2026-11-17T15:00:00Z')
@@ -250,8 +251,26 @@ describe('teto diario e cache no emulador', () => {
       for (const v of doc.variants) assert.equal(typeof v, 'string')
     }
     for (const [id, doc] of Object.entries(usage)) {
-      const allowed = id.startsWith('provider__') ? ['calls', 'day', 'providerId', 'updatedAt'] : ['calls', 'dayKey', 'ownerId', 'person', 'updatedAt']
+      // O dia da pessoa tambem conta as falas espontaneas servidas e os assuntos usados (07-16).
+      const allowed = id.startsWith('provider__')
+        ? ['calls', 'day', 'providerId', 'updatedAt']
+        : ['abertura', 'assuntos', 'calls', 'dayKey', 'espiar', 'ownerId', 'person', 'updatedAt']
       assert.deepEqual(Object.keys(doc).sort(), allowed)
+      for (const topic of doc.assuntos ?? []) assert.ok(TOPICS.includes(topic), `assunto fora da lista: ${topic}`)
     }
+  })
+
+  test('fala espontanea em paralelo respeita o teto do tipo e nunca repete assunto no banco real', async () => {
+    const config = readAiConfig({ AI_OPEN_PER_DAY: '3', AI_PEEK_PER_DAY: '6' }, quiet)
+    const budget = createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
+    const commit = (kind, topic) => budget.commitSpontaneous({ hid: HID, person: 'ele', kind, topic })
+
+    const opened = await Promise.all(TOPICS.map((topic) => commit('abertura', topic)))
+    assert.equal(opened.filter((r) => r.ok).length, 3)
+    const same = await Promise.all(Array.from({ length: 5 }, () => commit('espiar', 'assunto-novo')))
+    assert.equal(same.filter((r) => r.ok).length, 1)
+
+    const day = await budget.readDay({ hid: HID, person: 'ele' })
+    assert.deepEqual([day.abertura, day.espiar, day.assuntos.length, new Set(day.assuntos).size], [3, 1, 4, 4])
   })
 })

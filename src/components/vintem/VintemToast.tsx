@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import { Vintem, type VintemHandle, type VintemReaction } from '@/components/vintem/Vintem'
 
 export interface VintemToastBodyProps {
@@ -6,6 +7,8 @@ export interface VintemToastBodyProps {
   text: string
   /** Mesma reacao da Home, em miniatura (UI-SPEC S2 e S4). */
   reaction: VintemReaction
+  /** Lado da tela de onde ele espia (padrao: direita). */
+  side?: 'left' | 'right'
 }
 
 /**
@@ -13,26 +16,38 @@ export interface VintemToastBodyProps {
  * area de 48 por 48, decorativo e sem toque, e a fala em Sora 16/400. A superficie clara, a borda, o
  * botao de dispensar e o temporizador vem do item custom de toast.tsx. A fala nunca e truncada.
  */
-export function VintemToastBody({ text, reaction }: VintemToastBodyProps) {
+export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastBodyProps) {
   const handle = useRef<VintemHandle>(null)
 
   useEffect(() => {
     handle.current?.react(reaction)
   }, [reaction])
 
+  const left = side === 'left'
   return (
-    <div className="relative pb-14 pr-10 pt-1">
-      <div className="anim-peek-bubble relative min-w-0 max-w-[250px] origin-bottom-right rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground shadow-float">
+    <div className={cn('relative pb-14 pt-1', left ? 'pl-10' : 'pr-10')}>
+      <div
+        className={cn(
+          'anim-peek-bubble relative min-w-0 max-w-[250px] rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground shadow-float',
+          left ? 'origin-bottom-left' : 'origin-bottom-right',
+        )}
+      >
         <p lang="pt-BR" className="text-base font-normal leading-normal">
           {text}
         </p>
         <span
           aria-hidden="true"
-          className="absolute -bottom-[7px] right-8 h-3.5 w-3.5 rotate-45 border-b border-r border-border bg-surface-2"
+          className={cn(
+            'absolute -bottom-[7px] h-3.5 w-3.5 rotate-45 border-b border-r border-border bg-surface-2',
+            left ? 'left-8' : 'right-8',
+          )}
         />
       </div>
       {/* Vintem grande, inclinado na diagonal, com metade do corpo para fora da borda da tela. */}
-      <div className="pointer-events-none absolute -right-16 bottom-[-22px]" aria-hidden="true">
+      <div
+        className={cn('pointer-events-none absolute bottom-[-22px]', left ? '-left-16' : '-right-16')}
+        aria-hidden="true"
+      >
         <div className="anim-peek-vintem [&_ellipse[id$=-shadow]]:hidden">
           <Vintem ref={handle} state="atento" size="gauge" follow={false} />
         </div>

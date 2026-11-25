@@ -97,6 +97,20 @@ export interface VintemContextType {
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
 
 /** Duracao do toast do Vintem fora da Home: um pouco mais que o aviso comum, para ler a frase. */
+/** Lugares de onde o Vintem espia, para variar: roda em ordem fixa, sem repetir o aviso anterior. */
+const PEEK_SPOTS = [
+  { side: 'right', high: false },
+  { side: 'left', high: true },
+  { side: 'left', high: false },
+  { side: 'right', high: true },
+] as const
+let peekCount = 0
+function nextPeekSpot(): (typeof PEEK_SPOTS)[number] {
+  const spot = PEEK_SPOTS[peekCount % PEEK_SPOTS.length]
+  peekCount += 1
+  return spot
+}
+
 const VINTEM_TOAST_MS = 6000
 
 const RECENT_STORAGE_KEY = 'vintem:recent:v1'
@@ -205,9 +219,12 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       }
       const chosen = draw({ situation, raw })
       if (chosen !== null) {
+        const spot = nextPeekSpot()
         toast.show('', {
-          custom: <VintemToastBody text={chosen.text} reaction={reaction} />,
+          custom: <VintemToastBody text={chosen.text} reaction={reaction} side={spot.side} />,
           durationMs: VINTEM_TOAST_MS,
+          side: spot.side,
+          high: spot.high,
         })
       }
     },

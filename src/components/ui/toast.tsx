@@ -15,6 +15,10 @@ interface ToastOptions {
    * nunca sobre o fundo de acao, onde o corpo oliva do mascote sumiria. A mensagem fica vazia.
    */
   custom?: React.ReactNode
+  /** So para `custom`: de que lado da tela o Vintem espia (padrao: direita). */
+  side?: "left" | "right"
+  /** So para `custom`: espia na altura do meio da tela em vez de rente ao dock. */
+  high?: boolean
 }
 
 interface ToastItem {
@@ -24,6 +28,8 @@ interface ToastItem {
   icon?: LucideIcon
   durationMs: number
   custom?: React.ReactNode
+  side?: "left" | "right"
+  high?: boolean
 }
 
 interface ToastContextValue {
@@ -137,6 +143,8 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         detail: options?.detail,
         durationMs: options?.durationMs ?? DEFAULT_DURATION_MS,
         custom: options?.custom,
+        side: options?.side,
+        high: options?.high,
       },
     ])
   }, [])
@@ -165,9 +173,12 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         <div
           role="status"
           aria-live="polite"
+          style={{ "--peek-dir": current?.side === "left" ? -1 : 1 } as React.CSSProperties}
           className={`pointer-events-none fixed z-[10001] flex ${
             current?.custom !== undefined
-              ? "bottom-[calc(88px+env(safe-area-inset-bottom))] right-0 justify-end"
+              ? `${current.high ? "bottom-[42vh]" : "bottom-[calc(88px+env(safe-area-inset-bottom))]"} ${
+                  current.side === "left" ? "left-0 justify-start" : "right-0 justify-end"
+                }`
               : "inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] justify-center px-[5%]"
           }`}
         >

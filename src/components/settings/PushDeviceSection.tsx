@@ -3,7 +3,7 @@ import { PUSH_STATES, iphoneSteps } from '@shared/core/pushState.js'
 import { Button } from '@/components/ui/button'
 import { usePushState } from '@/hooks/usePushState'
 import { disablePush, enablePush, getPrimeState, primePush, subscribePrime, type PushReason } from '@/lib/push/messaging'
-import { sendTestPush } from '@/services/push.service'
+import { PushServerError, sendTestPush } from '@/services/push.service'
 
 const REASON_TEXT: Record<PushReason, string> = {
   'nao-configurado': 'Avisos ainda não configurados neste app.',
@@ -14,6 +14,10 @@ const REASON_TEXT: Record<PushReason, string> = {
 }
 const TEST_SENT = 'Aviso de teste enviado.'
 const TEST_FAILED = 'Não foi possível enviar o teste.'
+const TEST_BY_STATUS: Record<number, string> = {
+  404: 'Este aparelho ainda não está registrado. Toque em Ativar avisos.',
+  429: 'Espere um minuto para testar de novo.',
+}
 const DISABLE_FAILED = 'Não foi possível desativar os avisos.'
 
 interface PushDeviceSectionProps {
@@ -65,8 +69,8 @@ export function PushDeviceSection({ readOnly }: PushDeviceSectionProps) {
     try {
       await sendTestPush()
       setMessage(TEST_SENT)
-    } catch {
-      setMessage(TEST_FAILED)
+    } catch (err) {
+      setMessage((err instanceof PushServerError && TEST_BY_STATUS[err.status]) || TEST_FAILED)
     } finally {
       lock.current = false
       setPushBusy(null)

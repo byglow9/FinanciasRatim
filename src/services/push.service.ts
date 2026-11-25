@@ -7,6 +7,15 @@ const API_URL = (import.meta.env.VITE_BANK_API_URL as string | undefined)?.repla
 /** Verdadeiro quando ha servidor configurado e o app nao esta no modo local de desenvolvimento. */
 export const PUSH_SERVER_ENABLED = Boolean(API_URL) && !MOCK
 
+/** Falha do servidor de avisos: mensagem fixa e so o codigo HTTP, para a tela explicar o motivo. */
+export class PushServerError extends Error {
+  readonly status: number
+  constructor(status: number) {
+    super('Falha ao falar com o servidor de avisos')
+    this.status = status
+  }
+}
+
 /**
  * Chamada ao servidor com o ID token do Firebase. As mensagens de erro sao fixas: nunca levam o corpo
  * da resposta, o token nem o FID, e nada daqui vai a log.
@@ -22,7 +31,7 @@ async function call(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-  if (!res.ok) throw new Error('Falha ao falar com o servidor de avisos')
+  if (!res.ok) throw new PushServerError(res.status)
   return method === 'GET' || method === 'PUT' ? await res.json() : undefined
 }
 

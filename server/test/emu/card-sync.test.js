@@ -1517,3 +1517,144 @@ describe('historico do cartao: marcador, ensaio e aplicacao (D-13)', () => {
     assert.ok(calls.every((c) => c.opts.dateFrom === CARD_HISTORY_FLOOR))
   })
 })
+
+describe('historico do cartao por syncConnection (06-19, D-13, D-14)', () => {
+  let admin
+  let db
+
+  before(() => {
+    admin = initAdmin()
+    assert.equal(admin.mode, 'emulator')
+    db = admin.db
+  })
+  after(async () => {
+    await admin.app.delete()
+  })
+  beforeEach(async () => {
+    await resetEmulators()
+  })
+
+  const connection = (extra = {}) => ({
+    itemId: 'item-nubank',
+    ownerId: HID,
+    person: 'ela',
+    importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
+    ...extra,
+  })
+  const saveConnection = () => db.collection('bankConnections').doc('item-nubank').set(connection({ status: 'UPDATED' }))
+  const history = (state, cardHistory, extra = {}, target = db) =>
+    syncConnection(target, cardPluggy(state), connection(extra), { cardHistory })
+  const cardData = async () => (await db.collection('cards').doc('acc-credit').get()).data()
+
+  // Captura o que seria impresso durante a chamada.
+  async function silently(fn) {
+    const lines = []
+    const original = { warn: console.warn, error: console.error, log: console.log }
+    for (const key of Object.keys(original)) console[key] = (...args) => lines.push(args.join(' '))
+    try {
+      return { result: await fn(), lines }
+    } finally {
+      Object.assign(console, original)
+    }
+  }
+
+  test('ensaio processa so o cartao, nao grava nada e devolve as contagens', async () => {
+    const state = await seedHistory(db)
+    await saveConnection()
+    const before = await rawSnapshot(db)
+    const summary = await history(state, 'dry-run', {}, dbWithoutBatches(db))
+    assert.equal(summary.error, undefined)
+    assert.equal(summary.cardError, undefined)
+    assert.deepEqual(summary.cardTxs, { ...PLANNED, marked: 0 })
+    assert.equal(summary.cardAccounts, 1)
+    assert.equal(summary.imported + summary.review + summary.ignored, 0)
+    assert.equal('cards' in summary, false)
+    assert.deepEqual(state.calls.map((c) => c.accountId), ['acc-credit'])
+    assert.deepEqual(await rawSnapshot(db), before)
+  })
+
+  test('aplicacao mexe so no cartao: sem contas BANK, sem pagamentos e sem regravar a conexao', async () => {
+    const state = await seedHistory(db)
+    await saveConnection()
+    const rehearsal = await history(state, 'dry-run')
+    const before = await rawSnapshot(db)
+    const summary = await history(state, 'apply')
+    assert.equal(summary.cardError, undefined)
+    assert.deepEqual(summary.cardTxs, { ...rehearsal.cardTxs, marked: 1 })
+    assert.equal(summary.cards, 1)
+    assert.equal(summary.cardAccounts, 1)
+    const card = await cardData()
+    assert.ok(card.historyBaselineAt?.toDate)
+    assert.equal(card.creditLimitCents, 20000)
+    assert.ok(card.billTotals['2026-12'] > 0)
+    assert.equal(card.payments, undefined)
+    assert.equal((await db.collection('bankImports').doc('tx-bank-1').get()).exists, false)
+    assert.equal((await db.collection('transactions').doc('bank_tx-bank-1').get()).exists, false)
+    assert.equal(state.calls.some((c) => c.accountId === 'acc-bank'), false)
+    const after = await rawSnapshot(db)
+    assert.equal(after['bankConnections/item-nubank'], before['bankConnections/item-nubank'])
+  })
+
+  test('sem a opcao o resumo e o de antes; marcador ausente liga cardHistoryPending', async () => {
+    await saveConnection()
+    const state = { card: sixPurchases() }
+    const pending = await syncConnection(db, cardPluggy(state), connection())
+    assert.deepEqual(Object.keys(pending).sort(), ['cardHistoryPending', 'cards', 'ignored', 'imported', 'itemId', 'person', 'review'])
+    assert.equal(pending.cardHistoryPending, true)
+    assert.equal(pending.imported, 1)
+    await history(state, 'apply')
+    const done = await syncConnection(db, cardPluggy(state), connection())
+    assert.deepEqual(Object.keys(done).sort(), ['cardTxs', 'cards', 'ignored', 'imported', 'itemId', 'person', 'review'])
+    const noCard = await syncConnection(db, cardPluggy({ card: [], accounts: [BANK_ACCOUNT] }), connection())
+    assert.deepEqual(Object.keys(noCard).sort(), ['ignored', 'imported', 'itemId', 'person', 'review'])
+  })
+
+  test('falha no modo historico nao grava na conexao nem imprime identificador', async () => {
+    await saveConnection()
+    const before = await rawSnapshot(db)
+    const broken = cardPluggy({ card: [] })
+    broken.fetchAllTransactions = async () => {
+      throw new Error('falha simulada na Pluggy')
+    }
+    const card = await silently(() => syncConnection(db, broken, connection(), { cardHistory: 'dry-run' }))
+    assert.match(card.result.cardError, /falha simulada/)
+    const item = cardPluggy({ card: [] })
+    item.fetchItem = async () => {
+      throw new Error('item indisponivel')
+    }
+    for (const cardHistory of ['dry-run', 'apply']) {
+      const whole = await silently(() => syncConnection(db, item, connection(), { cardHistory }))
+      assert.match(whole.result.error, /indisponivel/)
+      assert.deepEqual(whole.lines, [])
+    }
+    const noOwner = await silently(() => history({ card: sixPurchases() }, 'apply', { ownerId: undefined }))
+    assert.ok(noOwner.result.error)
+    assert.deepEqual(card.lines, [])
+    assert.deepEqual(await rawSnapshot(db), before)
+  })
+
+  test('valor desconhecido de cardHistory e recusado sem gravar nada', async () => {
+    await assert.rejects(() => history({ card: sixPurchases() }, 'dryrun'), /cardHistory/)
+    await assert.rejects(() => history({ card: sixPurchases() }, ''), /cardHistory/)
+    assert.deepEqual(await rawSnapshot(db), {})
+  })
+
+  test('dois cartoes da mesma pessoa: o manual antigo e contado uma vez no ensaio e na aplicacao', async () => {
+    const date = daysAgo(3)
+    await db.collection('transactions').doc('legacy-1').set(legacyDoc(date, 45))
+    const second = { ...CREDIT_ACCOUNT, id: 'acc-credit-2' }
+    const run = async (cardHistory) => {
+      const claimedManualIds = new Set()
+      const totals = []
+      for (const [itemId, account, id] of [['item-nubank', CREDIT_ACCOUNT, 'c1'], ['item-outro', second, 'd1']]) {
+        const state = { card: [purchase(id, 'MERCADO CENTRAL', 45, { date })], accounts: [account] }
+        const summary = await syncConnection(db, cardPluggy(state), connection({ itemId }), { cardHistory, claimedManualIds })
+        totals.push([summary.cardTxs.adopted, summary.cardTxs.created])
+      }
+      return totals
+    }
+    const rehearsal = await run('dry-run')
+    assert.deepEqual(rehearsal, [[1, 0], [0, 1]])
+    assert.deepEqual(await run('apply'), rehearsal)
+  })
+})

@@ -2,7 +2,7 @@
 // Auditoria de layout em modo MOCK (Chrome sem janela + protocolo CDP). Sem dependencias novas.
 // Uso: . ./scripts/dev-env.sh && node scripts/ux-audit/audit.mjs --route / --viewport 360x640 --report-only
 // Flags: --route <caminho> (repetivel) | --routes all  --viewport LxA (repetivel) --smoke --expect-h1 <texto>
-//        --report-only --assert dock-peek --seed full|empty|cards
+//        --report-only --assert dock-peek|launch-card (repetivel) --seed full|empty|cards
 // Saida: uma linha JSON por rota e viewport. Codigos: 0 ok, 1 violacoes, 2 falha do proprio script.
 import { spawn } from 'node:child_process'
 import { connect, launchChrome } from './cdp.mjs'
@@ -44,7 +44,9 @@ function parseArgs(argv) {
     else if (arg === '--expect-h1') opts.expectH1 = next()
     else if (arg === '--assert') {
       const name = next()
-      if (name !== 'dock-peek') throw new Error(`assert desconhecido: ${name} (use dock-peek)`)
+      if (name !== 'dock-peek' && name !== 'launch-card') {
+        throw new Error(`assert desconhecido: ${name} (use dock-peek ou launch-card)`)
+      }
       opts.asserts.push(name)
     } else if (arg === '--seed') {
       const kind = next()
@@ -252,6 +254,134 @@ async function checkDockPeek(page) {
   return { ...m, expected: { total: DOCK_DESTINATIONS, label: 'Cartões', full: 4, partialRight: 1, firstCutLeft: false }, ok }
 }
 
+// Dentro da pagina: mede a folha de lancamento aberta (role=dialog). Alvo minimo de 44px de altura,
+// sem rolagem horizontal e o botao de lancar alcancavel (visivel ou apos rolar o contêiner da folha).
+function pageLaunchSheetMeasure() {
+  const round = (n) => Math.round(n * 100) / 100
+  const dialog = document.querySelector('[role="dialog"]')
+  if (!dialog) return { found: false }
+  const visible = (el) => {
+    const r = el.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0) return false
+    return typeof el.checkVisibility === 'function' ? el.checkVisibility({ visibilityProperty: true }) : true
+  }
+  const label = (el) => (el.getAttribute('aria-label') || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 30)
+  // Mesma regra do auditor principal: quem mora num carrossel (overflow-x auto/scroll) ou num recorte
+  // (hidden/clip) dentro da folha nao conta como vazamento; o scrollWidth da folha cobre o resto.
+  const clipped = (el) => {
+    // O proprio dialog fica de fora: overflow-y auto faz o overflow-x computar auto, e ele nao recorta nada.
+    for (let p = el.parentElement; p && p !== dialog; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX
+      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') return true
+    }
+    return false
+  }
+  const small = []
+  const outside = []
+  for (const el of dialog.querySelectorAll('button, a[href], [role="tab"], input, select, textarea')) {
+    if (el instanceof HTMLInputElement && el.type === 'hidden') continue
+    if (el.closest('[aria-hidden="true"]') || !visible(el)) continue
+    const r = el.getBoundingClientRect()
+    if (r.height < 44) small.push({ el: el.tagName.toLowerCase(), label: label(el), height: round(r.height) })
+    if ((r.right > window.innerWidth + 0.5 || r.left < -0.5) && !clipped(el)) outside.push({ el: el.tagName.toLowerCase(), label: label(el), left: round(r.left), right: round(r.right) })
+  }
+  const cta = [...dialog.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === 'Lançar gasto')
+  let ctaReachable = false
+  let ctaNeedsScroll = false
+  let ctaRect = null
+  if (cta) {
+    const inView = () => {
+      const r = cta.getBoundingClientRect()
+      return r.top >= 0 && r.bottom <= window.innerHeight + 0.5
+    }
+    dialog.scrollTop = 0
+    if (inView()) ctaReachable = true
+    else {
+      ctaNeedsScroll = true
+      dialog.scrollTop = dialog.scrollHeight
+      ctaReachable = inView() && dialog.scrollHeight > dialog.clientHeight && getComputedStyle(dialog).overflowY === 'auto'
+    }
+    const r = cta.getBoundingClientRect()
+    ctaRect = { top: round(r.top), bottom: round(r.bottom), height: round(r.height) }
+    dialog.scrollTop = 0
+  }
+  return {
+    found: true,
+    dialogScrollWidth: dialog.scrollWidth,
+    dialogClientWidth: dialog.clientWidth,
+    docOverflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    small,
+    outside,
+    cta: cta ? { found: true, reachable: ctaReachable, needsScroll: ctaNeedsScroll, rect: ctaRect, innerHeight: window.innerHeight } : { found: false },
+  }
+}
+
+// Dentro da pagina: estado do chip Cartao e dos cartoes do seletor.
+function pageLaunchCardState() {
+  const dialog = document.querySelector('[role="dialog"]')
+  if (!dialog) return { found: false }
+  const chip = [...dialog.querySelectorAll('button[aria-pressed]')].find((b) => (b.textContent || '').trim() === 'Cartão')
+  const group = dialog.querySelector('[role="group"][aria-label="Cartão do gasto"]')
+  const cards = group ? [...group.querySelectorAll('button')].map((b) => ({ label: (b.textContent || '').trim(), pressed: b.getAttribute('aria-pressed') === 'true' })) : []
+  return { found: true, chipFound: Boolean(chip), chipPressed: chip?.getAttribute('aria-pressed') === 'true', groupFound: Boolean(group), cards }
+}
+
+async function checkLaunchCard(page, route) {
+  const failures = []
+  if (route !== '/') await navigate(page, `${ORIGIN}/`)
+  // Abre a folha pelo botao do dock e toca o chip Cartao.
+  const opened = await page.evaluate(`(() => {
+    const b = document.querySelector('button[aria-label="Novo lançamento"]')
+    if (!b) return false
+    b.click()
+    return true
+  })()`)
+  if (!opened) return { ok: false, failures: ['botao "Novo lançamento" ausente'] }
+  await sleep(600)
+  const clicked = await page.evaluate(`(() => {
+    const dialog = document.querySelector('[role="dialog"]')
+    const chip = dialog && [...dialog.querySelectorAll('button[aria-pressed]')].find((b) => (b.textContent || '').trim() === 'Cartão')
+    if (!chip || chip.disabled) return false
+    chip.click()
+    return true
+  })()`)
+  if (!clicked) return { ok: false, failures: ['chip "Cartão" ausente ou desabilitado na folha'] }
+  await sleep(400)
+
+  const before = await page.evaluate(`(${pageLaunchCardState.toString()})()`)
+  if (!before.chipPressed) failures.push('chip Cartão não ficou selecionado')
+  if (!before.groupFound || before.cards.length < 2) failures.push(`esperados 2 cartões ou mais no seletor, achados ${before.cards.length}`)
+  else if (!before.cards[0].pressed || before.cards.slice(1).some((c) => c.pressed)) failures.push('o primeiro cartão não vem escolhido')
+
+  const measure = await page.evaluate(`(${pageLaunchSheetMeasure.toString()})()`)
+  if (!measure.found) failures.push('folha de lançamento não achada')
+  else {
+    if (measure.dialogScrollWidth > measure.dialogClientWidth || measure.docOverflowX) failures.push('rolagem horizontal na folha')
+    if (measure.small.length > 0) failures.push(`${measure.small.length} alvo(s) com menos de 44px de altura`)
+    if (measure.outside.length > 0) failures.push(`${measure.outside.length} controle(s) fora da largura da tela`)
+    if (!measure.cta.found) failures.push('botão "Lançar gasto" ausente')
+    else if (!measure.cta.reachable) failures.push('botão "Lançar gasto" fora de alcance')
+  }
+
+  // Troca para o segundo cartao e confere a escolha.
+  let afterPick = null
+  if (before.cards.length >= 2) {
+    await page.evaluate(`(() => {
+      const group = document.querySelector('[role="dialog"] [role="group"][aria-label="Cartão do gasto"]')
+      group?.querySelectorAll('button')[1]?.click()
+    })()`)
+    await sleep(300)
+    afterPick = await page.evaluate(`(${pageLaunchCardState.toString()})()`)
+    const c = afterPick.cards
+    if (!(c.length >= 2 && c[1].pressed && !c[0].pressed)) failures.push('tocar o segundo cartão não o escolheu')
+  }
+
+  // Fecha a folha para a proxima combinacao.
+  await page.evaluate(`document.querySelector('[role="dialog"] button[aria-label="Fechar"]')?.click()`)
+  await sleep(300)
+  return { ok: failures.length === 0, failures, cards: before.cards, afterPick: afterPick?.cards ?? null, measure }
+}
+
 async function checkSmoke(page, opts, collected) {
   const h1 = await page.evaluate(`document.querySelector('h1')?.textContent?.trim() ?? null`)
   const h1Ok = opts.expectH1 === null ? h1 !== null : h1 !== null && h1.includes(opts.expectH1)
@@ -353,6 +483,14 @@ async function main() {
           if (!line.dockPeek.ok) found++
         } else {
           line.dockPeek = { skipped: 'so vale em 360x640' }
+        }
+      }
+      if (opts.asserts.includes('launch-card')) {
+        if (viewport.width === 360 || viewport.width === 390) {
+          line.launchCard = await checkLaunchCard(page, route)
+          if (!line.launchCard.ok) found++
+        } else {
+          line.launchCard = { skipped: 'so vale em 360x640 e 390x844' }
         }
       }
       return { line, found }

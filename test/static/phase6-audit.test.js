@@ -199,3 +199,24 @@ test('a semente do cartao nao traz numero de conferencia, nome de banco nem iden
   assert.ok(cards.every((c) => c.id.startsWith('seed-') && c.itemId.startsWith('seed-')))
   assert.ok(txs.every((t) => t.id.startsWith('seed-')))
 })
+
+test('audit.mjs aceita o assert launch-card e mede a folha de lancamento com o cartao', () => {
+  const audit = code('scripts/ux-audit/audit.mjs')
+  assert.match(audit, /name !== 'dock-peek' && name !== 'launch-card'/)
+  assert.match(audit, /opts\.asserts\.includes\('launch-card'\)/)
+  assert.match(audit, /line\.launchCard = /)
+  for (const label of ['Novo lançamento', 'Cartão', 'Lançar gasto', 'Cartão do gasto']) {
+    assert.ok(audit.includes(label), `audit.mjs sem o rotulo ${label}`)
+  }
+  // Alvo minimo de 44px de altura, rolagem horizontal da folha e troca para o segundo cartao.
+  assert.match(audit, /r\.height < 44/)
+  assert.match(audit, /dialogScrollWidth > measure\.dialogClientWidth/)
+  assert.match(audit, /querySelectorAll\('button'\)\[1\]\?\.click\(\)/)
+  assert.match(audit, /c\[1\]\.pressed && !c\[0\]\.pressed/)
+})
+
+test('o assert launch-card nao afrouxa a regra de alvo nem cria excecao', () => {
+  const audit = code('scripts/ux-audit/audit.mjs')
+  assert.match(audit, /if \(rect\.width >= 44 && rect\.height >= 44\) continue/)
+  assert.ok(!/launch-card[^\n]*(skip|ignore|exce)/i.test(audit))
+})

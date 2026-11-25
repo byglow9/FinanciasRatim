@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
+import { DEFAULT_PUSH_PREFS, type PushPrefs } from '@shared/core/pushPrefs.js'
 import { useArea } from '@/contexts/AreaContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,10 +10,19 @@ import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 import { SettingsCard } from '@/components/settings/SettingsCard'
 import { PushDeviceSection } from '@/components/settings/PushDeviceSection'
+import { QuietHoursFields } from '@/components/settings/QuietHoursFields'
+import { PUSH_SERVER_ENABLED, getPushPrefs, savePushPrefs } from '@/services/push.service'
 
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
 const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
+const LOAD_FAILED = 'Não foi possível carregar os avisos.'
+const IN_APP_HINT = 'Dentro do app, os alertas de limite continuam sempre ligados.'
 const DAYS_MAX = 30
+
+/** Cópia mutável dos padrões do núcleo (D-06, D-21): três tipos ligados e silêncio desligado. */
+function defaultPrefs(): PushPrefs {
+  return { types: { ...DEFAULT_PUSH_PREFS.types }, quiet: { ...DEFAULT_PUSH_PREFS.quiet } }
+}
 
 /** Inteiro de 0 a 30 escrito só com dígitos; qualquer outra coisa vale null. */
 function parseDays(text: string): number | null {
@@ -22,9 +32,34 @@ function parseDays(text: string): number | null {
   return n >= 0 && n <= DAYS_MAX ? n : null
 }
 
+interface SwitchRowProps {
+  id: string
+  label: string
+  hint?: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  disabled: boolean
+}
+
+/** Linha de interruptor com alvo de toque de 44 px e dica opcional embaixo do rótulo. */
+function SwitchRow({ id, label, hint, checked, onChange, disabled }: SwitchRowProps) {
+  return (
+    <div className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-surface-2 py-1 pl-4 pr-2">
+      <span className="min-w-0 flex-1">
+        <Label htmlFor={id} className="font-normal">
+          {label}
+        </Label>
+        {hint ? <span className="block text-xs font-normal text-muted-foreground">{hint}</span> : null}
+      </span>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  )
+}
+
 /**
- * Cartão "Notificações" (UI-SPEC S5, cartão 6): avisos de vencimento e dias de antecedência.
- * Os avisos de limite não têm interruptor: ficam sempre ligados em 80% e 100% (PR-13).
+ * Cartão "Notificações" (PUSH-01, PUSH-03, D-08, D-21): estado dos avisos neste aparelho, os quatro tipos
+ * (80%, 100%, vencimento e espontâneo) e o horário de silêncio. O vencimento é o interruptor legado e continua
+ * em settings (vale também para o sino do app); o resto vai ao servidor. O botão de ativar vive só aqui.
  */
 export function NotificationsCard() {
   const { settings, updateNotifications, readOnly } = useArea()
@@ -43,9 +78,40 @@ export function NotificationsCard() {
     setDays(String(settings.daysBeforeDueDate))
   }
 
+  // Sem servidor (modo local) os padrões valem e o aviso de carga aparece desde o início.
+  const [prefs, setPrefs] = useState<PushPrefs>(defaultPrefs)
+  const [prefsReady, setPrefsReady] = useState(!PUSH_SERVER_ENABLED)
+  const [loadFailed, setLoadFailed] = useState(!PUSH_SERVER_ENABLED)
+
+  useEffect(() => {
+    if (!PUSH_SERVER_ENABLED) return
+    let cancelled = false
+    getPushPrefs().then(
+      (loaded) => {
+        if (cancelled) return
+        setPrefs(loaded)
+        setPrefsReady(true)
+      },
+      () => {
+        if (cancelled) return
+        setLoadFailed(true)
+        setPrefsReady(true)
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [error, setError] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const setType = (key: keyof PushPrefs['types'], value: boolean) =>
+    setPrefs((prev) => ({ ...prev, types: { ...prev.types, [key]: value } }))
+
+  const locked = readOnly || !prefsReady
+  const quietInvalid = prefs.quiet.enabled && prefs.quiet.from === prefs.quiet.to
 
   const save = async () => {
     if (readOnly || saving) return
@@ -54,11 +120,14 @@ export function NotificationsCard() {
       setError('Informe um número inteiro de 0 a 30.')
       return
     }
+    if (quietInvalid) return
     setError(null)
     setFailed(false)
     setSaving(true)
     try {
+      if (PUSH_SERVER_ENABLED) setPrefs(await savePushPrefs(prefs))
       await updateNotifications({ notificationsEnabled: enabled, daysBeforeDueDate: parsed })
+      setLoadFailed(false)
       show('Salvo')
     } catch {
       setFailed(true)
@@ -68,19 +137,35 @@ export function NotificationsCard() {
   }
 
   return (
-    <SettingsCard id="notificacoes" icon={Bell} title="Notificações" subtitle="Vencimentos e limites">
+    <SettingsCard id="notificacoes" icon={Bell} title="Notificações" subtitle="Avisos no celular e no app">
       <PushDeviceSection readOnly={readOnly} />
-      <div className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-surface-2 py-1 pl-4 pr-2">
-        <Label htmlFor="notifications-enabled" className="font-normal">
-          Avisos de vencimento
-        </Label>
-        <Switch
-          id="notifications-enabled"
-          checked={enabled}
-          onCheckedChange={setEnabled}
-          disabled={readOnly}
-        />
-      </div>
+      {loadFailed ? (
+        <p role="alert" className="text-xs font-normal text-danger-ink">
+          {LOAD_FAILED}
+        </p>
+      ) : null}
+      <SwitchRow
+        id="push-limite80"
+        label="Limite chegando a 80%"
+        checked={prefs.types.limite80}
+        onChange={(v) => setType('limite80', v)}
+        disabled={locked}
+      />
+      <SwitchRow
+        id="push-limite100"
+        label="Limite estourado (100%)"
+        checked={prefs.types.limite100}
+        onChange={(v) => setType('limite100', v)}
+        disabled={locked}
+      />
+      <SwitchRow
+        id="notifications-enabled"
+        label="Avisos de vencimento"
+        hint="Vale para o sino do app e para o aviso de fatura no celular."
+        checked={enabled}
+        onChange={setEnabled}
+        disabled={readOnly}
+      />
       <div className="space-y-1">
         <Label htmlFor="days-before-due">Dias de antecedência</Label>
         <Input
@@ -101,9 +186,20 @@ export function NotificationsCard() {
           {error}
         </p>
       ) : null}
-      <p className="text-xs font-normal text-muted-foreground">
-        Avisos de limite: sempre ligados, em 80% e em 100%.
-      </p>
+      <SwitchRow
+        id="push-espontanea"
+        label="OINC espontâneo"
+        hint="Uma cutucada por dia, no máximo."
+        checked={prefs.types.espontanea}
+        onChange={(v) => setType('espontanea', v)}
+        disabled={locked}
+      />
+      <QuietHoursFields
+        value={prefs.quiet}
+        onChange={(quiet) => setPrefs((prev) => ({ ...prev, quiet }))}
+        disabled={locked}
+      />
+      <p className="text-xs font-normal text-muted-foreground">{IN_APP_HINT}</p>
       {readOnly ? <p className="text-xs font-normal text-muted-foreground">{READ_ONLY_HINT}</p> : null}
       {failed ? <Notice tone="danger">{SAVE_FAILED}</Notice> : null}
       <Button
@@ -111,7 +207,7 @@ export function NotificationsCard() {
         size="lg"
         className="w-full"
         onClick={() => void save()}
-        disabled={readOnly || saving}
+        disabled={readOnly || saving || !prefsReady || quietInvalid}
         aria-busy={saving}
       >
         Salvar avisos

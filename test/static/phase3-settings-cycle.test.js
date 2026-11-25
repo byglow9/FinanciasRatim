@@ -139,12 +139,17 @@ test('AppearanceCard tem os nomes das abas e delega o tema ao ThemeGroup, sem in
   assert.doesNotMatch(src, /role="switch"|<Switch/, 'sem interruptor de tema')
 })
 
-test('NotificationsCard tem o interruptor, a antecedencia de 0 a 30 e os avisos de limite sem interruptor (PR-13)', () => {
+// O PUSH-03 da Fase 7 (07-11) substitui o PR-13 no que e push: o cartao deixa de ter um so interruptor e passa a
+// ter os tipos (80, 100, vencimento, espontaneo) e o silencio; o alerta de limite DENTRO do app segue sempre ligado.
+test('NotificationsCard tem os tipos de aviso, o silencio, a antecedencia de 0 a 30 e o alerta de limite do app sempre ligado (PUSH-03)', () => {
+  const QUIET = 'src/components/settings/QuietHoursFields.tsx'
+  const SECTION = 'src/components/settings/PushDeviceSection.tsx'
   assertIncludes(NOTIFICATIONS, [
     'id="notificacoes"',
     'Avisos de vencimento',
     'Dias de antecedência',
-    'Avisos de limite: sempre ligados, em 80% e em 100%.',
+    'Dentro do app, os alertas de limite continuam sempre ligados.',
+    'OINC espontâneo',
     'Salvar avisos',
     'updateNotifications',
     'inputMode="numeric"',
@@ -152,8 +157,15 @@ test('NotificationsCard tem o interruptor, a antecedencia de 0 a 30 e os avisos 
     'Salvo',
     'Volte ao seu perfil para editar',
   ])
+  // Os textos novos moram nos componentes que o cartao compoe.
+  assertIncludes(SECTION, ['Ativar avisos'])
+  assertIncludes(QUIET, ['Horário de silêncio'])
   const src = code(NOTIFICATIONS)
-  assert.equal((src.match(/<Switch\b/g) ?? []).length, 1, 'so o interruptor dos vencimentos; limite nao tem interruptor')
+  assert.doesNotMatch(src, /Avisos de limite: sempre ligados/, 'o texto antigo de limite sempre ligado saiu')
+  // Cinco interruptores: 80, 100, vencimento e espontaneo (linhas do cartao) e o silencio (QuietHoursFields).
+  const rows = (src.match(/<SwitchRow\b/g) ?? []).length
+  const quietSwitches = (code(QUIET).match(/<Switch\b/g) ?? []).length
+  assert.equal(rows + quietSwitches, 5, 'interruptores: 80, 100, vencimento, espontaneo e silencio')
   assert.match(src, /import\s*\{\s*Switch\s*\}\s*from\s+'@\/components\/ui\/switch'/)
   assert.match(src, /DAYS_MAX\s*=\s*30/)
 })

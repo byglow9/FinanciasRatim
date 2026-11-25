@@ -409,7 +409,7 @@ Plans:
 
 **Notas de execução:** a Central de Limites e Cartões foi removida pelo dono em 18/11 (quick `261118-mkh`), então o cartão ganha a rota `/cartoes`, com um resumo na Home (o dock ganha o 9º destino Cartões, decisão D-11 do dono em 24/11, e a Home continua com o resumo). O primeiro plano é o tracer (cartão Nubank real com limite, disponível, % usado e fatura atual vindos da Pluggy) e o plano 06-02 o confere em produção antes de qualquer expansão. Ordem de produção: índices, regras, servidor (push em main) e hospedagem coinc; depois, com o servidor no ar, o histórico completo do cartão por script do dono, com ensaio e cópia de segurança (D-13); nenhuma regra restritiva nova na fase. O MeuPluggy atualiza cerca de 1 vez por dia: nenhuma promessa de tempo real. Parcelas N/M são heurística até haver uma compra parcelada real (D-06, D-07). Decisões do dono de 24/11 (D-11 a D-14): o chip Cartão do lançamento manual funciona e a compra manual é adotada pela compra do banco sem duplicar (D-12); o histórico do cartão é importado inteiro, sem o limite de 40 dias, com ensaio e cópia de segurança antes de qualquer reclassificação em massa (D-13); sem tempo real, Casal e Relatórios contam a compra do cartão como gasto na data da compra e o "Marcar como paga" na fatura fica (D-14).
 
-**Plans**: 1/20 plans executed
+**Plans**: 14/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -419,28 +419,28 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — Gate do tracer: publicar regras, servidor e hospedagem, conferir com o app do Nubank e rodar de novo a sonda (CARD-01, CARD-02, CENT-03)
+- [x] 06-02-PLAN.md — Gate do tracer: publicar regras, servidor e hospedagem, conferir com o app do Nubank e rodar de novo a sonda (CARD-01, CARD-02, CENT-03)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 06-03-PLAN.md — Núcleo: mês da fatura, fechamento e vencimento do dono, total por fatura e status aberta, fechada, paga, atrasada (CARD-08, CARD-02, CENT-03)
-- [ ] 06-04-PLAN.md — Núcleo: valor em reais (dólar), classificação, parcelas N/M por dado ou texto, "a sair" e reconciliação de pendente para confirmada (CARD-07, CARD-05, CARD-03)
-- [ ] 06-05-PLAN.md — Núcleo: saldo de caixa sem compras do cartão, detecção do pagamento da fatura e regressão do orçamento, do Casal e dos Relatórios (CARD-03, CARD-04, CARD-06)
-- [ ] 06-16-PLAN.md — Dock com o 9º destino Cartões e auditor de espiada a 360px (CENT-03, CARD-02)
+- [x] 06-03-PLAN.md — Núcleo: mês da fatura, fechamento e vencimento do dono, total por fatura e status aberta, fechada, paga, atrasada (CARD-08, CARD-02, CENT-03)
+- [x] 06-04-PLAN.md — Núcleo: valor em reais (dólar), classificação, parcelas N/M por dado ou texto, "a sair" e reconciliação de pendente para confirmada (CARD-07, CARD-05, CARD-03)
+- [x] 06-05-PLAN.md — Núcleo: saldo de caixa sem compras do cartão, detecção do pagamento da fatura e regressão do orçamento, do Casal e dos Relatórios (CARD-03, CARD-04, CARD-06)
+- [x] 06-16-PLAN.md — Dock com o 9º destino Cartões e auditor de espiada a 360px (CENT-03, CARD-02)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-06-PLAN.md — Servidor: compras do cartão com campos de cartão, adoção do legado, id recriado, remoção de pendente e totais por fatura, com o histórico inteiro sem limite de idade (CARD-03, CARD-06, CARD-07, CARD-02)
-- [ ] 06-07-PLAN.md — Regras e índice do cartão, tipos, serviço e hooks useCards e useCardView (CARD-02, CARD-08, CENT-03)
+- [x] 06-06-PLAN.md — Servidor: compras do cartão com campos de cartão, adoção do legado, id recriado, remoção de pendente e totais por fatura, com o histórico inteiro sem limite de idade (CARD-03, CARD-06, CARD-07, CARD-02)
+- [x] 06-07-PLAN.md — Regras e índice do cartão, tipos, serviço e hooks useCards e useCardView (CARD-02, CARD-08, CENT-03)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 06-08-PLAN.md — Servidor: pagamento da fatura como transferência, cartão do dono (não do item), pagamentos ligados à fatura e script de reclassificação com ensaio e cópia de segurança (CARD-04, CARD-06)
-- [ ] 06-09-PLAN.md — Configurações: cartão Contas e cartões com apelido, fechamento e vencimento (CARD-08, CARD-02)
-- [ ] 06-10-PLAN.md — Página /cartoes completa: fatura atual, status, mês a mês, próximas faturas, parcelas a vir e resumo na Home (CARD-02, CENT-03, CARD-08, CARD-05)
-- [ ] 06-11-PLAN.md — Transações: saldo de caixa sem compras do cartão, marcas e linha do total do cartão (CARD-06, CARD-03)
-- [ ] 06-13-PLAN.md — Vencimento da fatura no Calendário e no sino (CENT-04)
-- [ ] 06-17-PLAN.md — Lançamento manual: chip Cartão habilitado, escolha do cartão e gravação com cardId e cardKind (CARD-03, CARD-06)
+- [x] 06-08-PLAN.md — Servidor: pagamento da fatura como transferência, cartão do dono (não do item), pagamentos ligados à fatura e script de reclassificação com ensaio e cópia de segurança (CARD-04, CARD-06)
+- [x] 06-09-PLAN.md — Configurações: cartão Contas e cartões com apelido, fechamento e vencimento (CARD-08, CARD-02)
+- [x] 06-10-PLAN.md — Página /cartoes completa: fatura atual, status, mês a mês, próximas faturas, parcelas a vir e resumo na Home (CARD-02, CENT-03, CARD-08, CARD-05)
+- [x] 06-11-PLAN.md — Transações: saldo de caixa sem compras do cartão, marcas e linha do total do cartão (CARD-06, CARD-03)
+- [x] 06-13-PLAN.md — Vencimento da fatura no Calendário e no sino (CENT-04)
+- [x] 06-17-PLAN.md — Lançamento manual: chip Cartão habilitado, escolha do cartão e gravação com cardId e cardKind (CARD-03, CARD-06)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -506,6 +506,6 @@ Plans:
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
-| 6. Cartão de crédito | 1/20 | In Progress|  |
+| 6. Cartão de crédito | 14/20 | In Progress|  |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

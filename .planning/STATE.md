@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 6
+current_phase: 06
 current_phase_name: Cartão de crédito
-status: planning
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-11-24T20:26:39.385Z"
+status: executing
+stopped_at: Completed 06-08-PLAN.md
+last_updated: "2026-11-25T01:01:43.042Z"
 last_activity: 2026-11-24
-last_activity_desc: Phase 5 complete, transitioned to Phase 6
-state_head: 0a632d537c846b43bfc6c118fad465cc50641018
+last_activity_desc: Phase 06 execution started
+state_head: 3a9e4c32f576b82a1bfa82ce1baa368fe8e55a03
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 129
-  completed_plans: 110
+  completed_plans: 123
   percent: 22
 ---
 
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 
 ## Current Position
 
-Phase: 6 — Cartão de crédito
-Plan: Not started
-Status: Ready to discuss
-Last activity: 2026-11-24 — Phase 5 complete, transitioned to Phase 1
+Phase: 06 (Cartão de crédito) — EXECUTING
+Plan: 9 of 20
+Status: Ready to execute
+Last activity: 2026-11-24 — Phase 06 execution started
 
 Progress: [██░░░░░░░░] 22%
 
@@ -146,6 +146,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 5 P15 | 55min | 2 tasks | 4 files |
 | Phase 5 P16 | 75min | 3 tasks | 8 files |
 | Phase 06 P01 | ~25min | 3 tasks | 16 files |
+| Phase 06 P08 | 12min (fechamento) | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -219,6 +220,8 @@ Recent decisions affecting current work:
 - [Phase 5]: [Phase 5] 05-15: auditor de tema deu FALHAS 0 em 72 combinacoes (18 telas x 2 temas x 2 tamanhos) com --selftest que planta defeitos; pizza separada por var(--color-card); excecoes so com motivo
 - [Phase 5]: [Phase 5] 05-16: dock do claro igual a acao (#2f6f3e) por decisao do dono (P-01); piso do par botao + / dock no claro 1,69 (razao medida 1,692), escuro segue 2,2
 - [Phase 5]: [Phase 5] 05-16: texto verde sobre painel escuro usa text-ok-ink; --overlays audita 14 sobreposicoes (56 combinacoes, FALHAS 0); Dialog sem consumidor e montado pelo modulo real
+- [Phase 06]: 06-08: ligacao de pagamento so alcanca faturas do mes anterior a janela de 90 dias em diante; pagamento que sai da janela continua em cards.payments
+- [Phase 06]: 06-08: saida que e o outro lado do credito de um cartao fica reservada a esse cartao
 
 ### Pending Todos
 
@@ -235,6 +238,7 @@ None yet.
 - Nome "Coinki": busca em lojas e INPI pendente; reservar o ID `coinki` no Hosting cedo
 - 01-02: .env.local ainda rastreado no git; guard de segredos bloqueou git rm --cached .env.local. Rodar manualmente.
 - G-01: window.confirm em src/components/settings/BankConnections.tsx reprova a guarda transversal da 3.1 (test:static sai 1); decisao do dono pendente
+- 06-08: nao publicar antes de npm run test:emu e test:rules; origin/main ja estava em a9897c61 (conferir Railway e a importacao do cartao sem o portao do D-13)
 
 ### Roadmap Evolution
 
@@ -250,8 +254,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-24T20:26:39.253Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-11-25T01:01:40.839Z
+Stopped at: Completed 06-08-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

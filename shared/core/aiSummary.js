@@ -20,7 +20,7 @@ import { DEFAULT_TZ, zonedParts } from './time.js'
 import { normalize } from './classify.js'
 import { BRAND_DICTIONARY, ESTABLISHMENT_TOKENS } from './insights.js'
 import { formatMoney, MONTH_LONG } from './format.js'
-import { safeLabel, merchantLabel, findLeaks } from './aiPrivacy.js'
+import { safeLabel, merchantLabel, findLeaks, freeText } from './aiPrivacy.js'
 import { extractNumbers } from './aiValidate.js'
 
 /** @typedef {import('./categories.js').CategoryDef} CategoryDef */
@@ -35,6 +35,10 @@ export const SUMMARY_LIMITS = Object.freeze({
   fatura: 2,
   padroes: 5,
   fixasProximas: 5,
+  agenda: 10,
+  agendaPassada: 3,
+  anotacoes: 6,
+  ultimosDias: 10,
 })
 
 /** Nenhum inteiro ou porcentagem do resumo passa disto (3 algarismos). */
@@ -221,6 +225,8 @@ function looksLikeFullName(m) {
  *   porquinhoCents?: number | null,
  *   cards?: unknown[],
  *   insights?: unknown[],
+ *   events?: unknown[],
+ *   notes?: unknown[],
  *   latestTx?: unknown,
  *   tz?: string,
  * }} input
@@ -337,6 +343,15 @@ export function buildAiSummary(input) {
 
   const padroes = buildPatterns(src.insights, { person, cycleKey: cycle.key, defs })
   if (padroes.length > 0) summary.padroes = padroes
+
+  const agenda = buildAgenda(src.events, { person, now, tz })
+  if (agenda.length > 0) summary.agenda = agenda
+
+  const anotacoes = buildNotes(src.notes, { person, now, tz })
+  if (anotacoes.length > 0) summary.anotacoes = anotacoes
+
+  const ultimosDias = buildRecent({ txs, now, tz, defs })
+  if (ultimosDias.length > 0) summary.ultimosDias = ultimosDias
 
   summary.assuntos = rankTopics(summary)
 
@@ -527,6 +542,103 @@ function buildCards(raw, person) {
     })
 }
 
+/**
+ * Distancia em dias de calendario ate a data, em palavras.
+ * @param {Date} date
+ * @param {Date} now
+ * @param {string} tz
+ * @returns {{ days: number, text: string }}
+ */
+function whenOf(date, now, tz) {
+  const days = daysBetweenParts(zonedParts(now, tz), zonedParts(date, tz))
+  const n = smallInt(Math.abs(days))
+  if (days === 0) return { days, text: 'hoje' }
+  if (days === 1) return { days, text: 'amanhã' }
+  if (days === -1) return { days, text: 'ontem' }
+  return { days, text: days > 0 ? `daqui a ${n} dias` : `há ${n} dias` }
+}
+
+/** @param {Date} date @param {string} tz */
+function dayAndMonth(date, tz) {
+  const parts = zonedParts(date, tz)
+  return { dia: smallInt(parts.day), mes: MONTH_LONG[parts.month - 1].toLowerCase() }
+}
+
+/**
+ * Eventos do calendario da pessoa e do casal ('conjunto'): os proximos primeiro, depois os que ja
+ * aconteceram (D-24). Todo texto passa por freeText.
+ * @param {unknown} raw
+ * @param {{ person: unknown, now: Date, tz: string }} ctx
+ * @returns {AiSummary[]}
+ */
+function buildAgenda(raw, { person, now, tz }) {
+  const items = list(raw)
+    .filter((e) => e && typeof e === 'object' && isValidDate(e.date) && !isOtherPerson(e, person))
+    .map((e) => ({ e, when: whenOf(e.date, now, tz) }))
+  const next = items.filter((i) => i.when.days >= 0).sort((a, b) => a.e.date - b.e.date)
+  const past = items.filter((i) => i.when.days < 0).sort((a, b) => b.e.date - a.e.date)
+  const keptPast = past.slice(0, Math.max(SUMMARY_LIMITS.agendaPassada, SUMMARY_LIMITS.agenda - next.length))
+  return [...next.slice(0, SUMMARY_LIMITS.agenda - Math.min(keptPast.length, SUMMARY_LIMITS.agendaPassada)), ...keptPast]
+    .slice(0, SUMMARY_LIMITS.agenda)
+    .map(({ e, when }) => {
+      /** @type {AiSummary} */
+      const out = { quando: when.text, ...dayAndMonth(e.date, tz), evento: freeText(e.title, { max: 40 }) ?? 'compromisso' }
+      if (typeof e.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(e.time)) out.hora = e.time
+      const place = freeText(e.location, { max: 30 })
+      if (place !== null) out.local = place
+      const detail = freeText(e.notes, { max: 80 })
+      if (detail !== null) out.detalhe = detail
+      return out
+    })
+}
+
+/**
+ * Anotacoes (post-its) da pessoa, da mais nova para a mais antiga (D-24). Anotacao que fala de
+ * senha ou chave fica inteira de fora.
+ * @param {unknown} raw
+ * @param {{ person: unknown, now: Date, tz: string }} ctx
+ * @returns {AiSummary[]}
+ */
+function buildNotes(raw, { person, now, tz }) {
+  /** @type {AiSummary[]} */
+  const out = []
+  for (const n of list(raw)) {
+    if (out.length >= SUMMARY_LIMITS.anotacoes) break
+    if (!n || typeof n !== 'object' || isOtherPerson(n, person)) continue
+    const whole = `${n.title ?? ''} ${n.content ?? ''}`
+    if (freeText(whole, { max: 600 }) === null) continue
+    const titulo = freeText(n.title, { max: 40 })
+    const texto = freeText(n.content, { max: 120 })
+    if (titulo === null && texto === null) continue
+    /** @type {AiSummary} */
+    const item = {}
+    if (titulo !== null) item.titulo = titulo
+    if (texto !== null) item.texto = texto
+    if (isValidDate(n.date)) item.quando = whenOf(n.date, now, tz).text
+    out.push(item)
+  }
+  return out
+}
+
+/**
+ * O que aconteceu nos ultimos 7 dias: lancamentos do mais novo ao mais antigo.
+ * @param {{ txs: any[], now: Date, tz: string, defs: CategoryDef[] }} args
+ * @returns {AiSummary[]}
+ */
+function buildRecent({ txs, now, tz, defs }) {
+  return txs
+    .map((t) => ({ t, when: whenOf(t.date, now, tz), cents: toCents(Number(t.amount)) }))
+    .filter((i) => i.when.days <= 0 && i.when.days > -WEEK_DAYS && Number.isFinite(i.cents))
+    .sort((a, b) => b.t.date - a.t.date || cmp(String(a.t.id), String(b.t.id)))
+    .slice(0, SUMMARY_LIMITS.ultimosDias)
+    .map(({ t, when, cents }) => ({
+      quando: when.text,
+      loja: safeMerchant(t, defs).label,
+      movimento: t.type === 'entrada' ? 'entrada' : 'gasto',
+      valor: money(Math.abs(cents)),
+    }))
+}
+
 /** Tipo de padrao em palavras (so os que sao padrao: limite e ritmo ja tem secao propria). */
 const PATTERN_TYPES = Object.freeze({
   'delivery-heavy': 'muito delivery',
@@ -617,6 +729,8 @@ export const TOPICS = Object.freeze([
   'porquinho',
   'fixas',
   'fatura',
+  'agenda',
+  'anotacoes',
 ])
 
 /** Variacao (em pontos percentuais, para cima ou para baixo) a partir da qual a comparacao e alta. */
@@ -655,6 +769,8 @@ export function rankTopics(summary) {
     porquinho: typeof s.porquinho === 'string',
     fixas: Boolean(s.fixas),
     fatura: list(s.fatura).length > 0,
+    agenda: list(s.agenda).length > 0,
+    anotacoes: list(s.anotacoes).length > 0,
   }
   /** @type {string[]} */
   const out = []
@@ -666,6 +782,7 @@ export function rankTopics(summary) {
   if (limites.some((l) => l && l.estado === 'estourou')) add('limites')
   if (limites.some((l) => l && l.estado === 'perto')) add('limites')
   if (comparacao.some((c) => c && Math.abs(pctOfText(c.variacao)) >= HIGH_COMPARISON_PCT)) add('comparacao')
+  if (list(s.agenda).some((e) => e && (e.quando === 'hoje' || e.quando === 'amanhã'))) add('agenda')
   add('ritmo')
   for (const topic of TOPICS) add(topic)
   return out

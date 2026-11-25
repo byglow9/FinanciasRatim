@@ -221,6 +221,40 @@ export function safeLabel(text, opts = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// freeText: titulo de evento, local e anotacao (D-24)
+// ---------------------------------------------------------------------------------------------
+
+/** Anotacao que fala de segredo nunca sai de casa. */
+const SECRET_HINT = /(^|[^a-z0-9])(senha|password|token|chave|pin|cvv)([^a-z0-9]|$)/
+
+// Palavra com inicial maiuscula no meio da frase (no comeco do texto ou da frase nao conta).
+const MID_CAPITALIZED = /(?<![.!?:]\s*)(?<!^\s*)(?<![\p{L}\p{N}'-])\p{Lu}[\p{L}'-]*/gu
+const ALL_CAPITALIZED = /^\p{Lu}[\p{L}'-]*(?:\s+\p{Lu}[\p{L}'-]*)+$/u
+
+/**
+ * Texto livre da agenda (D-24): alem do safeLabel estrito, toda palavra com inicial maiuscula no
+ * meio da frase vira o rotulo generico (parece nome de pessoa), salvo marca e estabelecimento.
+ * Texto que fala de senha ou chave, ou que ainda vaza algo, devolve nulo. Risco residual aceito
+ * pelo dono: nome no COMECO da frase ou todo em minusculas fora dos padroes passa.
+ * @param {unknown} text
+ * @param {{ max?: number }} [opts]
+ * @returns {string | null}
+ */
+export function freeText(text, opts = {}) {
+  const raw = String(text ?? '').replace(SPACE_LIKE, ' ').replace(/\s+/g, ' ').trim()
+  if (raw === '' || SECRET_HINT.test(normalize(raw))) return null
+  const hidden =
+    ALL_CAPITALIZED.test(raw) && !isKnownShopName(raw)
+      ? PERSON_LABEL
+      : raw.replace(MID_CAPITALIZED, (word) => (isKnownShopName(word) ? word : PERSON_LABEL))
+  const label = safeLabel(hidden.replace(/uma pessoa(?:\s+uma pessoa)+/g, PERSON_LABEL), {
+    strict: true,
+    max: opts.max ?? 60,
+  })
+  return label !== null && findLeaks(label).length === 0 ? label : null
+}
+
+// ---------------------------------------------------------------------------------------------
 // merchantLabel
 // ---------------------------------------------------------------------------------------------
 

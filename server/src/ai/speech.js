@@ -198,6 +198,7 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
       pct: pctOfUso(focusRow?.uso),
       rhythm: typeof ritmo === 'string' ? (RHYTHM_SLUG[ritmo] ?? 'acima-do-ritmo') : null,
       merchant: reaction ? reactionLabels(summary).focusLabel : null,
+      content: topic === 'agenda' || topic === 'anotacoes' ? JSON.stringify(summary[topic] ?? []) : null,
     })
 
     /**

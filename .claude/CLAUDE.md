@@ -10,7 +10,7 @@ Coinc (hoje "Financias Ratimbum") é um app web de finanças pessoais em portugu
 
 ### Constraints
 
-- **Privacidade**: à IA gratuita vão totais por categoria e nomes de lojas (autorizado pelo dono), nunca CPF, números de conta/cartão nem nomes de pessoas físicas; chaves só no servidor. As camadas grátis podem guardar e treinar com o que recebem, e o dono aceitou isso.
+- **Privacidade**: à IA gratuita vão totais por categoria, nomes de lojas, eventos do calendário e anotações (autorizado pelo dono; nomes de pessoas passam por removedor, que pode falhar), nunca CPF, números de conta/cartão nem nomes de pessoas físicas; chaves só no servidor. As camadas grátis podem guardar e treinar com o que recebem, e o dono aceitou isso.
 - **Custo**: o projeto deve rodar de graça (Firebase Spark/Hosting, Railway, MeuPluggy gratuito, IA gratuita) — uso pessoal.
 - **Originalidade**: nada copiado da referência; mascote e textos próprios.
 - **Compatibilidade**: manter o que já funciona (abas Ele/Ela/Porquinho, abas de seção, calendário, metas, sync bancária); renome sem perder dados nem trocar o projeto Firebase.

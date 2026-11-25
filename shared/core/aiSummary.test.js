@@ -533,3 +533,30 @@ test('camada extra: descricao manual so com maiusculas e sem loja conhecida nao 
   assert.equal(rotulo('Netflix'), 'Netflix')
   assert.equal(rotulo('almoço com Carlos'), 'almoço com uma pessoa')
 })
+
+test('D-24: agenda, anotacoes e ultimos dias entram sem nome de pessoa nem segredo', () => {
+  const at = (day) => zonedTimeToInstant(2026, 11, day, 12, 0, 0)
+  const s = buildAiSummary({
+    now: at(12),
+    person: 'ele',
+    events: [
+      { title: 'Jantar com Maria', date: at(13), time: '20:00', person: 'conjunto', notes: 'ligar para joana antes' },
+      { title: 'Consulta Mariana Souza', date: at(10), person: 'ele' },
+      { title: 'Evento da outra aba', date: at(14), person: 'ela' },
+    ],
+    notes: [
+      { title: 'Lembrete', content: 'comprar presente do Pedro', person: 'ele' },
+      { title: 'Wifi', content: 'senha abc123', person: 'ele' },
+      { title: 'Banco', content: 'meu cpf 123.456.789-00', person: 'ele' },
+    ],
+    transactions: [{ id: 't', date: at(11), amount: 30, type: 'saida', category: 'Lazer', description: 'Cinema', source: 'manual' }],
+  })
+  const text = summaryToPromptText(s)
+  assert.doesNotMatch(text, /Maria|joana|Souza|Pedro|senha|abc123|123\.456|outra aba/i)
+  assert.deepEqual(findLeaks(text), [])
+  assert.equal(s.agenda.length, 2)
+  assert.deepEqual([s.agenda[0].quando, s.agenda[0].hora, s.agenda[1].quando], ['amanhã', '20:00', 'há 2 dias'])
+  assert.ok(s.anotacoes.length >= 1 && s.anotacoes.length <= 2)
+  assert.equal(s.ultimosDias[0].quando, 'ontem')
+  assert.equal(s.assuntos[0], 'agenda')
+})

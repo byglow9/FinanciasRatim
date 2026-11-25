@@ -33,6 +33,9 @@ function createDb(seed, { failOn = [] } = {}) {
       select(...f) {
         return build(name, filters, order, f)
       },
+      limit() {
+        return build(name, filters, order, fields)
+      },
       async get() {
         queries.push({ collection: name, filters, order, fields })
         if (failOn.includes(name)) throw new Error('falha simulada')

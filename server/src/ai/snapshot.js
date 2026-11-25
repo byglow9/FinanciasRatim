@@ -15,6 +15,11 @@ const SAVINGS = 'savings'
 const CARDS = 'cards'
 const CARD_SETTINGS = 'cardSettings'
 const INSIGHTS = 'vintemInsights'
+const EVENTS = 'events'
+const NOTES = 'notes'
+/** Quantos dias depois do fim do ciclo ainda entram na agenda, e quantas anotacoes sao lidas. */
+const AGENDA_AHEAD_DAYS = 31
+const NOTES_MAX = 20
 
 /** Tom padrao e nomes padrao das abas (o mesmo do app) quando o documento falta ou e de outro casal. */
 export const DEFAULT_TONE = 'sem-filtro'
@@ -109,7 +114,8 @@ function transactionsQuery(db, hid, person, cycle) {
  * entram no resumo.
  *
  * Fontes (D-16): lancamentos do ciclo atual e do anterior, contas fixas e pagamentos, metas, so o
- * SALDO do Porquinho, fatura aberta do cartao, insights fortes e o ultimo lancamento. Toda consulta
+ * SALDO do Porquinho, fatura aberta do cartao, insights fortes, o ultimo lancamento, os eventos do
+ * calendario (da pessoa e do casal) e as anotacoes da pessoa (D-24). Toda consulta
  * de dado pessoal leva ownerId e person do token; so o Porquinho e as contas do casal nao filtram
  * pessoa (D-14). O Admin SDK ignora as regras, entao o filtro e daqui.
  *
@@ -358,6 +364,53 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
   }
 
   /**
+   * Eventos do calendario desde o comeco do ciclo ate um mes depois do fim (D-24). A consulta usa o
+   * indice do app (ownerId, date); a pessoa e o 'conjunto' sao filtrados aqui, e o evento so da
+   * outra pessoa nunca segue adiante.
+   * @param {string} hid
+   * @param {'ele' | 'ela'} person
+   * @param {{ start: Date, end: Date }} cycle
+   */
+  async function fetchEvents(hid, person, cycle) {
+    const until = new Date(cycle.end.getTime() + AGENDA_AHEAD_DAYS * 24 * 60 * 60 * 1000)
+    const snap = await db
+      .collection(EVENTS)
+      .where('ownerId', '==', hid)
+      .where('date', '>=', Timestamp.fromDate(cycle.start))
+      .where('date', '<=', Timestamp.fromDate(until))
+      .orderBy('date', 'asc')
+      .get()
+    const events = []
+    for (const doc of snap.docs) {
+      const d = doc.data() ?? {}
+      const date = toDate(d.date)
+      if (!date || (d.person !== person && d.person !== 'conjunto')) continue
+      events.push({ title: d.title, date, time: d.time, location: d.location, notes: d.notes, person: d.person })
+    }
+    return { value: events, reads: snap.docs.length }
+  }
+
+  /**
+   * Anotacoes mais novas da pessoa (D-24).
+   * @param {string} hid
+   * @param {'ele' | 'ela'} person
+   */
+  async function fetchNotes(hid, person) {
+    const snap = await db
+      .collection(NOTES)
+      .where('ownerId', '==', hid)
+      .where('person', '==', person)
+      .orderBy('createdAt', 'desc')
+      .limit(NOTES_MAX)
+      .get()
+    const notes = snap.docs.map((doc) => {
+      const d = doc.data() ?? {}
+      return { title: d.title, content: d.content, date: toDate(d.date), person }
+    })
+    return { value: notes, reads: snap.docs.length }
+  }
+
+  /**
    * Tudo do ciclo atual alem das configuracoes. Lancamentos sao essenciais (erro sobe e a fala vira
    * banco de frases); as demais fontes sao toleradas.
    * @param {string} hid
@@ -365,13 +418,15 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
    * @param {any} cycle
    */
   async function fetchCurrent(hid, person, cycle) {
-    const [txSnap, bills, goals, porquinho, cards, insights] = await Promise.all([
+    const [txSnap, bills, goals, porquinho, cards, insights, events, notes] = await Promise.all([
       transactionsQuery(db, hid, person, cycle).get(),
       safe('contas', /** @type {any[]} */ ([]), () => fetchBills(hid, person)),
       safe('metas', /** @type {any[]} */ ([]), () => fetchGoals(hid, person)),
       safe('porquinho', /** @type {number | null} */ (null), () => fetchPorquinho(hid)),
       safe('cartoes', /** @type {any[]} */ ([]), () => fetchCards(hid, person)),
       safe('insights', /** @type {any[]} */ ([]), () => fetchInsights(hid, person, cycle.key)),
+      safe('agenda', /** @type {any[]} */ ([]), () => fetchEvents(hid, person, cycle)),
+      safe('anotacoes', /** @type {any[]} */ ([]), () => fetchNotes(hid, person)),
     ])
     const billIds = new Set(bills.value.map((b) => b.id))
     const payments = await safe('pagamentos', /** @type {any[]} */ ([]), () => fetchPayments(hid, cycle, billIds))
@@ -394,7 +449,7 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
       }
     }
 
-    const parts = [bills, goals, porquinho, cards, insights, payments]
+    const parts = [bills, goals, porquinho, cards, insights, payments, events, notes]
     return {
       value: {
         transactions,
@@ -405,6 +460,8 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
         porquinhoCents: porquinho.value,
         cards: cards.value,
         insights: insights.value,
+        events: events.value,
+        notes: notes.value,
       },
       reads: txSnap.docs.length + parts.reduce((sum, p) => sum + p.reads, 0),
       partial: parts.some((p) => p.failed),
@@ -508,6 +565,8 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
         porquinhoCents: data.porquinhoCents,
         cards: openBills(data.cards, nowDate),
         insights: data.insights,
+        events: data.events,
+        notes: data.notes,
         ...(data.latestTx ? { latestTx: data.latestTx } : {}),
       },
       reads,

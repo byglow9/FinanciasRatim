@@ -15,8 +15,10 @@ export const CACHE_TONES = Object.freeze(['suave', 'direto', 'sem-filtro'])
 export const CACHE_SITUATIONS = Object.freeze(['lancamento', 'limite', 'sync', 'abertura', 'espiar'])
 export const CACHE_TOPICS = Object.freeze([
   'limites', 'ritmo', 'padroes', 'entradas', 'metas', 'porquinho', 'fixas', 'fatura', 'comparacao',
-  'semana',
+  'semana', 'agenda', 'anotacoes',
 ])
+/** Assuntos de texto livre: o conteudo entra na chave por hash, senao a fala velha voltaria. */
+const TEXT_TOPICS = Object.freeze(['agenda', 'anotacoes'])
 export const CACHE_RHYTHMS = Object.freeze(['folgado', 'no-ritmo', 'atencao', 'estourou'])
 /** Situacoes que reagem a um lancamento: so nelas a loja entra na chave. */
 export const MERCHANT_SITUATIONS = Object.freeze(['lancamento', 'sync'])
@@ -63,7 +65,7 @@ const fromList = (value, list) => (typeof value === 'string' && list.includes(va
 /**
  * Chave canonica da situacao: versao e partes em ordem fixa, separadas por barra vertical.
  * @param {{ cycleKey?: unknown, tone?: unknown, situation?: unknown, topic?: unknown,
- *   categoryId?: unknown, pct?: unknown, rhythm?: unknown, merchant?: unknown }} [input]
+ *   categoryId?: unknown, pct?: unknown, rhythm?: unknown, merchant?: unknown, content?: unknown }} [input]
  * @returns {string}
  */
 export function canonicalKey(input) {
@@ -86,5 +88,8 @@ export function canonicalKey(input) {
     band === null ? 'x' : `p${band}`,
     rhythm,
     merchant,
+    ...(typeof i.topic === 'string' && TEXT_TOPICS.includes(i.topic) && typeof i.content === 'string'
+      ? [`c${labelHash(i.content)}`]
+      : []),
   ].join('|')
 }

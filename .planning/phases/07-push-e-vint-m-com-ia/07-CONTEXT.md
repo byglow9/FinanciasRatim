@@ -51,6 +51,7 @@ O usuário recebe avisos reais no celular (push via FCM, servidor Express, sem C
 - **D-21:** O **push espontâneo é um quarto tipo, ligado por padrão**, que o usuário pode desligar em Configurações. **O silêncio segura e entrega depois**: avisos de limite e fatura que caírem no silêncio esperam e chegam quando ele acabar; o push espontâneo só sai fora do silêncio. O interruptor legado "Avisos de vencimento" vira o tipo `fatura`.
 - **D-22:** A régua de ofensas da validação da saída da IA é **própria desta fase**: a régua da Fase 4 proíbe o que a D-13 permite. Bloqueia só ofensa discriminatória (raça, orientação, religião, grupo); palavrão, deboche e apelidos como "baleia" passam.
 - **D-23:** Previsão de passos humanos do dono (checkpoints): chave VAPID e API de registros do FCM no Firebase, chaves dos provedores de IA no Railway, rodar o `ai-compare.js` com as próprias chaves e escolher o modelo, e testar no iPhone real. O planejador deve prever um checkpoint humano antes de fixar o modelo padrão.
+- **D-24 (2026-11-25, dono):** A IA lê sempre os eventos do calendário (da pessoa e do casal), as anotações (post-its) e o que aconteceu nos últimos dias. Título, local, detalhe e texto passam pelo removedor de nomes; anotação que fala de senha ou chave não sai. Risco aceito: nome no começo da frase ou em minúsculas pode passar, e o serviço grátis pode guardar e treinar com o que recebe.
 
 ### Claude's Discretion
 - Algoritmo de ordem de tentativa entre provedores, formato exato do prompt, faixa de tamanho da frase e validação de idioma.

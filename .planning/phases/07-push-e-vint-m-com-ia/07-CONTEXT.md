@@ -45,6 +45,13 @@ O usuário recebe avisos reais no celular (push via FCM, servidor Express, sem C
 - **D-09:** A IA recebe totais por categoria e nomes de lojas; nunca CPF, número de conta ou cartão, nem nome de pessoa (Pix para pessoa vira rótulo genérico). Saída validada (tamanho, texto simples, idioma) antes de aparecer.
 - **D-10:** Provedor trocável por configuração do servidor (Cloudflare Workers AI padrão; Groq e Grok candidatos). A escolha final relê, na data, termos de uso de dados e limites, e registra os termos; nenhuma cota fixa no código.
 
+### Decisões da rodada de planejamento (2026-11-25)
+- **D-19:** O aviso push **pode citar o nome da categoria** (ex.: "Lazer passou do limite, porra"), nunca valores nem lojas nem nome de pessoa.
+- **D-20:** **A descrição digitada nos lançamentos manuais também vai para a IA**, por escolha do dono. Isso afrouxa a recomendação de mandar só categoria e valor, e o servidor não detecta com certeza um nome de pessoa digitado livremente. Mitigação obrigatória: um removedor de nomes feito no servidor antes de montar o resumo (padrões como "Pix para ...", "para/de/com" seguidos de nome próprio, CPF, CNPJ, e-mail, telefone, números longos) trocando por rótulos genéricos ("uma pessoa"); o risco residual fica registrado e aceito pelo dono (o projeto já aceita que as camadas grátis guardem e treinem com o que recebem). CPF, contas e cartões continuam proibidos sem exceção.
+- **D-21:** O **push espontâneo é um quarto tipo, ligado por padrão**, que o usuário pode desligar em Configurações. **O silêncio segura e entrega depois**: avisos de limite e fatura que caírem no silêncio esperam e chegam quando ele acabar; o push espontâneo só sai fora do silêncio. O interruptor legado "Avisos de vencimento" vira o tipo `fatura`.
+- **D-22:** A régua de ofensas da validação da saída da IA é **própria desta fase**: a régua da Fase 4 proíbe o que a D-13 permite. Bloqueia só ofensa discriminatória (raça, orientação, religião, grupo); palavrão, deboche e apelidos como "baleia" passam.
+- **D-23:** Previsão de passos humanos do dono (checkpoints): chave VAPID e API de registros do FCM no Firebase, chaves dos provedores de IA no Railway, rodar o `ai-compare.js` com as próprias chaves e escolher o modelo, e testar no iPhone real. O planejador deve prever um checkpoint humano antes de fixar o modelo padrão.
+
 ### Claude's Discretion
 - Algoritmo de ordem de tentativa entre provedores, formato exato do prompt, faixa de tamanho da frase e validação de idioma.
 - Estrutura das coleções de inscrições push e dos marcadores de evento; texto exato do passo a passo do iPhone.

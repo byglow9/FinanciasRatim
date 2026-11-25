@@ -195,10 +195,14 @@ export async function syncConnection(db, pluggy, connection) {
             summary.cards = (summary.cards ?? 0) + 1
           }
           const counts = await syncCardTransactions(db, {
-            ownerId, person, itemId, account, connection, bankName, categorize, manual, usedManualIds, pluggy, chains,
+            ownerId, person, itemId, account, connection, bankName, categorize, usedManualIds, pluggy, chains,
           })
           await refreshCardAggregates(db, { ownerId, accountId: account.id })
-          const total = summary.cardTxs ?? { created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0 }
+          // so contagens (inclui a adocao do manual, D-12): nunca descricao, valor ou id
+          const total = summary.cardTxs ?? {
+            created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
+            adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
+          }
           for (const key of Object.keys(total)) total[key] += counts[key] ?? 0
           summary.cardTxs = total
         } catch (err) {

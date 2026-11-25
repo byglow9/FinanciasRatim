@@ -4,13 +4,16 @@ import { classifyCardTx } from '../../shared/core/cardTx.js'
 import { parseInstallment } from '../../shared/core/cardInstallments.js'
 import { reconcileCardTxs } from '../../shared/core/cardReconcile.js'
 import { sumBillTotals } from '../../shared/core/cardBills.js'
-import { findDuplicate } from '../../shared/core/classify.js'
+import { matchManualAdoptions, matchReverseAdoptions } from '../../shared/core/cardAdopt.js'
+import { isManualCardPurchase } from '../../shared/core/cardManual.js'
+import { DUPLICATE_WINDOW_DAYS } from '../../shared/core/classify.js'
 
 const CARDS = 'cards'
 const CARD_SETTINGS = 'cardSettings'
 const TRANSACTIONS = 'transactions'
 const IMPORTS = 'bankImports'
 const MAX_BATCH_OPS = 400
+const WINDOW_MS = DUPLICATE_WINDOW_DAYS * 24 * 60 * 60 * 1000
 
 // Piso tecnico da busca do cartao na Pluggy (D-13). NAO e um corte por idade: e uma data muito
 // antiga so para a Pluggy devolver tudo o que guarda, em vez de aplicar a janela padrao dela.
@@ -101,17 +104,134 @@ function kindOfDoc(d) {
   return d.cardKind === 'refund' || (d.cardKind == null && d.type === 'entrada') ? 'refund' : 'purchase'
 }
 
+// ---- Adocao do lancamento manual pela compra importada (D-12, D-13, CARD-07) ----
+
+const candidateOf = (docId, d) => ({
+  docId,
+  cents: Math.round(Number(d.amount) * 100),
+  description: d.description,
+  category: d.category,
+  dateMs: d.date?.toMillis?.() ?? NaN,
+  cardId: d.cardId ?? null,
+  person: d.person,
+  type: d.type,
+  transfer: d.transfer,
+})
+
+// Manuais antigos, sem cardId. A janela comeca na compra mais antiga ainda sem par menos
+// DUPLICATE_WINDOW_DAYS, nunca em um numero fixo de dias (D-13). Usa o indice (ownerId, person,
+// date). Manual ja apontado por outra importacao (ex.: saida da conta) fica de fora: e duvida.
+async function loadLegacyManuals(db, { ownerId, person, fromMs, usedManualIds }) {
+  const snap = await db
+    .collection(TRANSACTIONS)
+    .where('ownerId', '==', ownerId)
+    .where('person', '==', person)
+    .where('date', '>=', Timestamp.fromMillis(fromMs))
+    .orderBy('date', 'desc')
+    .get()
+  const out = []
+  for (const doc of snap.docs) {
+    const d = doc.data()
+    if (d.ownerId !== ownerId || d.person !== person) continue
+    if (d.source === 'bank' || d.bankImportId || d.type !== 'saida' || d.transfer === true) continue
+    if (d.cardId || d.cardKind || usedManualIds.has(doc.id)) continue
+    out.push(candidateOf(doc.id, d))
+  }
+  return out
+}
+
+// So decide (nada e gravado aqui). Para a frente: manuais contra as compras que seriam criadas.
+// Reassentamento: manuais do cartao que sobraram contra os importados ja gravados, deixando de
+// fora os que esta rodada religa ou remove.
+async function planAdoptions(db, { ownerId, person, cardId, cardManuals, existingDocs, result, importsById, foreignIds, usedManualIds }) {
+  const fresh = result.creates.filter((c) => !importsById.has(c.bankId) && !foreignIds.has(c.bankId))
+  let forward = { adoptions: [], nearMiss: 0, ambiguous: 0 }
+  if (fresh.length) {
+    const fromMs = fresh.reduce((min, c) => Math.min(min, c.dateMs), Infinity) - WINDOW_MS
+    const legacy = await loadLegacyManuals(db, { ownerId, person, fromMs, usedManualIds })
+    forward = matchManualAdoptions({
+      candidates: [...cardManuals, ...legacy],
+      incoming: fresh.map((c) => ({ ...c, cardId, person })),
+    })
+  }
+
+  const taken = new Set(forward.adoptions.map((a) => a.docId))
+  const leftovers = cardManuals.filter((m) => !taken.has(m.docId))
+  const returned = new Map(result.updates.map((u) => [u.docId, u.incoming]))
+  const leaving = new Set([...result.rebinds.map((r) => r.docId), ...result.vanished])
+  const imported = []
+  if (leftovers.length) {
+    for (const [docId, d] of existingDocs) {
+      if (d.ownerId !== ownerId || d.person !== person || d.source !== 'bank') continue
+      if (d.adoptedFromManual || kindOfDoc(d) !== 'purchase' || leaving.has(docId)) continue
+      const now = returned.get(docId)
+      const cents = now ? now.cents : Math.round(Number(d.amount) * 100)
+      const dateMs = now ? now.dateMs : (d.date?.toMillis?.() ?? NaN)
+      const description = now ? now.description : (d.bankDescription ?? d.description ?? '')
+      if (!leftovers.some((m) => m.cents === cents && Math.abs(m.dateMs - dateMs) <= WINDOW_MS)) continue
+      imported.push({ docId, bankId: d.bankImportId, cents, dateMs, description, cardId, person })
+    }
+  }
+  const links = await getAllDocs(db, IMPORTS, imported.map((i) => i.bankId))
+  const reverse = matchReverseAdoptions({
+    candidates: leftovers,
+    imported: imported
+      .filter((i) => !links.has(i.bankId) || links.get(i.bankId).ownerId === ownerId)
+      .map((i) => ({ ...i, matchedTransactionId: links.get(i.bankId)?.matchedTransactionId ?? null })),
+  })
+  return { forward, reverse, links, returned }
+}
+
+// Campos que o manual adotado recebe do banco. Descricao, categoria, categoryId e nota NUNCA
+// entram aqui: continuam como o dono deixou.
+function adoptedFields(item, cardId, bankName) {
+  return {
+    ...bankFields(item.entry, item.cents, cardId, 'purchase'),
+    bankImportId: item.id,
+    bankName,
+    bankDescription: item.entry.description,
+    originalDescription: item.entry.raw,
+    adoptedFromManual: true,
+  }
+}
+
+// O mesmo, copiado do importado ja gravado quando a Pluggy nao o devolveu nesta rodada.
+function storedFields(d, cardId, bankName) {
+  const bankDescription = d.bankDescription ?? d.description ?? ''
+  return {
+    amount: d.amount,
+    type: 'saida',
+    date: d.date,
+    cardId,
+    cardKind: 'purchase',
+    cardStatus: d.cardStatus ?? 'posted',
+    billMonth: d.billMonth ?? null,
+    billMonthSource: d.billMonthSource ?? null,
+    installment: d.installment ?? null,
+    currency: d.currency ?? null,
+    bankImportId: d.bankImportId,
+    bankName: d.bankName ?? bankName,
+    bankDescription,
+    originalDescription: d.originalDescription ?? bankDescription,
+    adoptedFromManual: true,
+  }
+}
+
 // Importa as compras, estornos e pagamentos de uma conta CREDIT (CARD-03, CARD-06, CARD-07).
 // Historico inteiro, sem limite de idade (D-13): a busca usa so o piso tecnico e o `connection`
-// (com o importFrom da conexao) nao e consultado. Nunca registra valores, descricoes nem ids.
+// (com o importFrom da conexao) nao e consultado. Duplicidade com lancamento manual se decide so
+// pela adocao (D-12), nunca por valor e data sozinhos. Nunca registra valores, descricoes nem ids.
 export async function syncCardTransactions(
   db,
-  { ownerId, person, itemId, account, bankName, now, categorize, manual = [], usedManualIds = new Set(), pluggy, chains = new Map() }
+  { ownerId, person, itemId, account, bankName, now, categorize, usedManualIds = new Set(), pluggy, chains = new Map() }
 ) {
   assertOwner(ownerId, 'syncCardTransactions')
   const cardId = account.id
   const stamp = now instanceof Date ? Timestamp.fromDate(now) : Timestamp.now()
-  const counts = { created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0 }
+  const counts = {
+    created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
+    adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
+  }
 
   const raws = await pluggy.fetchAllTransactions(cardId, { dateFrom: CARD_HISTORY_FLOOR })
   // Resposta vazia da Pluggy nunca apaga nada: pode ser uma falha passageira.
@@ -138,15 +258,18 @@ export async function syncCardTransactions(
   }
 
   // 2) lancamentos do cartao ja ligados ao banco (so igualdade, sem janela de data). O manual (D-12)
-  // sem bankImportId nunca entra aqui e nunca vira candidato a remocao.
+  // sem bankImportId nunca entra na reconciliacao nem vira candidato a remocao: a mesma consulta
+  // so o separa como candidato a adocao.
   const existingSnap = await db
     .collection(TRANSACTIONS)
     .where('ownerId', '==', ownerId)
     .where('cardId', '==', cardId)
     .get()
   const existingDocs = new Map()
+  const cardManuals = []
   for (const doc of existingSnap.docs) {
     const d = doc.data()
+    if (d.ownerId === ownerId && d.person === person && isManualCardPurchase(d)) cardManuals.push(candidateOf(doc.id, d))
     // Pagamento da fatura ligado ao cartao (06-08) nao e compra: nunca entra na reconciliacao.
     if (d.bankImportId && d.cardKind !== 'payment') existingDocs.set(doc.id, d)
   }
@@ -187,7 +310,16 @@ export async function syncCardTransactions(
       }))
     const result = reconcileCardTxs({ existing, incoming: items.map(incomingOf), fetchedFromMs: 0 })
 
+    // Adocao do manual: so no lado das compras, antes de qualquer gravacao.
+    const adoption =
+      kind === 'purchase'
+        ? await planAdoptions(db, { ownerId, person, cardId, cardManuals, existingDocs, result, importsById, foreignIds, usedManualIds })
+        : null
+    const adoptedBankIds = new Set(adoption?.forward.adoptions.map((a) => a.bankId))
+    const replaced = new Set(adoption?.reverse.reverse.map((r) => r.replacesDocId))
+
     for (const { docId, incoming } of result.updates) {
+      if (replaced.has(docId)) continue // o importado duplicado sai logo abaixo
       const item = itemById.get(incoming.bankId)
       const data = existingDocs.get(docId)
       const patch = changedFields(data, bankFields(item.entry, item.cents, cardId, kind))
@@ -216,7 +348,8 @@ export async function syncCardTransactions(
           batch.set(db.collection(IMPORTS).doc(fromBankId), { supersededBy: incoming.bankId }, { merge: true })
           batch.set(
             db.collection(IMPORTS).doc(incoming.bankId),
-            importDoc({ ownerId, person, itemId, account, bankName, item, kind, categorize, status: 'imported', reason: null, transactionId: docId, matched: null, stamp })
+            // adotado continua ligado ao manual: a conta bancaria nao pode reusa-lo como duplicado
+            importDoc({ ownerId, person, itemId, account, bankName, item, kind, categorize, status: 'imported', reason: null, transactionId: docId, matched: data.adoptedFromManual ? docId : null, stamp })
           )
         },
       })
@@ -226,29 +359,17 @@ export async function syncCardTransactions(
       const item = itemById.get(incoming.bankId)
       // Importacao ja existente (o dono apagou o lancamento, ou revisao pendente do caminho
       // antigo): o sync nao recria nem sobrescreve.
-      if (importsById.has(item.id) || foreignIds.has(item.id)) continue
-      let matched = null
-      let status = 'imported'
-      let reason = null
-      if (kind === 'purchase') {
-        matched = findDuplicate({ type: 'saida', amount: item.cents / 100, date: item.entry.date }, manual, usedManualIds)
-        if (matched) {
-          status = 'review'
-          reason = 'duplicate'
-          usedManualIds.add(matched)
-        }
-      }
+      if (importsById.has(item.id) || foreignIds.has(item.id) || adoptedBankIds.has(item.id)) continue
       const transactionId = `bank_${item.id}`
       const picked = categorize(item.entry, item.categoryNames)
-      counts.created += status === 'imported' ? 1 : 0
+      counts.created++
       units.push({
-        weight: status === 'imported' ? 2 : 1,
+        weight: 2,
         run: (batch) => {
           batch.set(
             db.collection(IMPORTS).doc(item.id),
-            importDoc({ ownerId, person, itemId, account, bankName, item, kind, categorize, picked, status, reason, transactionId: status === 'imported' ? transactionId : null, matched, stamp })
+            importDoc({ ownerId, person, itemId, account, bankName, item, kind, categorize, picked, status: 'imported', reason: null, transactionId, matched: null, stamp })
           )
-          if (status !== 'imported') return
           batch.set(db.collection(TRANSACTIONS).doc(transactionId), {
             ownerId,
             person,
@@ -267,15 +388,69 @@ export async function syncCardTransactions(
       })
     }
 
-    // So pendente sem par some; confirmada nunca (T-06-21).
+    // So pendente sem par some; confirmada nunca (T-06-21) e manual adotado nunca (D-12).
     for (const docId of result.vanished) {
       const data = existingDocs.get(docId)
+      if (data.adoptedFromManual) continue
       counts.removed++
       units.push({
         weight: 2,
         run: (batch) => {
           batch.delete(db.collection(TRANSACTIONS).doc(docId))
           batch.delete(db.collection(IMPORTS).doc(data.bankImportId))
+        },
+      })
+    }
+
+    if (!adoption) continue
+    counts.nearMiss += adoption.forward.nearMiss
+    counts.ambiguous += adoption.forward.ambiguous + adoption.reverse.ambiguous
+
+    // Para a frente: o manual vira a compra e nenhum segundo lancamento e criado.
+    for (const { docId, bankId, legacy } of adoption.forward.adoptions) {
+      const item = itemById.get(bankId)
+      usedManualIds.add(docId)
+      counts.adopted++
+      if (legacy) counts.adoptedLegacy++
+      units.push({
+        weight: 2,
+        run: (batch) => {
+          batch.update(db.collection(TRANSACTIONS).doc(docId), adoptedFields(item, cardId, bankName))
+          batch.set(
+            db.collection(IMPORTS).doc(bankId),
+            importDoc({ ownerId, person, itemId, account, bankName, item, kind, categorize, status: 'imported', reason: null, transactionId: docId, matched: docId, stamp })
+          )
+        },
+      })
+    }
+
+    // Reassentamento: o manual assume o bankImports e so entao o importado duplicado sai, tudo na
+    // mesma unidade (mesmo lote): ou acontece por inteiro ou nada muda.
+    for (const { docId, replacesDocId, bankId } of adoption.reverse.reverse) {
+      const data = existingDocs.get(replacesDocId)
+      const item = adoption.returned.has(replacesDocId) ? itemById.get(bankId) : null
+      const fields = item ? adoptedFields(item, cardId, bankName) : storedFields({ ...data, bankImportId: bankId }, cardId, bankName)
+      const link = { transactionId: docId, matchedTransactionId: docId, status: 'imported', reason: null }
+      const importData = adoption.links.has(bankId)
+        ? { ownerId, person, cardId, cardKind: kind, amount: fields.amount, ...link }
+        : importDoc({
+            ownerId, person, itemId, account, bankName, kind, categorize, stamp,
+            item: item ?? {
+              id: bankId,
+              cents: Math.round(Number(fields.amount) * 100),
+              entry: { description: fields.bankDescription, raw: fields.originalDescription, date: fields.date.toDate() },
+            },
+            picked: item ? undefined : { category: data.category ?? null, categoryId: data.categoryId ?? null },
+            status: link.status, reason: link.reason, transactionId: docId, matched: docId,
+          })
+      usedManualIds.add(docId)
+      counts.rehomed++
+      units.push({
+        weight: 3,
+        run: (batch) => {
+          batch.update(db.collection(TRANSACTIONS).doc(docId), fields)
+          batch.set(db.collection(IMPORTS).doc(bankId), importData, { merge: true })
+          batch.delete(db.collection(TRANSACTIONS).doc(replacesDocId))
         },
       })
     }

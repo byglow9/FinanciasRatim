@@ -45,7 +45,7 @@ export const PUSH_META = Object.freeze({
 })
 
 /** Titulo fixo da notificacao. */
-export const PUSH_TITLE = 'Vintém'
+export const PUSH_TITLE = 'OINC'
 
 /** @param {Array<[string, string]>} rows @returns {ReadonlyArray<{ id: string, t: string }>} */
 const list = (rows) => Object.freeze(rows.map(([id, t]) => Object.freeze({ id, t })))
@@ -144,7 +144,7 @@ export const PUSH_PHRASES = Object.freeze({
   'push-espontanea': Object.freeze({
     suave: list([
       ['pe-su-01', 'Passei só pra dizer oi. Está tudo bem por aí?'],
-      ['pe-su-02', 'Vintém por aqui. Quando der, dá uma espiada no mês, sem pressa.'],
+      ['pe-su-02', 'OINC por aqui. Quando der, dá uma espiada no mês, sem pressa.'],
       ['pe-su-03', 'Um cafuné do seu porquinho: você está indo bem.'],
       ['pe-su-04', 'Lembrando que cada gasto anotado é um passo pra um mês mais leve.'],
       ['pe-su-05', 'Respira fundo, o mês é longo e dá pra fazer dar certo.'],
@@ -152,7 +152,7 @@ export const PUSH_PHRASES = Object.freeze({
     ]),
     direto: list([
       ['pe-di-01', 'Abra o app e confira como está o mês.'],
-      ['pe-di-02', 'Vintém avisa: o app está esperando você.'],
+      ['pe-di-02', 'OINC avisa: o app está esperando você.'],
       ['pe-di-03', 'Já faz um tempo. Vale conferir seus lançamentos.'],
       ['pe-di-04', 'Passe no app para ver como está o mês.'],
       ['pe-di-05', 'Seus lançamentos recentes merecem uma conferida.'],
@@ -212,8 +212,8 @@ export function buildPushPayload({ situation, tone, categoryName, seed }) {
     slots,
     recent: [],
     rand: mulberry32(hashSeed(seed)),
-    bank: PUSH_PHRASES,
-    maxLen: PUSH_META[norm.situation].maxLen,
+    bank: /** @type {any} */ (PUSH_PHRASES),
+    maxLen: PUSH_META[/** @type {keyof typeof PUSH_META} */ (norm.situation)].maxLen,
   })
   if (chosen) return { title: PUSH_TITLE, body: chosen.text, phraseId: chosen.id }
 

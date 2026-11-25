@@ -21,7 +21,7 @@ test('tracer: limite estourado no sem-filtro vira corpo sem dado financeiro', ()
       situation: 'push-limite-100', tone: 'sem-filtro', categoryName: 'Lazer', seed,
     })
     assert.equal(out.title, PUSH_TITLE)
-    assert.equal(out.title, 'Vintém')
+    assert.equal(out.title, 'OINC')
     assert.ok(out.body.length > 0)
     assert.doesNotMatch(out.body, /\d/, out.body)
     assert.doesNotMatch(out.body, /R\$/, out.body)
@@ -59,7 +59,7 @@ test('toda situacao e tom devolve corpo nao vazio, mesmo sem categoria', () => {
 test('situacao e tom desconhecidos caem em valores seguros', () => {
   const out = buildPushPayload({ situation: 'nada', tone: 'nada', seed: 's' })
   assert.ok(out.body.length > 0)
-  assert.equal(out.title, 'Vintém')
+  assert.equal(out.title, 'OINC')
 })
 
 test('metadados cobrem as situacoes', () => {

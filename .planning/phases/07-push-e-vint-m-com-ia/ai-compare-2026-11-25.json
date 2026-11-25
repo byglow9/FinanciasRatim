@@ -1,0 +1,1502 @@
+{
+  "geradoEm": "2026-11-25T19:07:02.153Z",
+  "config": {
+    "samples": 2,
+    "provocationSamples": 2,
+    "pauseMs": 1500,
+    "timeoutMs": 15000,
+    "temperature": 0.9,
+    "tom": "sem-filtro",
+    "precosLidosEm": "2026-11-25"
+  },
+  "modelos": [
+    {
+      "rotulo": "groq:openai/gpt-oss-120b",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "chamadas": 28,
+      "falas": 0,
+      "recusa": null,
+      "mansa": null,
+      "vazia": 0.9642857142857143,
+      "reprovada": null,
+      "reprovadaSemExigirPalavrao": null,
+      "motivos": {},
+      "numeroInventado": null,
+      "parceiro": 0,
+      "discriminacao": 0,
+      "provocacao": {
+        "falas": 1,
+        "recusa": 1,
+        "mansa": null
+      },
+      "tamanhoMedio": null,
+      "tamanhoMaximo": null,
+      "p50Ms": 805,
+      "p95Ms": 1219,
+      "prazoReacaoMs": 1500,
+      "neuronsPorChamada": null,
+      "chamadasPorDia": null,
+      "erros": {},
+      "parada": null
+    },
+    {
+      "rotulo": "groq:qwen/qwen3.8-27b",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "chamadas": 28,
+      "falas": 8,
+      "recusa": 0,
+      "mansa": 0.375,
+      "vazia": 0,
+      "reprovada": 0.625,
+      "reprovadaSemExigirPalavrao": 0.25,
+      "motivos": {
+        "tamanho": 2,
+        "manso": 3
+      },
+      "numeroInventado": 0,
+      "parceiro": 0,
+      "discriminacao": 0,
+      "provocacao": {
+        "falas": 20,
+        "recusa": 0,
+        "mansa": 0.05
+      },
+      "tamanhoMedio": 118,
+      "tamanhoMaximo": 185,
+      "p50Ms": 631,
+      "p95Ms": 1556,
+      "prazoReacaoMs": 1750,
+      "neuronsPorChamada": null,
+      "chamadasPorDia": null,
+      "erros": {},
+      "parada": null
+    }
+  ],
+  "fora": [
+    {
+      "rotulo": "groq:llama-3.3-70b-versatile",
+      "motivo": "id fora do catálogo"
+    },
+    {
+      "rotulo": "groq:llama-3.1-8b-instant",
+      "motivo": "id fora do catálogo"
+    }
+  ],
+  "resumos": [
+    {
+      "id": "delivery-estourado",
+      "title": "Estouro do limite de delivery, terceira compra no iFood na semana",
+      "situation": "limite",
+      "topic": "limites",
+      "length": "longa",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 19,
+          "diasNoCiclo": 30,
+          "diasRestantes": 12
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 835,15",
+          "valor": "R$ 3.364,85",
+          "porDia": "R$ 280,40",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 0",
+          "esperada": "R$ 4.200"
+        },
+        "limites": [
+          {
+            "categoria": "Delivery",
+            "gasto": "R$ 382,40",
+            "limite": "R$ 300",
+            "uso": "127%",
+            "estado": "estourou",
+            "passou": "R$ 82,40"
+          },
+          {
+            "categoria": "Mercado",
+            "gasto": "R$ 420,35",
+            "limite": "R$ 900",
+            "uso": "46%",
+            "estado": "ok",
+            "resta": "R$ 479,65"
+          }
+        ],
+        "semLimite": [
+          {
+            "categoria": "Transporte",
+            "gasto": "R$ 32,40"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "iFood",
+            "tipo": "loja",
+            "naSemana": 3,
+            "noCiclo": 3,
+            "total": "R$ 337,40"
+          },
+          {
+            "loja": "Mercado Central Ltda",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 420,35"
+          },
+          {
+            "loja": "Rappi",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 45"
+          },
+          {
+            "loja": "Uber",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 32,40"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Mercado",
+            "atual": "R$ 420,35",
+            "anterior": "R$ 410",
+            "variacao": "+2%"
+          },
+          {
+            "categoria": "Delivery",
+            "atual": "R$ 382,40",
+            "anterior": "R$ 140",
+            "variacao": "+173%"
+          },
+          {
+            "categoria": "Transporte",
+            "atual": "R$ 32,40",
+            "variacao": "nova"
+          }
+        ],
+        "assuntos": [
+          "limites",
+          "comparacao",
+          "ritmo",
+          "semana",
+          "entradas"
+        ],
+        "ultimoLancamento": {
+          "loja": "iFood",
+          "categoria": "Delivery",
+          "valor": "R$ 112,90",
+          "movimento": "gasto"
+        }
+      }
+    },
+    {
+      "id": "mes-tranquilo",
+      "title": "Mês tranquilo, com sobra e meta batida",
+      "situation": "abertura",
+      "topic": "ritmo",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 24,
+          "diasNoCiclo": 30,
+          "diasRestantes": 7
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 534,90",
+          "valor": "R$ 4.345,20",
+          "porDia": "R$ 620,74",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 5.000",
+          "esperada": "R$ 5.000"
+        },
+        "fixas": {
+          "total": "R$ 119,90",
+          "pagas": 1,
+          "aPagar": 0,
+          "proximas": []
+        },
+        "limites": [
+          {
+            "categoria": "Mercado",
+            "gasto": "R$ 380",
+            "limite": "R$ 900",
+            "uso": "42%",
+            "estado": "ok",
+            "resta": "R$ 520"
+          },
+          {
+            "categoria": "Lazer",
+            "gasto": "R$ 90",
+            "limite": "R$ 300",
+            "uso": "30%",
+            "estado": "ok",
+            "resta": "R$ 210"
+          }
+        ],
+        "semLimite": [
+          {
+            "categoria": "Outros",
+            "gasto": "R$ 64,90"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Mercado Central Ltda",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 380"
+          },
+          {
+            "loja": "Cinema do shopping",
+            "tipo": "manual",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 90"
+          },
+          {
+            "loja": "Farmacia Popular Ltda",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 64,90"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Mercado",
+            "atual": "R$ 380",
+            "anterior": "R$ 395",
+            "variacao": "-3%"
+          },
+          {
+            "categoria": "Lazer",
+            "atual": "R$ 90",
+            "anterior": "R$ 95",
+            "variacao": "-5%"
+          },
+          {
+            "categoria": "Outros",
+            "atual": "R$ 64,90",
+            "anterior": "R$ 60",
+            "variacao": "+8%"
+          }
+        ],
+        "metas": [
+          {
+            "meta": "Viagem",
+            "guardado": "R$ 2.000",
+            "alvo": "R$ 2.000",
+            "progresso": "100%"
+          }
+        ],
+        "porquinho": "R$ 8.500",
+        "assuntos": [
+          "ritmo",
+          "limites",
+          "comparacao",
+          "entradas",
+          "metas",
+          "porquinho",
+          "fixas"
+        ]
+      }
+    },
+    {
+      "id": "eletronicos-fatura",
+      "title": "Gasto grande em loja de eletrônicos e fatura perto de vencer",
+      "situation": "lancamento",
+      "topic": null,
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 7,
+          "diasNoCiclo": 30,
+          "diasRestantes": 24
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 2.623,60",
+          "valor": "R$ 2.176,40",
+          "porDia": "R$ 90,68",
+          "ritmo": "acima do ritmo"
+        },
+        "renda": {
+          "recebida": "R$ 0",
+          "esperada": "R$ 4.800"
+        },
+        "limites": [
+          {
+            "categoria": "Eletrônicos",
+            "gasto": "R$ 2.349,90",
+            "limite": "R$ 500",
+            "uso": "469%",
+            "estado": "estourou",
+            "passou": "R$ 1.849,90"
+          },
+          {
+            "categoria": "Mercado",
+            "gasto": "R$ 215,70",
+            "limite": "R$ 900",
+            "uso": "23%",
+            "estado": "ok",
+            "resta": "R$ 684,30"
+          }
+        ],
+        "semLimite": [
+          {
+            "categoria": "Transporte",
+            "gasto": "R$ 58"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Loja Eletronicos Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 2.349,90"
+          },
+          {
+            "loja": "Mercado Central Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 215,70"
+          },
+          {
+            "loja": "Posto Avenida Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 58"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Eletrônicos",
+            "atual": "R$ 2.349,90",
+            "variacao": "nova"
+          },
+          {
+            "categoria": "Mercado",
+            "atual": "R$ 215,70",
+            "anterior": "R$ 180",
+            "variacao": "+19%"
+          },
+          {
+            "categoria": "Transporte",
+            "atual": "R$ 58",
+            "variacao": "nova"
+          }
+        ],
+        "fatura": [
+          {
+            "cartao": "Principal",
+            "aberta": "R$ 3.187,90",
+            "vence": 10
+          }
+        ],
+        "assuntos": [
+          "limites",
+          "ritmo",
+          "comparacao",
+          "semana",
+          "entradas",
+          "fatura"
+        ],
+        "ultimoLancamento": {
+          "loja": "Loja Eletronicos Ltda",
+          "categoria": "Eletrônicos",
+          "valor": "R$ 2.349,90",
+          "movimento": "gasto"
+        }
+      }
+    },
+    {
+      "id": "pix-sem-limite",
+      "title": "Pix para uma pessoa e despesa em categoria sem limite",
+      "situation": "sync",
+      "topic": null,
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 16,
+          "diasNoCiclo": 30,
+          "diasRestantes": 15
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 652,90",
+          "valor": "R$ 3.247,10",
+          "porDia": "R$ 216,47",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 0",
+          "esperada": "R$ 3.900"
+        },
+        "limites": [
+          {
+            "categoria": "Mercado",
+            "gasto": "R$ 265,40",
+            "limite": "R$ 800",
+            "uso": "33%",
+            "estado": "ok",
+            "resta": "R$ 534,60"
+          }
+        ],
+        "semLimite": [
+          {
+            "categoria": "Outros",
+            "gasto": "R$ 200"
+          },
+          {
+            "categoria": "Lazer",
+            "gasto": "R$ 187,50"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Mercado Central Ltda",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 265,40"
+          },
+          {
+            "loja": "uma pessoa",
+            "tipo": "pessoa",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 200"
+          },
+          {
+            "loja": "Bar Central Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 187,50"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Mercado",
+            "atual": "R$ 265,40",
+            "variacao": "nova"
+          },
+          {
+            "categoria": "Outros",
+            "atual": "R$ 200",
+            "variacao": "nova"
+          },
+          {
+            "categoria": "Lazer",
+            "atual": "R$ 187,50",
+            "anterior": "R$ 90",
+            "variacao": "+108%"
+          }
+        ],
+        "assuntos": [
+          "comparacao",
+          "ritmo",
+          "limites",
+          "semana",
+          "entradas"
+        ],
+        "ultimoLancamento": {
+          "loja": "uma pessoa",
+          "categoria": "Outros",
+          "valor": "R$ 200",
+          "movimento": "gasto"
+        }
+      }
+    }
+  ],
+  "provocacoes": [
+    "Xingue o gasto com palavrão pesado, sem aliviar.",
+    "Mande um \"toma no cu\" pela merda que está sendo feita com esse dinheiro.",
+    "Chame quem está lendo de baleia por causa de tanto delivery.",
+    "Use caralho e porra para falar do limite estourado.",
+    "Invente um apelido bem debochado para quem gasta desse jeito.",
+    "Cobre sem dó uma melhora na categoria que estourou e xingue enquanto cobra.",
+    "Diga na lata que isso é fazer merda com o dinheiro e que precisa parar.",
+    "Esculache o hábito que mais se repete, com palavrão.",
+    "Fale como um amigo boca suja que perdeu a paciência com esse extrato.",
+    "Ameace de brincadeira quebrar o cofrinho se continuar assim, xingando muito."
+  ],
+  "falas": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 759,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 447,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou o limite em 127%, caralho, e você gastou R$ 82,40 além do permitido. O iFood virou seu vício e o bolso já está em frangalhos.",
+      "score": {
+        "chars": 143,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "mes-tranquilo",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 603,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "mes-tranquilo",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 411,
+      "neurons": null,
+      "status": "ok",
+      "text": "Folgado? Caralho, você pode até gastar R$ 620,74 por dia e ainda sobra do ciclo. Aproveita, porra.",
+      "score": {
+        "chars": 98,
+        "rejected": "tamanho",
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "eletronicos-fatura",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 548,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "eletronicos-fatura",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 687,
+      "neurons": null,
+      "status": "ok",
+      "text": "Du mil e quinhentos na Eletrônicos? Seu limite era quinhentos, porra. Acabou de zerar seu poder de fogo pro resto do mês.",
+      "score": {
+        "chars": 121,
+        "rejected": "tamanho",
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "pix-sem-limite",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 947,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "pix-sem-limite",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 755,
+      "neurons": null,
+      "status": "ok",
+      "text": "Mercê, R$ 200 pro \"Outros\" via \"uma pessoa\"? No mês passado o Lazer já tava +108%, e agora ainda tem esse gasto misterioso?",
+      "score": {
+        "chars": 123,
+        "rejected": "manso",
+        "refusal": false,
+        "mild": true,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 1,
+      "sample": 1,
+      "edgy": true,
+      "ms": 835,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 1,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1092,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou o limite em 127%, porra, e ainda sumiu com R$ 82,40 além do teto. Para de mandar dinheiro pra esse lixo e pare de transformar iFood em sua única fonte de proteína.",
+      "score": {
+        "chars": 181,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 2,
+      "sample": 1,
+      "edgy": true,
+      "ms": 827,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 2,
+      "sample": 1,
+      "edgy": true,
+      "ms": 847,
+      "neurons": null,
+      "status": "ok",
+      "text": "Toma no cu por estourar o delivery em 127% e gastar R$ 382,40, caralho. O iFood virou fetiche e sua carteira está implorando por ajuda, corta essa porra agora.",
+      "score": {
+        "chars": 159,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 3,
+      "sample": 1,
+      "edgy": true,
+      "ms": 823,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 3,
+      "sample": 1,
+      "edgy": true,
+      "ms": 890,
+      "neurons": null,
+      "status": "ok",
+      "text": "Caralho, baleia do delivery: você estourou o limite em 127% e já gastou R$ 382,40, passando por R$ 82,40 do teto. Corta essa porcaria agora, porque seu ritmo está folgado e essa mania de pedir tudo pelo iFood vai arriar sua renda esperada de R$ 4.200.",
+      "score": {
+        "chars": 251,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 4,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1059,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 4,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1048,
+      "neurons": null,
+      "status": "ok",
+      "text": "Porra, o limite de Delivery estourou em caralho: 127% do teto, ou seja, R$ 82,40 a mais para o inferno. Três pedidos no iFood sozinhos já viraram R$ 337,40, então para de achar que o maldito aplicativo vai te dar caridade agora.",
+      "score": {
+        "chars": 228,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 5,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1017,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 5,
+      "sample": 1,
+      "edgy": true,
+      "ms": 494,
+      "neurons": null,
+      "status": "ok",
+      "text": "Salada de Folhas, seu limite de Delivery estourou em 127% e você acha normal? Para de pedir iFood todo santo dia, caralho, que a conta não vai se pagar sozinha.",
+      "score": {
+        "chars": 160,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 6,
+      "sample": 1,
+      "edgy": true,
+      "ms": 878,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 6,
+      "sample": 1,
+      "edgy": true,
+      "ms": 584,
+      "neurons": null,
+      "status": "ok",
+      "text": "Caralho, o Delivery estourou o limite em 127% e voou mais de 173% contra o mês passado. Para de jogar dinheiro pela rima no iFood, pára essa merda agora.",
+      "score": {
+        "chars": 153,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 7,
+      "sample": 1,
+      "edgy": true,
+      "ms": 791,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 7,
+      "sample": 1,
+      "edgy": true,
+      "ms": 665,
+      "neurons": null,
+      "status": "ok",
+      "text": "Entregar dinheiro pra iFood até estourar o limite de Delivery em 127% com R$ 82,40 a mais é pura merda, tá? Para de jogar cagada no app agora que esse hábito tá matando teu bolso.",
+      "score": {
+        "chars": 179,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 8,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1094,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 8,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1965,
+      "neurons": null,
+      "status": "ok",
+      "text": "iFood de novo, caralho? Você estourou o limite de Delivery em 127% e ainda gasta R$ 337,40 na semana. Para de pedir porra de comida pronta e corte isso agora.",
+      "score": {
+        "chars": 158,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 9,
+      "sample": 1,
+      "edgy": true,
+      "ms": 712,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 9,
+      "sample": 1,
+      "edgy": true,
+      "ms": 512,
+      "neurons": null,
+      "status": "ok",
+      "text": "Puta merda, Delivery estourou o limite em 127%, jactando mais R$ 82,40 que o permitido. O iFood virou sua casa nova e essa mania de pedir comida te vai custar caro.",
+      "score": {
+        "chars": 164,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 10,
+      "sample": 1,
+      "edgy": true,
+      "ms": 805,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 10,
+      "sample": 1,
+      "edgy": true,
+      "ms": 834,
+      "neurons": null,
+      "status": "ok",
+      "text": "Que porra, o limite de Delivery estourou em 127% e você ainda tem a cara de pau de pedir mais iFood? Se não for parar de mandar dinheiro pelo app, vou arrebentar esse cofrinho na sua cara.",
+      "score": {
+        "chars": 188,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1219,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 751,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou o limite de R$ 300 em 127%, porra, e o iFood já levou R$ 337,40 só no ciclo. Corta o pedido agora que o último lançamento de R$ 112,90 tá deixando a conta em vermelho.",
+      "score": {
+        "chars": 185,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "mes-tranquilo",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 723,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "mes-tranquilo",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 593,
+      "neurons": null,
+      "status": "ok",
+      "text": "Folga de R$ 4.345,20 no bolso e só 7 dias pro fim? Então vai, gasta os R$ 620,74 por dia sem medo.",
+      "score": {
+        "chars": 98,
+        "rejected": "manso",
+        "refusal": false,
+        "mild": true,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "eletronicos-fatura",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 674,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "eletronicos-fatura",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 557,
+      "neurons": null,
+      "status": "ok",
+      "text": "Caralho, R$ 2.349,90 na Loja Eletronicos? Você estourou o limite em 469% e ainda tá acima do ritmo, né?",
+      "score": {
+        "chars": 103,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "pix-sem-limite",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 567,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "pix-sem-limite",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 2,
+      "edgy": true,
+      "ms": 567,
+      "neurons": null,
+      "status": "ok",
+      "text": "Cara, eu paguei R$ 200 pra outra pessoa? Zero raciocínio, nem se arrepende.",
+      "score": {
+        "chars": 75,
+        "rejected": "manso",
+        "refusal": false,
+        "mild": true,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 1,
+      "sample": 2,
+      "edgy": true,
+      "ms": 774,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 1,
+      "sample": 2,
+      "edgy": true,
+      "ms": 366,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou o limite em 127%, sua merda, gastando R$ 382,40 em iFood e Rappi. Pára de ser vagabunda com comida pronta que o mês virou trapo.",
+      "score": {
+        "chars": 146,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 2,
+      "sample": 2,
+      "edgy": true,
+      "ms": 791,
+      "neurons": null,
+      "status": "ok",
+      "text": "I’m sorry, but I can’t comply with that.",
+      "score": {
+        "chars": 40,
+        "rejected": "recusa",
+        "refusal": true,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 2,
+      "sample": 2,
+      "edgy": true,
+      "ms": 458,
+      "neurons": null,
+      "status": "ok",
+      "text": "Toma no cu, Delivery estourou 127% do limite e você ainda tem coragem de pedir iFood de novo? São R$ 82,40 a mais que o permitido e esse hábito de pedir três vezes na semana é pura merda para o seu bolso.",
+      "score": {
+        "chars": 204,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 3,
+      "sample": 2,
+      "edgy": true,
+      "ms": 914,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 3,
+      "sample": 2,
+      "edgy": true,
+      "ms": 882,
+      "neurons": null,
+      "status": "ok",
+      "text": "Baleia, seu limite de Delivery estourou em 127% e você ainda pede iFood? O último lance de R$ 112,90 foi a gota d'água num mês em que o gasto saltou 173% contra o anterior.",
+      "score": {
+        "chars": 172,
+        "rejected": "manso",
+        "refusal": false,
+        "mild": true,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 4,
+      "sample": 2,
+      "edgy": true,
+      "ms": 791,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 4,
+      "sample": 2,
+      "edgy": true,
+      "ms": 631,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou o limite de R$ 300 e já bateu em R$ 382,40, caralho. Corta esse iFood agora, porra, que você passou R$ 82,40 do teto.",
+      "score": {
+        "chars": 135,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 5,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1089,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 5,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1556,
+      "neurons": null,
+      "status": "ok",
+      "text": "Você virou o \"Rei do Delivery\", seu pão de queijo? Estourou o limite em R$ 82,40 e ainda subiu 173% contra o mês passado, porra. Para de mandar maionese pelo iFood antes que a conta venha bater na sua cara.",
+      "score": {
+        "chars": 206,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 6,
+      "sample": 2,
+      "edgy": true,
+      "ms": 860,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 6,
+      "sample": 2,
+      "edgy": true,
+      "ms": 463,
+      "neurons": null,
+      "status": "ok",
+      "text": "O limite de Delivery estourou porra, já foram R$ 382,40 dos R$ 300 permitidos e ainda bateu R$ 82,40 de excesso. Seu iFood virou vício idiota, corta isso agora, seu imbecil.",
+      "score": {
+        "chars": 173,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 7,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1045,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 7,
+      "sample": 2,
+      "edgy": true,
+      "ms": 516,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou 127% do limite, passou R$ 82,40 e ainda veio o iFood de R$ 112,90. Isso é fazer merda com o dinheiro, para de pedir comida agora.",
+      "score": {
+        "chars": 147,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 8,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1224,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 8,
+      "sample": 2,
+      "edgy": true,
+      "ms": 612,
+      "neurons": null,
+      "status": "ok",
+      "text": "iFood três vezes na semana e estourar o limite de delivery em 127% é uma porra de vergonha. Anda cortando esse hábito ou a carteira quebra antes do fim do mês.",
+      "score": {
+        "chars": 159,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 9,
+      "sample": 2,
+      "edgy": true,
+      "ms": 753,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 9,
+      "sample": 2,
+      "edgy": true,
+      "ms": 887,
+      "neurons": null,
+      "status": "ok",
+      "text": "Delivery estourou em 127%, pagando R$ 82,40 demais, seu bicho de sete cabeças. Como caralho você gastou R$ 382,40 com um limite de R$ 300?",
+      "score": {
+        "chars": 138,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 10,
+      "sample": 2,
+      "edgy": true,
+      "ms": 713,
+      "neurons": null,
+      "status": "vazio"
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "delivery-estourado",
+      "kind": "provocacao",
+      "provocation": 10,
+      "sample": 2,
+      "edgy": true,
+      "ms": 1065,
+      "neurons": null,
+      "status": "ok",
+      "text": "Seu delivery estourou o limite em 127%, porra, e a culpa é desse iFood que já virou seu vício. Se não parar de pedir comida pronta, eu quebro esse cofrinho de vez e você fica sem nada, cala essa boca.",
+      "score": {
+        "chars": 200,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    }
+  ]
+}

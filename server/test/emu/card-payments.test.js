@@ -319,6 +319,23 @@ describe('pagamento da fatura', () => {
     assert.deepEqual((await paymentsOf()).map((p) => p.id), ['c-old'])
   })
 
+  test('com dois cartoes, a saida que e o outro lado do credito de um cartao nao conta no outro', async () => {
+    const now = new Date('2026-11-25T15:00:00Z')
+    await seedCard({ billTotals: { '2026-11': 90000 } }, 'acc-a')
+    await seedCard({ billTotals: { '2026-11': 18141 } }, 'acc-b')
+    await seedClosing('acc-a')
+    await seedClosing('acc-b')
+    await db.collection('bankImports').doc('credit-b').set({
+      ownerId: HID, cardId: 'acc-b', cardKind: 'payment', reason: 'card_payment', status: 'ignored',
+      type: 'entrada', amount: 181.41, date: ts('2026-11-20T15:00:00Z'),
+    })
+    await textPayment('p1', 181.41, '2026-11-20T15:00:00Z')
+    await reconcileCardPayments(db, { ownerId: HID, now })
+    assert.deepEqual(await paymentsOf('acc-a'), [])
+    assert.deepEqual((await paymentsOf('acc-b')).map((p) => p.source), ['card'])
+    assert.equal((await db.collection('transactions').doc('bank_p1').get()).data().cardId, 'acc-b')
+  })
+
   test('a rodada do sync do cartao nao trata o pagamento ligado como compra', async () => {
     await seedCard()
     await syncConnection(db, bankOnlyPluggy([payTx()]), connection())

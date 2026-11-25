@@ -104,10 +104,7 @@ export async function reconcileCardPayments(db, { ownerId, now = new Date() }) {
     outflows.push({ id: doc.id, cents: ev.cents, dateMs: ev.dateMs, origin: 'self' })
   }
 
-  const claimed = new Set() // saidas ja ligadas a um cartao: nunca contam em dois
-  const links = new Map() // id do lancamento do pagamento -> { cardId, billMonth }
-  const manyCards = cardsSnap.size > 1
-
+  const states = [] // evidencias proprias de cada cartao
   for (const cardDoc of cardsSnap.docs) {
     const cardId = cardDoc.id
     const card = cardDoc.data()
@@ -132,14 +129,33 @@ export async function reconcileCardPayments(db, { ownerId, now = new Date() }) {
       if (settled.some((p) => p.source !== 'card' && sameOperation(credit, p))) continue
       cardCredits.push(credit)
     }
+    states.push({ cardDoc, cardId, card, closingDay, cardCredits, settled })
+  }
 
+  const fresh = outflows.filter(
+    (o) => !states.some((s) => s.settled.some((p) => p.source === 'card' && sameOperation(o, p)))
+  )
+
+  // Antes de ligar: a saida que e o outro lado de um credito visto num cartao pertence a ele,
+  // qualquer que seja a ordem dos cartoes.
+  const reserved = new Map() // id da saida -> cardId
+  for (const { cardId, cardCredits } of states) {
+    const free = fresh.filter((o) => !reserved.has(o.id))
+    for (const p of detectCardPayments({ cardCredits, bankOutflows: free })) {
+      if (p.source === 'card' && p.linkedBankId) reserved.set(p.linkedBankId, cardId)
+    }
+  }
+
+  const claimed = new Set() // saidas ja ligadas a um cartao: nunca contam em dois
+  const links = new Map() // id do lancamento do pagamento -> { cardId, billMonth }
+  const manyCards = cardsSnap.size > 1
+
+  for (const { cardDoc, cardId, card, closingDay, cardCredits, settled } of states) {
     const detected = detectCardPayments({
       billTotals: reachableBillTotals(card.billTotals, settled, sinceMs),
       closingDay,
       cardCredits,
-      bankOutflows: outflows.filter(
-        (o) => !claimed.has(o.id) && !settled.some((p) => p.source === 'card' && sameOperation(o, p))
-      ),
+      bankOutflows: fresh.filter((o) => !claimed.has(o.id) && (reserved.get(o.id) ?? cardId) === cardId),
     })
 
     const kept = []

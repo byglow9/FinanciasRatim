@@ -50,7 +50,7 @@ test('toast.tsx tem o item custom claro, Esc e o rotulo do Vintem, e o toast com
   const src = code(TOAST)
   assert.match(src, /custom\?: React\.ReactNode/, 'ToastOptions sem custom')
   const body = code(VINTEM_TOAST)
-  assert.ok(body.includes('bg-surface-2') && body.includes('border-border'), 'balao do Vintem sem superficie clara com borda')
+  assert.ok(body.includes('bg-action') && body.includes('text-action-text'), 'balao do Vintem deve ser verde (bg-action)')
   assert.ok(src.includes('Escape'), 'item custom sem Esc')
   assert.ok(src.includes('aria-label="Dispensar fala do OINC"'), 'sem o rotulo "Dispensar fala do OINC"')
   assert.ok(src.includes('aria-label="Fechar aviso"') && src.includes('bg-action'), 'o toast comum perdeu o fundo de acao')
@@ -70,7 +70,7 @@ test('VintemToast: fala em texto React, sem line-clamp, sem HTML bruto e Vintem 
   assert.match(src, /follow=\{false\}/, 'Vintem do toast nao deve seguir o cursor')
   assert.ok(!/<button/.test(src), 'o Vintem do toast nao e interativo')
   assert.match(src, /\.react\(reaction\)/, 'o toast nao roda a reacao em miniatura')
-  assert.ok(!/bg-action|bg-primary/.test(src), 'toast do Vintem com fundo de acao')
+  assert.ok(!/bg-primary/.test(src), 'toast do Vintem com fundo primario')
 })
 
 test('o provedor decide pelo nucleo, e melhor esforco e nao registra valor nem nome', () => {

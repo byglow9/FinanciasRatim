@@ -25,10 +25,10 @@ export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastB
 
   const left = side === 'left'
   return (
-    <div className={cn('relative pb-16 pt-1', left ? 'pl-6' : 'pr-6')}>
+    <div className={cn('relative pb-28 pt-1', left ? 'pl-6' : 'pr-6')}>
       <div
         className={cn(
-          'anim-peek-bubble relative min-w-0 max-w-[210px] rounded-2xl border border-border bg-surface-2 px-3 py-2 text-foreground shadow-float',
+          'anim-peek-bubble relative min-w-0 max-w-[210px] rounded-2xl bg-action px-3 py-2 text-action-text shadow-float',
           left ? 'origin-bottom-left' : 'origin-bottom-right',
         )}
       >
@@ -38,14 +38,14 @@ export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastB
         <span
           aria-hidden="true"
           className={cn(
-            'absolute -bottom-[7px] h-3.5 w-3.5 rotate-45 border-b border-r border-border bg-surface-2',
+            'absolute -bottom-[7px] h-3.5 w-3.5 rotate-45 rounded-br-[3px] bg-action',
             left ? 'left-6' : 'right-6',
           )}
         />
       </div>
       {/* Vintem grande, inclinado na diagonal, com metade do corpo para fora da borda da tela. */}
       <div
-        className={cn('pointer-events-none absolute bottom-[-8px]', left ? '-left-8' : '-right-8')}
+        className={cn('pointer-events-none absolute bottom-0', left ? '-left-8' : '-right-8')}
         aria-hidden="true"
       >
         <div className="anim-peek-vintem [&_ellipse[id$=-shadow]]:hidden">

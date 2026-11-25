@@ -337,7 +337,8 @@ describe('pagamento da fatura', () => {
   })
 
   test('a rodada do sync do cartao nao trata o pagamento ligado como compra', async () => {
-    await seedCard()
+    // historico ja aplicado (06-19): sem o marcador o sync automatico nao grava compras
+    await seedCard({ historyBaselineAt: ts('2026-01-01T00:00:00Z') })
     await syncConnection(db, bankOnlyPluggy([payTx()]), connection())
     const nubank = {
       async fetchItem(itemId) {

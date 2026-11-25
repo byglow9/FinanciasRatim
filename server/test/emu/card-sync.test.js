@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { Timestamp } from 'firebase-admin/firestore'
 import { initAdmin } from '../../scripts/lib/admin.js'
 import { syncConnection } from '../../src/sync.js'
-import { CARD_HISTORY_FLOOR } from '../../src/card-sync.js'
+import { CARD_HISTORY_FLOOR, syncCardTransactions } from '../../src/card-sync.js'
 import { accumulatedBalance } from '../../../shared/core/ledger.js'
 import { resetEmulators } from './_helpers.js'
 
@@ -210,6 +210,22 @@ function sixPurchases() {
   ]
 }
 
+// Libera o cartao como o dono faz ao aplicar o historico (06-19): sem o marcador o sync
+// automatico nao grava compras. Carimbo fixo e so quando ausente, para nao mexer nos retratos.
+const BASELINE_AT = Timestamp.fromMillis(Date.UTC(2026, 0, 1))
+
+async function releasedRun(db, state, conn) {
+  if (typeof conn.ownerId === 'string') {
+    for (const account of state.accounts ?? [BANK_ACCOUNT, CREDIT_ACCOUNT]) {
+      if (account.type !== 'CREDIT') continue
+      const ref = db.collection('cards').doc(account.id)
+      if ((await ref.get()).data()?.historyBaselineAt) continue
+      await ref.set({ ownerId: conn.ownerId, historyBaselineAt: BASELINE_AT }, { merge: true })
+    }
+  }
+  return syncConnection(db, cardPluggy(state), conn)
+}
+
 // Pluggy falsa com as transacoes do cartao em uma lista mutavel; registra as buscas.
 function cardPluggy(state) {
   const base = fakePluggy()
@@ -250,7 +266,7 @@ describe('compras do cartao', () => {
     importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
     ...extra,
   })
-  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const run = (state, extra) => releasedRun(db, state, connection(extra))
   const cardTxs = async (ownerId = HID) =>
     (await db.collection('transactions').where('ownerId', '==', ownerId).where('cardId', '==', 'acc-credit').get()).docs
 
@@ -464,7 +480,7 @@ describe('agregados do cartao', () => {
     importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
     ...extra,
   })
-  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const run = (state, extra) => releasedRun(db, state, connection(extra))
   const cardDoc = async () => (await db.collection('cards').doc('acc-credit').get()).data()
 
   test('seis compras de exemplo: billTotals 18141, pendingCount 6, sem sem-mes; segunda rodada idempotente', async () => {
@@ -564,7 +580,7 @@ describe('isolamento e privacidade do cartao', () => {
     importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
     ...extra,
   })
-  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const run = (state, extra) => releasedRun(db, state, connection(extra))
 
   test('dois casais: cada rodada so toca o proprio ownerId e cardSettings alheio e ignorado', async () => {
     // casal B ja tem dados do cartao e uma configuracao com o MESMO accountId do casal A
@@ -717,7 +733,7 @@ describe('adocao do lancamento manual (D-12, D-13)', () => {
     importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
     ...extra,
   })
-  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const run = (state, extra) => releasedRun(db, state, connection(extra))
   const tx = (id) => db.collection('transactions').doc(id)
   const read = async (id) => (await tx(id).get()).data()
   const exists = async (id) => (await tx(id).get()).exists
@@ -1046,7 +1062,7 @@ describe('historico longo e isolamento da adocao (D-12, D-13)', () => {
     importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
     ...extra,
   })
-  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const run = (state, extra) => releasedRun(db, state, connection(extra))
   const read = async (id) => (await db.collection('transactions').doc(id).get()).data()
   const sizeOf = async (name) => (await db.collection(name).get()).size
 
@@ -1231,5 +1247,273 @@ describe('historico longo e isolamento da adocao (D-12, D-13)', () => {
     assert.equal(summary.cardTxs.created, 449)
     assert.equal(await sizeOf('transactions'), 451)
     assert.equal(await sizeOf('bankImports'), 451)
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Historico do cartao: marcador, ensaio e aplicacao (06-19, D-13). Dados sinteticos.
+// ---------------------------------------------------------------------------------------------
+
+// Retrato completo, sem excluir carimbos: serve para provar que NADA foi gravado.
+async function rawSnapshot(db) {
+  const out = {}
+  for (const name of ['transactions', 'bankImports', 'cards', 'cardSettings', 'bankConnections']) {
+    const snap = await db.collection(name).get()
+    for (const doc of snap.docs) {
+      out[`${name}/${doc.id}`] = JSON.stringify(Object.entries(doc.data()).sort(([a], [b]) => (a < b ? -1 : 1)))
+    }
+  }
+  return out
+}
+
+// db que recusa qualquer lote: o ensaio nao pode sequer montar um.
+function dbWithoutBatches(db) {
+  return new Proxy(db, {
+    get(target, prop) {
+      if (prop === 'batch') {
+        return () => {
+          throw new Error('o ensaio nao pode gravar')
+        }
+      }
+      const value = target[prop]
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+}
+
+// db cujo lote de numero `failAt` falha na confirmacao.
+function dbFailingBatch(db, failAt) {
+  let n = 0
+  return new Proxy(db, {
+    get(target, prop) {
+      if (prop === 'batch') {
+        return () => {
+          const batch = target.batch()
+          const mine = ++n
+          return {
+            set: (...args) => batch.set(...args),
+            update: (...args) => batch.update(...args),
+            delete: (...args) => batch.delete(...args),
+            commit: () => (mine === failAt ? Promise.reject(new Error('falha simulada no lote')) : batch.commit()),
+          }
+        }
+      }
+      const value = target[prop]
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+}
+
+// Um pouco de tudo: compras ja importadas por versao anterior, manuais, revisao e id recriado.
+async function seedHistory(db) {
+  const date = daysAgo(3)
+  const at = stampOf(date)
+  const imported = (bankId, amount, description, cardStatus) => ({
+    ownerId: HID, person: 'ela', type: 'saida', amount, description, category: 'Outros', categoryId: 'outros',
+    date: at, source: 'bank', bankImportId: bankId, bankDescription: description, cardId: 'acc-credit',
+    cardKind: 'purchase', cardStatus,
+  })
+  const link = (extra = {}) => ({
+    ownerId: HID, person: 'ela', cardId: 'acc-credit', status: 'imported', matchedTransactionId: null, ...extra,
+  })
+  const seeds = {
+    'transactions/bank_upd': imported('upd', 10, 'Loja Atualiza', 'pending'),
+    'transactions/bank_old-rb': imported('old-rb', 12, 'Loja Recriada', 'posted'),
+    'transactions/bank_gone': imported('gone', 99, 'Loja Sumida', 'pending'),
+    'transactions/bank_rh': imported('rh', 77, 'Loja Reassenta', 'posted'),
+    'bankImports/upd': link({ transactionId: 'bank_upd' }),
+    'bankImports/old-rb': link({ transactionId: 'bank_old-rb' }),
+    'bankImports/gone': link({ transactionId: 'bank_gone' }),
+    'bankImports/rh': link({ transactionId: 'bank_rh' }),
+    'bankImports/c-rev': link({ status: 'review', reason: 'duplicate', transactionId: null, matchedTransactionId: 'legacy-rev' }),
+    'bankImports/c-del': link({ transactionId: 'bank_c-del' }),
+    'transactions/man-card': manualDoc(date, 45),
+    'transactions/man-leg': legacyDoc(date, 32),
+    'transactions/man-rh': manualDoc(date, 77),
+    'transactions/man-near': manualDoc(date, 55, { description: 'almoco com a ana' }),
+    'transactions/man-amb': manualDoc(date, 20),
+    'transactions/man-dup': legacyDoc(date, 10),
+    'transactions/legacy-rev': legacyDoc(date, 66),
+  }
+  for (const [path, data] of Object.entries(seeds)) {
+    const [name, id] = path.split('/')
+    await db.collection(name).doc(id).set(data)
+  }
+  const row = (id, description, amount, extra = {}) => purchase(id, description, amount, { date, ...extra })
+  return {
+    card: [
+      row('upd', 'LOJA ATUALIZA', 10, { status: 'POSTED' }),
+      row('new-rb', 'LOJA RECRIADA', 12, { status: 'POSTED' }),
+      row('c-card', 'MERCADO CENTRAL', 45),
+      row('c-leg', 'FARMACIA BOA SAUDE', 32),
+      row('rh', 'LOJA REASSENTA', 77, { status: 'POSTED' }),
+      row('c-near', 'RESTAURANTE XYZ', 55),
+      row('c-new', 'POSTO ESTRADA', 29.33),
+      row('c-usd', 'LOJA FORA', 5, { currencyCode: 'USD', amountInAccountCurrency: null }),
+      row('c-rev', 'LOJA REVISAO', 66),
+      row('c-del', 'LOJA APAGADA', 88),
+      row('c-amb1', 'PADARIA SOL', 20),
+      row('c-amb2', 'POSTO LUA', 20),
+      { id: 'pg', description: 'Pagamento de fatura', amount: -50, type: 'CREDIT', status: 'POSTED', currencyCode: 'BRL', date: daysAgo(1) },
+    ],
+  }
+}
+
+const PLANNED = {
+  created: 4, updated: 1, rebound: 1, removed: 1, adopted: 2, adoptedLegacy: 1, rehomed: 1,
+  nearMiss: 1, ambiguous: 1, skippedNoBrl: 1, payments: 1,
+  fetched: 13, priorImported: 4, priorReview: 1, priorWithoutTx: 1, priorUnadopted: 1,
+  alreadyReleased: 0, empty: 0,
+}
+
+describe('historico do cartao: marcador, ensaio e aplicacao (D-13)', () => {
+  let admin
+  let db
+
+  before(() => {
+    admin = initAdmin()
+    assert.equal(admin.mode, 'emulator')
+    db = admin.db
+  })
+  after(async () => {
+    await admin.app.delete()
+  })
+  beforeEach(async () => {
+    await resetEmulators()
+  })
+
+  const connection = (extra = {}) => ({
+    itemId: 'item-nubank',
+    ownerId: HID,
+    person: 'ela',
+    importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
+    ...extra,
+  })
+  const direct = (state, options = {}, target = db) =>
+    syncCardTransactions(target, {
+      ownerId: HID,
+      person: 'ela',
+      itemId: 'item-nubank',
+      account: CREDIT_ACCOUNT,
+      bankName: 'MeuPluggy',
+      categorize: () => ({ category: 'Outros', categoryId: 'outros' }),
+      usedManualIds: new Set(['legacy-rev']),
+      pluggy: cardPluggy(state),
+      ...options,
+    })
+  const markerOf = async () => (await db.collection('cards').doc('acc-credit').get()).data()?.historyBaselineAt
+
+  test('sem o marcador a rodada normal nao grava compras, mas mantem limites e agregados', async () => {
+    const state = { card: sixPurchases() }
+    await db.collection('transactions').doc('legacy-1').set(legacyDoc(state.card[0].date, 45))
+    const before = await snapshotOf(db, ['transactions'])
+    const summary = await syncConnection(db, cardPluggy(state), connection())
+    assert.equal(summary.error, undefined)
+    assert.equal(summary.cardError, undefined)
+    assert.equal(summary.cards, 1)
+    const after = await snapshotOf(db, ['transactions'])
+    assert.equal(after['transactions/legacy-1'], before['transactions/legacy-1'])
+    assert.equal(Object.keys(after).length, 2, 'so o manual e a saida da conta')
+    assert.equal((await db.collection('bankImports').get()).size, 1, 'so a importacao da conta')
+    const card = (await db.collection('cards').doc('acc-credit').get()).data()
+    assert.equal(card.creditLimitCents, 20000)
+    assert.equal(card.availableLimitCents, 1859)
+    assert.deepEqual(card.billTotals, {})
+    assert.equal(card.historyBaselineAt, undefined)
+    assert.deepEqual(await direct(state), { skipped: 'baseline_pending' })
+    // nem busca o historico a toa
+    assert.equal(state.calls.some((c) => c.accountId === 'acc-credit'), false)
+  })
+
+  test('marcador de um cartao de outro dono nao libera a gravacao', async () => {
+    await db.collection('cards').doc('acc-credit').set({ ownerId: 'casal-bbbb-0002', historyBaselineAt: BASELINE_AT })
+    assert.deepEqual(await direct({ card: sixPurchases() }), { skipped: 'baseline_pending' })
+    assert.equal((await db.collection('transactions').get()).size, 0)
+  })
+
+  test('ensaio percorre reconciliacao e adocao, devolve as contagens e nao grava nada', async () => {
+    const state = await seedHistory(db)
+    const before = await rawSnapshot(db)
+    const counts = await direct(state, { dryRun: true }, dbWithoutBatches(db))
+    assert.deepEqual(counts, { ...PLANNED, marked: 0 })
+    assert.deepEqual(await rawSnapshot(db), before)
+  })
+
+  test('dryRun vence baseline apply: nada e gravado', async () => {
+    const state = await seedHistory(db)
+    const before = await rawSnapshot(db)
+    const counts = await direct(state, { dryRun: true, baseline: 'apply' }, dbWithoutBatches(db))
+    assert.equal(counts.marked, 0)
+    assert.deepEqual(await rawSnapshot(db), before)
+  })
+
+  test('aplicar grava o mesmo que o ensaio contou e so entao define o marcador', async () => {
+    const state = await seedHistory(db)
+    const rehearsal = await direct(state, { dryRun: true })
+    const applied = await direct(state, { baseline: 'apply' })
+    assert.deepEqual(applied, { ...rehearsal, marked: 1 })
+    assert.ok((await markerOf())?.toDate)
+    assert.equal((await db.collection('transactions').doc('bank_c-new').get()).exists, true)
+    assert.equal((await db.collection('transactions').doc('bank_gone').get()).exists, false)
+    assert.equal((await db.collection('transactions').doc('man-card').get()).data().bankImportId, 'c-card')
+    assert.equal((await db.collection('transactions').doc('man-rh').get()).data().bankImportId, 'rh')
+
+    const marker = (await markerOf()).toMillis()
+    const snapshot = await rawSnapshot(db)
+    const again = await direct(state, { dryRun: true })
+    for (const key of ['created', 'updated', 'rebound', 'removed', 'adopted', 'adoptedLegacy', 'rehomed', 'nearMiss', 'priorImported', 'priorReview', 'priorWithoutTx', 'priorUnadopted']) {
+      assert.equal(again[key], 0, key)
+    }
+    assert.equal(again.alreadyReleased, 1)
+    assert.deepEqual(await rawSnapshot(db), snapshot)
+    const second = await direct(state, { baseline: 'apply' })
+    assert.equal(second.marked, 0)
+    assert.equal((await markerOf()).toMillis(), marker, 'o marcador guarda a primeira data')
+  })
+
+  test('falha no meio da gravacao nao define o marcador; aplicar de novo completa', async () => {
+    const many = Array.from({ length: 450 }, (_, i) =>
+      purchase(`m${i}`, `LOJA SINTETICA ${i}`, 1000 + i, { date: daysAgo(10 + i), status: 'POSTED' })
+    )
+    await assert.rejects(() => direct({ card: many }, { baseline: 'apply' }, dbFailingBatch(db, 2)), /falha simulada no lote/)
+    assert.equal(await markerOf(), undefined)
+    const partial = (await db.collection('transactions').get()).size
+    assert.ok(partial > 0 && partial < 450)
+    // o sync automatico continua parado
+    assert.deepEqual(await direct({ card: many }), { skipped: 'baseline_pending' })
+    const done = await direct({ card: many }, { baseline: 'apply' })
+    assert.equal(done.marked, 1)
+    assert.equal(done.created, 450 - partial)
+    assert.equal((await db.collection('transactions').get()).size, 450)
+  })
+
+  test('resposta vazia da Pluggy ao aplicar nao libera o cartao', async () => {
+    const counts = await direct({ card: [] }, { baseline: 'apply' })
+    assert.equal(counts.empty, 1)
+    assert.equal(counts.marked, 0)
+    assert.equal(await markerOf(), undefined)
+  })
+
+  test('com o marcador a rodada normal importa as compras novas e e idempotente', async () => {
+    const state = { card: sixPurchases() }
+    await direct(state, { baseline: 'apply' })
+    state.card = [...state.card, purchase('c7', 'LIVRARIA CENTRO', 15)]
+    const summary = await syncConnection(db, cardPluggy(state), connection())
+    assert.equal(summary.cardTxs.created, 1)
+    const snapshot = await snapshotOf(db, ['transactions', 'bankImports'])
+    const second = await syncConnection(db, cardPluggy(state), connection())
+    assert.equal(second.cardTxs.created + second.cardTxs.updated + second.cardTxs.adopted + second.cardTxs.removed, 0)
+    assert.deepEqual(await snapshotOf(db, ['transactions', 'bankImports']), snapshot)
+  })
+
+  test('o ensaio e a aplicacao buscam com o piso tecnico e trazem compra de 14 meses', async () => {
+    const state = { card: [purchase('old', 'COMPRA ANTIGA', 70, { date: daysAgo(430), status: 'POSTED' })] }
+    const rehearsal = await direct(state, { dryRun: true })
+    assert.equal(rehearsal.created, 1)
+    await direct(state, { baseline: 'apply' })
+    assert.equal((await db.collection('transactions').doc('bank_old').get()).exists, true)
+    const calls = state.calls.filter((c) => c.accountId === 'acc-credit')
+    assert.equal(calls.length, 2)
+    assert.ok(calls.every((c) => c.opts.dateFrom === CARD_HISTORY_FLOOR))
   })
 })

@@ -4,6 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
 import { PluggyClient } from 'pluggy-sdk'
 import { createApp } from './app.js'
+import { createAiFeature } from './ai/index.js'
 import { parseOrigins } from './auth.js'
 import { createPushFeature } from './push/index.js'
 import { cleanExistingDescriptions, syncAll, syncConnection, syncItem } from './sync.js'
@@ -46,7 +47,7 @@ const db = getFirestore()
 db.settings({ ignoreUndefinedProperties: true })
 
 // Trilhas montadas depois do requireOwner (push agora; IA e avisos de limite entram aqui).
-const features = [createPushFeature({ db, messaging: getMessaging() })]
+const features = [createPushFeature({ db, messaging: getMessaging() }), createAiFeature({ db })]
 
 const app = createApp({
   verifyToken: (token) => getAuth().verifyIdToken(token),

@@ -5,6 +5,7 @@ import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
 import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { useVintemInsights } from '@/hooks/useVintemInsights'
+import { ASK_TIMEOUT_OPEN_MS } from '@/services/vintemSpeech.service'
 import type { CategoryDef, Transaction } from '@/types'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -126,7 +127,7 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak, slot, cheer } = useVintem()
+  const { tone, speak, speakAi, slot, cheer } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson } = useCycle()
   const todayKey = dayKeyOf(now)
@@ -219,8 +220,12 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     if (result.situation === 'lancamento-ok' || result.situation === 'gasto-grande') {
       raw.valorCents = bankArrival.cents
     }
-    speak({ situation: result.situation, raw, announce: true })
-  }, [bankArrival, view, enabled, readOnly, entryKey, slot, speak, categoryDefs, insights, todayKey])
+    // Fim de sincronizacao com gasto novo: tenta a IA (sem ninguem esperando) e cai na frase do banco.
+    void speakAi({
+      ai: { situation: 'sync', categoryId: bankArrival.categoryId, timeoutMs: ASK_TIMEOUT_OPEN_MS },
+      fallback: { situation: result.situation, raw, announce: true },
+    })
+  }, [bankArrival, view, enabled, readOnly, entryKey, slot, speakAi, categoryDefs, insights, todayKey])
 
   // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
   // do giro ficam em ref e sao limpos ao desmontar.

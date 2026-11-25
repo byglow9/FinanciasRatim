@@ -133,6 +133,9 @@ function nextPeekSpot(): (typeof PEEK_SPOTS)[number] {
 
 const VINTEM_TOAST_MS = 6000
 
+/** Situacoes decididas pelo nucleo que contam como limite para a fala da IA. */
+const LIMIT_SITUATIONS: ReadonlySet<string> = new Set(['limite-atento', 'limite-perto', 'limite-estourou'])
+
 const RECENT_STORAGE_KEY = 'vintem:recent:v1'
 
 type Recent = Record<string, string[]>
@@ -337,10 +340,12 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         if (result.situation === 'limite-estourou' && core.excessCents !== undefined) {
           raw.valorCents = core.excessCents
         }
+        // As tres situacoes de limite pedem a fala de limite; o resto do gasto e a receita, a de lancamento.
+        const limitSituation = LIMIT_SITUATIONS.has(result.situation)
         const ai: AskArgs | undefined =
           kind === 'gasto' || kind === 'receita'
             ? {
-                situation: 'lancamento',
+                situation: limitSituation ? 'limite' : 'lancamento',
                 categoryId: kind === 'gasto' ? categoryId : null,
                 timeoutMs: ASK_TIMEOUT_REACTION_MS,
               }

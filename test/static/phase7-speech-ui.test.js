@@ -87,3 +87,35 @@ test('contexto: o reflexo de porquinho e de meta continua so do banco de frases'
   assert.match(src, /kind === 'gasto' \|\| kind === 'receita'/, 'a IA nao se limita a gasto e receita')
   assert.match(src, /void deliver\('festa', 'meta-batida', \{ valorCents \}\)/, 'meta sem ser so do banco')
 })
+
+test('a situacao limite so vale para as tres situacoes de limite do nucleo', () => {
+  const src = code(CONTEXT)
+  assert.match(
+    src,
+    /LIMIT_SITUATIONS: ReadonlySet<string> = new Set\(\['limite-atento', 'limite-perto', 'limite-estourou'\]\)/,
+    'conjunto de situacoes de limite alterado',
+  )
+  assert.match(src, /situation: limitSituation \? 'limite' : 'lancamento'/, 'a situacao da IA nao sai do conjunto')
+  assert.equal((src.match(/'limite'/g) ?? []).length, 1, "'limite' usado fora da escolha da situacao da IA")
+  // A reserva e sempre a frase do banco da situacao decidida pelo nucleo.
+  assert.match(src, /deliver\(result\.reaction, result\.situation, raw, ai\)/)
+})
+
+test('a situacao sync so vem do gasto importado do banco; toque e entrada nao chamam a IA', () => {
+  const hook = code(HOME_HOOK)
+  assert.equal((hook.match(/situation: 'sync'/g) ?? []).length, 1, 'sync fora do ramo do gasto importado')
+  assert.match(hook, /timeoutMs: ASK_TIMEOUT_OPEN_MS/, 'sync sem o prazo da abertura')
+  assert.match(hook, /categoryId: bankArrival\.categoryId/, 'sync sem a categoria da chegada')
+  assert.equal((hook.match(/\bspeakAi\(/g) ?? []).length, 1, 'speakAi fora do ramo do gasto importado')
+  const effect = hook.slice(hook.indexOf('const reactedKey'), hook.indexOf('// Toque:'))
+  assert.match(effect, /void speakAi\(/, 'speakAi sem void')
+  assert.match(effect, /fallback: \{ situation: result\.situation, raw, announce: true \}/, 'reserva diferente da fala antiga')
+  assert.match(effect, /!enabled \|\| readOnly \|\| view\.isPast/, 'portao do gasto importado alterado')
+  // Entrada e toque seguem so com o banco de frases (a abertura e do 07-16).
+  const tap = hook.slice(hook.indexOf('const onTap'))
+  assert.ok(!/speakAi|askVintem/.test(tap), 'o toque chama a IA')
+  const entry = hook.slice(hook.indexOf('const spokenKey'), hook.indexOf('const reactedKey'))
+  assert.ok(!/speakAi|askVintem/.test(entry), 'a fala de entrada chama a IA')
+  assert.match(entry, /announce: false/)
+  assert.ok(!/askVintem/.test(hook), 'o hook pede a IA direto')
+})

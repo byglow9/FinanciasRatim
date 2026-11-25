@@ -217,25 +217,96 @@ function storedFields(d, cardId, bankName) {
   }
 }
 
+// ---- Marcador do historico (D-13) ----
+// cards/{accountId}.historyBaselineAt diz que o dono ja conferiu o ensaio, tem copia de seguranca
+// e aplicou o historico. Sem ele o sync automatico nao grava nenhuma compra do cartao.
+
+async function hasHistoryBaseline(db, ownerId, cardId) {
+  const snap = await db.collection(CARDS).doc(cardId).get()
+  const data = snap.exists ? snap.data() : null
+  return Boolean(data && data.ownerId === ownerId && data.historyBaselineAt)
+}
+
+// O que uma versao anterior do servidor (sem o marcador) pode ter deixado para tras. So contagens,
+// para o dono conferir no ensaio: nada disso e adotado nem recriado depois.
+function priorImportedPurchases(existingDocs, { ownerId, person }) {
+  return [...existingDocs].filter(
+    ([, d]) =>
+      d.ownerId === ownerId && d.person === person && d.source === 'bank' && !d.adoptedFromManual && kindOfDoc(d) === 'purchase'
+  )
+}
+
+// Compras sem lancamento mas com importacao: retida em revisao ou ignorada/apagada.
+function countHeldPurchases(counts, purchases, { importsById, knownBankIds, existingDocs }) {
+  for (const item of purchases) {
+    const imp = importsById.get(item.id)
+    if (!imp || knownBankIds.has(item.id) || existingDocs.has(`bank_${item.id}`)) continue
+    if (imp.status === 'review') counts.priorReview++
+    else counts.priorWithoutTx++
+  }
+}
+
+// Compras ja importadas que tem um manual antigo equivalente: o manual so casa com compra nova,
+// entao esse par continua duplicado.
+async function countUnadopted(db, imported, { ownerId, person, cardId, usedManualIds }) {
+  if (!imported.length) return 0
+  const incoming = imported.map(([, d]) => ({
+    bankId: d.bankImportId,
+    cents: Math.round(Number(d.amount) * 100),
+    description: d.bankDescription ?? d.description ?? '',
+    dateMs: d.date?.toMillis?.() ?? NaN,
+    cardId,
+    person,
+  }))
+  const dates = incoming.map((i) => i.dateMs).filter(Number.isFinite)
+  if (!dates.length) return 0
+  const fromMs = dates.reduce((min, ms) => Math.min(min, ms), Infinity) - WINDOW_MS
+  const legacy = await loadLegacyManuals(db, { ownerId, person, fromMs, usedManualIds })
+  const { adoptions, ambiguous } = matchManualAdoptions({ candidates: legacy, incoming })
+  return adoptions.length + ambiguous
+}
+
 // Importa as compras, estornos e pagamentos de uma conta CREDIT (CARD-03, CARD-06, CARD-07).
 // Historico inteiro, sem limite de idade (D-13): a busca usa so o piso tecnico e o `connection`
 // (com o importFrom da conexao) nao e consultado. Duplicidade com lancamento manual se decide so
 // pela adocao (D-12), nunca por valor e data sozinhos. Nunca registra valores, descricoes nem ids.
+//
+// Primeira importacao (D-13): sem o marcador e sem dryRun nem baseline 'apply', nada e gravado e o
+// retorno e { skipped: 'baseline_pending' }. Com dryRun o caminho inteiro roda e nada e gravado.
+// Com baseline 'apply' grava e, so depois de todos os lotes confirmados, define o marcador.
 export async function syncCardTransactions(
   db,
-  { ownerId, person, itemId, account, bankName, now, categorize, usedManualIds = new Set(), pluggy, chains = new Map() }
+  { ownerId, person, itemId, account, bankName, now, categorize, usedManualIds = new Set(), pluggy, chains = new Map(), dryRun = false, baseline }
 ) {
   assertOwner(ownerId, 'syncCardTransactions')
   const cardId = account.id
   const stamp = now instanceof Date ? Timestamp.fromDate(now) : Timestamp.now()
+  // dryRun vence: qualquer valor verdadeiro significa nao gravar.
+  const rehearsing = Boolean(dryRun)
+  const releasing = !rehearsing && baseline === 'apply'
+  const history = rehearsing || releasing
+  const released = await hasHistoryBaseline(db, ownerId, cardId)
+  // Sem o marcador o sync automatico nem busca o historico.
+  if (!history && !released) return { skipped: 'baseline_pending' }
   const counts = {
     created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
     adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
   }
+  // Contagens extras so no ensaio e na aplicacao: o resumo do sync automatico nao muda.
+  if (history) {
+    Object.assign(counts, {
+      fetched: 0, priorImported: 0, priorReview: 0, priorWithoutTx: 0, priorUnadopted: 0,
+      alreadyReleased: released ? 1 : 0, empty: 0, marked: 0,
+    })
+  }
 
   const raws = await pluggy.fetchAllTransactions(cardId, { dateFrom: CARD_HISTORY_FLOOR })
-  // Resposta vazia da Pluggy nunca apaga nada: pode ser uma falha passageira.
-  if (!raws.length) return counts
+  if (history) counts.fetched = raws.length
+  // Resposta vazia da Pluggy nunca apaga nada nem libera o cartao: pode ser uma falha passageira.
+  if (!raws.length) {
+    if (history) counts.empty = 1
+    return counts
+  }
 
   // 1) classifica a resposta; so entram campos de lista fechada.
   const purchases = []
@@ -290,6 +361,13 @@ export async function syncCardTransactions(
   const legacyDocs = await getAllDocs(db, TRANSACTIONS, legacyIds)
   for (const [docId, d] of legacyDocs) {
     if (d.ownerId === ownerId && d.source === 'bank') existingDocs.set(docId, { ...d, bankImportId: d.bankImportId ?? docId.slice(5) })
+  }
+
+  // Estado anterior ao marcador, medido antes de planejar qualquer gravacao.
+  const priorImported = history && !released ? priorImportedPurchases(existingDocs, { ownerId, person }) : []
+  if (history && !released) {
+    counts.priorImported = priorImported.length
+    countHeldPurchases(counts, purchases, { importsById, knownBankIds, existingDocs })
   }
 
   const units = []
@@ -473,7 +551,18 @@ export async function syncCardTransactions(
     })
   }
 
+  // Depois do planejamento: os manuais adotados nesta rodada ja estao em usedManualIds.
+  if (history) {
+    counts.priorUnadopted = await countUnadopted(db, priorImported, { ownerId, person, cardId, usedManualIds })
+  }
+  if (rehearsing) return counts
+
   await commitUnits(db, units)
+  // So depois de todos os lotes confirmados; falha no meio deixa o sync automatico parado.
+  if (releasing && !released) {
+    await db.collection(CARDS).doc(cardId).set({ ownerId, historyBaselineAt: Timestamp.now() }, { merge: true })
+    counts.marked = 1
+  }
   return counts
 }
 

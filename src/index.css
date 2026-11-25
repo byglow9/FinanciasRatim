@@ -472,14 +472,14 @@
 
 @keyframes peek-vintem {
   0% { transform: translate(120px, 90px) rotate(18deg) scale(0.9); opacity: 0; }
-  55% { transform: translate(-14px, -10px) rotate(-30deg) scale(1.02); opacity: 1; }
-  75% { transform: translate(4px, 3px) rotate(-19deg) scale(1); }
-  100% { transform: translate(0, 0) rotate(-24deg) scale(1); opacity: 1; }
+  55% { transform: translate(-14px, -10px) rotate(-46deg) scale(1.02); opacity: 1; }
+  75% { transform: translate(4px, 3px) rotate(-34deg) scale(1); }
+  100% { transform: translate(0, 0) rotate(-38deg) scale(1); opacity: 1; }
 }
 
 @keyframes peek-bob {
-  0%, 100% { transform: translate(0, 0) rotate(-24deg); }
-  50% { transform: translate(-3px, -5px) rotate(-21deg); }
+  0%, 100% { transform: translate(0, 0) rotate(-38deg); }
+  50% { transform: translate(-3px, -5px) rotate(-35deg); }
 }
 
 @keyframes peek-bubble {
@@ -554,7 +554,7 @@
 
   .anim-peek-vintem {
     animation: none !important;
-    transform: rotate(-24deg);
+    transform: rotate(-38deg);
   }
 
   .anim-peek-bubble {

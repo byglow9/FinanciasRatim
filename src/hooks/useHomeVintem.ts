@@ -37,6 +37,9 @@ export interface HomeVintem {
   onTap: (handle: VintemHandle | null) => void
 }
 
+// Abertura (D-12 a): no maximo um pedido de fala a IA por carga do app, mesmo se a Home montar de novo.
+let openingAsked = false
+
 /** Tempo em perfil antes de voltar (o giro todo dura cerca de 1,6 s). */
 const TURN_HOLD_MS = 600
 
@@ -170,7 +173,9 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
 
   // Fala de entrada: uma por visita (chave pessoa:ciclo), so com a view pronta. O portao neutro ja
   // devolve situacao nula em carregando, sem renda, ciclo passado, dado velho e somente leitura.
-  // Nunca e anunciada na regiao viva (UI-SPEC S1).
+  // Nunca e anunciada na regiao viva (UI-SPEC S1). A primeira da carga pede a IA um comentario sobre
+  // o mes, com a mesma frase do banco como reserva; com gasto novo do banco para reagir, a vez da IA
+  // e da reacao abaixo.
   const spokenKey = useRef<string | null>(null)
   const entryKey = `${viewPerson}:${cycle.key}`
   const { situation, subject } = mood
@@ -179,12 +184,18 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     if (view === null || situation === null || !insightsReady) return
     if (spokenKey.current === entryKey) return
     spokenKey.current = entryKey
-    speak({
+    const entry = {
       situation,
       raw: slotsFor(situation, subject, view, categoryDefs, insights, todayKey),
       announce: false,
-    })
-  }, [view, situation, subject, entryKey, speak, categoryDefs, insights, insightsReady, todayKey])
+    }
+    if (openingAsked || bankArrival !== null) {
+      speak(entry)
+      return
+    }
+    openingAsked = true
+    void speakAi({ ai: { situation: 'abertura' }, fallback: entry })
+  }, [view, situation, subject, entryKey, speak, speakAi, bankArrival, categoryDefs, insights, insightsReady, todayKey])
 
   // Lancamento importado do banco: uma reacao por carga (chave pessoa:ciclo), so com o slot registrado
   // e fora do modo somente leitura (perfil do parceiro nao reage). O gasto ja esta somado na view.

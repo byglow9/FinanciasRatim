@@ -6,6 +6,7 @@ import { normalize } from '../../../shared/core/classify.js'
 import { canonicalKey } from '../../../shared/core/aiCacheKey.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
 import { normalizePersonConfig } from '../../../shared/core/limits.js'
+import { SPONTANEOUS, dailyCapOf, pickTopic } from './topics.js'
 
 /** Situacoes do pedido (lista fechada da rota) e o nome que o prompt usa para cada uma. */
 export const SITUATIONS = Object.freeze(['lancamento', 'limite', 'sync', 'abertura', 'espiar'])
@@ -71,11 +72,17 @@ function pctOfUso(text) {
  * `source` diz de onde veio ('cache' ou 'ia'). Nunca registra resumo, prompt, descricao nem texto.
  * Ordem: cache (revalidado contra o resumo atual) -> teto da pessoa -> cadeia -> guarda no cache.
  * Acerto de cache nao consome teto; sem teto e sem cache valido a resposta e text null.
+ * Fala espontanea (abertura e espiar, D-12): antes de tudo confere o teto do tipo no dia, escolhe um
+ * assunto ainda nao usado e so conta (teto e assunto) quando ha texto para mostrar.
  * @param {{
  *   snapshot: { load: (args: { hid: string, person: string, fresh: boolean }) => Promise<any> },
  *   providers: { complete: (args: any) => Promise<{ ok: boolean, text?: string, providerId?: string }>, available?: () => boolean },
- *   config: { requireProfanity?: boolean, totalBudgetMs?: number, cacheVariants?: number, providers?: unknown[] },
- *   budget?: { consume: (args: { hid: string, person: string }) => Promise<{ ok: boolean }> } | null,
+ *   config: { requireProfanity?: boolean, totalBudgetMs?: number, cacheVariants?: number, providers?: unknown[], openPerDay?: number, peekPerDay?: number },
+ *   budget?: {
+ *     consume: (args: { hid: string, person: string }) => Promise<{ ok: boolean }>,
+ *     readDay: (args: { hid: string, person: string }) => Promise<{ ok: boolean, abertura: number, espiar: number, assuntos: string[] }>,
+ *     commitSpontaneous: (args: { hid: string, person: string, kind: string, topic: string }) => Promise<{ ok: boolean }>,
+ *   } | null,
  *   cache?: {
  *     lookup: (args: any) => Promise<{ text: string | null, count: number }>,
  *     store: (args: any) => Promise<void>,
@@ -88,12 +95,22 @@ function pctOfUso(text) {
 export function createSpeech({ snapshot, providers, config, budget = null, cache = null, log = console, leakCheck = findLeaks }) {
   /**
    * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
+   * @param {() => boolean} abandoned verdadeiro quando ninguem mais espera a resposta
    * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
    */
-  async function run({ hid, person, situation, categoryId, transactionId, latestTx }) {
+  async function run({ hid, person, situation, categoryId, transactionId, latestTx }, abandoned) {
     const key = /** @type {keyof typeof PROMPT_SITUATION} */ (situation)
     if (!SITUATIONS.includes(situation)) return { text: null }
     const reaction = REACTION_SITUATIONS.includes(situation)
+    const spontaneous = SPONTANEOUS.includes(situation)
+
+    // Teto do tipo esgotado (ou dia ilegivel): nem le os dados nem chama provedor.
+    let day = null
+    if (spontaneous && budget) {
+      day = await budget.readDay({ hid, person })
+      const used = situation === 'abertura' ? day.abertura : day.espiar
+      if (!day.ok || used >= dailyCapOf(config, situation)) return { text: null }
+    }
 
     const snap = await snapshot.load({ hid, person, fresh: FRESH_SITUATIONS.includes(situation) })
     const input = { ...snap.input, person }
@@ -122,10 +139,13 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
     /** @type {string | null} */
     let topic = null
     if (situation === 'limite') topic = 'limites'
-    else if (!reaction) topic = summary.assuntos?.[0] ?? null
+    else if (spontaneous) {
+      topic = pickTopic({ summary, used: day?.assuntos })
+      if (topic === null) return { text: null }
+    }
 
     let overLimit = false
-    if (situation === 'limite') {
+    if (topic === 'limites') {
       const rows = Array.isArray(summary.limites) ? summary.limites : []
       const mine = category ? rows.find((r) => normalize(r.categoria) === normalize(category.name)) : undefined
       overLimit = mine ? mine.estado === 'estourou' : rows.some((r) => r.estado === 'estourou')
@@ -177,11 +197,24 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
       merchant: reaction ? reactionLabels(summary).focusLabel : null,
     })
 
+    /**
+     * A fala espontanea so conta quando ha texto para mostrar. Se a transacao negar (teto ou assunto
+     * tomados por um pedido simultaneo) ou ninguem mais esperar, nada sai e nada e consumido.
+     * @param {{ text: string | null, source?: 'cache' | 'ia' }} out
+     * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
+     */
+    const serve = async (out) => {
+      if (out.text === null || !spontaneous || !budget) return out
+      if (abandoned()) return { text: null }
+      const counted = await budget.commitSpontaneous({ hid, person, kind: situation, topic: String(topic) })
+      return counted.ok ? out : { text: null }
+    }
+
     // 1. Cache: variante revalidada contra o resumo atual. Acerto nao consome teto nem chama a rede.
     let hit = { text: /** @type {string | null} */ (null), count: 0 }
     if (cache) hit = await cache.lookup({ hid, person, canonical, validate })
     const wanted = Math.max(1, Math.trunc(Number(config.cacheVariants)) || 3)
-    if (hit.text !== null && hit.count >= wanted) return { text: hit.text, source: 'cache' }
+    if (hit.text !== null && hit.count >= wanted) return serve({ text: hit.text, source: 'cache' })
     /** @type {{ text: string | null, source?: 'cache' }} */
     const fallback = hit.text !== null ? { text: hit.text, source: 'cache' } : { text: null }
 
@@ -207,25 +240,31 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
     const generated = cache ? await cache.coalesce({ hid, person, canonical }, generateOnce) : await generateOnce()
     // Quem entrou na geracao de outro revalida com o proprio resumo antes de mostrar.
     const approved = generated === null ? null : validate(generated)
-    return approved !== null ? { text: approved, source: 'ia' } : fallback
+    return serve(approved !== null ? { text: approved, source: 'ia' } : fallback)
   }
 
   /**
    * Prazo total da rota (AI_TOTAL_BUDGET_MS): estourado, devolve { text: null } sem cancelar o que
    * ja foi pedido (a chamada em andamento termina sozinha e o 07-12 aproveita para o cache).
-   * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
+   * `gone` (opcional) diz que quem pediu ja desistiu: com o prazo vencido ou o pedido abandonado, a
+   * fala espontanea nao consome o teto nem o assunto.
+   * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any, gone?: () => boolean }} args
    * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
    */
   async function generate(args) {
-    const work = run(args)
+    let expired = false
+    const work = run(args, () => expired || args.gone?.() === true)
     // Se o prazo vencer primeiro, a falha tardia do trabalho nao pode virar rejeicao sem dono.
     work.catch(() => {})
-    const budget = Number(config.totalBudgetMs)
-    if (!(budget > 0)) return work
+    const limitMs = Number(config.totalBudgetMs)
+    if (!(limitMs > 0)) return work
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let timer
     const late = new Promise((resolve) => {
-      timer = setTimeout(() => resolve({ text: null }), budget)
+      timer = setTimeout(() => {
+        expired = true
+        resolve({ text: null })
+      }, limitMs)
     })
     try {
       return await Promise.race([work, late])

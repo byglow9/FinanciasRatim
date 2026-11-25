@@ -101,25 +101,38 @@ test('a situacao limite so vale para as tres situacoes de limite do nucleo', () 
   assert.match(src, /deliver\(result\.reaction, result\.situation, raw, ai\)/)
 })
 
-test('a situacao sync so vem do gasto importado do banco; toque e entrada nao chamam a IA', () => {
+test('a situacao sync so vem do gasto importado do banco; o toque nao chama a IA', () => {
   const hook = code(HOME_HOOK)
   assert.equal((hook.match(/situation: 'sync'/g) ?? []).length, 1, 'sync fora do ramo do gasto importado')
   // O hook nao importa servico (guarda da Fase 4): o prazo da abertura e o padrao de speakAi.
   assert.ok(!/vintemSpeech\.service/.test(hook), 'o hook importa o servico da fala')
   assert.match(body(code(CONTEXT), 'speakAi'), /timeoutMs: ai\.timeoutMs \?\? ASK_TIMEOUT_OPEN_MS/, 'speakAi sem o prazo padrao da abertura')
   assert.match(hook, /categoryId: bankArrival\.categoryId/, 'sync sem a categoria da chegada')
-  assert.equal((hook.match(/\bspeakAi\(/g) ?? []).length, 1, 'speakAi fora do ramo do gasto importado')
+  assert.equal((hook.match(/\bspeakAi\(/g) ?? []).length, 2, 'speakAi fora da abertura e do gasto importado')
   const effect = hook.slice(hook.indexOf('const reactedKey'), hook.indexOf('// Toque:'))
   assert.match(effect, /void speakAi\(/, 'speakAi sem void')
   assert.match(effect, /fallback: \{ situation: result\.situation, raw, announce: true \}/, 'reserva diferente da fala antiga')
   assert.match(effect, /!enabled \|\| readOnly \|\| view\.isPast/, 'portao do gasto importado alterado')
-  // Entrada e toque seguem so com o banco de frases (a abertura e do 07-16).
+  // O toque segue so com o banco de frases.
   const tap = hook.slice(hook.indexOf('const onTap'))
   assert.ok(!/speakAi|askVintem/.test(tap), 'o toque chama a IA')
-  const entry = hook.slice(hook.indexOf('const spokenKey'), hook.indexOf('const reactedKey'))
-  assert.ok(!/speakAi|askVintem/.test(entry), 'a fala de entrada chama a IA')
-  assert.match(entry, /announce: false/)
   assert.ok(!/askVintem/.test(hook), 'o hook pede a IA direto')
+})
+
+test('abertura: uma pergunta por carga do app, por variavel de modulo, com a fala do banco como reserva', () => {
+  const hook = code(HOME_HOOK)
+  assert.match(hook, /^let openingAsked = false/m, 'a marca da abertura precisa ser variavel de modulo')
+  assert.equal((hook.match(/situation: 'abertura'/g) ?? []).length, 1, 'abertura pedida em mais de um lugar')
+  assert.equal((hook.match(/openingAsked = true/g) ?? []).length, 1)
+  assert.ok(!/openingAsked = false/.test(hook.slice(hook.indexOf('export function useHomeVintem'))), 'a marca e zerada no hook')
+  const entry = hook.slice(hook.indexOf('const spokenKey'), hook.indexOf('const reactedKey'))
+  // Segunda fala de entrada da mesma carga, ou gasto novo do banco para reagir: so o banco de frases.
+  assert.match(entry, /if \(openingAsked \|\| bankArrival !== null\) \{\s*speak\(entry\)\s*return\s*\}/)
+  assert.ok(entry.indexOf('openingAsked = true') < entry.indexOf('speakAi('), 'marca depois do pedido')
+  assert.match(entry, /void speakAi\(\{ ai: \{ situation: 'abertura' \}, fallback: entry \}\)/, 'sem a reserva da entrada')
+  assert.match(entry, /announce: false/, 'a fala de entrada nunca e anunciada')
+  // O portao neutro (somente leitura, ciclo passado, sem renda) vem antes de qualquer pedido.
+  assert.ok(entry.indexOf('situation === null') < entry.indexOf('speakAi('), 'abertura sem o portao neutro')
 })
 
 test('resposta atrasada ou de outra tela e descartada: geracao e escopo conferidos antes de mostrar', () => {

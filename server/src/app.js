@@ -25,9 +25,19 @@ export function createApp({
   origins,
   now = () => new Date(),
   webhookSecret,
+  features = [],
 }) {
   if (!Array.isArray(origins) || origins.length === 0) {
     throw new Error('ALLOWED_ORIGINS obrigatoria: informe ao menos uma origem')
+  }
+  // features: lista de { mounts: [{ path, router }] }. Cada router e montado depois do requireOwner,
+  // so em caminhos /api/ (as trilhas de push e de IA entram por aqui, sem mexer mais neste arquivo).
+  for (const feature of features) {
+    for (const mount of feature?.mounts ?? []) {
+      if (typeof mount?.path !== 'string' || !mount.path.startsWith('/api/') || !mount.router) {
+        throw new Error('feature invalida: o caminho de cada router deve comecar com /api/')
+      }
+    }
   }
 
   const app = express()
@@ -75,6 +85,10 @@ export function createApp({
   }
 
   app.use('/api', originGuard(origins), requireOwner(verifyToken))
+
+  for (const feature of features) {
+    for (const mount of feature.mounts ?? []) app.use(mount.path, mount.router)
+  }
 
   const handle = (fn) => (req, res) =>
     fn(req, res).catch((err) => {

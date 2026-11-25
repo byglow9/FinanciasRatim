@@ -1,9 +1,11 @@
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { getMessaging } from 'firebase-admin/messaging'
 import { PluggyClient } from 'pluggy-sdk'
 import { createApp } from './app.js'
 import { parseOrigins } from './auth.js'
+import { createPushFeature } from './push/index.js'
 import { cleanExistingDescriptions, syncAll, syncConnection, syncItem } from './sync.js'
 
 function required(name) {
@@ -43,6 +45,9 @@ initializeApp({ credential: cert(serviceAccount) })
 const db = getFirestore()
 db.settings({ ignoreUndefinedProperties: true })
 
+// Trilhas montadas depois do requireOwner (push agora; IA e avisos de limite entram aqui).
+const features = [createPushFeature({ db, messaging: getMessaging() })]
+
 const app = createApp({
   verifyToken: (token) => getAuth().verifyIdToken(token),
   db,
@@ -50,10 +55,12 @@ const app = createApp({
   sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem },
   origins,
   webhookSecret: webhookSecrets,
+  features,
 })
 
 const port = Number(process.env.PORT ?? 3000)
 app.listen(port, () => console.log(`[server] ouvindo na porta ${port}`))
+for (const feature of features) feature.start?.()
 
 // Agendador: sincroniza todas as conexões (sem hid), cada uma com o ownerId gravado nela.
 const hours = Number(process.env.SYNC_INTERVAL_HOURS ?? 6)

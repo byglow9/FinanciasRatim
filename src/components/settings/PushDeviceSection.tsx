@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { PUSH_STATES, iphoneSteps } from '@shared/core/pushState.js'
 import { Button } from '@/components/ui/button'
 import { usePushState } from '@/hooks/usePushState'
-import { enablePush, getPrimeState, primePush, subscribePrime, type PushReason } from '@/lib/push/messaging'
+import { disablePush, enablePush, getPrimeState, primePush, subscribePrime, type PushReason } from '@/lib/push/messaging'
 import { sendTestPush } from '@/services/push.service'
 
 const REASON_TEXT: Record<PushReason, string> = {
@@ -14,6 +14,7 @@ const REASON_TEXT: Record<PushReason, string> = {
 }
 const TEST_SENT = 'Aviso de teste enviado.'
 const TEST_FAILED = 'Não foi possível enviar o teste.'
+const DISABLE_FAILED = 'Não foi possível desativar os avisos.'
 
 interface PushDeviceSectionProps {
   readOnly: boolean
@@ -26,7 +27,7 @@ interface PushDeviceSectionProps {
 export function PushDeviceSection({ readOnly }: PushDeviceSectionProps) {
   const { state, copy, refresh } = usePushState()
   const prime = useSyncExternalStore(subscribePrime, getPrimeState)
-  const [pushBusy, setPushBusy] = useState<'ativar' | 'testar' | null>(null)
+  const [pushBusy, setPushBusy] = useState<'ativar' | 'testar' | 'desativar' | null>(null)
   const lock = useRef(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -72,6 +73,21 @@ export function PushDeviceSection({ readOnly }: PushDeviceSectionProps) {
     }
   }
 
+  const deactivate = async () => {
+    if (readOnly || lock.current) return
+    lock.current = true
+    setPushBusy('desativar')
+    setMessage(null)
+    try {
+      const result = await disablePush()
+      if (!result.ok) setMessage(DISABLE_FAILED)
+      refresh()
+    } finally {
+      lock.current = false
+      setPushBusy(null)
+    }
+  }
+
   const showActivate = copy.action === 'ativar' || copy.action === 'reativar'
   const showTest = state === PUSH_STATES.ATIVO
 
@@ -89,12 +105,12 @@ export function PushDeviceSection({ readOnly }: PushDeviceSectionProps) {
         ) : null}
       </div>
       {showActivate || showTest ? (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {showActivate ? (
             <Button
               type="button"
               size="sm"
-              className="flex-1"
+              className="min-w-36 flex-1"
               onClick={() => void activate()}
               disabled={readOnly || pushBusy !== null || !canActivate}
               aria-busy={pushBusy === 'ativar'}
@@ -107,12 +123,25 @@ export function PushDeviceSection({ readOnly }: PushDeviceSectionProps) {
               type="button"
               size="sm"
               variant="outline"
-              className="flex-1"
+              className="min-w-36 flex-1"
               onClick={() => void test()}
               disabled={readOnly || pushBusy !== null}
               aria-busy={pushBusy === 'testar'}
             >
               Testar aviso
+            </Button>
+          ) : null}
+          {showTest ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="min-w-36 flex-1"
+              onClick={() => void deactivate()}
+              disabled={readOnly || pushBusy !== null}
+              aria-busy={pushBusy === 'desativar'}
+            >
+              Desativar avisos
             </Button>
           ) : null}
         </div>

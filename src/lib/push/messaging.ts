@@ -3,9 +3,9 @@
 // (enablePush) pede a permissao logo, sem nenhuma espera antes, porque o iPhone so aceita o pedido
 // perto do gesto. Nenhum FID, token, chave ou mensagem do SDK vai a log ou a tela: erro vira so o motivo.
 import { getApp } from 'firebase/app'
-import { getMessaging, isSupported, onRegistered, register } from 'firebase/messaging'
+import { getMessaging, isSupported, onRegistered, register, unregister, type Messaging } from 'firebase/messaging'
 import { MOCK } from '@/lib/mockStorage'
-import { PUSH_SERVER_ENABLED, registerFid } from '@/services/push.service'
+import { PUSH_SERVER_ENABLED, registerFid, unregisterFid } from '@/services/push.service'
 
 export type PushReason = 'nao-configurado' | 'nao-suportado' | 'permissao-negada' | 'atualizando' | 'falhou'
 export type PushResult = { ok: true } | { ok: false; reason: PushReason }
@@ -68,6 +68,10 @@ function store(key: string, value: string | null): void {
 /** Guarda o FID deste aparelho so no localStorage (o 07-10 o usa para nao avisar o aparelho em uso). */
 export function rememberFid(fid: string): void {
   store(FID_STORAGE_KEY, fid)
+}
+
+function forgetFid(): void {
+  store(FID_STORAGE_KEY, null)
 }
 
 /** Os avisos foram desativados neste aparelho pelo usuario? */
@@ -159,6 +163,13 @@ function handleFid(fid: string): void {
     () => settleFid(true),
     () => settleFid(false),
   )
+}
+
+/** Liga o ouvinte do FID uma unica vez; sempre antes de qualquer register (ativar e renovar). */
+function ensureListener(messaging: Messaging): void {
+  if (listening) return
+  onRegistered(messaging, handleFid)
+  listening = true
 }
 
 function settleFid(ok: boolean): void {
@@ -257,10 +268,7 @@ export async function enablePush(): Promise<PushResult> {
   }
   try {
     const messaging = getMessaging(getApp())
-    if (!listening) {
-      onRegistered(messaging, handleFid)
-      listening = true
-    }
+    ensureListener(messaging)
     outcome = null
     let failure: unknown = null
     const finished = await withTimeout(
@@ -275,8 +283,66 @@ export async function enablePush(): Promise<PushResult> {
     )
     if (finished === null) return { ok: false, reason: 'falhou' }
     if (finished === false) return { ok: false, reason: isPermissionBlocked(failure) ? 'permissao-negada' : 'falhou' }
-    return (await awaitFid(FID_MS)) ? { ok: true } : { ok: false, reason: 'falhou' }
+    if (!(await awaitFid(FID_MS))) return { ok: false, reason: 'falhou' }
+    store(OFF_STORAGE_KEY, null)
+    return { ok: true }
   } catch {
     return { ok: false, reason: 'falhou' }
   }
+}
+
+/**
+ * Renova o registro do aparelho a cada abertura (o register de novo chama o ouvinte com o FID atual).
+ * So age com a permissao ja concedida, o app configurado e o preparo do worker pronto; nunca pede
+ * permissao, nunca espera o FID e nunca mostra erro. Com os avisos desativados, so tenta de novo
+ * tirar o aparelho do servidor.
+ */
+export async function refreshPush(): Promise<void> {
+  try {
+    if (configReason() !== null) return
+    if (isPushOff()) {
+      await dropServerRegistration()
+      return
+    }
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    if (state.status !== 'pronto' || !registration) return
+    const messaging = getMessaging(getApp())
+    ensureListener(messaging)
+    await withTimeout(
+      register(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration }),
+      REGISTER_MS,
+    )
+  } catch {
+    /* melhor esforco: a renovacao falha em silencio */
+  }
+}
+
+/** Tira o FID local do servidor; so apaga o FID daqui quando o servidor confirmou (senao tenta na proxima abertura). */
+async function dropServerRegistration(): Promise<boolean> {
+  const fid = getLocalFid()
+  if (!fid) return true
+  try {
+    await unregisterFid(fid)
+    forgetFid()
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Desativar avisos: o aparelho sai do FCM e do servidor e o cartao volta ao botao de ativar.
+ * O estado local fica desativado mesmo sem rede; o servidor e tentado de novo na proxima abertura.
+ */
+export async function disablePush(): Promise<PushResult> {
+  const blocked = configReason()
+  if (blocked) return { ok: false, reason: blocked }
+  store(OFF_STORAGE_KEY, '1')
+  try {
+    await withTimeout(unregister(getMessaging(getApp())), REGISTER_MS)
+  } catch {
+    /* sem registro no FCM: nada a desfazer */
+  }
+  await dropServerRegistration()
+  return { ok: true }
 }

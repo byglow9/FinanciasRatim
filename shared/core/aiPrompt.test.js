@@ -12,6 +12,7 @@ import {
   SPOKEN_EXAMPLES,
   COMIC_ANGLES,
   SCENARIOS,
+  HUMOR_MOODS,
   TONES,
   SITUATIONS,
   LENGTHS,
@@ -287,4 +288,11 @@ test('cenas por assunto: todo assunto tem repertorio, e a reacao separa entrada 
   assert.ok(SCENARIOS.gasto.includes(cena({ summaryText: '{"ultimoLancamento":{"movimento":"gasto"}}' })))
   assert.notEqual(cena({ topic: 'fatura', seed: 0 }), cena({ topic: 'fatura', seed: 1 }))
   assert.doesNotMatch(messages({ tone: 'suave' })[1].content, /Cena para se inspirar/)
+})
+
+test('o humor alterna: em pedidos seguidos todos os estilos aparecem', () => {
+  const mood = (seed) => messages({ seed })[1].content.match(/Humor desta vez: (.*)\./)[1]
+  assert.equal(new Set(HUMOR_MOODS.map((_, seed) => mood(seed))).size, HUMOR_MOODS.length)
+  for (const m of HUMOR_MOODS) assert.doesNotMatch(m, /\d|[\u2014\u2013]/, m)
+  assert.doesNotMatch(messages({ tone: 'direto' })[1].content, /Humor desta vez/)
 })

@@ -45,6 +45,8 @@ const CLIENT_COLS = [
   'cardSettings',
 ]
 const BANK_COLS = ['bankConnections', 'bankImports', 'cards']
+// Colecoes so do servidor (Fase 7): marcadores de push, preferencias, contadores e cache da IA.
+const SERVER_COLS = ['pushRegistrations', 'pushPrefs', 'pushEvents', 'aiUsage', 'aiCache']
 
 const [emuHost, emuPort] = (process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080').split(':')
 
@@ -74,7 +76,7 @@ describe('matriz de regras do Firestore', () => {
     await env.clearFirestore()
     await env.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore()
-      for (const col of [...CLIENT_COLS, ...BANK_COLS, 'users', 'secrets']) {
+      for (const col of [...CLIENT_COLS, ...BANK_COLS, ...SERVER_COLS, 'users', 'secrets']) {
         await setDoc(doc(db, col, 'a1'), { ownerId: HID_A, person: 'ele', amount: 1, currentAmount: 0 })
         await setDoc(doc(db, col, 'b1'), { ownerId: HID_B, person: 'ele', amount: 2, currentAmount: 0 })
       }
@@ -179,6 +181,45 @@ describe('matriz de regras do Firestore', () => {
       await assertFails(byOwner(outro, col, HID_A))
       await assertFails(getDocs(collection(ele, col)))
     }
+  })
+
+  test('colecoes do servidor (push e IA): o cliente nao le, nao lista, nao cria, nao altera e nao apaga', async () => {
+    const perfis = [
+      ['anonimo', anon],
+      ['sem claim', semClaim],
+      ['ele', ele],
+      ['ela', ela],
+      ['outro casal', outro],
+    ]
+    for (const col of SERVER_COLS) {
+      for (const [nome, db] of perfis) {
+        const rotulo = `${col} (${nome})`
+        for (const id of ['a1', 'b1']) {
+          await assertFails(getDoc(doc(db, col, id)), `get ${rotulo}`)
+        }
+        await assertFails(byOwner(db, col, HID_A), `lista hid A ${rotulo}`)
+        await assertFails(byOwner(db, col, HID_B), `lista hid B ${rotulo}`)
+        await assertFails(getDocs(collection(db, col)), `lista aberta ${rotulo}`)
+        await assertFails(setDoc(doc(db, col, 'novo'), { ownerId: HID_A }), `create hid A ${rotulo}`)
+        await assertFails(setDoc(doc(db, col, 'novo'), { ownerId: HID_B }), `create hid B ${rotulo}`)
+        await assertFails(updateDoc(doc(db, col, 'a1'), { amount: 9 }), `update a1 ${rotulo}`)
+        await assertFails(updateDoc(doc(db, col, 'b1'), { amount: 9 }), `update b1 ${rotulo}`)
+        await assertFails(deleteDoc(doc(db, col, 'a1')), `delete a1 ${rotulo}`)
+        await assertFails(deleteDoc(doc(db, col, 'b1')), `delete b1 ${rotulo}`)
+      }
+    }
+    // Nada do que o cliente tentou mudou os documentos semeados.
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      for (const col of SERVER_COLS) {
+        for (const [id, hid, amount] of [['a1', HID_A, 1], ['b1', HID_B, 2]]) {
+          const snap = await getDoc(doc(ctx.firestore(), col, id))
+          assert.ok(snap.exists(), `${col}/${id} continua existindo`)
+          assert.equal(snap.data().ownerId, hid)
+          assert.equal(snap.data().amount, amount)
+        }
+        assert.equal((await getDoc(doc(ctx.firestore(), col, 'novo'))).exists(), false, `${col}/novo nao foi criado`)
+      }
+    })
   })
 
   test('runTransaction em goals atualiza so currentAmount e cria goalContributions com ownerId', async () => {

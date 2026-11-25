@@ -120,11 +120,6 @@ export function TransactionTotals({
           />
         </span>
       </button>
-      {hasCardSpend ? (
-        <p className="pb-3 text-center text-xs font-normal text-muted-foreground">
-          Compras no cartão: {exact(cardSpendCents)}, fora do saldo até você pagar a fatura
-        </p>
-      ) : null}
       <Collapsible open={open} id={panelId}>
         <dl className="space-y-2 border-t border-border py-3">
           {details.map((row) => (

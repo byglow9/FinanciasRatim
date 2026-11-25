@@ -45,13 +45,11 @@ test('a linha tem as quatro marcas textuais do cartao', () => {
   assert.match(src, /cardKind === 'refund'/)
 })
 
-test('a linha do cartao nos totais so aparece com compra no cartao e usa o texto combinado', () => {
+test('o cartao aparece so em Detalhes dos totais (aviso solto removido a pedido do dono) e so com compra no cartao', () => {
   const src = code(TOTALS)
   assert.match(src, /cardSpendCents = 0/, 'padrao zero')
   assert.match(src, /hasCardSpend = cardSpendCents > 0/)
-  assert.match(src, /hasCardSpend \?/, 'linha condicionada')
-  assert.ok(src.includes('fora do saldo até você pagar a fatura'), 'texto da linha')
-  assert.match(src, /Compras no cartão:/)
+  assert.ok(!src.includes('fora do saldo até você pagar a fatura'), 'aviso solto voltou')
   assert.match(src, /id: 'cartao'/, 'Detalhes repete o valor exato')
   assert.match(code(PAGE), /cardSpendCents=\{cardSpendCents\}/, 'a pagina passa o total do cartao')
 })

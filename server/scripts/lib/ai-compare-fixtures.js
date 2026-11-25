@@ -292,6 +292,19 @@ export function generalCases() {
         tx('g-r2', 11, 9, 2120, 'Loja de Moveis Ltda', 'outros'),
       ],
     })),
+    open('evento-amanha', 'Evento marcado no calendário para amanhã', 'agenda', base(at(11, 20, 18), {
+      events: [
+        { title: 'Show de rock', date: at(11, 21), time: '21:00', person: 'conjunto' },
+        { title: 'Dentista', date: at(11, 24), time: '09:00', person: PERSON },
+        { title: 'Churrasco da firma', date: at(11, 15), person: PERSON },
+      ],
+    })),
+    open('anotacao', 'Anotações que a pessoa deixou', 'anotacoes', base(at(11, 18, 22), {
+      notes: [
+        { title: 'Promessa', content: 'parar de pedir comida este mês', person: PERSON },
+        { title: 'Comprar', content: 'tênis novo só se sobrar', person: PERSON },
+      ],
+    })),
   ]
 }
 

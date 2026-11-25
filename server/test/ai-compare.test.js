@@ -226,13 +226,13 @@ describe('medidas', () => {
 describe('rodada geral', () => {
   test('um caso por assunto, sem vazamento e sem provocacao', () => {
     const cases = buildGeneralFixtures()
-    assert.equal(cases.length, 9)
+    assert.equal(cases.length, 11)
     for (const c of cases) assert.deepEqual(findLeaks(c.summaryText), [], c.id)
-    for (const topic of ['fatura', 'porquinho', 'metas', 'fixas', 'comparacao', 'semana', 'ritmo']) {
+    for (const topic of ['fatura', 'porquinho', 'metas', 'fixas', 'comparacao', 'semana', 'ritmo', 'agenda', 'anotacoes']) {
       assert.ok(cases.some((c) => c.topic === topic), topic)
     }
     const tasks = planTasks(cases, 2, { provocations: false })
-    assert.equal(tasks.length, 18)
+    assert.equal(tasks.length, 22)
     assert.ok(tasks.every((t) => t.kind === 'resumo'))
   })
 })

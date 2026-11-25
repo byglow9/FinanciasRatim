@@ -269,6 +269,27 @@ describe('pagamento da fatura', () => {
     assert.equal(tx.cardId, undefined)
   })
 
+  const textPayment = (id, amount, iso) =>
+    db.collection('transactions').doc(`bank_${id}`).set({
+      ownerId: HID, source: 'bank', type: 'saida', amount, cardKind: 'payment', transfer: true,
+      bankImportId: id, date: ts(iso),
+    })
+  const paymentsOf = async (id = 'acc-credit') => (await db.collection('cards').doc(id).get()).data().payments
+  const seedClosing = (id = 'acc-credit') =>
+    db.collection('cardSettings').doc(id).set({ ownerId: HID, closingDay: 5 })
+
+  test('fatura do historico, fora do alcance da janela de 90 dias, nunca recebe o pagamento', async () => {
+    const now = new Date('2026-11-25T15:00:00Z')
+    // o historico inteiro do cartao esta em billTotals (D-13), mas as evidencias so cobrem 90 dias
+    await seedCard({ billTotals: { '2025-03': 30000, '2025-04': 10000, '2026-11': 30000 } })
+    await seedClosing()
+    await textPayment('p1', 100, '2026-11-20T15:00:00Z')
+    await reconcileCardPayments(db, { ownerId: HID, now })
+    const payments = await paymentsOf()
+    assert.equal(payments.length, 1)
+    assert.equal(payments[0].billMonth, '2026-11')
+  })
+
   test('a rodada do sync do cartao nao trata o pagamento ligado como compra', async () => {
     await seedCard()
     await syncConnection(db, bankOnlyPluggy([payTx()]), connection())

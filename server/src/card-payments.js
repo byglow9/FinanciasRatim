@@ -6,6 +6,7 @@
 //   ignora as regras) e a janela de data e filtrada em memoria, sem indice novo.
 // Nunca registra valores, descricoes nem ids em log.
 
+import { partsOfDate, shiftBillMonth } from '../../shared/core/cardBills.js'
 import { detectCardPayments } from '../../shared/core/cardPayments.js'
 
 const CARDS = 'cards'
@@ -38,6 +39,19 @@ function evidenceOf(doc, sinceMs) {
   const cents = centsOf(d.amount)
   if (!Number.isFinite(dateMs) || dateMs < sinceMs || !Number.isFinite(cents) || cents <= 0) return null
   return { d, dateMs, cents }
+}
+
+// billTotals traz o historico inteiro (D-13), mas as evidencias so cobrem a janela: fica de fora a
+// fatura que um pagamento da janela ja nao alcanca (anterior ao mes antes do inicio da janela),
+// senao o pagamento parcial abateria uma fatura de anos atras.
+function reachableBillTotals(billTotals, sinceMs) {
+  const { year, month } = partsOfDate(sinceMs)
+  const oldest = shiftBillMonth(`${year}-${String(month).padStart(2, '0')}`, -1)
+  const totals = {}
+  for (const [billMonth, total] of Object.entries(billTotals ?? {})) {
+    if (billMonth >= oldest) totals[billMonth] = total
+  }
+  return totals
 }
 
 // Liga os pagamentos do dono as faturas de cada cartao e grava cards/{id}.payments.
@@ -95,7 +109,7 @@ export async function reconcileCardPayments(db, { ownerId, now = new Date() }) {
     }
 
     const detected = detectCardPayments({
-      billTotals: card.billTotals ?? {},
+      billTotals: reachableBillTotals(card.billTotals, sinceMs),
       closingDay,
       cardCredits,
       bankOutflows: outflows.filter((o) => !claimed.has(o.id)),

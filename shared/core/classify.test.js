@@ -77,6 +77,8 @@ test('transferencia propria sem texto de pagamento continua em revisao, sem paga
   const r = classify(tx(), { ...bank, hasCreditCard: true, categoryNames: ['Same person transfer - PIX'] })
   assert.deepEqual([r.status, r.reason], ['review', 'self_transfer'])
   assert.equal(r.cardKind, undefined)
+  const semCartao = classify(tx(), { ...bank, categoryNames: ['Same person transfer - PIX'] })
+  assert.deepEqual([semCartao.status, semCartao.reason], ['review', 'self_transfer'])
 })
 
 test('credito com texto de pagamento de fatura na conta nao vira pagamento (so saida)', () => {

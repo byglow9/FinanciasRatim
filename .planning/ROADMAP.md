@@ -409,7 +409,7 @@ Plans:
 
 **Notas de execução:** a Central de Limites e Cartões foi removida pelo dono em 18/11 (quick `261118-mkh`), então o cartão ganha a rota `/cartoes`, com um resumo na Home (o dock ganha o 9º destino Cartões, decisão D-11 do dono em 24/11, e a Home continua com o resumo). O primeiro plano é o tracer (cartão Nubank real com limite, disponível, % usado e fatura atual vindos da Pluggy) e o plano 06-02 o confere em produção antes de qualquer expansão. Ordem de produção: índices, regras, servidor (push em main) e hospedagem coinc; depois, com o servidor no ar, o histórico completo do cartão por script do dono, com ensaio e cópia de segurança (D-13); nenhuma regra restritiva nova na fase. O MeuPluggy atualiza cerca de 1 vez por dia: nenhuma promessa de tempo real. Parcelas N/M são heurística até haver uma compra parcelada real (D-06, D-07). Decisões do dono de 24/11 (D-11 a D-14): o chip Cartão do lançamento manual funciona e a compra manual é adotada pela compra do banco sem duplicar (D-12); o histórico do cartão é importado inteiro, sem o limite de 40 dias, com ensaio e cópia de segurança antes de qualquer reclassificação em massa (D-13); sem tempo real, Casal e Relatórios contam a compra do cartão como gasto na data da compra e o "Marcar como paga" na fatura fica (D-14).
 
-**Plans**: 17/20 plans executed
+**Plans**: 18/20 plans executed
 **UI hint**: yes
 
 Plans:
@@ -450,7 +450,7 @@ Plans:
 **Wave 7** *(blocked on Wave 6 completion)*
 
 - [x] 06-19-PLAN.md — Servidor: histórico completo do cartão com ensaio, cópia de segurança obrigatória e marcador que pausa o sync automático (CARD-07, CARD-06, CARD-03)
-- [ ] 06-20-PLAN.md — Auditoria de layout a 360px: /cartoes, dock de 9 destinos e folha de lançamento com o cartão, nos dois temas (CENT-03, CARD-02)
+- [x] 06-20-PLAN.md — Auditoria de layout a 360px: /cartoes, dock de 9 destinos e folha de lançamento com o cartão, nos dois temas (CENT-03, CARD-02)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -506,6 +506,6 @@ Plans:
 | 3. Limites, "Pode gastar" e Central | 23/23 | In Progress|  |
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
-| 6. Cartão de crédito | 17/20 | In Progress|  |
+| 6. Cartão de crédito | 18/20 | In Progress|  |
 | 7. Push e Vintém com IA | 0/TBD | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

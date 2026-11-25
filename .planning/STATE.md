@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 06
 current_phase_name: Cartão de crédito
 status: executing
-stopped_at: Completed 06-19-PLAN.md
-last_updated: "2026-11-25T01:39:35.675Z"
+stopped_at: Completed 06-20-PLAN.md
+last_updated: "2026-11-25T14:28:23.142Z"
 last_activity: 2026-11-24
 last_activity_desc: Phase 06 execution started
-state_head: 7d6927db7c53262391da7271b331e4c4f1096211
+state_head: 86016a4c567dbea90ef8783ff7a6c5b6985ff696
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 129
-  completed_plans: 126
+  completed_plans: 127
   percent: 22
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-17)
 ## Current Position
 
 Phase: 06 (Cartão de crédito) — EXECUTING
-Plan: 12 of 20
+Plan: 13 of 20
 Status: Ready to execute
 Last activity: 2026-11-24 — Phase 06 execution started
 
@@ -150,6 +150,7 @@ Progress: [██░░░░░░░░] 22%
 | Phase 06 P12 | 9min | 3 tasks | 7 files |
 | Phase 06 P18 | 15min | 3 tasks | 5 files |
 | Phase 06 P19 | 15min | 3 tasks | 6 files |
+| Phase 06 P20 | 20min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -230,6 +231,7 @@ Recent decisions affecting current work:
 - [Phase 06]: 06-18: nao publicar a adocao sem o portao do 06-19 e sem os testes de emulador
 - [Phase 06]: 06-19: sem cards.historyBaselineAt o sync automatico nao grava compras do cartao; resposta vazia da Pluggy nao define o marcador
 - [Phase 06]: 06-19: aplicar o historico exige copia que traga como estao agora os lancamentos e importacoes do casal
+- [Phase 06]: [Phase 06] 06-20: telas do cartao, dock e folha de lancamento com dois cartoes passaram em Chrome (layout e tema, 360x640 e 390x844) com zero violacoes e sem mudar a interface; launch-card usa o recorte overflow-x do auditor principal
 
 ### Pending Todos
 
@@ -262,8 +264,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-25T01:39:33.997Z
-Stopped at: Completed 06-19-PLAN.md
+Last session: 2026-11-25T14:28:23.010Z
+Stopped at: Completed 06-20-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

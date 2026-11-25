@@ -21,6 +21,18 @@ O usuário recebe avisos reais no celular (push via FCM, servidor Express, sem C
 - **D-03:** O dono pediu "sem limite". Decisão: **teto alto e invisível**, 100 falas por pessoa por dia, configurável no servidor (padrão 100). Ao bater o teto, ou quando a cota grátis do provedor acabar, o Vintém usa o banco de frases sem nenhum aviso ao usuário. Cumpre o IA-01 e protege o plano grátis (Cloudflare ~250 a 300 chamadas/dia no total).
 - **D-04:** Espera máxima de 4 s por chamada; falha, timeout, 429 ou validação reprovada caem no próximo provedor e depois no banco de frases.
 
+### O que o Vintém fala e como (IA)
+- **D-11:** Assuntos, todos os quatro: o gasto que acabou de lançar (citando loja ou categoria), limites e ritmo do mês, **padrões e comparações** (frequência, "terceira vez no iFood esta semana", comparação com o mês passado) e entradas, metas e porquinho. O Vintém tem que **analisar tudo e entender padrões engraçados**, comentando e alfinetando.
+- **D-12:** **Fala espontânea, sem gatilho**: mistura de três formas: (a) ao abrir o app, de 1 a 3 vezes por dia, no máximo uma por abertura e sem repetir o assunto no mesmo dia; (b) solta, espiando enquanto o usuário usa o app, de vez em quando; (c) notificação push espontânea, no máximo 1 por dia, respeitando os tipos e o silêncio que o usuário configurar. As frequências exatas ficam ajustáveis por configuração do servidor.
+- **D-13:** **Personalidade: sem filtro de verdade.** Palavrão pesado, deboche, "toma no cu porque está fazendo merda", cobrar que melhore em tal e tal coisa, apelidos como "baleia", "tudo que for preciso". O dono pediu isso explicitamente, e o app é só do casal.
+- **D-14:** **Travas mantidas** (única exceção ao sem filtro): xinga o **comportamento** e o gasto, nunca discrimina por raça, orientação, religião ou grupo; e **nunca fala de Ele para Ela nem de Ela para Ele**: cada pessoa só recebe fala sobre os próprios gastos e o que é do casal (Porquinho). A trava de aperto grave (tom sério quando houver sinal de dívida perigosa) **não** foi escolhida e não entra.
+- **D-15:** **Tamanho varia por situação:** curta (1 frase, até ~140 caracteres) no dia a dia e na notificação; mais longa (até ~2 frases) em estouro de limite, resumo da semana e padrões notados.
+- **D-16:** **O que a IA pode saber:** o dono quer acesso a "tudo". Entra um **resumo montado no servidor**: totais e valores exatos por categoria, frequência dos gastos, o que mais está gastando, tendência contra o mês passado, limites e % usado, entradas, metas, porquinho, contas fixas, fatura do cartão, e nomes de lojas. Continua proibido enviar CPF, número de conta ou cartão, e nome de pessoa (Pix para pessoa vira rótulo genérico como "uma pessoa"). Quem monta o resumo é o servidor, nunca o cliente. O dono aceitou que os provedores gratuitos possam guardar e treinar com o que recebem (PROJECT.md).
+
+### Modelo e provedor
+- **D-17:** **Grátis primeiro, trocar se recusar.** Ordem de partida: Cloudflare Workers AI e/ou Groq (a ordem e o modelo exato são decididos na pesquisa/implementação, relendo na data limites, modelos grátis e termos de dados, porque as fontes da pesquisa de 2026-11-25 divergem). Se o modelo se recusar a xingar, vier mansinho demais, falhar, estourar o limite ou demorar, cai no próximo provedor e depois no banco de frases. Grok só entra se algum crédito grátis for confirmado; pago não entra por padrão (PROJECT.md: rodar de graça).
+- **D-18:** A pesquisa da fase deve incluir um **teste lado a lado** do mesmo resumo nos modelos candidatos, no tom sem filtro, para o dono escolher qual soa como o Vintém; e medir a taxa de recusa de palavrão por modelo.
+
 ### Texto e momento dos avisos
 - **D-05:** O texto da notificação na tela de bloqueio usa o **tom sem filtro** (frase do Vintém com deboche), **sem valores e sem nomes de lojas**. O dono aceitou que quem olhar o celular leia o palavrão. As frases dos avisos vêm do banco de frases por tom (Fase 4), não da IA, para o texto de tela de bloqueio ser previsível e nunca ter dado financeiro.
 - **D-06:** Padrão de partida: **sem horário de silêncio e os três tipos ligados** (80% do limite, estouro de 100% e fatura perto de vencer). O usuário escolhe os tipos e define o silêncio nas Configurações (PUSH-03).
@@ -90,6 +102,8 @@ O usuário recebe avisos reais no celular (push via FCM, servidor Express, sem C
 <deferred>
 ## Deferred Ideas
 
+- **Distinção melhor de configurações por perfil** (tom, avisos, o que cada pessoa vê): o dono quer tratar em uma fase própria. Hoje o tom é um só do casal (Fase 4, D-10b) e os avisos são por usuário.
+- Trava de tom sério para aperto financeiro grave: não escolhida agora; pode voltar na fase de configurações por perfil.
 - Convite do Vintém na Home para ativar avisos, e tela de convite na primeira abertura: descartados por ora (decisão D-08).
 
 </deferred>

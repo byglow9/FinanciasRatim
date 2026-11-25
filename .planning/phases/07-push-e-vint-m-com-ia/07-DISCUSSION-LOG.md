@@ -16,3 +16,12 @@ Ordem de provedores, prompt, validação de idioma, estrutura das coleções.
 
 ## Deferred Ideas
 Convite na Home e tela de primeira abertura.
+
+## Rodada 2 (conteúdo, IA e modelo)
+- **Assuntos:** todos os quatro, mais fala espontânea sem gatilho e análise de padrões engraçados.
+- **Personalidade:** sem filtro total, palavrão, apelidos, "tudo que for preciso".
+- **Formato:** varia por situação.
+- **Contexto da IA:** "acesso a tudo", via resumo montado no servidor; proibições de CPF, conta, cartão e nome de pessoa mantidas.
+- **Modelo:** grátis primeiro, troca se recusar. Pesquisa de 2026-11-25 (fontes de terceiros e divergentes): Cloudflare 10 mil Neurons/dia; Groq gpt-oss e Qwen grátis (30 RPM, 1.000/dia); Grok sem crédito grátis confirmado.
+- **Fala espontânea:** mistura das três alternativas (ao abrir, solta no uso, push espontâneo).
+- **Travas:** xinga o comportamento sem discriminar; nunca fala de Ele para Ela. Pediu uma fase futura para configurações por perfil.

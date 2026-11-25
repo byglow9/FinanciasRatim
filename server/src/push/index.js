@@ -1,6 +1,7 @@
 import { createLimiter } from '../limiter.js'
 import { createLimitsRouter } from './limits-router.js'
-import { createNotifier, readMaxPerDay } from './notifier.js'
+import { readPushConfig } from './config.js'
+import { createNotifier } from './notifier.js'
 import { createPrefsStore } from './prefs.js'
 import { createRepo } from './repo.js'
 import { createPushRouter } from './router.js'
@@ -15,7 +16,8 @@ export function createPushFeature({ db, messaging, now = () => new Date(), env =
   const checkLimiter = createLimiter({ max: 10, windowMs: 60_000, now: () => now().getTime() })
   const prefsStore = createPrefsStore(db)
   const repo = createRepo({ db, prefsStore })
-  const notifier = createNotifier({ repo, sender: send, now, config: { maxPerDay: readMaxPerDay(env) } })
+  const config = readPushConfig(env)
+  const notifier = createNotifier({ repo, sender: send, now, config })
   const router = createPushRouter({ db, send, now, limiter, prefsStore })
   const limitsRouter = createLimitsRouter({ notifier, limiter: checkLimiter })
   return {

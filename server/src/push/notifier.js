@@ -1,22 +1,17 @@
 import { buildBudgetView } from '../../../shared/core/budget.js'
 import { categoryDisplayName } from '../../../shared/core/categories.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
-import { collapseHeld, eventDayKey, limitEvents } from '../../../shared/core/pushEvents.js'
+import { billEvents, collapseHeld, eventDayKey, limitEvents } from '../../../shared/core/pushEvents.js'
 import { deliveryDecision, isQuiet } from '../../../shared/core/pushPrefs.js'
 import { buildPushPayload } from '../../../shared/core/vintemPhrasesPush.js'
+import { readPushConfig } from './config.js'
+import { joinBillCards } from './repo.js'
+
+export { readMaxPerDay } from './config.js'
 
 const PEOPLE = ['ele', 'ela']
-const DEFAULT_MAX_PER_DAY = 8
 
-/**
- * Teto diario de avisos por pessoa (PUSH_MAX_PER_DAY). Valor ausente ou invalido vale o padrao.
- * @param {Record<string, string | undefined>} [env]
- * @returns {number}
- */
-export function readMaxPerDay(env = {}) {
-  const n = Number(env.PUSH_MAX_PER_DAY)
-  return Number.isInteger(n) && n >= 1 && n <= 1000 ? n : DEFAULT_MAX_PER_DAY
-}
+const isPair = (hid, person) => typeof hid === 'string' && hid !== '' && PEOPLE.includes(person)
 
 /** Situacao do banco de frases de push de um marcador. */
 function situationOf(marker) {
@@ -31,8 +26,8 @@ function logError(where, err) {
 }
 
 /**
- * Notificador de limites (PUSH-02, PUSH-03, PUSH-04). Uma so funcao idempotente por pessoa: calcula
- * os eventos pela mesma conta do cliente e reivindica um marcador por evento com create() do
+ * Notificador (PUSH-02, PUSH-03, PUSH-04): limites e fatura de cartao. Cada funcao e idempotente por
+ * pessoa: calcula os eventos pela mesma conta do cliente e reivindica um marcador por evento com create() do
  * Firestore. Quem perde a corrida nao envia (D-07). O marcador guarda so ids, categoria, limiar e
  * chaves de ciclo e de dia, nunca o texto do aviso: o texto e montado na hora do envio (D-05).
  *
@@ -46,7 +41,8 @@ function logError(where, err) {
  * }} deps
  */
 export function createNotifier({ repo, sender, now = () => new Date(), config = {} }) {
-  const maxPerDay = Number.isInteger(config.maxPerDay) && config.maxPerDay >= 1 ? config.maxPerDay : DEFAULT_MAX_PER_DAY
+  const defaults = readPushConfig()
+  const maxPerDay = Number.isInteger(config.maxPerDay) && config.maxPerDay >= 1 ? config.maxPerDay : defaults.maxPerDay
 
   /**
    * Envia o aviso de um marcador ja reivindicado (status enviando) e fecha o marcador com o
@@ -105,13 +101,29 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
+   * Reivindica o marcador ja com o status da decisao e envia quando for o caso. Desligado nao
+   * entrega depois; retido espera o silencio acabar (D-21). Sem texto no marcador.
+   */
+  async function claimAndDeliver({ hid, person, id, marker, decision, tone, excludeFid, at }) {
+    if (decision === 'desligado' || decision === 'reter') {
+      const status = decision === 'desligado' ? 'desligado' : 'pendente'
+      return { claimed: await repo.claimEvent(id, { ...marker, status }), sent: 0 }
+    }
+    if (decision !== 'enviar' || !(await repo.claimEvent(id, { ...marker, status: 'enviando' }))) {
+      return { claimed: false, sent: 0 }
+    }
+    const out = await dispatch({ hid, person, id, marker, tone, excludeFid, at })
+    return { claimed: true, sent: out.sent }
+  }
+
+  /**
    * Avalia os limites da pessoa e envia o que for novo. `excludeFid` e o aparelho em uso, que ja
    * mostra o aviso dentro da tela.
    * @param {{ hid: string, person: string, excludeFid?: string }} args
    */
   async function evaluateLimits({ hid, person, excludeFid }) {
     const summary = { events: 0, claimed: 0, sent: 0 }
-    if (typeof hid !== 'string' || !hid || !PEOPLE.includes(person)) return summary
+    if (!isPair(hid, person)) return summary
 
     const at = now()
     const settings = await repo.readSettings(hid, person)
@@ -176,17 +188,59 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
         now: at,
       })
 
-      if (decision === 'desligado' || decision === 'reter') {
-        // Desligado nao entrega depois; retido espera o silencio acabar (D-21). Sem texto no marcador.
-        const status = decision === 'desligado' ? 'desligado' : 'pendente'
-        if (await repo.claimEvent(event.id, { ...marker, status })) summary.claimed++
-        continue
-      }
-      if (decision !== 'enviar') continue
+      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, excludeFid, at })
+      if (out.claimed) summary.claimed++
+      summary.sent += out.sent
+    }
+    return summary
+  }
 
-      if (!(await repo.claimEvent(event.id, { ...marker, status: 'enviando' }))) continue
-      summary.claimed++
-      const out = await dispatch({ hid, person, id: event.id, marker, tone: settings.tone, excludeFid, at })
+  /**
+   * Avisa as faturas da pessoa fechadas (ou atrasadas), nao pagas e perto de vencer, pela mesma
+   * conta do sino do app (cardBillAlerts). Um marcador por cartao e mes da fatura. Sem excluir o
+   * aparelho em uso: a fatura nao aparece como aviso dentro da tela, so no sino.
+   * Le so cartoes, configuracoes e preferencias, nunca lancamentos.
+   * @param {{ hid: string, person: string }} args
+   */
+  async function evaluateBills({ hid, person }) {
+    const summary = { events: 0, claimed: 0, sent: 0 }
+    if (!isPair(hid, person)) return summary
+
+    const cards = await repo.readCards(hid, person)
+    if (cards.length === 0) return summary
+
+    const at = now()
+    const [cardSettings, settings] = await Promise.all([repo.readCardSettings(hid), repo.readSettings(hid, person)])
+    // enabled sempre ligado aqui: com o interruptor desligado o evento vira marcador desligado.
+    const events = billEvents({
+      hid,
+      person,
+      cards: joinBillCards(cards, cardSettings),
+      now: at,
+      daysBefore: settings.daysBeforeDueDate,
+      enabled: true,
+    })
+    summary.events = events.length
+    if (events.length === 0) return summary
+
+    const prefs = await repo.readPrefs(hid, person)
+    const decision = deliveryDecision({ prefs, kind: 'fatura', faturaEnabled: settings.faturaEnabled, now: at })
+    const dayKey = eventDayKey(at)
+    for (const event of events) {
+      // Sem valor, data nem nome do cartao: o texto sai do banco de push na hora do envio (D-05).
+      const marker = {
+        ownerId: hid,
+        person,
+        kind: 'fatura',
+        cardId: event.cardId,
+        billMonth: event.billMonth,
+        tag: event.tag,
+        url: event.url,
+        dayKey,
+        createdAt: at,
+      }
+      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, at })
+      if (out.claimed) summary.claimed++
       summary.sent += out.sent
     }
     return summary
@@ -207,7 +261,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     const groups = new Map()
     for (const marker of pending) {
       const hid = marker.ownerId
-      if (typeof hid !== 'string' || !hid || !PEOPLE.includes(marker.person)) continue
+      if (!isPair(hid, marker.person)) continue
       const key = `${hid}\u0000${marker.person}`
       const group = groups.get(key) ?? { hid, person: marker.person, items: [] }
       group.items.push(marker)
@@ -255,5 +309,5 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     return summary
   }
 
-  return { evaluateLimits, deliverHeld }
+  return { evaluateLimits, evaluateBills, deliverHeld }
 }

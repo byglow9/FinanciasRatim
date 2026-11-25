@@ -45,14 +45,20 @@ function spend(amountReais, over = {}) {
   }
 }
 
-function makeRepo({ settings = settingsFor(), txs = [], silentIds = [], fids = {}, prefs = DEFAULT_PUSH_PREFS } = {}) {
+function makeRepo({ settings = settingsFor(), txs = [], silentIds = [], fids = {}, prefs = DEFAULT_PUSH_PREFS, cards = [], cardSettings = [] } = {}) {
   const events = new Map()
-  const state = { settings, txs, silentIds, fids, prefs, claimCalls: 0 }
+  const state = { settings, txs, silentIds, fids, prefs, cards, cardSettings, claimCalls: 0 }
   const repo = {
     state,
     events,
     async readSettings() {
       return state.settings
+    },
+    async readCards(hid, person) {
+      return state.cards.filter((c) => c.ownerId === hid && c.person === person)
+    },
+    async readCardSettings(hid) {
+      return state.cardSettings.filter((c) => c.ownerId === hid)
     },
     async readCycleTransactions(hid, person, cycle) {
       return state.txs.filter((t) => t.ownerId === hid && t.person === person && t.date >= cycle.start && t.date <= cycle.end)
@@ -484,6 +490,7 @@ describe('POST /api/limits/check', () => {
   let db
   let sentMessages
   let clock
+  let feature
 
   const post = (token, body, headers = {}) =>
     fetch(`${base}/api/limits/check`, {
@@ -503,7 +510,7 @@ describe('POST /api/limits/check', () => {
       },
     }
     // O Firestore falso nao tem orderBy nem count: o repo real do emulador e provado em emu/push-events.
-    const feature = createPushFeature({ db, messaging, now: () => new Date(clock.t), env: {} })
+    feature = createPushFeature({ db, messaging, now: () => new Date(clock.t), env: {} })
     feature.notifier.evaluateLimits = async (args) => {
       sentMessages.push({ check: args })
       return { events: 0, claimed: 0, sent: 0 }
@@ -520,6 +527,25 @@ describe('POST /api/limits/check', () => {
   })
 
   const checks = () => sentMessages.filter((m) => m.check).map((m) => m.check)
+
+  test('o check avalia a fatura depois dos limites, sem mudar a resposta mesmo se ela falhar', async () => {
+    const original = feature.notifier.evaluateBills
+    const bills = []
+    feature.notifier.evaluateBills = async (args) => {
+      bills.push({ args, limitsBefore: checks().length })
+      throw new Error('falha da fatura')
+    }
+    try {
+      const before = checks().length
+      const res = await post('tok-a-ele', { fid: 'fidAparelho00001' })
+      assert.equal(res.status, 200)
+      assert.deepEqual(await res.json(), { ok: true })
+      // Sem excludeFid: a fatura nao aparece como aviso dentro da tela.
+      assert.deepEqual(bills, [{ args: { hid: 'casalA', person: 'ele' }, limitsBefore: before + 1 }])
+    } finally {
+      feature.notifier.evaluateBills = original
+    }
+  })
 
   test('sem token a rota responde 401', async () => {
     assert.equal((await post(null, {})).status, 401)
@@ -563,5 +589,143 @@ describe('POST /api/limits/check', () => {
     // Passada a janela, volta a aceitar.
     clock.t += 61_000
     assert.equal((await post('tok-a-ela', {})).status, 200)
+  })
+})
+
+// Fatura: NOW e 17/11. Fechamento dia 10 e vencimento dia 20 fazem a fatura 2026-11 estar fechada e
+// vencer em 3 dias (a antecedencia padrao).
+const CARD = {
+  id: 'cartao-ele',
+  ownerId: HID,
+  person: 'ele',
+  name: 'Cartao Teste',
+  billTotals: { '2026-11': 45067 },
+  payments: [],
+}
+const CARD_CFG = { accountId: 'cartao-ele', ownerId: HID, closingDay: 10, dueDay: 20, nickname: 'Roxinho', paidMonths: [] }
+const BILL_ID = 'casalA__fatura__cartao-ele__2026-11'
+
+describe('notificador de fatura', () => {
+  let clock
+  let repo
+  let sender
+  let notifier
+
+  const setup = (opts = {}) => {
+    clock = { t: T_1000_NOV17 }
+    repo = makeRepo({ cards: [CARD], cardSettings: [CARD_CFG], fids: FIDS, ...opts })
+    sender = makeSender()
+    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t) })
+  }
+  const T_1000_NOV17 = at('2026-11-17T13:00:00Z')
+  const bills = (person = 'ele', hid = HID) => notifier.evaluateBills({ hid, person })
+  const billStatuses = () => [...repo.events.values()].map((e) => e.status)
+
+  beforeEach(() => setup())
+
+  test('fatura fechada, nao paga e perto de vencer gera um aviso unico, com texto do banco de push', async () => {
+    const out = await bills()
+    assert.deepEqual(out, { events: 1, claimed: 1, sent: 2 })
+    assert.equal(sender.calls.length, 1)
+    assert.deepEqual(sender.calls[0].fids.sort(), ['fidEle-aparelho1', 'fidEle-aparelho2'])
+    const { payload } = sender.calls[0]
+    assert.equal(payload.tag, 'fatura-cartao-ele')
+    assert.equal(payload.url, '/cartoes')
+    assert.equal(payload.body, buildPushPayload({ situation: 'push-fatura', tone: 'sem-filtro', seed: BILL_ID }).body)
+    // Sem valor, sem data e sem nome do cartao (D-05).
+    assert.doesNotMatch(`${payload.title} ${payload.body}`, /\d|R\$|Roxinho|Cartao Teste/)
+
+    const marker = repo.events.get(BILL_ID)
+    assert.deepEqual(
+      Object.keys(marker).filter((k) => !['enviados', 'sentAt'].includes(k)).sort(),
+      ['billMonth', 'cardId', 'createdAt', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'url']
+    )
+    assert.equal(marker.status, 'enviado')
+  })
+
+  test('uma segunda avaliacao, mesmo no dia seguinte, nao repete', async () => {
+    await bills()
+    clock.t += 24 * 60 * 60 * 1000
+    const again = await bills()
+    assert.equal(again.claimed, 0)
+    assert.equal(sender.calls.length, 1)
+    assert.equal(repo.events.size, 1)
+  })
+
+  test('paga, marcada como paga, aberta, longe do vencimento ou sem as datas do dono nao gera', async () => {
+    const cases = [
+      { cards: [{ ...CARD, payments: [{ billMonth: '2026-11', cents: 45067 }] }] },
+      { cardSettings: [{ ...CARD_CFG, paidMonths: ['2026-11'] }] },
+      { cards: [{ ...CARD, billTotals: { '2026-12': 1000 } }] },
+      { cardSettings: [{ ...CARD_CFG, dueDay: 28 }] },
+      { cardSettings: [] },
+      { cardSettings: [{ ...CARD_CFG, closingDay: null }] },
+      { cards: [] },
+    ]
+    for (const opts of cases) {
+      setup(opts)
+      const out = await bills()
+      assert.equal(out.events, 0, JSON.stringify(opts))
+      assert.equal(sender.calls.length, 0)
+      assert.equal(repo.events.size, 0)
+    }
+  })
+
+  test('a antecedencia vem das configuracoes', async () => {
+    setup({ settings: { ...settingsFor(), daysBeforeDueDate: 2 } })
+    assert.equal((await bills()).events, 0)
+    clock.t += 24 * 60 * 60 * 1000
+    assert.equal((await bills()).events, 1)
+  })
+
+  test('com o interruptor de vencimento desligado grava desligado e nao entrega depois', async () => {
+    setup({ settings: settingsFor({ faturaEnabled: false }) })
+    await bills()
+    assert.deepEqual(billStatuses(), ['desligado'])
+    await notifier.deliverHeld()
+    repo.state.settings = settingsFor()
+    await bills()
+    assert.equal(sender.calls.length, 0)
+  })
+
+  test('cartao da outra pessoa ou de outro casal nao gera aviso', async () => {
+    assert.equal((await bills('ela')).events, 0)
+    assert.equal((await bills('ele', 'casalB')).events, 0)
+    assert.equal(sender.calls.length, 0)
+    // O cartao e da Ela: so o aparelho dela recebe.
+    setup({ cards: [{ ...CARD, person: 'ela' }] })
+    await bills('ele')
+    await bills('ela')
+    assert.deepEqual(sender.calls.map((c) => c.fids), [['fidEla-aparelho1']])
+  })
+
+  test('no silencio a fatura fica pendente e o deliverHeld entrega uma vez', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = at('2026-11-18T02:30:00Z')
+    await bills()
+    assert.deepEqual(billStatuses(), ['pendente'])
+    assert.equal(sender.calls.length, 0)
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    await notifier.deliverHeld()
+    await bills()
+    assert.equal(sender.calls.length, 1)
+    assert.equal(sender.calls[0].payload.body, buildPushPayload({ situation: 'push-fatura', tone: 'sem-filtro', seed: BILL_ID }).body)
+    assert.deepEqual(billStatuses(), ['enviado'])
+  })
+
+  test('falha transitoria apaga o marcador e a avaliacao seguinte reenvia', async () => {
+    sender.result = { sent: 0, dead: 0, failed: 2 }
+    await bills()
+    assert.equal(repo.events.size, 0)
+    sender.result = null
+    await bills()
+    assert.deepEqual(billStatuses(), ['enviado'])
+  })
+
+  test('entrada invalida nao faz nada', async () => {
+    assert.equal((await bills('porquinho')).events, 0)
+    assert.equal((await bills('ele', '')).events, 0)
+    assert.equal(repo.events.size, 0)
   })
 })

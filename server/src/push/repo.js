@@ -9,6 +9,8 @@ const TRANSACTIONS = 'transactions'
 const LIMIT_ALERTS = 'limitAlerts'
 const EVENTS = 'pushEvents'
 const REGISTRATIONS = 'pushRegistrations'
+const CARDS = 'cards'
+const CARD_SETTINGS = 'cardSettings'
 
 const DEFAULT_TONE = 'sem-filtro'
 const DEFAULT_DAYS_BEFORE = 3
@@ -38,6 +40,32 @@ function mapTransaction(id, d) {
     person: d.person,
     date,
   }
+}
+
+const dayOfMonth = (v) => (Number.isInteger(v) && v >= 1 && v <= 31 ? v : null)
+
+/**
+ * Junta cards e cardSettings na forma CalendarCard do nucleo, como o sino do app (AlertsBell).
+ * @param {Array<Record<string, any>>} cards
+ * @param {Array<Record<string, any>>} settings
+ * @returns {Array<import('../../../shared/core/cardCalendar.js').CalendarCard>}
+ */
+export function joinBillCards(cards, settings) {
+  const byAccount = new Map(settings.map((s) => [s.accountId, s]))
+  return cards.map((card) => {
+    const own = byAccount.get(card.id)
+    const nickname = typeof own?.nickname === 'string' ? own.nickname.trim() : ''
+    return {
+      id: card.id,
+      displayName: nickname || card.name,
+      name: card.name,
+      billTotals: card.billTotals,
+      payments: card.payments,
+      closingDay: dayOfMonth(own?.closingDay),
+      dueDay: dayOfMonth(own?.dueDay),
+      paidMonths: Array.isArray(own?.paidMonths) ? own.paidMonths : [],
+    }
+  })
 }
 
 /** Erro de create() que significa "o documento ja existe". */
@@ -138,6 +166,29 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
         .get()
       const prefix = `${hid}__limite__`
       return snap.docs.map((d) => (d.id.startsWith(prefix) ? d.id.slice(prefix.length) : d.id))
+    },
+
+    /**
+     * Cartoes da pessoa (cards/{accountId}). Dois filtros de igualdade: o cartao da outra pessoa
+     * nunca entra (D-14).
+     * @param {string} hid
+     * @param {string} person
+     * @returns {Promise<Array<Record<string, any>>>}
+     */
+    async readCards(hid, person) {
+      const snap = await db.collection(CARDS).where('ownerId', '==', hid).where('person', '==', person).get()
+      return snap.docs.map((d) => ({ ...d.data(), id: d.id }))
+    },
+
+    /**
+     * Configuracao dos cartoes do casal (cardSettings/{accountId}: fechamento, vencimento, apelido
+     * e meses marcados como pagos). Nao tem pessoa: a juncao com os cartoes da pessoa resolve.
+     * @param {string} hid
+     * @returns {Promise<Array<Record<string, any>>>}
+     */
+    async readCardSettings(hid) {
+      const snap = await db.collection(CARD_SETTINGS).where('ownerId', '==', hid).get()
+      return snap.docs.map((d) => ({ ...d.data(), accountId: d.id }))
     },
 
     /** Preferencias de aviso da pessoa (padroes quando nao ha documento). */

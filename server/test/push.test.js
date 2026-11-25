@@ -167,7 +167,7 @@ describe('push', () => {
     assert.ok(!('token' in msg), 'sem o campo token')
     assert.ok(!('notification' in msg), 'sem o campo notification')
     assert.deepEqual(Object.keys(msg.data).sort(), ['body', 'tag', 'title', 'url'])
-    assert.equal(msg.data.title, 'Vintém')
+    assert.equal(msg.data.title, 'OINC')
     assert.equal(msg.data.tag, 'teste')
     assert.equal(msg.data.url, '/configuracoes#notificacoes')
     assert.ok(Object.values(msg.data).every((v) => typeof v === 'string'))

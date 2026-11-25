@@ -79,7 +79,7 @@ export function createPushRouter({ db, send, now = () => new Date(), limiter = n
       if (fids.length === 0) return res.status(404).json({ error: 'Nenhum aparelho registrado' })
 
       const result = await send.sendToFids(fids, {
-        title: 'Vintém',
+        title: 'OINC',
         body: 'Teste de aviso: se você está lendo isto, os avisos chegam neste aparelho.',
         tag: 'teste',
         url: '/configuracoes#notificacoes',

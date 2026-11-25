@@ -1,10 +1,14 @@
 import { test, describe, beforeEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { DEFAULT_CATEGORY_DEFS } from '../../shared/core/categories.js'
 import { DEFAULT_PUSH_PREFS } from '../../shared/core/pushPrefs.js'
+import { withAfterSync } from '../src/push/after-sync.js'
 import { readPushConfig } from '../src/push/config.js'
+import { createPushFeature } from '../src/push/index.js'
 import { createNotifier } from '../src/push/notifier.js'
 import { createTick } from '../src/push/tick.js'
+import { createFakeFirestore } from './_fake-firestore.js'
 
 // 17/11 as 12:00 em Sao Paulo.
 const NOW = Date.parse('2026-11-17T15:00:00Z')
@@ -301,5 +305,214 @@ describe('relogio com o notificador real', () => {
     }
     assert.equal(sent.length, 1)
     assert.equal(sent[0].payload.tag, 'limite-lazer-2026-11')
+  })
+})
+
+// Espera o gancho, que roda fora da promessa devolvida.
+const settle = () => new Promise((resolve) => setImmediate(resolve))
+
+describe('withAfterSync', () => {
+  const OWNERS = { 'item-a-ele': 'casalA', 'item-a-ele-2': 'casalA', 'item-a-ela': 'casalA', 'item-b-ele': 'casalB' }
+  const summary = (itemId, person, imported, extra = {}) => ({ itemId, person, imported, review: 0, ignored: 0, ...extra })
+
+  let hooked
+  let ownerReads
+  const ownerOf = async (itemId) => {
+    ownerReads.push(itemId)
+    return OWNERS[itemId] ?? null
+  }
+  const wrap = (fns, hook = async (pair) => hooked.push(pair)) =>
+    withAfterSync(
+      {
+        syncAll: async () => [],
+        syncConnection: async () => null,
+        syncItem: async () => null,
+        cleanExistingDescriptions: async () => 'limpo',
+        ...fns,
+      },
+      hook,
+      { ownerOf }
+    )
+
+  beforeEach(() => {
+    hooked = []
+    ownerReads = []
+  })
+
+  test('devolve o mesmo resultado, repassa os argumentos e nao envolve a limpeza', async () => {
+    const results = [summary('item-a-ele', 'ele', 2)]
+    const received = []
+    const clean = async () => 'limpo'
+    const sync = wrap({
+      syncAll: async (...args) => (received.push(args), results),
+      syncConnection: async (...args) => (received.push(args), results[0]),
+      syncItem: async (...args) => (received.push(args), results[0]),
+      cleanExistingDescriptions: clean,
+    })
+    const connection = { itemId: 'item-a-ele', ownerId: 'casalA', person: 'ele' }
+    assert.equal(await sync.syncAll('db', 'pluggy', { hid: 'casalA' }), results)
+    assert.equal(await sync.syncConnection('db', 'pluggy', connection), results[0])
+    assert.equal(await sync.syncItem('db', 'pluggy', 'item-a-ele'), results[0])
+    assert.deepEqual(received, [
+      ['db', 'pluggy', { hid: 'casalA' }],
+      ['db', 'pluggy', connection],
+      ['db', 'pluggy', 'item-a-ele'],
+    ])
+    assert.equal(sync.cleanExistingDescriptions, clean)
+  })
+
+  test('o erro da sincronizacao passa igual e o gancho nao roda', async () => {
+    const boom = new Error('pluggy fora do ar')
+    const fail = async () => {
+      throw boom
+    }
+    const sync = wrap({ syncAll: fail, syncConnection: fail, syncItem: fail })
+    for (const name of ['syncAll', 'syncConnection', 'syncItem']) {
+      await assert.rejects(() => sync[name]('db', 'pluggy', {}), (err) => err === boom)
+    }
+    await settle()
+    assert.deepEqual(hooked, [])
+  })
+
+  test('chama o gancho so com lancamento novo e uma vez por casal e pessoa', async () => {
+    const sync = wrap({
+      syncAll: async () => [
+        summary('item-a-ele', 'ele', 1),
+        summary('item-a-ele-2', 'ele', 3),
+        summary('item-a-ela', 'ela', 0),
+        summary('item-b-ele', 'ele', 1),
+        summary('item-sem-dono', 'ele', 5),
+      ],
+    })
+    await sync.syncAll('db', 'pluggy')
+    await settle()
+    assert.deepEqual(hooked, [
+      { hid: 'casalA', person: 'ele' },
+      { hid: 'casalB', person: 'ele' },
+    ])
+    assert.ok(!ownerReads.includes('item-a-ela'), 'sem importacao nao precisa ler o dono')
+  })
+
+  test('compra de cartao nova tambem conta; so atualizacao ou resumo nulo nao', async () => {
+    const cases = [
+      [summary('item-a-ele', 'ele', 0, { cardTxs: { created: 2 } }), 1],
+      [summary('item-a-ele', 'ele', 0, { cardTxs: { created: 0, updated: 4 } }), 0],
+      [summary('item-a-ele', 'ele', 0, { error: 'falhou' }), 0],
+      [null, 0],
+    ]
+    for (const [result, expected] of cases) {
+      hooked = []
+      await wrap({ syncItem: async () => result }).syncItem('db', 'pluggy', 'item-a-ele')
+      await settle()
+      assert.equal(hooked.length, expected, JSON.stringify(result))
+    }
+  })
+
+  test('o casal vem do argumento quando existe, sem ler a conexao', async () => {
+    const one = summary('item-a-ela', 'ela', 1)
+    const sync = wrap({ syncAll: async () => [one], syncConnection: async () => one })
+    await sync.syncAll('db', 'pluggy', { hid: 'casalA' })
+    await sync.syncConnection('db', 'pluggy', { itemId: 'item-a-ela', ownerId: 'casalA' })
+    await settle()
+    assert.equal(hooked.length, 2)
+    assert.deepEqual(ownerReads, [])
+  })
+
+  test('nao espera o gancho, e um gancho que lanca nao altera nada', async () => {
+    const result = summary('item-a-ele', 'ele', 1)
+    const never = wrap({ syncItem: async () => result }, () => new Promise(() => {}))
+    assert.equal(await never.syncItem('db', 'pluggy', 'item-a-ele'), result)
+
+    const error = mock.method(console, 'error', () => {})
+    try {
+      for (const hook of [
+        () => {
+          throw new Error('sincrono')
+        },
+        async () => {
+          throw new Error('assincrono')
+        },
+      ]) {
+        assert.equal(await wrap({ syncItem: async () => result }, hook).syncItem('db', 'pluggy', 'item-a-ele'), result)
+        await settle()
+      }
+      assert.equal(error.mock.callCount(), 2)
+      assert.doesNotMatch(error.mock.calls.map((c) => c.arguments.join(' ')).join(' '), /sincrono/)
+    } finally {
+      error.mock.restore()
+    }
+  })
+})
+
+describe('composicao do push no servidor', () => {
+  const messaging = { sendEach: async (messages) => ({ responses: messages.map(() => ({ success: true })) }) }
+  const feature = (env) => createPushFeature({ db: createFakeFirestore(), messaging, env })
+
+  // Troca os temporizadores globais so durante o start().
+  const startWith = (env, times = 1) => {
+    const timers = []
+    const fake = (kind) => (fn, ms) => {
+      const timer = { kind, ms, unrefed: false }
+      timers.push(timer)
+      return {
+        unref() {
+          timer.unrefed = true
+        },
+      }
+    }
+    const timeout = mock.method(globalThis, 'setTimeout', fake('uma-vez'))
+    const interval = mock.method(globalThis, 'setInterval', fake('intervalo'))
+    try {
+      const push = feature(env)
+      for (let i = 0; i < times; i++) push.start()
+    } finally {
+      timeout.mock.restore()
+      interval.mock.restore()
+    }
+    return timers
+  }
+
+  test('start liga o relogio uma vez, com a primeira rodada em 60 s, sem segurar o processo', () => {
+    assert.deepEqual(startWith({}, 2), [
+      { kind: 'uma-vez', ms: 60_000, unrefed: true },
+      { kind: 'intervalo', ms: 15 * MINUTE, unrefed: true },
+    ])
+    assert.equal(startWith({ PUSH_TICK_MINUTES: '5' })[1].ms, 5 * MINUTE)
+  })
+
+  test('PUSH_TICK_MINUTES igual a zero nao liga nada', () => {
+    assert.deepEqual(startWith({ PUSH_TICK_MINUTES: '0' }), [])
+  })
+
+  test('afterSync avalia limites e fatura, e a falha de um nao impede o outro', async () => {
+    const push = feature({})
+    const calls = []
+    push.notifier.evaluateLimits = async (pair) => {
+      calls.push(['limites', pair])
+      throw new Error('falha')
+    }
+    push.notifier.evaluateBills = async (pair) => {
+      calls.push(['fatura', pair])
+      return { sent: 0 }
+    }
+    const error = mock.method(console, 'error', () => {})
+    try {
+      await push.afterSync({ hid: 'casalA', person: 'ele' })
+    } finally {
+      error.mock.restore()
+    }
+    assert.deepEqual(calls, [
+      ['limites', { hid: 'casalA', person: 'ele' }],
+      ['fatura', { hid: 'casalA', person: 'ele' }],
+    ])
+  })
+
+  test('o index.js entrega o sync envolvido a rota, ao webhook e ao agendador', () => {
+    const source = readFileSync(new URL('../src/index.js', import.meta.url), 'utf8')
+    assert.match(source, /const sync = withAfterSync\(/)
+    assert.match(source, /\n  sync,\n/)
+    assert.match(source, /sync\s*\.syncAll\(db, pluggy\)/)
+    // Nenhuma chamada direta da funcao sem o gancho.
+    assert.doesNotMatch(source, /(?<![.\w])syncAll\(/)
   })
 })

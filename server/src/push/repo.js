@@ -11,6 +11,7 @@ const EVENTS = 'pushEvents'
 const REGISTRATIONS = 'pushRegistrations'
 const CARDS = 'cards'
 const CARD_SETTINGS = 'cardSettings'
+const CONNECTIONS = 'bankConnections'
 
 const DEFAULT_TONE = 'sem-filtro'
 const DEFAULT_DAYS_BEFORE = 3
@@ -189,6 +190,18 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
     async readCardSettings(hid) {
       const snap = await db.collection(CARD_SETTINGS).where('ownerId', '==', hid).get()
       return snap.docs.map((d) => ({ ...d.data(), accountId: d.id }))
+    },
+
+    /**
+     * Casal dono de uma conexao bancaria (bankConnections/{itemId}), para o gancho
+     * pos-sincronizacao quando a chamada nao traz o casal.
+     * @param {string} itemId
+     * @returns {Promise<string | null>}
+     */
+    async readConnectionOwner(itemId) {
+      if (typeof itemId !== 'string' || !itemId) return null
+      const snap = await db.collection(CONNECTIONS).doc(itemId).get()
+      return snap.exists ? (snap.data().ownerId ?? null) : null
     },
 
     /** Preferencias de aviso da pessoa (padroes quando nao ha documento). */

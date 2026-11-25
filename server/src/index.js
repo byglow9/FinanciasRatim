@@ -6,6 +6,7 @@ import { PluggyClient } from 'pluggy-sdk'
 import { createApp } from './app.js'
 import { createAiFeature } from './ai/index.js'
 import { parseOrigins } from './auth.js'
+import { withAfterSync } from './push/after-sync.js'
 import { createPushFeature } from './push/index.js'
 import { cleanExistingDescriptions, syncAll, syncConnection, syncItem } from './sync.js'
 
@@ -47,13 +48,22 @@ const db = getFirestore()
 db.settings({ ignoreUndefinedProperties: true })
 
 // Trilhas montadas depois do requireOwner (push agora; IA e avisos de limite entram aqui).
-const features = [createPushFeature({ db, messaging: getMessaging() }), createAiFeature({ db })]
+const push = createPushFeature({ db, messaging: getMessaging() })
+const features = [push, createAiFeature({ db })]
+
+// Rota, webhook e agendador usam o mesmo sync envolvido: depois de importar, o push avalia os
+// avisos da pessoa sem atrasar nem alterar a sincronizacao.
+const sync = withAfterSync(
+  { syncAll, syncConnection, cleanExistingDescriptions, syncItem },
+  push.afterSync,
+  { ownerOf: push.ownerOfItem }
+)
 
 const app = createApp({
   verifyToken: (token) => getAuth().verifyIdToken(token),
   db,
   pluggy,
-  sync: { syncAll, syncConnection, cleanExistingDescriptions, syncItem },
+  sync,
   origins,
   webhookSecret: webhookSecrets,
   features,
@@ -67,7 +77,8 @@ for (const feature of features) feature.start?.()
 const hours = Number(process.env.SYNC_INTERVAL_HOURS ?? 6)
 if (hours > 0) {
   const run = () =>
-    syncAll(db, pluggy)
+    sync
+      .syncAll(db, pluggy)
       .then((r) => console.log('[sync] agendada:', JSON.stringify(r)))
       .catch((err) => console.error('[sync] agendada falhou:', err?.message ?? err))
   setTimeout(run, 30_000)

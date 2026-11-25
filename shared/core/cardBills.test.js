@@ -14,6 +14,7 @@ import {
   sumBillTotals,
   cardBillStatus,
   groupBills,
+  billDayGroups,
 } from './cardBills.js'
 
 // Meio-dia em Sao Paulo (15:00 UTC): nunca cruza a virada do dia em UTC nem em Tokyo.
@@ -334,4 +335,34 @@ test('groupBills: entrada fora do tipo devolve resultado vazio sem lancar', () =
   assert.deepEqual(groupBills(undefined), { bills: [], unassignedCents: 0 })
   assert.deepEqual(groupBills({ txs: null }), { bills: [], unassignedCents: 0 })
   assert.deepEqual(groupBills({ txs: [null, 1, {}], payments: 'x', paidMonths: 3, ...GROUP }), { bills: [], unassignedCents: 0 })
+})
+
+test('billDayGroups: dia de Sao Paulo, mais recente primeiro, estorno subtrai do dia', () => {
+  const item = (id, date, amountCents) => ({ id, date, amountCents })
+  const groups = billDayGroups([
+    // 02:00 UTC ainda e o dia 20 em Sao Paulo
+    item('c', new Date('2026-11-21T02:00:00Z'), 1000),
+    item('a', at('2026-11-22'), 500),
+    item('b', at('2026-11-20'), -300),
+  ])
+  assert.deepEqual(groups.map((g) => g.key), ['2026-11-22', '2026-11-20'])
+  assert.deepEqual(groups.map((g) => g.totalCents), [500, 700])
+  assert.deepEqual(groups[1].items.map((i) => i.id), ['c', 'b'])
+})
+
+test('billDayGroups: item sem data fica por ultimo e a soma dos dias bate com a fatura', () => {
+  const txs = [
+    { id: '1', cardKind: 'purchase', amount: 40, billMonth: '2026-12', date: at('2026-11-22') },
+    { id: '2', cardKind: 'purchase', amount: 10.5, billMonth: '2026-12' },
+    { id: '3', cardKind: 'refund', amount: 5, billMonth: '2026-12', date: at('2026-11-22') },
+  ]
+  const [bill] = groupBills({ txs }).bills
+  const groups = billDayGroups(bill.items)
+  assert.deepEqual(groups.map((g) => g.key), ['2026-11-22', null])
+  assert.equal(groups.reduce((sum, g) => sum + g.totalCents, 0), bill.totalCents)
+})
+
+test('billDayGroups: entrada fora do tipo devolve lista vazia sem lancar', () => {
+  for (const bad of [undefined, null, 'x', 3, {}, []]) assert.deepEqual(billDayGroups(bad), [], String(bad))
+  assert.deepEqual(billDayGroups([null, 1]), [])
 })

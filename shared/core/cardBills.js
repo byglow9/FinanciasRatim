@@ -10,6 +10,7 @@
 import { DEFAULT_TZ, monthRangeOf, zonedParts } from './time.js'
 import { daysBetweenParts } from './cycle.js'
 import { toCents } from './ledger.js'
+import { groupByDay } from './dayKey.js'
 
 /** @typedef {import('./cycle.js').DateParts} DateParts */
 
@@ -391,4 +392,27 @@ export function groupBills({ txs, payments, paidMonths, closingDay, dueDay, now,
     })
   })
   return { bills, unassignedCents }
+}
+
+/**
+ * Itens de uma fatura agrupados pelo dia de Sao Paulo, do mais recente ao mais
+ * antigo, com o total do dia em centavos (estorno subtrai, como no total da
+ * fatura). Item sem data valida fica por ultimo, com `key` null, para a soma dos
+ * dias continuar igual ao total da fatura.
+ * @param {unknown} items itens de uma fatura de groupBills
+ * @returns {{ key: string | null, totalCents: number, items: CardBillItem[] }[]}
+ */
+export function billDayGroups(items) {
+  if (!Array.isArray(items)) return []
+  const list = /** @type {CardBillItem[]} */ (items.filter((item) => item && typeof item === 'object'))
+  const isDated = (/** @type {CardBillItem} */ item) => item.date instanceof Date && !Number.isNaN(item.date.getTime())
+  /** @type {{ key: string | null, items: CardBillItem[] }[]} */
+  const groups = groupByDay(list.filter(isDated), (item) => /** @type {Date} */ (item.date))
+  const undated = list.filter((item) => !isDated(item))
+  if (undated.length > 0) groups.push({ key: null, items: undated })
+  return groups.map((group) => ({
+    key: group.key,
+    totalCents: group.items.reduce((sum, item) => sum + (Number.isFinite(item.amountCents) ? item.amountCents : 0), 0),
+    items: group.items,
+  }))
 }

@@ -57,8 +57,19 @@ test('servidor e nucleo compartilhado nao mencionam contas fixas', () => {
     ...walk(path.join(ROOT, 'shared', 'core'), ['.js']),
   ]
   assert.ok(files.length >= 8, `a varredura deveria achar ao menos 8 arquivos .js, achou ${files.length}`)
+  // Unica excecao (Fase 7, D-16): a carga do resumo da IA le as contas e os pagamentos para a fala
+  // conhecer o mes. Leitura apenas; a guarda abaixo garante que nunca grava nelas.
+  const readOnly = 'server/src/ai/snapshot.js'
   const hits = files
     .filter((f) => /fixedExpense/i.test(code(fs.readFileSync(f, 'utf8'))))
     .map((f) => path.relative(ROOT, f))
+    .filter((f) => f !== readOnly)
   assert.deepEqual(hits, [], 'nada no servidor nem em shared/core pode tocar contas fixas (D-02)')
+})
+
+test('a carga do resumo da IA so le contas fixas e pagamentos, nunca grava', () => {
+  const src = code(read('server/src/ai/snapshot.js'))
+  assert.ok(/fixedExpense/i.test(src), 'a excecao so vale enquanto o arquivo le contas fixas')
+  assert.ok(!/\)\s*\.(set|create|update|delete)\s*\(|\.add\s*\(/.test(src), 'snapshot.js nao pode gravar no Firestore')
+  assert.ok(!/\bbatch\b|runTransaction|bulkWriter/i.test(src), 'snapshot.js nao pode gravar em lote')
 })

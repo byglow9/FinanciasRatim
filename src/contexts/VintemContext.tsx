@@ -22,6 +22,8 @@ import {
   type AskArgs,
 } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
+import { useVintemPeek } from '@/hooks/useVintemPeek'
+import { isBusy } from '@/lib/pwa/isBusy'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
@@ -308,6 +310,43 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     [askGuarded, speakText, speak],
   )
 
+  // Fora da Home o Vintem espia pela borda da tela, no toast dele.
+  const peekToast = useCallback(
+    (text: string, reaction: VintemReaction): void => {
+      speechGen.current += 1
+      const spot = nextPeekSpot()
+      toast.show('', {
+        custom: <VintemToastBody text={text} reaction={reaction} side={spot.side} />,
+        durationMs: VINTEM_TOAST_MS,
+        side: spot.side,
+        high: spot.high,
+      })
+    },
+    [toast],
+  )
+
+  // Fala sem gatilho (D-12 b): so o texto da IA. Sem texto nada aparece, porque frase de reserva repetida
+  // e pior que silencio; se um lancamento ou uma edicao abriu durante a espera, tambem nao.
+  const espiar = useCallback(
+    async (ai: AskArgs): Promise<void> => {
+      try {
+        const text = await askGuarded(ai)
+        if (text === null || text === 'stale') return
+        if (document.visibilityState !== 'visible' || isBusy()) return
+        if (slot.current !== null) {
+          slot.current.react('wake')
+          speakText({ text, situation: 'espiar' })
+          return
+        }
+        peekToast(text, 'wake')
+      } catch {
+        // Melhor esforco: a espiada nunca atrapalha o que a pessoa esta fazendo.
+      }
+    },
+    [askGuarded, speakText, peekToast],
+  )
+  useVintemPeek({ canAsk, viewPerson, espiar })
+
   // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo dos hints) ou do banco. Na Home
   // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de
   // sucesso. Sem frase no banco nao ha toast. Nunca lanca.
@@ -327,21 +366,12 @@ export function VintemProvider({ children }: { children: ReactNode }) {
           return
         }
         const text = aiText ?? draw({ situation, raw })?.text ?? null
-        if (text !== null) {
-          speechGen.current += 1
-          const spot = nextPeekSpot()
-          toast.show('', {
-            custom: <VintemToastBody text={text} reaction={reaction} side={spot.side} />,
-            durationMs: VINTEM_TOAST_MS,
-            side: spot.side,
-            high: spot.high,
-          })
-        }
+        if (text !== null) peekToast(text, reaction)
       } catch {
         // Melhor esforco: a fala nunca atrapalha o lancamento.
       }
     },
-    [askGuarded, speakText, speak, draw, toast],
+    [askGuarded, speakText, speak, draw, peekToast],
   )
 
   const onLaunched = useCallback(

@@ -8,6 +8,7 @@ import { code, read } from './helpers/phase3-1.js'
 const SERVICE = 'src/services/vintemSpeech.service.ts'
 const CONTEXT = 'src/contexts/VintemContext.tsx'
 const HOME_HOOK = 'src/hooks/useHomeVintem.ts'
+const PEEK_HOOK = 'src/hooks/useVintemPeek.ts'
 const TOAST = 'src/components/vintem/VintemToast.tsx'
 const BALLOON = 'src/components/vintem/VintemHomeBalloon.tsx'
 
@@ -54,13 +55,14 @@ test('servico: o corpo do pedido so tem situation e categoryId', () => {
   assert.match(src, /MAX_TEXT_LENGTH = 300/)
 })
 
-test('contexto: askVintem so e chamado dentro de askGuarded, usado por speakAi e por deliver', () => {
+test('contexto: askVintem so e chamado dentro de askGuarded, usado por speakAi, deliver e espiar', () => {
   const src = code(CONTEXT)
   assert.equal((src.match(/\baskVintem\(/g) ?? []).length, 1, 'askVintem chamado em mais de um lugar')
   assert.ok(body(src, 'askGuarded').includes('askVintem('), 'askVintem fora de askGuarded')
   assert.ok(body(src, 'speakAi').includes('askGuarded('), 'speakAi sem askGuarded')
   assert.ok(body(src, 'deliver').includes('askGuarded('), 'deliver sem askGuarded')
-  assert.equal((src.match(/\baskGuarded\(/g) ?? []).length, 2, 'askGuarded usado fora de speakAi e deliver')
+  assert.ok(body(src, 'espiar').includes('askGuarded('), 'espiar sem askGuarded')
+  assert.equal((src.match(/\baskGuarded\(/g) ?? []).length, 3, 'askGuarded usado fora de speakAi, deliver e espiar')
 })
 
 test('contexto: so a pessoa logada, no proprio perfil e fora do somente leitura pede a IA (D-14)', () => {
@@ -293,4 +295,157 @@ test('deliver usa getReactionTimeoutMs, sem prazo fixo nas reacoes, e os hints s
   assert.ok(!/ASK_TIMEOUT_REACTION_MS/.test(src), 'prazo fixo de reacao no contexto')
   assert.ok(!/timeoutMs:/.test(body(src, 'onLaunched')), 'onLaunched fixa o prazo da reacao')
   assert.match(src, /if \(canAsk\) void getVintemHints\(\)/, 'os hints nao sao pedidos antes do primeiro lancamento')
+})
+
+// ---------------------------------------------------------------------------------------------
+// O Vintem que espia (07-16, D-12 b).
+// ---------------------------------------------------------------------------------------------
+
+test('espiar: sem texto da IA nada aparece, sem reserva do banco, e confere de novo antes de mostrar', () => {
+  const src = code(CONTEXT)
+  const peek = body(src, 'espiar')
+  assert.match(peek, /if \(text === null \|\| text === 'stale'\) return/, 'espiar mostra sem texto da IA')
+  assert.ok(!/\bspeak\(|\bdraw\(|speakAi\(|PHRASES|fallback/.test(peek), 'espiar usa o banco de frases')
+  assert.match(peek, /document\.visibilityState !== 'visible' \|\| isBusy\(\)\) return/, 'sem conferir de novo')
+  assert.ok(peek.indexOf('isBusy()') < peek.indexOf('speakText('), 'confere depois de mostrar')
+  // Mesma regra da reacao: balao na Home, toast do Vintem (com a animacao de espiar) fora dela.
+  assert.match(peek, /if \(slot\.current !== null\)/)
+  assert.match(peek, /peekToast\(text, 'wake'\)/)
+  assert.match(body(src, 'deliver'), /peekToast\(text, reaction\)/)
+  assert.match(src, /useVintemPeek\(\{ canAsk, viewPerson, espiar \}\)/, 'o provedor nao monta a espiada')
+})
+
+test('useVintemPeek: sem banco de frases, sem acaso na renderizacao e sem intervalo fixo de espiada', () => {
+  const hook = code(PEEK_HOOK)
+  assert.ok(!/phrasePicker|vintemPhrases|PHRASES|speak\(|askVintem|fetch\(|console\./.test(hook))
+  assert.equal((hook.match(/situation: 'espiar'/g) ?? []).length, 1)
+  assert.match(hook, /getVintemHints\(\)/)
+  assert.match(hook, /peekMinMs \+ Math\.floor\(rand\(\) \* \(peekMaxMs - peekMinMs \+ 1\)\)/)
+  assert.ok(!/Math\.random/.test(hook))
+  assert.ok(hook.indexOf('mulberry32(Date.now())') > hook.indexOf('if (!canAsk) return'), 'o acaso nasce fora do efeito')
+  for (const file of [PEEK_HOOK, CONTEXT, HOME_HOOK]) {
+    assert.ok(!/360_?000|900_?000|\* 60_?000|peekPerDay: \d|openPerDay: \d/.test(code(file)), `${file} fixa frequencia`)
+  }
+})
+
+// Executa o hook de verdade com React, relogio, documento e temporizadores falsos.
+function runPeek({ canAsk = true, hints = { peekMinMs: 360000, peekMaxMs: 900000, peekPerDay: 6 } } = {}) {
+  const { outputText } = ts.transpileModule(read(PEEK_HOOK), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  })
+  const world = { now: 1_000_000, busy: false, asked: [], timers: new Map(), nextId: 0, cleanups: [] }
+  const target = () => {
+    const listeners = new Map()
+    return {
+      listeners,
+      addEventListener: (type, fn) => listeners.set(type, fn),
+      removeEventListener: (type) => listeners.delete(type),
+      emit: (type) => listeners.get(type)?.(),
+    }
+  }
+  world.window = target()
+  world.document = Object.assign(target(), { visibilityState: 'visible' })
+  const modules = {
+    react: {
+      useRef: (value) => ({ current: value }),
+      useEffect: (fn) => world.cleanups.push(fn()),
+    },
+    '@/lib/pwa/isBusy': { isBusy: () => world.busy },
+    '@/services/vintemSpeech.service': { ASK_TIMEOUT_OPEN_MS: 4000, getVintemHints: async () => hints },
+    '@shared/core/vintemSpring.js': { mulberry32: () => () => 0.5 },
+  }
+  const exports = {}
+  new Function('exports', 'require', 'window', 'document', 'setTimeout', 'clearTimeout', 'Date', outputText)(
+    exports,
+    (name) => modules[name] ?? assert.fail(`import nao esperado no hook: ${name}`),
+    world.window,
+    world.document,
+    (fn, ms) => {
+      world.nextId += 1
+      world.timers.set(world.nextId, { fn, ms })
+      return world.nextId
+    },
+    (id) => world.timers.delete(id),
+    { now: () => world.now },
+  )
+  exports.useVintemPeek({ canAsk, viewPerson: 'ele', espiar: async (ai) => void world.asked.push(ai) })
+  world.settle = () => new Promise((resolve) => setImmediate(resolve))
+  /** Espera os microtasks, exige um temporizador so e o dispara. */
+  world.fire = async () => {
+    assert.equal(world.timers.size, 1, 'deveria haver um temporizador')
+    const [[id, timer]] = world.timers
+    world.timers.delete(id)
+    timer.fn()
+    await world.settle()
+  }
+  world.delay = () => [...world.timers.values()].map((t) => t.ms)
+  world.unmount = () => world.cleanups.forEach((fn) => typeof fn === 'function' && fn())
+  return world
+}
+
+test('useVintemPeek: agenda entre os hints e so pergunta com atividade recente, aba visivel e nada aberto', async () => {
+  const w = runPeek()
+  await w.settle()
+  assert.deepEqual(w.delay(), [630000], 'intervalo sorteado entre o minimo e o maximo dos hints')
+
+  // Sem atividade nenhuma: nao pergunta, olha de novo em 30 s.
+  await w.fire()
+  assert.equal(w.asked.length, 0)
+  assert.deepEqual(w.delay(), [30000])
+
+  // Atividade velha (mais de 60 s).
+  w.window.emit('pointerdown')
+  w.now += 61000
+  await w.fire()
+  assert.equal(w.asked.length, 0)
+
+  // Lancamento ou edicao aberta.
+  w.window.emit('keydown')
+  w.busy = true
+  await w.fire()
+  assert.equal(w.asked.length, 0)
+
+  // Aba escondida na hora de disparar, mesmo sem o evento.
+  w.busy = false
+  w.document.visibilityState = 'hidden'
+  w.window.emit('scroll')
+  await w.fire()
+  assert.equal(w.asked.length, 0)
+  assert.equal(w.timers.size, 0, 'temporizador com a aba escondida')
+
+  // De volta, ativo e livre: pergunta uma vez e reagenda no intervalo dos hints.
+  w.document.visibilityState = 'visible'
+  w.document.emit('visibilitychange')
+  await w.settle()
+  w.window.emit('touchstart')
+  await w.fire()
+  assert.deepEqual(w.asked, [{ situation: 'espiar', timeoutMs: 4000 }])
+  assert.deepEqual(w.delay(), [630000])
+})
+
+test('useVintemPeek: limpa ao esconder a aba e ao desmontar', async () => {
+  const w = runPeek()
+  await w.settle()
+  w.document.visibilityState = 'hidden'
+  w.document.emit('visibilitychange')
+  assert.equal(w.timers.size, 0)
+  w.document.visibilityState = 'visible'
+  w.document.emit('visibilitychange')
+  await w.settle()
+  assert.equal(w.timers.size, 1)
+  w.unmount()
+  assert.equal(w.timers.size, 0)
+  assert.equal(w.window.listeners.size, 0)
+  assert.equal(w.document.listeners.size, 0)
+})
+
+test('useVintemPeek: perfil do parceiro ou somente leitura nunca pergunta; teto zero nao agenda', async () => {
+  const partner = runPeek({ canAsk: false })
+  await partner.settle()
+  assert.equal(partner.timers.size, 0)
+  assert.equal(partner.window.listeners.size, 0)
+
+  const off = runPeek({ hints: { peekMinMs: 60000, peekMaxMs: 60000, peekPerDay: 0 } })
+  await off.settle()
+  assert.equal(off.timers.size, 0)
 })

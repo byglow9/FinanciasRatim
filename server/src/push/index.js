@@ -1,4 +1,5 @@
 import { createLimiter } from '../limiter.js'
+import { createPrefsStore } from './prefs.js'
 import { createPushRouter } from './router.js'
 import { createSender } from './send.js'
 
@@ -8,6 +9,7 @@ import { createSender } from './send.js'
 export function createPushFeature({ db, messaging, now = () => new Date() }) {
   const send = createSender({ db, messaging })
   const limiter = createLimiter({ max: 1, windowMs: 60_000, now: () => now().getTime() })
-  const router = createPushRouter({ db, send, now, limiter })
-  return { mounts: [{ path: '/api/push', router }], send }
+  const prefsStore = createPrefsStore(db)
+  const router = createPushRouter({ db, send, now, limiter, prefsStore })
+  return { mounts: [{ path: '/api/push', router }], send, prefsStore }
 }

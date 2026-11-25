@@ -238,6 +238,102 @@ describe('push', () => {
     const again = await call('/api/push/test', { token: 'tok-a-ele' })
     assert.equal(again.status, 200)
   })
+
+  const getPrefs = (token) => call('/api/push/prefs', { method: 'GET', token })
+  const putPrefs = (token, body) => call('/api/push/prefs', { method: 'PUT', token, body })
+
+  const DEFAULT_PREFS = {
+    types: { limite80: true, limite100: true, espontanea: true },
+    quiet: { enabled: false, from: '22:00', to: '08:00' },
+  }
+
+  test('prefs: sem documento o GET devolve os padroes da D-06 e da D-21', async () => {
+    const res = await getPrefs('tok-a-ele')
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { prefs: DEFAULT_PREFS })
+    assert.equal(db.store.size, 0, 'ler nao grava')
+  })
+
+  test('prefs: PUT valido grava no documento do casal e da pessoa e o GET seguinte devolve', async () => {
+    const body = {
+      types: { limite80: false, limite100: true, espontanea: false },
+      quiet: { enabled: true, from: '23:00', to: '07:30' },
+    }
+    const put = await putPrefs('tok-a-ele', body)
+    assert.equal(put.status, 200)
+    assert.deepEqual(await put.json(), { prefs: body })
+    const doc = db.store.get('pushPrefs/casalA__ele')
+    assert.equal(doc.ownerId, 'casalA')
+    assert.equal(doc.person, 'ele')
+    assert.equal(doc.uid, 'u-a-ele')
+    assert.deepEqual(doc.types, body.types)
+    assert.deepEqual(doc.quiet, body.quiet)
+    assert.ok(doc.updatedAt)
+    const get = await getPrefs('tok-a-ele')
+    assert.deepEqual(await get.json(), { prefs: body })
+  })
+
+  test('prefs: PUT parcial completa com os padroes', async () => {
+    const put = await putPrefs('tok-a-ele', { quiet: { enabled: true } })
+    assert.equal(put.status, 200)
+    assert.deepEqual(await put.json(), {
+      prefs: { types: DEFAULT_PREFS.types, quiet: { enabled: true, from: '22:00', to: '08:00' } },
+    })
+  })
+
+  test('prefs: chave extra, hora invalida, inicio igual ao fim e tipo errado dao 400 e nao gravam', async () => {
+    const bad = [
+      { extra: 1 },
+      { types: { limite80: true, fatura: true } },
+      { quiet: { enabled: true, from: '25:00', to: '08:00' } },
+      { quiet: { enabled: true, from: '22:00', to: '22:00' } },
+      { types: { limite80: 'sim' } },
+      { quiet: 'sempre' },
+    ]
+    for (const body of bad) {
+      const res = await putPrefs('tok-a-ele', body)
+      assert.equal(res.status, 400, JSON.stringify(body))
+      const json = await res.json()
+      assert.equal(typeof json.error, 'string')
+    }
+    assert.equal(db.store.size, 0)
+  })
+
+  test('prefs: Ele grava e Ela continua com os padroes (documentos separados)', async () => {
+    await putPrefs('tok-a-ele', { types: { limite80: false } })
+    const ela = await getPrefs('tok-a-ela')
+    assert.deepEqual(await ela.json(), { prefs: DEFAULT_PREFS })
+    await putPrefs('tok-a-ela', { quiet: { enabled: true } })
+    const ele = await (await getPrefs('tok-a-ele')).json()
+    assert.equal(ele.prefs.types.limite80, false)
+    assert.equal(ele.prefs.quiet.enabled, false)
+    assert.ok(db.store.has('pushPrefs/casalA__ele') && db.store.has('pushPrefs/casalA__ela'))
+  })
+
+  test('prefs: outro casal nao ve o do casalA e o corpo nao define o dono', async () => {
+    await putPrefs('tok-a-ele', { types: { limite80: false } })
+    const b = await getPrefs('tok-b-ele')
+    assert.deepEqual(await b.json(), { prefs: DEFAULT_PREFS })
+    const spoof = await putPrefs('tok-b-ele', { ownerId: 'casalA', person: 'ela' })
+    assert.equal(spoof.status, 400)
+    assert.equal(db.store.get('pushPrefs/casalA__ele').types.limite80, false)
+  })
+
+  test('prefs: documento de outro dono no mesmo id nunca e lido', async () => {
+    db.store.set('pushPrefs/casalA__ele', { ownerId: 'casalB', person: 'ele', types: { limite80: false }, quiet: {} })
+    const res = await getPrefs('tok-a-ele')
+    assert.deepEqual(await res.json(), { prefs: DEFAULT_PREFS })
+  })
+
+  test('prefs: sem token 401, sem pessoa 403', async () => {
+    assert.equal((await getPrefs(undefined)).status, 401)
+    assert.equal((await putPrefs(undefined, {})).status, 401)
+    assert.equal((await getPrefs('tok-ruim')).status, 401)
+    assert.equal((await getPrefs('tok-semhid')).status, 403)
+    assert.equal((await getPrefs('tok-sempessoa')).status, 403)
+    assert.equal((await putPrefs('tok-sempessoa', { types: {} })).status, 403)
+    assert.equal(db.store.size, 0)
+  })
 })
 
 describe('createApp features', () => {

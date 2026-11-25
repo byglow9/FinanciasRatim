@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { validatePushPrefs } from '../../../shared/core/pushPrefs.js'
+import { createPrefsStore } from './prefs.js'
 
 const PEOPLE = ['ele', 'ela']
 const FID_RE = /^[A-Za-z0-9_-]{10,64}$/
@@ -11,9 +13,9 @@ export function platformOf(userAgent) {
   return 'desktop'
 }
 
-// createPushRouter({ db, send, now, limiter }) -> express.Router montado em /api/push.
+// createPushRouter({ db, send, now, limiter, prefsStore }) -> express.Router montado em /api/push.
 // Dono (hid), usuario (uid) e pessoa vem so de req.owner, nunca do corpo (FUND-04, D-14).
-export function createPushRouter({ db, send, now = () => new Date(), limiter = null }) {
+export function createPushRouter({ db, send, now = () => new Date(), limiter = null, prefsStore = createPrefsStore(db) }) {
   const router = Router()
 
   const handle = (fn) => (req, res) =>
@@ -51,6 +53,28 @@ export function createPushRouter({ db, send, now = () => new Date(), limiter = n
         { merge: true }
       )
       res.json({ ok: true })
+    })
+  )
+
+  // Preferencias de aviso da pessoa do token (PUSH-03). Dono e pessoa so de req.owner (D-14).
+  router.get(
+    '/prefs',
+    handle(async (req, res) => {
+      const { hid, person } = req.owner
+      if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+      res.json({ prefs: await prefsStore.get(hid, person) })
+    })
+  )
+
+  router.put(
+    '/prefs',
+    handle(async (req, res) => {
+      const { uid, hid, person } = req.owner
+      if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+      const checked = validatePushPrefs(req.body)
+      if (!checked.ok) return res.status(400).json({ error: checked.error })
+      const saved = await prefsStore.put(hid, person, uid, checked.prefs, now())
+      res.json({ prefs: saved })
     })
   )
 

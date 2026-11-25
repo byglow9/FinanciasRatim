@@ -160,6 +160,9 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
       situation: PROMPT_SITUATION[key],
       topic,
       summaryText,
+      person,
+      // Semente do repertorio comico: muda o angulo e os exemplos a cada pedido.
+      seed: Math.floor(input.now.getTime() / 1000),
     })
 
     const ctx = {

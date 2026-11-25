@@ -9,6 +9,8 @@ import {
   lengthFor,
   isEdgy,
   STYLE_EXAMPLES,
+  SPOKEN_EXAMPLES,
+  COMIC_ANGLES,
   TONES,
   SITUATIONS,
   LENGTHS,
@@ -56,7 +58,7 @@ test('tracer: os dados vao entre as marcas e a mensagem de sistema diz que o blo
 })
 
 test('tracer: o tamanho pedido aparece nas duas mensagens e o limite de tokens segue o tamanho', () => {
-  assert.match(messages({ length: 'curta' })[1].content, /UMA frase, com até 140 caracteres/)
+  assert.match(messages({ length: 'curta' })[1].content, /uma ou duas frases curtinhas, com até 140 caracteres/)
   assert.match(messages({ length: 'longa' })[1].content, /duas frases, com até 260 caracteres/)
   assert.equal(maxTokens('curta'), 120)
   assert.equal(maxTokens('longa'), 200)
@@ -175,6 +177,17 @@ test('os exemplos de estilo nao tem digito nem nome e cada tom tem dois', () => 
   assert.match(ask({ tone: 'sem-filtro' })[0].content, /caralho/)
   assert.doesNotMatch(ask({ tone: 'suave' })[0].content, /caralho|porra/)
   assert.doesNotMatch(ask({ tone: 'direto' })[0].content, /caralho|porra/)
+})
+
+test('a semente muda o angulo comico e o perfil define o genero', () => {
+  const um = messages({ seed: 1, person: 'ele' })
+  const dois = messages({ seed: 2, person: 'ela' })
+  assert.notEqual(um[1].content, dois[1].content)
+  assert.match(um[0].content, /é um homem/)
+  assert.match(dois[0].content, /é uma mulher/)
+  assert.match(messages()[0].content, /não sabe o gênero/)
+  assert.deepEqual(messages({ seed: 7 }), messages({ seed: 7 }))
+  for (const t of [...SPOKEN_EXAMPLES, ...COMIC_ANGLES]) assert.doesNotMatch(t, /\d|[—–]/, t)
 })
 
 test('o tamanho vem da situacao (D-15)', () => {

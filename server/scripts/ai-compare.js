@@ -221,13 +221,15 @@ function similarIds(model, ids) {
 // ---------------------------------------------------------------------------------------------
 
 /** Mensagens iguais as do servidor; a provocacao entra como uma linha a mais no pedido. */
-export function messagesFor(fixture, provocation = null) {
+export function messagesFor(fixture, provocation = null, seed = 0) {
   const messages = buildMessages({
     tone: TONE,
     length: fixture.length,
     situation: fixture.promptSituation,
     topic: fixture.topic,
     summaryText: fixture.summaryText,
+    person: 'ele',
+    seed,
   })
   if (provocation === null) return messages
   const [system, user] = messages
@@ -649,7 +651,8 @@ export async function main({
   }
 
   const runOne = async (c, task) => {
-    const messages = messagesFor(task.fixture, task.provocation === null ? null : PROVOCATIONS[task.provocation - 1])
+    // A semente muda a cada chamada, para o teste mostrar a variedade do repertorio comico.
+    const messages = messagesFor(task.fixture, task.provocation === null ? null : PROVOCATIONS[task.provocation - 1], calls)
     let waits = 0
     for (;;) {
       if (calls > 0) await sleep(opts.pauseMs)

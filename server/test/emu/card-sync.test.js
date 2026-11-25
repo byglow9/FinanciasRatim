@@ -978,3 +978,258 @@ describe('adocao do lancamento manual (D-12, D-13)', () => {
     assert.equal(summary.review, 1)
   })
 })
+
+// ---------------------------------------------------------------------------------------------
+// Historico longo, varios manuais e isolamento (06-18, Task 3: D-12 e D-13). Dados sinteticos.
+// ---------------------------------------------------------------------------------------------
+
+// 60 compras, uma por semana, de 8 a 421 dias atras (cerca de 14 meses), cada uma com valor proprio.
+function longHistory(prefix = 'h') {
+  const now = Date.now()
+  return Array.from({ length: 60 }, (_, i) =>
+    purchase(`${prefix}${i}`, `LOJA SINTETICA ${i}`, 100 + i, {
+      date: new Date(now - (8 + i * 7) * DAY_MS).toISOString(),
+      status: 'POSTED',
+    })
+  )
+}
+
+const shifted = (iso, days) => new Date(new Date(iso).getTime() + days * DAY_MS).toISOString()
+
+// 12 manuais antigos: 9 equivalentes a compras e 3 que nao podem ser adotados.
+async function seedLegacy(db, history) {
+  const equivalent = [
+    [59, 0, {}],
+    [55, 2, {}],
+    [50, -3, {}],
+    [45, 3, { description: '' }],
+    [40, 0, { description: 'sintetica 40' }],
+    [30, 1, { description: 'loja sintetica 30' }],
+    [20, -1, {}],
+    [10, 0, { description: 'sintetica 10' }],
+    [6, 0, {}],
+  ]
+  const untouched = {
+    'antigo-descricao': legacyDoc(history[5].date, 105, { description: 'almoco com a ana' }),
+    'antigo-um-centavo': legacyDoc(history[15].date, 115.01),
+    'antigo-quatro-dias': legacyDoc(shifted(history[25].date, -4), 125),
+  }
+  for (const [i, days, extra] of equivalent) {
+    await db.collection('transactions').doc(`antigo-${i}`).set(legacyDoc(shifted(history[i].date, days), 100 + i, extra))
+  }
+  for (const [id, data] of Object.entries(untouched)) await db.collection('transactions').doc(id).set(data)
+  return { equivalent: equivalent.map(([i]) => i), untouched: Object.keys(untouched) }
+}
+
+const ALL_COLLECTIONS = ['transactions', 'bankImports', 'cards', 'cardSettings']
+
+describe('historico longo e isolamento da adocao (D-12, D-13)', () => {
+  let admin
+  let db
+
+  before(() => {
+    admin = initAdmin()
+    assert.equal(admin.mode, 'emulator')
+    db = admin.db
+  })
+  after(async () => {
+    await admin.app.delete()
+  })
+  beforeEach(async () => {
+    await resetEmulators()
+  })
+
+  const connection = (extra = {}) => ({
+    itemId: 'item-nubank',
+    ownerId: HID,
+    person: 'ela',
+    importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
+    ...extra,
+  })
+  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const read = async (id) => (await db.collection('transactions').doc(id).get()).data()
+  const sizeOf = async (name) => (await db.collection(name).get()).size
+
+  test('14 meses: 60 compras e 12 manuais antigos viram 9 adocoes, 3 manuais intocados e 51 criacoes', async () => {
+    const history = longHistory()
+    const { equivalent, untouched } = await seedLegacy(db, history)
+    assert.equal(await sizeOf('transactions'), 12)
+    assert.equal(await sizeOf('bankImports'), 0)
+    const before = await snapshotOf(db, ['transactions'])
+
+    const summary = await run({ card: history })
+    assert.equal(summary.error, undefined)
+    assert.equal(summary.cardError, undefined)
+    assert.equal(summary.cardTxs.adopted, 9)
+    assert.equal(summary.cardTxs.adoptedLegacy, 9)
+    assert.equal(summary.cardTxs.created, 51)
+    assert.equal(summary.cardTxs.nearMiss, 1)
+    assert.equal(summary.cardTxs.ambiguous, 0)
+    assert.equal(summary.cardTxs.removed, 0)
+
+    // 12 manuais + 51 compras novas + a saida da conta; 60 importacoes do cartao + 1 da conta
+    assert.equal(await sizeOf('transactions'), 64)
+    assert.equal(await sizeOf('bankImports'), 61)
+    for (const i of equivalent) {
+      const d = await read(`antigo-${i}`)
+      assert.equal(d.bankImportId, `h${i}`, `antigo-${i}`)
+      assert.equal(d.cardId, 'acc-credit')
+      assert.equal(d.adoptedFromManual, true)
+      assert.equal(d.note, 'nota do dono')
+      assert.equal((await db.collection('transactions').doc(`bank_h${i}`).get()).exists, false)
+    }
+    const after = await snapshotOf(db, ['transactions'])
+    for (const id of untouched) assert.equal(after[`transactions/${id}`], before[`transactions/${id}`], id)
+    const card = (await db.collection('transactions').where('ownerId', '==', HID).where('cardId', '==', 'acc-credit').get()).docs
+    assert.equal(card.length, 60, 'uma linha de cartao por compra, sem descarte por idade')
+    assert.equal(new Set(card.map((d) => d.data().bankImportId)).size, 60)
+  })
+
+  test('segunda rodada identica nao altera nenhum documento, em nenhuma colecao', async () => {
+    const history = longHistory()
+    await seedLegacy(db, history)
+    await db.collection('cardSettings').doc('acc-credit').set({ ownerId: HID, closingDay: 7 })
+    await run({ card: history })
+    const snapshot = await snapshotOf(db, ALL_COLLECTIONS)
+    const second = await run({ card: history })
+    for (const key of ['created', 'updated', 'rebound', 'removed', 'adopted', 'adoptedLegacy', 'rehomed']) {
+      assert.equal(second.cardTxs[key], 0, key)
+    }
+    assert.deepEqual(await snapshotOf(db, ALL_COLLECTIONS), snapshot)
+  })
+
+  test('dois casais: cada rodada so toca os documentos do proprio dono', async () => {
+    const OTHER = 'casal-bbbb-0002'
+    const otherAccount = { ...CREDIT_ACCOUNT, id: 'acc-credit-b' }
+    const mine = purchase('a1', 'MERCADO CENTRAL', 45)
+    const theirs = purchase('b1', 'MERCADO CENTRAL', 45, { date: mine.date })
+    await db.collection('transactions').doc('a-cartao').set(manualDoc(mine.date, 45))
+    await db.collection('transactions').doc('a-antigo').set(legacyDoc(mine.date, 45))
+    await db.collection('transactions').doc('b-cartao').set(manualDoc(mine.date, 45, { ownerId: OTHER, cardId: 'acc-credit-b' }))
+    await db.collection('transactions').doc('b-antigo').set(legacyDoc(mine.date, 45, { ownerId: OTHER }))
+    const ownedBy = async (ownerId) => {
+      const all = await snapshotOf(db, ['transactions', 'bankImports', 'cards'])
+      const out = {}
+      for (const [path, value] of Object.entries(all)) {
+        if (value.includes(`["ownerId","${ownerId}"]`)) out[path] = value
+      }
+      return out
+    }
+
+    const beforeOther = await ownedBy(OTHER)
+    assert.equal(Object.keys(beforeOther).length, 2)
+    const first = await run({ card: [mine], accounts: [CREDIT_ACCOUNT] })
+    assert.equal(first.cardTxs.adopted, 1)
+    assert.deepEqual(await ownedBy(OTHER), beforeOther)
+    assert.equal((await read('a-cartao')).bankImportId, 'a1')
+
+    const beforeMine = await ownedBy(HID)
+    const second = await run(
+      { card: [theirs], accounts: [otherAccount] },
+      { itemId: 'item-outro', ownerId: OTHER }
+    )
+    assert.equal(second.cardTxs.adopted, 1)
+    assert.deepEqual(await ownedBy(HID), beforeMine)
+    assert.equal((await read('b-cartao')).bankImportId, 'b1')
+    assert.equal((await read('b-antigo')).bankImportId, undefined)
+    assert.equal((await db.collection('bankImports').doc('b1').get()).data().ownerId, OTHER)
+  })
+
+  test('apelido do cartao alterado depois do lancamento: a adocao segue pelo mesmo cardId', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45)
+    await db.collection('cardSettings').doc('acc-credit').set({ ownerId: HID, nickname: 'Roxinho' })
+    await db.collection('transactions').doc('manual-1').set(manualDoc(p.date, 45))
+    await db.collection('cardSettings').doc('acc-credit').update({ nickname: 'Cartao da casa' })
+    const summary = await run({ card: [p] })
+    assert.equal(summary.cardTxs.adopted, 1)
+    assert.equal((await read('manual-1')).bankImportId, 'c1')
+  })
+
+  test('manual lancado em outro cartao nao e adotado pela compra deste', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45)
+    await db.collection('transactions').doc('manual-1').set(manualDoc(p.date, 45, { cardId: 'acc-outro-cartao' }))
+    const before = await snapshotOf(db, ['transactions'])
+    const summary = await run({ card: [p] })
+    assert.equal(summary.cardTxs.adopted, 0)
+    assert.equal(summary.cardTxs.rehomed, 0)
+    assert.equal(summary.cardTxs.nearMiss, 0)
+    assert.equal(summary.cardTxs.created, 1)
+    const after = await snapshotOf(db, ['transactions'])
+    assert.equal(after['transactions/manual-1'], before['transactions/manual-1'])
+    // nem no reassentamento da rodada seguinte
+    assert.equal((await run({ card: [p] })).cardTxs.rehomed, 0)
+  })
+
+  test('o resumo da rodada traz so contagens, sem descricao, valor nem id', async () => {
+    const history = longHistory()
+    await seedLegacy(db, history)
+    const summary = await run({ card: history })
+    assert.deepEqual(Object.keys(summary.cardTxs).sort(), [
+      'adopted', 'adoptedLegacy', 'ambiguous', 'created', 'nearMiss', 'payments', 'rebound',
+      'rehomed', 'removed', 'skippedNoBrl', 'updated',
+    ])
+    assert.ok(Object.values(summary.cardTxs).every((v) => Number.isInteger(v) && v >= 0))
+    const text = JSON.stringify(summary)
+    for (const leak of ['SINTETICA', 'Sintetica', 'antigo-', 'bank_h', 'acc-credit', 'almoco', '115.01']) {
+      assert.ok(!text.includes(leak), `o resumo nao pode conter ${leak}`)
+    }
+  })
+
+  test('reassentamento de compra que a Pluggy nao devolve mais copia os campos do importado', async () => {
+    const old = purchase('c1', 'MERCADO CENTRAL', 45, { status: 'POSTED', billForecastDate: '2026-11' })
+    const other = purchase('c2', 'POSTO ESTRADA', 11, { status: 'POSTED' })
+    await run({ card: [old, other] })
+    await db.collection('transactions').doc('manual-1').set(manualDoc(old.date, 45))
+    const summary = await run({ card: [other] })
+    assert.equal(summary.cardTxs.rehomed, 1)
+    assert.equal(summary.cardTxs.removed, 0)
+    assert.equal((await db.collection('transactions').doc('bank_c1').get()).exists, false)
+    const d = await read('manual-1')
+    assert.equal(d.bankImportId, 'c1')
+    assert.equal(d.amount, 45)
+    assert.equal(d.cardStatus, 'posted')
+    assert.equal(d.billMonth, '2026-11')
+    assert.equal(d.date.toMillis(), new Date(old.date).getTime())
+    assert.equal(d.bankDescription, 'Mercado Central')
+    assert.equal(d.description, 'Alimentacao')
+    assert.equal((await db.collection('bankImports').doc('c1').get()).data().transactionId, 'manual-1')
+    // quando a compra volta, atualiza o manual e nao recria o importado
+    const back = await run({ card: [old, other] })
+    assert.equal(back.cardTxs.created, 0)
+    assert.equal((await db.collection('transactions').doc('bank_c1').get()).exists, false)
+  })
+
+  test('reassentamento sem bankImports grava a importacao com dono; importado ligado a outro manual fica', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45, { status: 'POSTED' })
+    const q = purchase('c2', 'POSTO ESTRADA', 61, { status: 'POSTED' })
+    await run({ card: [p, q] })
+    await db.collection('bankImports').doc('c1').delete()
+    await db.collection('bankImports').doc('c2').update({ matchedTransactionId: 'lancamento-do-dono' })
+    await db.collection('transactions').doc('manual-1').set(manualDoc(p.date, 45))
+    await db.collection('transactions').doc('manual-2').set(manualDoc(q.date, 61))
+    const summary = await run({ card: [p, q] })
+    assert.equal(summary.cardTxs.rehomed, 1)
+    const i = (await db.collection('bankImports').doc('c1').get()).data()
+    assert.equal(i.ownerId, HID)
+    assert.equal(i.person, 'ela')
+    assert.equal(i.cardId, 'acc-credit')
+    assert.equal(i.transactionId, 'manual-1')
+    assert.equal(i.amount, 45)
+    assert.equal((await db.collection('transactions').doc('bank_c2').get()).exists, true)
+    assert.equal((await read('manual-2')).bankImportId, undefined)
+  })
+
+  test('historico acima de um lote: 450 compras e manuais entram por inteiro e sem duplicar', async () => {
+    const now = Date.now()
+    const many = Array.from({ length: 450 }, (_, i) =>
+      purchase(`m${i}`, `LOJA SINTETICA ${i}`, 1000 + i, { date: new Date(now - (40 + i) * DAY_MS).toISOString(), status: 'POSTED' })
+    )
+    await db.collection('transactions').doc('antigo-fim').set(legacyDoc(many[449].date, 1449))
+    const summary = await run({ card: many })
+    assert.equal(summary.cardError, undefined)
+    assert.equal(summary.cardTxs.adopted, 1)
+    assert.equal(summary.cardTxs.created, 449)
+    assert.equal(await sizeOf('transactions'), 451)
+    assert.equal(await sizeOf('bankImports'), 451)
+  })
+})

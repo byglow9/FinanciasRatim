@@ -2,7 +2,7 @@ import { test, describe, before, after, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { createApp } from '../src/app.js'
 import { readAiConfig } from '../src/ai/config.js'
-import { createProviders } from '../src/ai/providers.js'
+import { createChain, createProviders } from '../src/ai/providers.js'
 import { createAiRouter } from '../src/ai/routes.js'
 import { createSpeech } from '../src/ai/speech.js'
 
@@ -111,9 +111,7 @@ describe('ai fala', () => {
     fetchFn = fakeFetch(queue)
     const config = readAiConfig(env, log)
     const providers = createProviders(config, { fetch: fetchFn })
-    const chain = {
-      complete: async (args) => (providers.length === 0 ? { ok: false } : providers[0].complete(args)),
-    }
+    const chain = createChain({ providers, config, now: () => NOW, log })
     const speech = createSpeech({ snapshot, providers: chain, config, log })
     const router = createAiRouter({ speech, log })
     const app = createApp({
@@ -197,6 +195,18 @@ describe('ai fala', () => {
     const res = await post('tok-a-ele', { situation: 'lancamento' })
     assert.equal(res.status, 200)
     assert.deepEqual(await res.json(), { text: null })
+    await stop()
+  })
+
+  test('saida reprovada cai no proximo provedor da lista e a fala aprovada dele e a resposta', async () => {
+    queue = [WRONG_STORE, GOOD]
+    await start({ ...AI_ENV, AI_PROVIDERS: 'groq,xai', AI_XAI_API_KEY: 'chave-xai-de-teste-1234', AI_XAI_MODEL: 'modelo-xai' })
+    const res = await post('tok-a-ele', { situation: 'lancamento' })
+    assert.deepEqual(await res.json(), { text: GOOD })
+    assert.deepEqual(
+      fetchFn.requests.map((r) => new URL(r.url).host),
+      ['api.groq.com', 'api.x.ai']
+    )
     await stop()
   })
 

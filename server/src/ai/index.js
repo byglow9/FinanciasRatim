@@ -1,5 +1,5 @@
 import { readAiConfig } from './config.js'
-import { createProviders } from './providers.js'
+import { createChain, createProviders } from './providers.js'
 import { createAiRouter } from './routes.js'
 import { createSnapshotLoader } from './snapshot.js'
 import { createSpeech } from './speech.js'
@@ -15,13 +15,11 @@ export function createAiFeature({ db, now = () => new Date(), env = process.env,
   const providers = createProviders(config, { fetch: fetchFn })
   if (providers.length === 0) log.warn?.('[ai] nenhum provedor configurado: a fala por IA responde so com o banco de frases')
 
-  // Tracer: so o primeiro provedor ligado; a cadeia completa entra na proxima tarefa.
-  const chain = {
-    complete: async (args) => (providers.length === 0 ? { ok: false } : providers[0].complete(args)),
-  }
+  // Cadeia na ordem de AI_PROVIDERS, com prazo por chamada, orcamento total e freios por provedor.
+  const chain = createChain({ providers, config, now, log })
 
   const snapshot = createSnapshotLoader({ db, now })
   const speech = createSpeech({ snapshot, providers: chain, config, log })
   const router = createAiRouter({ speech, log })
-  return { mounts: [{ path: '/api/vintem', router }], speech, config }
+  return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

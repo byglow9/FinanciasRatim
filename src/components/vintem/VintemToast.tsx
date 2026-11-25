@@ -21,20 +21,20 @@ export function VintemToastBody({ text, reaction }: VintemToastBodyProps) {
   }, [reaction])
 
   return (
-    <div className="relative pb-24 pr-16 pt-1">
-      <div className="anim-peek-bubble relative min-w-0 max-w-[300px] origin-bottom-right rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground shadow-float">
+    <div className="relative pb-14 pr-10 pt-1">
+      <div className="anim-peek-bubble relative min-w-0 max-w-[250px] origin-bottom-right rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground shadow-float">
         <p lang="pt-BR" className="text-base font-normal leading-normal">
           {text}
         </p>
         <span
           aria-hidden="true"
-          className="absolute -bottom-[7px] right-12 h-3.5 w-3.5 rotate-45 border-b border-r border-border bg-surface-2"
+          className="absolute -bottom-[7px] right-8 h-3.5 w-3.5 rotate-45 border-b border-r border-border bg-surface-2"
         />
       </div>
       {/* Vintem grande, inclinado na diagonal, com metade do corpo para fora da borda da tela. */}
-      <div className="pointer-events-none absolute -right-24 bottom-[-34px]" aria-hidden="true">
-        <div className="anim-peek-vintem">
-          <Vintem ref={handle} state="atento" size="stage" follow={false} />
+      <div className="pointer-events-none absolute -right-16 bottom-[-22px]" aria-hidden="true">
+        <div className="anim-peek-vintem [&_ellipse[id$=-shadow]]:hidden">
+          <Vintem ref={handle} state="atento" size="gauge" follow={false} />
         </div>
       </div>
     </div>

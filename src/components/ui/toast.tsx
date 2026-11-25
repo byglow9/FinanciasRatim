@@ -167,7 +167,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
           aria-live="polite"
           className={`pointer-events-none fixed z-[10001] flex ${
             current?.custom !== undefined
-              ? "bottom-[calc(120px+env(safe-area-inset-bottom))] right-0 justify-end"
+              ? "bottom-[calc(88px+env(safe-area-inset-bottom))] right-0 justify-end"
               : "inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] justify-center px-[5%]"
           }`}
         >

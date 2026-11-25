@@ -65,7 +65,7 @@ test('VintemToast: fala em texto React, sem line-clamp, sem HTML bruto e Vintem 
   assert.ok(!/line-clamp/.test(src), 'a fala do toast nunca e truncada')
   assert.ok(!/dangerouslySetInnerHTML|innerHTML/.test(src), 'HTML bruto na fala do toast')
   assert.match(src, /\{text\}/, 'a fala deve entrar como texto React')
-  assert.match(src, /size="stage"/, 'Vintem do toast espia em tamanho grande (stage)')
+  assert.match(src, /size="gauge"/, 'Vintem do toast espia em tamanho grande (gauge)')
   assert.match(src, /follow=\{false\}/, 'Vintem do toast nao deve seguir o cursor')
   assert.ok(!/<button/.test(src), 'o Vintem do toast nao e interativo')
   assert.match(src, /\.react\(reaction\)/, 'o toast nao roda a reacao em miniatura')

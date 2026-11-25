@@ -127,4 +127,131 @@ describe('teto diario e cache no emulador', () => {
       assert.equal(dump.includes(forbidden), false, `nao pode gravar ${forbidden}`)
     }
   })
+
+  test('com o teto em N, N mais M chamadas simultaneas deixam passar exatamente N', async () => {
+    const config = readAiConfig({ AI_DAILY_CAP_PER_USER: '8' }, quiet)
+    const budget = createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
+    const results = await Promise.all(Array.from({ length: 8 + 22 }, () => budget.consume({ hid: HID, person: 'ela' })))
+    assert.equal(results.filter((r) => r.ok).length, 8)
+    assert.equal(results.filter((r) => !r.ok).length, 22)
+    const usage = await docsOf(db, 'aiUsage')
+    assert.equal(usage[`${HID}__ela__2026-11-17`].calls, 8, 'o contador gravado bate com o que passou')
+  })
+
+  test('uma nova instancia sobre o mesmo banco continua a contagem do dia (reinicio do servidor)', async () => {
+    const config = readAiConfig({ AI_DAILY_CAP_PER_USER: '3' }, quiet)
+    const mk = () => createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
+    const before = mk()
+    assert.equal((await before.consume({ hid: HID, person: 'ele' })).calls, 1)
+    assert.equal((await before.consume({ hid: HID, person: 'ele' })).calls, 2)
+    const after = mk()
+    assert.deepEqual(await after.consume({ hid: HID, person: 'ele' }), { ok: true, calls: 3 })
+    assert.deepEqual(await after.consume({ hid: HID, person: 'ele' }), { ok: false, calls: 3 })
+    assert.deepEqual(await mk().consume({ hid: HID, person: 'ele' }), { ok: false, calls: 3 })
+  })
+
+  test('o contador da pessoa vira no dia de Sao Paulo, nao a meia-noite UTC', async () => {
+    const config = readAiConfig({ AI_DAILY_CAP_PER_USER: '1' }, quiet)
+    const budget = createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
+    clock.t = Date.parse('2026-11-17T02:30:00Z') // ainda dia 16, 23:30 em Sao Paulo
+    assert.equal((await budget.consume({ hid: HID, person: 'ele' })).ok, true)
+    clock.t = Date.parse('2026-11-17T02:50:00Z')
+    assert.equal((await budget.consume({ hid: HID, person: 'ele' })).ok, false, 'mesmo dia em Sao Paulo, apesar do UTC ja ser dia 17')
+    clock.t = Date.parse('2026-11-17T03:05:00Z') // 00:05 do dia 17 em Sao Paulo
+    assert.equal((await budget.consume({ hid: HID, person: 'ele' })).ok, true)
+    const usage = await docsOf(db, 'aiUsage')
+    assert.deepEqual(Object.keys(usage).sort(), [`${HID}__ele__2026-11-16`, `${HID}__ele__2026-11-17`])
+  })
+
+  test('um cache novo sobre o mesmo banco encontra a variante gravada e respeita o vencimento', async () => {
+    const first = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '10' })
+    assert.equal((await say(first)).source, 'ia')
+
+    // Instancia nova (Map vazio) com outro provedor falso: o acerto vem do Firestore, sem rede.
+    const second = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '10' })
+    assert.deepEqual(await say(second), { text: GOOD, source: 'cache' })
+    assert.equal(second.fetchFn.requests.length, 0)
+
+    // Passadas 25 horas o documento existe, mas o vencimento manda: miss e geracao nova.
+    clock.t += 25 * 3_600_000
+    const third = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '10' })
+    assert.deepEqual(await say(third), { text: GOOD, source: 'ia' })
+    assert.equal(third.fetchFn.requests.length, 1)
+    const cached = Object.values(await docsOf(db, 'aiCache'))
+    assert.equal(cached.length, 1)
+    assert.equal(cached[0].expiresAt.toMillis(), clock.t + 24 * 3_600_000, 'entrada vencida recomecou')
+  })
+
+  test('o contador por provedor usa o dia UTC e separa os provedores', async () => {
+    const config = readAiConfig({ AI_PROVIDER_CAP_CLOUDFLARE: '2', AI_PROVIDER_CAP_GROQ: '1' }, quiet)
+    const budget = createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
+    clock.t = Date.parse('2026-11-17T23:50:00Z') // 20:50 em Sao Paulo, ainda o mesmo dia UTC
+    const calls = await Promise.all([
+      budget.consumeProvider({ providerId: 'cloudflare' }),
+      budget.consumeProvider({ providerId: 'cloudflare' }),
+      budget.consumeProvider({ providerId: 'cloudflare' }),
+      budget.consumeProvider({ providerId: 'groq' }),
+      budget.consumeProvider({ providerId: 'groq' }),
+    ])
+    // Simultaneas: a ordem de chegada nao e garantida, so quantas passam por provedor.
+    assert.equal(calls.slice(0, 3).filter((c) => c.ok).length, 2)
+    assert.equal(calls.slice(3).filter((c) => c.ok).length, 1)
+    clock.t = Date.parse('2026-11-18T00:10:00Z') // virou o dia UTC (21:10 em Sao Paulo)
+    assert.equal((await budget.consumeProvider({ providerId: 'cloudflare' })).ok, true)
+    const usage = await docsOf(db, 'aiUsage')
+    assert.equal(usage['provider__cloudflare__2026-11-17'].calls, 2)
+    assert.equal(usage['provider__groq__2026-11-17'].calls, 1)
+    assert.equal(usage['provider__cloudflare__2026-11-18'].calls, 1)
+    assert.equal('ownerId' in usage['provider__cloudflare__2026-11-17'], false, 'so o servidor usa estes documentos')
+  })
+
+  test('freio por provedor ligado na cadeia: provedor no teto e pulado sem rede', async () => {
+    const env = {
+      AI_PROVIDERS: 'cloudflare,groq',
+      AI_CF_ACCOUNT_ID: 'conta123456',
+      AI_CF_API_TOKEN: 'token-secreto-de-teste-1234',
+      AI_CF_MODEL: '@cf/modelo/teste',
+      AI_PROVIDER_CAP_CLOUDFLARE: '1',
+      AI_CACHE_VARIANTS: '1',
+      AI_DAILY_CAP_PER_USER: '10',
+    }
+    const s = build(env)
+    assert.equal((await say(s, 'lancamento')).source, 'ia')
+    assert.equal((await say(s, 'abertura')).source, 'ia')
+    const hosts = s.fetchFn.requests.map((r) => (r.url.includes('cloudflare') ? 'cloudflare' : 'groq'))
+    assert.deepEqual(hosts, ['cloudflare', 'groq'])
+  })
+
+  test('nenhum documento de aiUsage ou aiCache guarda resumo, descricao, prompt ou chave de API', async () => {
+    const env = {
+      AI_PROVIDERS: 'cloudflare,groq',
+      AI_CF_ACCOUNT_ID: 'conta123456',
+      AI_CF_API_TOKEN: 'token-secreto-de-teste-1234',
+      AI_CF_MODEL: '@cf/modelo/teste',
+      AI_PROVIDER_CAP_CLOUDFLARE: '1',
+      AI_CACHE_VARIANTS: '2',
+      AI_DAILY_CAP_PER_USER: '10',
+    }
+    const s = build(env)
+    for (const situation of ['lancamento', 'lancamento', 'abertura', 'espiar']) await say(s, situation)
+    const usage = await docsOf(db, 'aiUsage')
+    const cached = await docsOf(db, 'aiCache')
+    assert.ok(Object.keys(usage).length >= 3 && Object.keys(cached).length >= 2)
+    const dump = JSON.stringify([usage, cached])
+    for (const forbidden of [
+      'IFOOD', 'UBER', 'RESTAURANTE', 'Alimentacao', 'Transporte', 'token-secreto', 'chave-secreta', 'conta123456',
+      'messages', 'role', 'system', 'podeGastar', 'ultimoLancamento', 'Nirigue',
+    ]) {
+      assert.equal(dump.includes(forbidden), false, `nao pode gravar ${forbidden}`)
+    }
+    // Campos permitidos, nada alem deles.
+    for (const doc of Object.values(cached)) {
+      assert.deepEqual(Object.keys(doc).sort(), ['expiresAt', 'lastText', 'ownerId', 'person', 'updatedAt', 'variants'])
+      for (const v of doc.variants) assert.equal(typeof v, 'string')
+    }
+    for (const [id, doc] of Object.entries(usage)) {
+      const allowed = id.startsWith('provider__') ? ['calls', 'day', 'providerId', 'updatedAt'] : ['calls', 'dayKey', 'ownerId', 'person', 'updatedAt']
+      assert.deepEqual(Object.keys(doc).sort(), allowed)
+    }
+  })
 })

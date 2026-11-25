@@ -238,6 +238,7 @@ src/
 **Id do marcador:** `pushEvents/{hid}__{alertId(person, cycleKey, categoryId, threshold)}` para limites, onde `alertId` já existe: [VERIFIED: shared/core/alerts.js:44-46] `export function alertId(person, cycleKey, categoryId, threshold) { return \`${person}__${cycleKey}__${categoryId}__${threshold}\` }`. Fatura: `{hid}__fatura__{cardId}__{billMonth}`. Espontâneo: `{hid}__{person}__espontanea__{dayKey}`.
 **Garantia:** `create()` falha se o documento existe [VERIFIED: server/node_modules/@google-cloud/firestore/types/firestore.d.ts:1479-1487, "The write fails if the document already exists"]. Semântica **no máximo uma vez**: se o processo morrer entre o `create()` e o envio, o aviso se perde (aceitável frente a duplicar). Se TODOS os envios falharem por erro transitório (5xx), apagar o marcador para a próxima checagem tentar de novo.
 **Marcador guarda** `{ ownerId, person, kind, status: 'enviado' | 'suprimido' | 'sem-aparelho', motivo?, createdAt, enviados }`. Silêncio ou tipo desligado cria o marcador como `suprimido` (o evento fica só no alerta dentro do app; o aviso não "chega atrasado" depois que o silêncio acaba).
+> **Atualização (D-21, rodada de planejamento 2026-11-25):** a D-21 SUBSTITUI o `suprimido` do silêncio por `pendente`: o aviso de limite ou de fatura que cai no silêncio espera e é entregue quando ele acaba. O status do marcador passa a ser `enviando`, `enviado`, `pendente`, `desligado`, `silencioso`, `teto`, `colapsado`, `sem-aparelho` ou `falhou`; o tipo desligado vira `desligado` (não entrega depois). Vale o que está nos planos 07-03, 07-10 e 07-15.
 **Limiar silencioso:** `thresholdsToFire` já marca `silent: true` nos limiares menores quando o gasto saltou direto para o maior [VERIFIED: shared/core/alerts.js:64-93, `silent: threshold !== top`]; criar marcador para os silenciosos sem enviar.
 
 ### Pattern 2: Servidor valida e grava tudo de push; regras do Firestore não mudam
@@ -322,6 +323,7 @@ Chave: `hid | person | cycleKey | tom | hash(situação normalizada)`, com perce
 **Envio só para a pessoa do evento** (D-14): consulta `pushRegistrations` com `where('ownerId','==',hid).where('person','==',person)` (duas igualdades, sem índice composto novo). `POST /api/limits/check` aceita `fid` do aparelho em uso e o exclui do envio (ele já mostra o alerta dentro do app); os outros aparelhos da mesma pessoa recebem.
 
 **Teto anti-enxurrada:** `PUSH_MAX_PER_DAY` (padrão 8) por pessoa, contado em `aiUsage`-like `pushEvents` do dia; passou do teto, cria marcador `suprimido`.
+> **Atualização (D-21):** o marcador do teto diário passa a se chamar `teto` (o `suprimido` não existe mais nos planos); o silêncio usa `pendente` e entrega depois. Os documentos de preferências são `pushPrefs/{hid}__{person}` (e não `pushPrefs/{uid}`), porque o servidor precisa achar as preferências da pessoa a partir de casal e pessoa.
 
 **Preferências:** `pushPrefs/{uid}` com `{ ownerId, person, types: { limite80: true, limite100: true, fatura: true, espontanea: true }, quiet: { enabled: false, from: '22:00', to: '08:00' }, updatedAt }`. Padrões da D-06 (silêncio desligado, três tipos ligados); `espontanea` não está na D-06, ver Open Question 2. `isQuiet` interpreta no fuso `America/Sao_Paulo` (`zonedParts`), aceitando janela que cruza meia-noite. As configurações existentes `notificationsEnabled` e `daysBeforeDueDate` [VERIFIED: src/types/index.ts:94-95 `notificationsEnabled: boolean` / `daysBeforeDueDate: number`; padrões 215-216: `notificationsEnabled: true,` `daysBeforeDueDate: 3,`] continuam: `daysBeforeDueDate` é a antecedência da fatura (recomendação), e o interruptor legado "Avisos de vencimento" do cartão atual não deve virar um segundo botão para a mesma coisa (decisão de UI para o UI-SPEC).
 
@@ -554,32 +556,43 @@ const res = await fetch(`${baseUrl}/chat/completions`, {
 | A16 | Modelos que raciocinam devolvem `content` vazio quando o `max_tokens` acaba no raciocínio | Pitfall 7 | Só muda a escolha de modelo e o `max_tokens` |
 | A17 | Push espontâneo ligado por padrão para quem ativou os avisos | Prefs | Incômodo; fácil de inverter (Open Question 2) |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Todas as perguntas abaixo foram resolvidas pelo dono nas decisões D-19 a D-23 de `07-CONTEXT.md` (rodada de planejamento de 2026-11-25) ou viraram checkpoint humano nos planos. A linha **Resolução** de cada item é a que vale; a recomendação original fica só como histórico.
 
 1. **Passos humanos do Firebase/Google Cloud antes de testar push**
    - Sabemos: o `register()` usa a chave pública VAPID e a API `fcmregistrations.googleapis.com`.
    - Falta: gerar o par em Configurações do projeto > Cloud Messaging > Certificados Web Push, definir `VITE_FIREBASE_VAPID_KEY` no build, conferir que a API de registros do FCM está habilitada e que a chave `VITE_FIREBASE_API_KEY` não a bloqueia.
    - Recomendação: tarefa `checkpoint:human-action` no início da trilha A.
+   - **Resolução (D-23):** checkpoint humano no plano 07-06 (chave VAPID, API de registros do FCM e conferência da restrição da chave de API, antes do teste no iPhone).
 
 2. **O push espontâneo (D-12 c) é um quarto tipo ligado por padrão?**
    - A D-06 só lista três tipos ligados; a D-12 diz "respeitando os tipos".
    - Recomendação: tipo `espontanea` separado, ligado por padrão (A17), com o limite de 1 por dia.
+   - **Resolução (D-21):** o push espontâneo é o quarto tipo, ligado por padrão, que o usuário pode desligar; no máximo 1 por dia, só fora do silêncio (planos 07-03, 07-11 e 07-15).
 
 3. **O aviso pode citar o nome da categoria?** D-05 proíbe valores e lojas; categoria não é proibida.
    - Recomendação segura: zero encaixes no texto do push (previsível, nada financeiro). Se o dono quiser, permitir só `{categoria}`.
+   - **Resolução (D-19):** o aviso pode citar o nome da categoria (`{categoria}` é o único encaixe permitido, só nas situações de limite), nunca valores, lojas nem nome de pessoa (plano 07-04).
 
 4. **Descrições de lançamentos manuais na IA:** nome de pessoa digitado livremente não é detectável com certeza.
    - Recomendação: usar descrição manual só quando for loja já vista nas importações do banco; senão a categoria. Dono confirma se aceita o risco residual de usar tudo.
+   - **Resolução (D-20):** a descrição digitada nos lançamentos manuais TAMBÉM vai à IA, por escolha do dono, depois do removedor de nomes do servidor; o risco residual (nome em minúsculas) é aceito e registrado (planos 07-05, 07-13 e roteiro do 07-19).
 
 5. **Régua de conteúdo da IA x Fase 4 e o apelido "baleia":** a D-13 pede sem filtro, a D-14 proíbe discriminação e parceiro. Confirmar com o dono a lista de raízes proibidas (raça, orientação, religião, deficiência, grupos) e se apelidos sobre o corpo ("baleia") ficam permitidos como ele pediu.
+   - **Resolução (D-22):** a régua da saída da IA é própria desta fase: bloqueia só ofensa discriminatória; palavrão, deboche e apelido como "baleia" passam. A lista de raízes é revisada pelo dono no gate 07-18 (plano 07-05).
 
 6. **Silêncio descarta o evento de push?** Recomendação: sim (marcador `suprimido`); o alerta continua dentro do app. A alternativa (adiar) manda aviso velho quando o silêncio acaba.
+   - **Resolução (D-21, SUBSTITUI a recomendação acima):** o silêncio SEGURA e entrega depois. O aviso de limite ou de fatura que cai no silêncio fica com o marcador `pendente` e chega quando o silêncio acaba (colapsando 80 e 100 da mesma categoria no mais alto); o push espontâneo só sai fora do silêncio (planos 07-03, 07-10 e 07-15). O marcador `suprimido` deixa de existir para o silêncio.
 
 7. **Interruptor legado "Avisos de vencimento" (`notificationsEnabled`):** vira o tipo `fatura` ou continua separado? Decisão de UI para o UI-SPEC; recomendação: um só controle por tipo, preservando `daysBeforeDueDate`.
+   - **Resolução (D-21):** o interruptor legado "Avisos de vencimento" (`notificationsEnabled`, em `settings`) vira o tipo `fatura`; continua o único controle, vale também para o sino do app, e os dias de antecedência seguem em `settings` (planos 07-03 e 07-11).
 
 8. **Railway sempre ligado?** Confirmar o plano e se o serviço dorme (A1).
+   - **Resolução (D-23):** o dono confirma no checkpoint do plano 07-06 ("sempre ligado" ou "dorme"); o check do app e o gancho pós-sincronização também avaliam a fatura, então o aviso não depende só do relógio (plano 07-15).
 
 9. **Qual modelo e qual ordem de provedores:** só se decide depois do script de comparação rodado pelo dono (checkpoint humano da trilha B).
+   - **Resolução (D-18, D-23):** checkpoint humano no plano 07-17: o dono roda o `ai-compare.js` com as próprias chaves, lê os textos lado a lado e escolhe modelos e ordem antes de qualquer padrão ser fixado nas variáveis do Railway.
 
 ## Environment Availability
 

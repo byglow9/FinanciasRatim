@@ -52,6 +52,8 @@ const CLOSED_KEYS = [
   'coinc:origem-antiga',
   'coinc:recarga:v1',
   'coinc:sw-reload:v1',
+  // Fase 7: FID do aparelho, so no localStorage (src/lib/push/messaging.ts).
+  'coinc:push:fid',
 ]
 
 /** Lista os arquivos de um diretorio (recursivo) que nao sao testes, para varreduras de texto. */

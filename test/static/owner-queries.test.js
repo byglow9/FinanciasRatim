@@ -155,6 +155,10 @@ const all = fs
   .filter((f) => f.endsWith('.service.ts'))
   .map((f) => f.replace(/\.service\.ts$/, ''))
   .sort()
+// Services que so falam com o servidor (fetch com ID token) nao tocam o Firestore: nao ha consulta nem
+// gravacao para guardar, e o servidor decide o dono pelo token.
+const usesFirestore = (name) =>
+  /from 'firebase\/firestore'/.test(fs.readFileSync(path.join(SERVICES_DIR, `${name}.service.ts`), 'utf8'))
 const only = process.env.ONLY
   ? process.env.ONLY.split(',').map((s) => s.trim()).filter(Boolean)
   : null
@@ -164,7 +168,7 @@ test('ONLY referencia services que existem e a selecao nao e vazia', () => {
   assert.ok(selected.length > 0, 'nenhum service selecionado')
   for (const name of selected) assert.ok(all.includes(name), `service inexistente: ${name}`)
   if (!only) {
-    assert.equal(all.length, 13, 'esperados 13 services')
+    assert.equal(all.filter(usesFirestore).length, 13, 'esperados 13 services com Firestore')
   }
 })
 
@@ -172,6 +176,11 @@ for (const name of selected) {
   test(`${name}.service.ts consulta e grava por dono`, () => {
     const source = fs.readFileSync(path.join(SERVICES_DIR, `${name}.service.ts`), 'utf8')
     const { problems, checks } = checkService(source)
+    if (!usesFirestore(name)) {
+      assert.equal(checks, 0, `${name}: service sem Firestore nao deve ter consulta ou gravacao`)
+      assert.match(source, /Authorization/, `${name}: service sem Firestore deve falar com o servidor pelo ID token`)
+      return
+    }
     assert.ok(checks > 0, `${name}: 0 verificacoes executadas`)
     assert.deepEqual(problems, [])
     if (/(?<![\w.])(query|addDoc|setDoc)\(|transaction\.set\(/.test(sanitize(source))) {

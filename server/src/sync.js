@@ -114,7 +114,21 @@ export async function cleanExistingDescriptions(db, hid) {
   return { transactions: updated, imports: imports.size }
 }
 
-export async function syncConnection(db, pluggy, connection) {
+// Modo do historico do cartao (06-19, D-13), usado so pelo script do dono:
+// - cardHistory 'dry-run': processa so as contas CREDIT e nao grava nada.
+// - cardHistory 'apply': grava limite, compras, marcador e agregados do cartao.
+// Nos dois nao ha contas BANK, ligacao de pagamentos nem gravacao do documento da conexao, e nada
+// e impresso (a mensagem de erro vai so no resumo). claimedManualIds e compartilhado entre as
+// conexoes de um mesmo ensaio ou aplicacao, para um manual antigo nao ser contado duas vezes.
+// Sem as opcoes o comportamento e o do sync de sempre.
+export async function syncConnection(db, pluggy, connection, options = {}) {
+  const { cardHistory, claimedManualIds } = options
+  // Valor desconhecido nunca pode virar uma rodada normal (que grava).
+  if (cardHistory !== undefined && cardHistory !== 'dry-run' && cardHistory !== 'apply') {
+    throw new Error('syncConnection: cardHistory invalido (use dry-run ou apply)')
+  }
+  const history = cardHistory !== undefined
+  const dryRun = cardHistory === 'dry-run'
   const { itemId, person, ownerId } = connection
   const ref = db.collection(CONNECTIONS).doc(itemId)
   const summary = { itemId, person, imported: 0, review: 0, ignored: 0 }
@@ -131,7 +145,7 @@ export async function syncConnection(db, pluggy, connection) {
     // Item com conta CREDIT ja diz que ha cartao; so os demais consultam o dono. Falha na consulta
     // nunca derruba a importacao do banco (so a mensagem vai para o log e para o resumo).
     let hasCreditCard = accounts.some((a) => a.type === 'CREDIT')
-    if (!hasCreditCard) {
+    if (!hasCreditCard && !history) {
       try {
         hasCreditCard = await ownerHasCard(db, ownerId)
       } catch (err) {
@@ -173,9 +187,11 @@ export async function syncConnection(db, pluggy, connection) {
         manual.push({ id: doc.id, type: d.type, amount: d.amount, date: d.date.toDate() })
       }
     }
-    const usedManualIds = new Set(
-      personImportsSnap.docs.map((d) => d.data().matchedTransactionId).filter(Boolean)
-    )
+    const usedManualIds = (history && claimedManualIds) || new Set()
+    for (const d of personImportsSnap.docs) {
+      const matched = d.data().matchedTransactionId
+      if (matched) usedManualIds.add(matched)
+    }
 
     const bankName = item.connector?.name ?? connection.connectorName ?? 'Banco'
     // Categoria do cartao pela mesma regra das demais contas (aprendida, mapeada, padrao).
@@ -190,28 +206,38 @@ export async function syncConnection(db, pluggy, connection) {
       // Falha aqui nunca derruba a importacao do banco: so a mensagem vai para o log e para o
       // resumo, sem valores nem dados pessoais.
       if (account.type === 'CREDIT') {
+        if (history) summary.cardAccounts = (summary.cardAccounts ?? 0) + 1
         try {
-          if (await syncCardSnapshot(db, { ownerId, person, itemId, account })) {
+          if (!dryRun && (await syncCardSnapshot(db, { ownerId, person, itemId, account }))) {
             summary.cards = (summary.cards ?? 0) + 1
           }
           const counts = await syncCardTransactions(db, {
             ownerId, person, itemId, account, connection, bankName, categorize, usedManualIds, pluggy, chains,
+            dryRun, baseline: cardHistory === 'apply' ? 'apply' : undefined,
           })
-          await refreshCardAggregates(db, { ownerId, accountId: account.id })
-          // so contagens (inclui a adocao do manual, D-12): nunca descricao, valor ou id
-          const total = summary.cardTxs ?? {
-            created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
-            adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
+          if (!dryRun) await refreshCardAggregates(db, { ownerId, accountId: account.id })
+          if (counts.skipped === 'baseline_pending') {
+            // o dono ainda nao aplicou o historico: so limite e agregados (D-13)
+            summary.cardHistoryPending = true
+          } else {
+            // so contagens (inclui a adocao do manual, D-12): nunca descricao, valor ou id
+            const total = summary.cardTxs ?? {
+              created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
+              adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
+            }
+            // o modo do historico traz contagens extras; o resumo normal mantem as chaves de antes
+            const keys = history ? Object.keys(counts) : Object.keys(total)
+            for (const key of keys) total[key] = (total[key] ?? 0) + (counts[key] ?? 0)
+            summary.cardTxs = total
           }
-          for (const key of Object.keys(total)) total[key] += counts[key] ?? 0
-          summary.cardTxs = total
         } catch (err) {
           const message = err?.message ?? String(err)
-          console.warn(`[sync] cartao nao gravado no item ${itemId}:`, message)
+          if (!history) console.warn(`[sync] cartao nao gravado no item ${itemId}:`, message)
           summary.cardError = message
         }
         continue
       }
+      if (history) continue
       const txs = await pluggy.fetchAllTransactions(account.id, { dateFrom })
       const existing = await getExisting(db, txs.map((t) => t.id))
       let batch = db.batch()
@@ -303,6 +329,9 @@ export async function syncConnection(db, pluggy, connection) {
       if (ops) await batch.commit()
     }
 
+    // No modo do historico acaba aqui: so o cartao e tocado.
+    if (history) return summary
+
     // Liga os pagamentos da fatura (cartao, texto na conta, transferencia propria de valor exato)
     // a fatura certa. Falha aqui nunca derruba a importacao: so a mensagem vai ao log e ao resumo.
     // Se o cartao ja falhou nesta rodada, nao ha o que ligar (e nao repete o aviso).
@@ -337,9 +366,12 @@ export async function syncConnection(db, pluggy, connection) {
     )
   } catch (err) {
     const message = err?.message ?? String(err)
-    console.error(`[sync] falha no item ${itemId}:`, message)
     summary.error = message
-    await ref.set({ lastSyncAt: Timestamp.now(), lastSyncError: message }, { merge: true })
+    // o modo do historico nunca grava na conexao nem imprime identificador
+    if (!history) {
+      console.error(`[sync] falha no item ${itemId}:`, message)
+      await ref.set({ lastSyncAt: Timestamp.now(), lastSyncError: message }, { merge: true })
+    }
   }
   return summary
 }

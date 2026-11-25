@@ -69,24 +69,25 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
   const Icon = item.icon
 
   if (isCustom) {
+    // Fala do Vintem: ele espia pela lateral direita e o balao sai ao lado dele (sem caixa de toast).
     return (
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`pointer-events-auto flex w-fit max-w-full items-center rounded-2xl border border-border bg-surface-2 text-foreground shadow-float transition-opacity duration-200 anim-toast-in ${
-          leaving ? "opacity-0" : "opacity-100"
-        }`}
+        className={`pointer-events-auto relative ${leaving ? "anim-peek-out" : "anim-peek-in"}`}
       >
-        <div className="min-w-0 flex-1">{item.custom}</div>
+        {item.custom}
         <button
           type="button"
           aria-label="Dispensar fala do OINC"
           onClick={onDismiss}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute -left-4 -top-4 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <X className="h-4 w-4" aria-hidden="true" />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-surface-2 shadow-float">
+            <X className="h-4 w-4" aria-hidden="true" />
+          </span>
         </button>
       </div>
     )
@@ -164,10 +165,14 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-[10001] flex justify-center px-[5%]"
+          className={`pointer-events-none fixed z-[10001] flex ${
+            current?.custom !== undefined
+              ? "bottom-[calc(120px+env(safe-area-inset-bottom))] right-0 justify-end"
+              : "inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] justify-center px-[5%]"
+          }`}
         >
           {current ? (
-            <div className="max-w-md">
+            <div className={current.custom !== undefined ? "max-w-[min(360px,92vw)]" : "max-w-md"}>
               <ToastView key={current.id} item={current} leaving={leaving} onDismiss={dismiss} />
             </div>
           ) : null}

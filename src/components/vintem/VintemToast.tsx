@@ -21,13 +21,20 @@ export function VintemToastBody({ text, reaction }: VintemToastBodyProps) {
   }, [reaction])
 
   return (
-    <div className="flex items-center gap-3 py-3 pl-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center" aria-hidden="true">
+    <div className="flex items-end">
+      <div className="relative mb-3 min-w-0 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground shadow-float">
+        <p lang="pt-BR" className="text-base font-normal leading-normal">
+          {text}
+        </p>
+        <span
+          aria-hidden="true"
+          className="absolute -right-[7px] bottom-4 h-3.5 w-3.5 rotate-45 border-r border-t border-border bg-surface-2"
+        />
+      </div>
+      {/* Vintem espiando: metade do corpo fica para fora da borda da tela. */}
+      <div className="-mr-6 ml-2 flex h-14 w-14 shrink-0 items-center justify-center" aria-hidden="true">
         <Vintem ref={handle} state="neutro" size="inline" follow={false} />
       </div>
-      <p lang="pt-BR" className="min-w-0 flex-1 text-base font-normal leading-normal">
-        {text}
-      </p>
     </div>
   )
 }

@@ -5,7 +5,11 @@ import { readAiConfig } from '../src/ai/config.js'
 import { createChain, createProviders } from '../src/ai/providers.js'
 import { createLimiter } from '../src/limiter.js'
 import { createAiRouter } from '../src/ai/routes.js'
+import { createBudget } from '../src/ai/budget.js'
+import { createCache } from '../src/ai/cache.js'
+import { createMemoryDb } from './_ai-memory-db.js'
 import { createSpeech } from '../src/ai/speech.js'
+import { hintsOf } from '../src/ai/topics.js'
 import { createFakeFirestore } from './_fake-firestore.js'
 
 // Testes HTTP da fala por IA com snapshot, provedor e fetch injetados (sem rede, sem Firestore).
@@ -53,6 +57,7 @@ function fakeSnapshot() {
   return {
     calls,
     failWith: null,
+    extra: {},
     async load(args) {
       calls.push(args)
       if (this.failWith) throw this.failWith
@@ -69,6 +74,7 @@ function fakeSnapshot() {
             tx('t1', 'IFOOD *RESTAURANTE', 45.9, 16, 'alimentacao', 'Alimentacao'),
             tx('t2', 'UBER *TRIP', 23.5, 15, 'transporte', 'Transporte'),
           ],
+          ...this.extra,
         },
         reads: 3,
         tone: 'sem-filtro',
@@ -108,6 +114,7 @@ describe('ai fala', () => {
   let log
   let db
   let clock
+  let usage
 
   async function start(env = AI_ENV, opts = {}) {
     snapshot = fakeSnapshot()
@@ -118,9 +125,13 @@ describe('ai fala', () => {
     const config = readAiConfig(env, log)
     const providers = createProviders(config, { fetch: fetchFn })
     const chain = opts.chain ?? createChain({ providers, config, now: () => NOW, log })
-    const speech = createSpeech({ snapshot, providers: chain, config, log })
+    // Com opts.spontaneous entram o teto do dia e o cache de verdade (banco em memoria).
+    usage = createMemoryDb()
+    const budget = opts.spontaneous ? createBudget({ db: usage, config, now: () => NOW, log }) : null
+    const cache = opts.spontaneous ? createCache({ db: usage, config, now: () => NOW, log }) : null
+    const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log })
     const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => clock.t })
-    const router = createAiRouter({ speech, db, limiter, log })
+    const router = createAiRouter({ speech, config, db, limiter, log })
     const app = createApp({
       verifyToken,
       db: {},
@@ -416,6 +427,184 @@ describe('ai fala', () => {
     assert.deepEqual(c.providers, [])
     assert.equal(readAiConfig({ AI_REACTION_TIMEOUT_MS: '3000' }, { warn() {} }).reactionTimeoutMs, 3000)
     assert.equal(readAiConfig({ AI_REACTION_TIMEOUT_MS: '1000' }, { warn() {} }).reactionTimeoutMs, 2500)
+  })
+
+  const getHints = (token) =>
+    fetch(`${base}/api/vintem/hints`, { headers: token ? { authorization: `Bearer ${token}` } : {} })
+
+  test('GET /hints devolve as frequencias e o prazo da configuracao do servidor', async () => {
+    await start({
+      ...AI_ENV,
+      VINTEM_PEEK_MIN_MS: '120000',
+      VINTEM_PEEK_MAX_MS: '240000',
+      AI_PEEK_PER_DAY: '4',
+      AI_OPEN_PER_DAY: '2',
+      AI_REACTION_TIMEOUT_MS: '3200',
+    })
+    const res = await getHints('tok-a-ele')
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), {
+      peekMinMs: 120000,
+      peekMaxMs: 240000,
+      peekPerDay: 4,
+      openPerDay: 2,
+      reactionTimeoutMs: 3200,
+    })
+    assert.equal(snapshot.calls.length, 0, 'hints nao le dado nenhum')
+    assert.equal((await getHints(null)).status, 401)
+    await stop()
+  })
+
+  test('GET /hints sem configuracao devolve os padroes (prazo de 2500 ms)', async () => {
+    await start()
+    assert.deepEqual(await (await getHints('tok-a-ela')).json(), {
+      peekMinMs: 360000,
+      peekMaxMs: 900000,
+      peekPerDay: 6,
+      openPerDay: 3,
+      reactionTimeoutMs: 2500,
+    })
+    await stop()
+  })
+
+  test('o prazo das reacoes fica entre 1500 e 4000: fora disso volta a 2500', async () => {
+    const cases = [
+      ['1500', 1500],
+      ['4000', 4000],
+      ['1499', 2500],
+      ['4001', 2500],
+      ['0', 2500],
+      ['99999999', 2500],
+      ['abc', 2500],
+      ['2000.5', 2500],
+    ]
+    for (const [raw, expected] of cases) {
+      await start({ ...AI_ENV, AI_REACTION_TIMEOUT_MS: raw })
+      const out = await (await getHints('tok-a-ele')).json()
+      assert.equal(out.reactionTimeoutMs, expected, `AI_REACTION_TIMEOUT_MS=${raw}`)
+      await stop()
+    }
+    // A rota sanea mesmo que receba uma configuracao que nao passou pelo readAiConfig.
+    for (const [value, expected] of [[100, 2500], [60000, 2500], [undefined, 2500], [3999, 3999]]) {
+      assert.equal(hintsOf({ reactionTimeoutMs: value }).reactionTimeoutMs, expected, String(value))
+    }
+  })
+
+  test('intervalo absurdo e saneado: piso de 60 s e maximo nunca abaixo do minimo', async () => {
+    await start({ ...AI_ENV, VINTEM_PEEK_MIN_MS: '1', VINTEM_PEEK_MAX_MS: '2' })
+    let out = await (await getHints('tok-a-ele')).json()
+    assert.deepEqual([out.peekMinMs, out.peekMaxMs], [60000, 60000])
+    await stop()
+
+    await start({ ...AI_ENV, VINTEM_PEEK_MIN_MS: '600000', VINTEM_PEEK_MAX_MS: '120000' })
+    out = await (await getHints('tok-a-ele')).json()
+    assert.deepEqual([out.peekMinMs, out.peekMaxMs], [600000, 600000])
+    await stop()
+
+    await start({ ...AI_ENV, VINTEM_PEEK_MIN_MS: '9000000000', VINTEM_PEEK_MAX_MS: '-5', AI_PEEK_PER_DAY: '0' })
+    out = await (await getHints('tok-a-ele')).json()
+    assert.deepEqual([out.peekMinMs, out.peekMaxMs, out.peekPerDay], [86400000, 86400000, 0])
+    await stop()
+  })
+
+  // Resumo com sete assuntos, para o teto de espiadas acabar antes dos assuntos.
+  const MANY_TOPICS = {
+    goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }],
+    porquinhoCents: 123400,
+    insights: [{ id: 'i1', type: 'delivery-heavy', severity: 3, subject: { kind: 'category', key: 'alimentacao' }, metrics: {} }],
+  }
+  const usageDoc = (person = 'ele') => usage.read('aiUsage', `casalA__${person}__2026-11-17`)
+  const say = async (situation, token = 'tok-a-ele', body = {}) => (await post(token, { situation, ...body })).json()
+
+  test('a sexta espiada do dia passa e a setima devolve null; padrao notado sai mais longo', async () => {
+    await start(AI_ENV, { spontaneous: true })
+    snapshot.extra = MANY_TOPICS
+    for (let i = 1; i <= 6; i += 1) assert.equal((await say('espiar')).text, GOOD, `espiada ${i}`)
+    const day = usageDoc()
+    assert.equal(day.espiar, 6)
+    assert.equal(day.abertura, undefined)
+    assert.equal(new Set(day.assuntos).size, 6)
+    assert.equal(day.calls, 6, 'a fala espontanea conta no teto diario da pessoa (D-03)')
+    assert.deepEqual(await say('espiar'), { text: null })
+    assert.equal(fetchFn.requests.length, 6)
+    assert.equal(day.assuntos[0], 'padroes')
+    assert.equal(fetchFn.requests[0].body.max_tokens, 200, 'padrao notado pede fala longa (D-15)')
+    assert.equal(fetchFn.requests[day.assuntos.indexOf('ritmo')].body.max_tokens, 120)
+    const prompt = fetchFn.requests[0].body.messages.map((m) => m.content).join('\n')
+    assert.ok(prompt.includes('espiando o app'), 'o prompt e o da espiada')
+    await stop()
+  })
+
+  test('abertura e espiada dividem a lista de assuntos do dia', async () => {
+    await start(AI_ENV, { spontaneous: true })
+    snapshot.extra = MANY_TOPICS
+    await say('abertura')
+    await say('espiar')
+    const day = usageDoc()
+    assert.deepEqual([day.abertura, day.espiar], [1, 1])
+    assert.equal(day.assuntos.length, 2)
+    assert.notEqual(day.assuntos[0], day.assuntos[1], 'o assunto da abertura voltou na espiada')
+    await stop()
+  })
+
+  test('o teto diario da pessoa vale para a espiada e o acerto de cache nao conta', async () => {
+    await start({ ...AI_ENV, AI_DAILY_CAP_PER_USER: '1', AI_CACHE_VARIANTS: '1' }, { spontaneous: true })
+    snapshot.extra = MANY_TOPICS
+    assert.equal((await say('espiar')).text, GOOD)
+    assert.deepEqual(await say('espiar'), { text: null })
+    assert.equal(fetchFn.requests.length, 1)
+    // Sem o contador do dia, o mesmo assunto sai do cache: conta a espiada, nao a chamada.
+    await usage.collection('aiUsage').doc('casalA__ele__2026-11-17').delete()
+    assert.equal((await say('espiar')).text, GOOD)
+    assert.equal(fetchFn.requests.length, 1)
+    assert.deepEqual([usageDoc().espiar, usageDoc().calls], [1, 0])
+    await stop()
+  })
+
+  test('na fala espontanea pessoa e casal vem so do token', async () => {
+    await start(AI_ENV, { spontaneous: true })
+    snapshot.extra = MANY_TOPICS
+    await say('espiar', 'tok-a-ele', { person: 'ela', hid: 'casalB', ownerId: 'casalB', topic: 'porquinho' })
+    assert.deepEqual(Object.keys(usage.all('aiUsage')), ['casalA__ele__2026-11-17'])
+    assert.deepEqual(snapshot.calls, [{ hid: 'casalA', person: 'ele', fresh: false }])
+    assert.deepEqual(usageDoc().assuntos, ['padroes'])
+    await stop()
+  })
+
+  test('app que desiste antes da resposta nao consome a espiada nem o assunto', async () => {
+    let release
+    const held = new Promise((resolve) => {
+      release = resolve
+    })
+    let asked
+    const reached = new Promise((resolve) => {
+      asked = resolve
+    })
+    const slow = {
+      complete: async () => {
+        asked()
+        await held
+        return { ok: true, text: GOOD }
+      },
+    }
+    await start(AI_ENV, { spontaneous: true, chain: slow })
+    snapshot.extra = MANY_TOPICS
+    const control = new AbortController()
+    const pending = fetch(`${base}/api/vintem/fala`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer tok-a-ele' },
+      body: JSON.stringify({ situation: 'espiar' }),
+      signal: control.signal,
+    })
+    await reached
+    control.abort()
+    await assert.rejects(pending)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    assert.equal(usageDoc().espiar, undefined)
+    assert.equal(usageDoc().assuntos, undefined)
+    await stop()
   })
 
   test('o id da conta do Cloudflare so entra na baseUrl se for seguro (SSRF)', () => {

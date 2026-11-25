@@ -38,6 +38,6 @@ export function createAiFeature({
   const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log })
   // Freio de rajada por usuario com o limitador proprio.
   const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => now().getTime() })
-  const router = createAiRouter({ speech, db, limiter, log })
+  const router = createAiRouter({ speech, config, db, limiter, log })
   return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

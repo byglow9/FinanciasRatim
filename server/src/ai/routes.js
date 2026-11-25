@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { mapTransaction } from './snapshot.js'
 import { SITUATIONS } from './speech.js'
+import { hintsOf } from './topics.js'
 
 const PEOPLE = ['ele', 'ela']
 const CATEGORY_ID_RE = /^[a-z0-9_-]{1,40}$/
@@ -12,15 +13,24 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
  * servidor revalida contra o casal e a pessoa do token (IDOR, T-07-32). Qualquer outro campo do
  * corpo e ignorado. Dono e pessoa vem so de req.owner (D-14). Falha de geracao nunca vira 5xx:
  * responde { text: null } e o app usa o banco de frases (IA-04).
+ * GET /hints devolve so numeros da configuracao do servidor: frequencias da fala espontanea e o prazo
+ * que o app espera nas reacoes (D-12).
  * @param {{
  *   speech: { generate: (args: any) => Promise<{ text: string | null }> },
+ *   config?: Parameters<typeof hintsOf>[0],
  *   db?: any,
  *   limiter?: { take: (key: string) => { ok: boolean, retryAfterMs: number } } | null,
  *   log?: { warn?: (line: string) => void },
  * }} deps
  */
-export function createAiRouter({ speech, db = null, limiter = null, log = console }) {
+export function createAiRouter({ speech, config = {}, db = null, limiter = null, log = console }) {
   const router = Router()
+  const hints = hintsOf(config)
+
+  router.get('/hints', (req, res) => {
+    if (!PEOPLE.includes(req.owner.person)) return res.status(403).json({ error: 'Sem acesso' })
+    res.json(hints)
+  })
 
   router.post('/fala', async (req, res) => {
     const { uid, hid, person } = req.owner
@@ -45,6 +55,11 @@ export function createAiRouter({ speech, db = null, limiter = null, log = consol
     const categoryId = typeof body.categoryId === 'string' && CATEGORY_ID_RE.test(body.categoryId) ? body.categoryId : null
 
     const started = Date.now()
+    // O app desistiu (fechou a conexao antes da resposta): a fala espontanea nao e contada.
+    let gone = false
+    res.on('close', () => {
+      if (!res.writableEnded) gone = true
+    })
     let latestTx
     if (body.transactionId !== undefined && body.transactionId !== null) {
       const id = body.transactionId
@@ -68,7 +83,7 @@ export function createAiRouter({ speech, db = null, limiter = null, log = consol
 
     let text = null
     try {
-      const out = await speech.generate({ hid, person, situation, categoryId, latestTx })
+      const out = await speech.generate({ hid, person, situation, categoryId, latestTx, gone: () => gone })
       text = typeof out?.text === 'string' && out.text !== '' ? out.text : null
     } catch (err) {
       // So o codigo do erro: nunca a mensagem, que poderia carregar dado.

@@ -475,8 +475,51 @@ Plans:
   4. O Vintém comenta os gastos com frases geradas por IA no tom escolhido (inclusive sem filtro), exibidas como texto simples e validadas antes de aparecer, com limite diário por usuário e cache; a IA recebe totais por categoria e nomes de lojas, e nunca CPF, números de conta ou cartão, nem nomes de pessoas (Pix para pessoa vira um rótulo genérico)
   5. Quando a IA falha, demora ou passa do limite, o Vintém usa o banco de frases sem o usuário ver erro, e o provedor pode ser trocado por configuração do servidor, com os termos de uso de dados da escolha registrados na data
 
-**Plans**: TBD
+**Notas de planejamento (2026-11-25):** as duas trilhas (push e IA) rodam em paralelo nas ondas. Primeiro vêm os tracers (07-01 e 07-02 para o push, que o gate 07-06 prova num iPhone real antes de qualquer expansão; 07-09 para a IA), depois as expansões. Os checkpoints humanos do dono ficam em 07-06 (chave VAPID, APIs do Google e iPhone real), 07-17 (chaves de IA, teste lado a lado e escolha do modelo) e 07-18 (publicação e conferência no aparelho real, com a revisão de conteúdo). Nenhuma regra nem índice do Firestore muda na fase e nenhum pacote novo entra (limitador próprio no lugar de express-rate-limit).
+
+**Plans**: 0/19 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 07-01-PLAN.md — Tracer do push no servidor e no service worker: registro do FID, teste de aviso por fid e worker que sempre exibe (PUSH-01, PUSH-04, PUSH-05)
+- [ ] 07-02-PLAN.md — Tracer do push no app: Ativar avisos pelo fluxo FID e Testar aviso no cartão Notificações (PUSH-01, PUSH-05)
+- [ ] 07-03-PLAN.md — Núcleo: preferências, silêncio com retenção e eventos de limite, fatura e espontâneo com id estável (PUSH-02, PUSH-03, PUSH-04)
+- [ ] 07-04-PLAN.md — Núcleo: banco de frases do aviso sem dado financeiro e os cinco estados do cartão Notificações (PUSH-01, PUSH-04)
+- [ ] 07-05-PLAN.md — Núcleo da IA: filtro de privacidade com removedor de nomes, régua própria da saída e chave do cache (IA-02, IA-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 07-06-PLAN.md — Gate do tracer de push: chave VAPID, APIs do FCM, publicação e aviso de teste no iPhone real (PUSH-01, PUSH-05)
+- [ ] 07-07-PLAN.md — Núcleo da IA: resumo montado no servidor e prompt por tom e situação (IA-02, IA-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 07-08-PLAN.md — Servidor do push: preferências por pessoa, registro robusto, status e coleções do servidor fechadas ao cliente (PUSH-01, PUSH-03, PUSH-04)
+- [ ] 07-09-PLAN.md — Servidor da fala por IA: rota, provedores trocáveis por configuração, cadeia de fallback e validação da saída (IA-01 a IA-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 07-10-PLAN.md — Notificador de limites: aviso único a 80 e 100 por cento, silêncio que entrega depois e gatilho no app (PUSH-02, PUSH-03, PUSH-04)
+- [ ] 07-11-PLAN.md — Cartão Notificações completo: cinco estados, tipos, silêncio, desativar e renovação a cada abertura (PUSH-01, PUSH-03, PUSH-05)
+- [ ] 07-12-PLAN.md — IA: teto diário por pessoa, cache com variantes, coalescência e freio por provedor (IA-01, IA-04)
+- [ ] 07-13-PLAN.md — IA: leitura completa do resumo (ciclo anterior, fixas, metas, Porquinho, fatura e padrões) com escopo por pessoa (IA-01, IA-02)
+- [ ] 07-14-PLAN.md — Cliente da fala por IA nas reações a lançamento, limite e sincronização, com reserva do banco de frases (IA-01, IA-03, IA-04)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 07-15-PLAN.md — Notificador: fatura perto de vencer, push espontâneo, entrega retida, relógio e gatilho pós-sincronização (PUSH-02, PUSH-03, PUSH-04)
+- [ ] 07-16-PLAN.md — Fala espontânea da IA: abertura do app e Vintém que espia (IA-01, IA-04)
+- [ ] 07-17-PLAN.md — Gate da IA: teste lado a lado, termos de dados e escolha do modelo pelo dono (IA-03, IA-05)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 07-18-PLAN.md — Gate de produção: publicação e conferência de push e IA no aparelho real, com revisão de conteúdo (PUSH-01 a PUSH-05, IA-01 a IA-05)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 07-19-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 ### Phase 8: Visão do casal e multiusuário
 
@@ -507,5 +550,5 @@ Plans:
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
 | 6. Cartão de crédito | 18/20 | In Progress|  |
-| 7. Push e Vintém com IA | 0/TBD | Not started | - |
+| 7. Push e Vintém com IA | 0/19 | Not started | - |
 | 8. Visão do casal e multiusuário | 0/TBD | Not started | - |

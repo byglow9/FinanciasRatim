@@ -1,33 +1,77 @@
 import { Router } from 'express'
+import { mapTransaction } from './snapshot.js'
 import { SITUATIONS } from './speech.js'
 
 const PEOPLE = ['ele', 'ela']
+const CATEGORY_ID_RE = /^[a-z0-9_-]{1,40}$/
+const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 /**
  * Rotas da fala por IA, montadas em /api/vintem depois do requireOwner.
- * O corpo traz so { situation } (lista fechada); dono e pessoa vem so de req.owner (D-14).
- * Falha de geracao nunca vira 5xx: responde { text: null } e o app usa o banco de frases (IA-04).
- * @param {{ speech: { generate: (args: any) => Promise<{ text: string | null }> }, log?: { warn?: (line: string) => void } }} deps
+ * O corpo traz so { situation } (lista fechada) e, opcionais, categoryId e transactionId, que o
+ * servidor revalida contra o casal e a pessoa do token (IDOR, T-07-32). Qualquer outro campo do
+ * corpo e ignorado. Dono e pessoa vem so de req.owner (D-14). Falha de geracao nunca vira 5xx:
+ * responde { text: null } e o app usa o banco de frases (IA-04).
+ * @param {{
+ *   speech: { generate: (args: any) => Promise<{ text: string | null }> },
+ *   db?: any,
+ *   limiter?: { take: (key: string) => { ok: boolean, retryAfterMs: number } } | null,
+ *   log?: { warn?: (line: string) => void },
+ * }} deps
  */
-export function createAiRouter({ speech, log = console }) {
+export function createAiRouter({ speech, db = null, limiter = null, log = console }) {
   const router = Router()
 
   router.post('/fala', async (req, res) => {
-    const { hid, person } = req.owner
+    const { uid, hid, person } = req.owner
     if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
 
-    const situation = req.body?.situation
+    // Freio de rajada por usuario (T-07-36): o app trata 429 como "sem fala".
+    if (limiter) {
+      const gate = limiter.take(uid)
+      if (!gate.ok) {
+        res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
+        return res.status(429).json({ error: 'Muitos pedidos' })
+      }
+    }
+
+    // So estes tres campos do corpo sao lidos; o resto e ignorado.
+    const body = req.body && typeof req.body === 'object' ? req.body : {}
+    const situation = body.situation
     if (typeof situation !== 'string' || !SITUATIONS.includes(situation)) {
       return res.status(400).json({ error: 'Situacao invalida' })
     }
+    // categoryId fora do formato e ignorado em silencio; o que a pessoa nao tem e descartado na fala.
+    const categoryId = typeof body.categoryId === 'string' && CATEGORY_ID_RE.test(body.categoryId) ? body.categoryId : null
 
     const started = Date.now()
+    let latestTx
+    if (body.transactionId !== undefined && body.transactionId !== null) {
+      const id = body.transactionId
+      /** @type {Record<string, any> | null} */
+      let doc = null
+      try {
+        if (typeof id === 'string' && TRANSACTION_ID_RE.test(id) && db) {
+          const snap = await db.collection('transactions').doc(id).get()
+          const data = snap.exists ? snap.data() : null
+          // Inexistente e alheio (outro casal ou outra pessoa) respondem igual: sem revelar existencia.
+          if (data && data.ownerId === hid && data.person === person) doc = mapTransaction(id, data) ?? {}
+        }
+      } catch (err) {
+        log.warn?.(`[ai] leitura do lancamento falhou codigo=${String(err?.code ?? err?.name ?? 'erro').slice(0, 40)}`)
+        return res.json({ text: null })
+      }
+      const found = doc !== null
+      if (!found) return res.status(404).json({ error: 'Lancamento nao encontrado' })
+      latestTx = Object.keys(doc).length > 0 ? doc : undefined
+    }
+
     let text = null
     try {
-      const out = await speech.generate({ hid, person, situation })
+      const out = await speech.generate({ hid, person, situation, categoryId, latestTx })
       text = typeof out?.text === 'string' && out.text !== '' ? out.text : null
     } catch (err) {
-      // So o codigo do erro: nunca mensagem, que poderia carregar dado.
+      // So o codigo do erro: nunca a mensagem, que poderia carregar dado.
       log.warn?.(`[ai] fala falhou codigo=${String(err?.code ?? err?.name ?? 'erro').slice(0, 40)}`)
     }
     log.warn?.(`[ai] fala situacao=${situation} resultado=${text === null ? 'nulo' : 'ok'} ms=${Date.now() - started}`)

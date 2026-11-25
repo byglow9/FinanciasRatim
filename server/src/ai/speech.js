@@ -50,17 +50,18 @@ function partnerLabelsOf(person, tabNames) {
  * @param {{
  *   snapshot: { load: (args: { hid: string, person: string, fresh: boolean }) => Promise<any> },
  *   providers: { complete: (args: any) => Promise<{ ok: boolean, text?: string, providerId?: string }> },
- *   config: { requireProfanity?: boolean },
+ *   config: { requireProfanity?: boolean, totalBudgetMs?: number },
  *   now?: () => Date,
  *   log?: { warn?: (line: string) => void },
+ *   leakCheck?: (text: string) => string[],
  * }} deps
  */
-export function createSpeech({ snapshot, providers, config, log = console }) {
+export function createSpeech({ snapshot, providers, config, log = console, leakCheck = findLeaks }) {
   /**
    * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
    * @returns {Promise<{ text: string | null }>}
    */
-  async function generate({ hid, person, situation, categoryId, transactionId, latestTx }) {
+  async function run({ hid, person, situation, categoryId, transactionId, latestTx }) {
     const key = /** @type {keyof typeof PROMPT_SITUATION} */ (situation)
     if (!SITUATIONS.includes(situation)) return { text: null }
     const reaction = REACTION_SITUATIONS.includes(situation)
@@ -79,7 +80,7 @@ export function createSpeech({ snapshot, providers, config, log = console }) {
     const summary = buildAiSummary(input)
     // Defesa final: um resumo com qualquer vazamento nunca sai de casa (T-07-33).
     const summaryText = summaryToPromptText(summary)
-    if (findLeaks(summaryText).length > 0) {
+    if (leakCheck(summaryText).length > 0) {
       log.warn?.('[ai] resumo barrado: vazamento acusado, fala vira banco de frases')
       return { text: null }
     }
@@ -128,6 +129,30 @@ export function createSpeech({ snapshot, providers, config, log = console }) {
       validate: (text) => validateSpeech(text, ctx),
     })
     return { text: result.ok && typeof result.text === 'string' ? result.text : null }
+  }
+
+  /**
+   * Prazo total da rota (AI_TOTAL_BUDGET_MS): estourado, devolve { text: null } sem cancelar o que
+   * ja foi pedido (a chamada em andamento termina sozinha e o 07-12 aproveita para o cache).
+   * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
+   * @returns {Promise<{ text: string | null }>}
+   */
+  async function generate(args) {
+    const work = run(args)
+    // Se o prazo vencer primeiro, a falha tardia do trabalho nao pode virar rejeicao sem dono.
+    work.catch(() => {})
+    const budget = Number(config.totalBudgetMs)
+    if (!(budget > 0)) return work
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let timer
+    const late = new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ text: null }), budget)
+    })
+    try {
+      return await Promise.race([work, late])
+    } finally {
+      clearTimeout(timer)
+    }
   }
 
   return { generate }

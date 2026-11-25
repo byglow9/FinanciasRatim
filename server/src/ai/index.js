@@ -1,3 +1,4 @@
+import { createLimiter } from '../limiter.js'
 import { readAiConfig } from './config.js'
 import { createChain, createProviders } from './providers.js'
 import { createAiRouter } from './routes.js'
@@ -20,6 +21,8 @@ export function createAiFeature({ db, now = () => new Date(), env = process.env,
 
   const snapshot = createSnapshotLoader({ db, now })
   const speech = createSpeech({ snapshot, providers: chain, config, log })
-  const router = createAiRouter({ speech, log })
+  // Freio de rajada por usuario com o limitador proprio; o teto diario e o cache sao do 07-12.
+  const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => now().getTime() })
+  const router = createAiRouter({ speech, db, limiter, log })
   return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

@@ -3,8 +3,10 @@ import assert from 'node:assert/strict'
 import { createApp } from '../src/app.js'
 import { readAiConfig } from '../src/ai/config.js'
 import { createChain, createProviders } from '../src/ai/providers.js'
+import { createLimiter } from '../src/limiter.js'
 import { createAiRouter } from '../src/ai/routes.js'
 import { createSpeech } from '../src/ai/speech.js'
+import { createFakeFirestore } from './_fake-firestore.js'
 
 // Testes HTTP da fala por IA com snapshot, provedor e fetch injetados (sem rede, sem Firestore).
 const ORIGIN = 'https://app.exemplo.test'
@@ -104,16 +106,21 @@ describe('ai fala', () => {
   let queue
   let fetchFn
   let log
+  let db
+  let clock
 
-  async function start(env = AI_ENV) {
+  async function start(env = AI_ENV, opts = {}) {
     snapshot = fakeSnapshot()
     log = captureLog()
     fetchFn = fakeFetch(queue)
+    db = createFakeFirestore()
+    clock = { t: NOW.getTime() }
     const config = readAiConfig(env, log)
     const providers = createProviders(config, { fetch: fetchFn })
-    const chain = createChain({ providers, config, now: () => NOW, log })
+    const chain = opts.chain ?? createChain({ providers, config, now: () => NOW, log })
     const speech = createSpeech({ snapshot, providers: chain, config, log })
-    const router = createAiRouter({ speech, log })
+    const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => clock.t })
+    const router = createAiRouter({ speech, db, limiter, log })
     const app = createApp({
       verifyToken,
       db: {},
@@ -243,6 +250,128 @@ describe('ai fala', () => {
       assert.equal(res.status, 400, JSON.stringify(body))
     }
     assert.equal(snapshot.calls.length, 0)
+    await stop()
+  })
+
+  const putTx = (id, data) =>
+    db.store.set(`transactions/${id}`, {
+      type: 'saida',
+      amount: 30,
+      category: 'Alimentacao',
+      categoryId: 'alimentacao',
+      source: 'bank',
+      date: new Date(Date.UTC(2026, 10, 17, 12)),
+      ...data,
+    })
+
+  test('transactionId de outro casal, de outra pessoa e inexistente dao a mesma resposta 404', async () => {
+    await start()
+    putTx('mine', { ownerId: 'casalA', person: 'ele', description: 'RAPPI *PEDIDO' })
+    putTx('outro-casal', { ownerId: 'casalB', person: 'ele', description: 'RAPPI *PEDIDO' })
+    putTx('outra-pessoa', { ownerId: 'casalA', person: 'ela', description: 'RAPPI *PEDIDO' })
+    const bodies = []
+    for (const transactionId of ['outro-casal', 'outra-pessoa', 'nao-existe', '../x', 'a/b', 7]) {
+      const res = await post('tok-a-ele', { situation: 'lancamento', transactionId })
+      assert.equal(res.status, 404, String(transactionId))
+      bodies.push(await res.text())
+    }
+    assert.equal(new Set(bodies).size, 1, 'a mesma mensagem para todos')
+    assert.equal(snapshot.calls.length, 0, 'nada foi gerado')
+    assert.equal(fetchFn.requests.length, 0)
+    await stop()
+  })
+
+  test('transactionId proprio vira o lancamento da fala', async () => {
+    queue = ['Mais um Rappi, seu trouxa. Assim o mês acaba antes de começar.']
+    await start()
+    putTx('mine', { ownerId: 'casalA', person: 'ele', description: 'RAPPI *PEDIDO' })
+    const res = await post('tok-a-ele', { situation: 'lancamento', transactionId: 'mine' })
+    assert.equal(res.status, 200)
+    assert.equal((await res.json()).text, 'Mais um Rappi, seu trouxa. Assim o mês acaba antes de começar.')
+    const prompt = fetchFn.requests[0].body.messages.map((m) => m.content).join('\n')
+    assert.ok(prompt.includes('"loja":"Rappi"'), 'o ultimoLancamento e o do id')
+    await stop()
+  })
+
+  test('campos extras do corpo (texto, valores, hid) sao ignorados e nunca chegam ao resumo', async () => {
+    await start()
+    const res = await post('tok-a-ele', {
+      situation: 'lancamento',
+      text: 'texto-injetado-pelo-cliente',
+      summary: { ultimoLancamento: { loja: 'LojaInventada' } },
+      amount: 987654,
+      valor: 'R$ 1.234,56',
+      hid: 'casalB',
+      ownerId: 'casalB',
+      person: 'ela',
+    })
+    assert.equal(res.status, 200)
+    const prompt = fetchFn.requests[0].body.messages.map((m) => m.content).join('\n')
+    for (const bad of ['texto-injetado-pelo-cliente', 'LojaInventada', '987654', '1.234,56']) {
+      assert.ok(!prompt.includes(bad), bad)
+    }
+    assert.deepEqual(snapshot.calls[0], { hid: 'casalA', person: 'ele', fresh: true })
+    await stop()
+  })
+
+  test('categoryId invalido ou desconhecido e ignorado e a fala sai normal', async () => {
+    await start()
+    for (const categoryId of ['Cat/../x', 'x'.repeat(41), 42, 'naoexiste', 'transporte']) {
+      const res = await post('tok-a-ele', { situation: 'limite', categoryId })
+      assert.equal(res.status, 200, String(categoryId))
+    }
+    await stop()
+  })
+
+  test('rajada acima de AI_BURST_PER_MIN responde 429 e libera depois de um minuto', async () => {
+    await start({ ...AI_ENV, AI_BURST_PER_MIN: '2' })
+    assert.equal((await post('tok-a-ele', { situation: 'abertura' })).status, 200)
+    assert.equal((await post('tok-a-ele', { situation: 'abertura' })).status, 200)
+    const res = await post('tok-a-ele', { situation: 'abertura' })
+    assert.equal(res.status, 429)
+    assert.deepEqual(await res.json(), { error: 'Muitos pedidos' })
+    assert.ok(Number(res.headers.get('retry-after')) >= 1)
+    assert.equal(snapshot.calls.length, 2, 'o pedido barrado nao gera nada')
+    // outro usuario nao e afetado
+    assert.equal((await post('tok-a-ela', { situation: 'abertura' })).status, 200)
+    clock.t += 61_000
+    assert.equal((await post('tok-a-ele', { situation: 'abertura' })).status, 200)
+    await stop()
+  })
+
+  test('falha interna de geracao da 200 com text null e nao vaza a mensagem', async () => {
+    await start()
+    snapshot.failWith = new Error('segredo-interno-do-banco')
+    const res = await post('tok-a-ele', { situation: 'lancamento' })
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { text: null })
+    assert.ok(!log.lines.join('\n').includes('segredo-interno-do-banco'))
+    await stop()
+  })
+
+  test('prazo total da rota estourado devolve text null sem esperar o provedor', async () => {
+    const never = { complete: () => new Promise(() => {}) }
+    await start({ ...AI_ENV, AI_TOTAL_BUDGET_MS: '60' }, { chain: never })
+    const started = Date.now()
+    const res = await post('tok-a-ele', { situation: 'abertura' })
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { text: null })
+    assert.ok(Date.now() - started < 2000)
+    await stop()
+  })
+
+  test('o log capturado nao tem nada do resumo, da descricao, do texto gerado nem da chave', async () => {
+    await start()
+    putTx('mine', { ownerId: 'casalA', person: 'ele', description: 'RAPPI *PEDIDO' })
+    await post('tok-a-ele', { situation: 'lancamento' })
+    await post('tok-a-ele', { situation: 'lancamento', transactionId: 'mine' })
+    queue.splice(0, queue.length, WRONG_STORE)
+    await post('tok-a-ela', { situation: 'abertura' })
+    const everything = log.lines.join('\n')
+    assert.ok(everything.length > 0)
+    for (const secret of ['chave-secreta-de-teste', GOOD, 'trouxa', 'iFood', 'IFOOD', 'Rappi', 'R$', 'alimentacao', 'Alimentacao', 'casalA', 'u-a-ele', 'tok-a-ele']) {
+      assert.ok(!everything.includes(secret), `vazou no log: ${secret}`)
+    }
     await stop()
   })
 

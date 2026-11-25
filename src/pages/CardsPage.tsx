@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CircleAlert } from 'lucide-react'
+import { BillDetailSheet } from '@/components/cards/BillDetailSheet'
 import { BillHistoryList } from '@/components/cards/BillHistoryList'
 import { BillSummary } from '@/components/cards/BillSummary'
 import { CardLimitCard } from '@/components/cards/CardLimitCard'
@@ -21,6 +23,9 @@ const SHELL = 'mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]'
 function CardSection({ cardId }: { cardId: string }) {
   const { now } = useCycle()
   const view = useCardView(cardId)
+  // Fatura aberta na folha. A secao tem a key do cartao: trocar de cartao ou de perfil a desmonta e
+  // fecha a folha.
+  const [openMonth, setOpenMonth] = useState<string | null>(null)
 
   if (view.error) {
     return (
@@ -50,6 +55,8 @@ function CardSection({ cardId }: { cardId: string }) {
     )
   }
 
+  const openBill = bills.find((b) => b.billMonth === openMonth) ?? null
+
   return (
     <div className="space-y-4">
       <CardLimitCard card={card} limit={limit} />
@@ -61,6 +68,17 @@ function CardSection({ cardId }: { cardId: string }) {
         mismatchCents={view.openBillMismatchCents}
         now={now}
       />
+      {currentBill ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-full"
+          aria-haspopup="dialog"
+          onClick={() => setOpenMonth(currentBill.billMonth)}
+        >
+          Ver compras da fatura
+        </Button>
+      ) : null}
       {view.unassignedCents !== null && view.unassignedCents > 0 ? (
         <Notice
           tone="warn"
@@ -79,8 +97,9 @@ function CardSection({ cardId }: { cardId: string }) {
           fechamento.
         </Notice>
       ) : null}
-      <BillHistoryList bills={bills} />
+      <BillHistoryList bills={bills} onOpen={setOpenMonth} activeMonth={openBill?.billMonth ?? null} />
       <UpcomingBills nextBills={nextBills} upcoming={upcoming} />
+      <BillDetailSheet card={card} bill={openBill} now={now} onClose={() => setOpenMonth(null)} />
     </div>
   )
 }

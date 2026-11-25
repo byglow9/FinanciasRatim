@@ -1,21 +1,24 @@
 import { ChevronRight } from 'lucide-react'
 import { BillStatusChip } from '@/components/cards/BillStatusChip'
 import { Progress } from '@/components/ui/progress'
-import { billMonthLabel, moneyOrDash } from '@/lib/cardLabels'
+import { BILL_STATUS_LABEL, billMonthLabel, moneyOrDash } from '@/lib/cardLabels'
+import { cn } from '@/lib/utils'
 import type { CardBill } from '@shared/core/cardBills.js'
 import { plural } from '@shared/core/format.js'
 
 interface BillHistoryListProps {
   bills: CardBill[]
-  /** Quando passada, cada linha vira um botao que abre a fatura (ligado no plano 06-12). */
+  /** Quando passada, cada linha vira um botao que abre a fatura. */
   onOpen?: (billMonth: string) => void
+  /** Mes da fatura aberta na folha: a linha dela fica marcada. */
+  activeMonth?: string | null
 }
 
 /**
  * Quanto foi gasto em cada fatura, mes a mes (D-10): todas as faturas que existem, sem limite de
  * meses (D-13), da mais nova para a mais antiga, com a barra proporcional a maior delas.
  */
-export function BillHistoryList({ bills, onOpen }: BillHistoryListProps) {
+export function BillHistoryList({ bills, onOpen, activeMonth }: BillHistoryListProps) {
   const ordered = [...bills].sort((a, b) => b.billMonth.localeCompare(a.billMonth))
   const biggest = ordered.reduce((max, b) => Math.max(max, b.totalCents), 0)
 
@@ -58,8 +61,20 @@ export function BillHistoryList({ bills, onOpen }: BillHistoryListProps) {
                   <button
                     type="button"
                     onClick={() => onOpen(bill.billMonth)}
-                    aria-label={`Abrir a fatura de ${billMonthLabel(bill.billMonth)}`}
-                    className="block min-h-11 w-full py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    // O rotulo substitui o conteudo para o leitor de tela: leva o valor e o status.
+                    aria-label={[
+                      `Abrir a fatura de ${billMonthLabel(bill.billMonth)}`,
+                      moneyOrDash(bill.totalCents),
+                      bill.status ? BILL_STATUS_LABEL[bill.status].label : null,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                    aria-haspopup="dialog"
+                    aria-current={activeMonth === bill.billMonth ? 'true' : undefined}
+                    className={cn(
+                      'block min-h-11 w-full py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                      activeMonth === bill.billMonth && 'bg-surface-2'
+                    )}
                   >
                     {body}
                   </button>

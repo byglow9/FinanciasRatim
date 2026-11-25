@@ -290,6 +290,35 @@ describe('pagamento da fatura', () => {
     assert.equal(payments[0].billMonth, '2026-11')
   })
 
+  test('pagamento que saiu da janela continua guardado e a fatura dele nao volta a receber', async () => {
+    await seedCard({ billTotals: { '2026-09': 20000, '2026-10': 30000 } })
+    await seedClosing()
+    await textPayment('set', 200, '2026-09-10T15:00:00Z')
+    await reconcileCardPayments(db, { ownerId: HID, now: new Date('2026-09-20T15:00:00Z') })
+    assert.equal((await paymentsOf())[0].billMonth, '2026-09')
+
+    // 100 dias depois a evidencia de setembro ja nao e lida, mas a fatura continua paga
+    await textPayment('out', 100, '2026-12-15T15:00:00Z')
+    const now = new Date('2026-12-20T15:00:00Z')
+    await reconcileCardPayments(db, { ownerId: HID, now })
+    const payments = await paymentsOf()
+    assert.deepEqual(payments.map((p) => [p.id, p.billMonth]), [['out', '2026-10'], ['set', '2026-09']])
+    await reconcileCardPayments(db, { ownerId: HID, now })
+    assert.deepEqual(await paymentsOf(), payments)
+  })
+
+  test('na borda da janela, o outro lado de um pagamento ja guardado nao conta de novo', async () => {
+    const now = new Date('2026-11-25T15:00:00Z')
+    const edge = now.getTime() - 90 * DAY_MS
+    await seedCard({
+      billTotals: { '2026-08': 20000 },
+      payments: [{ id: 'c-old', billMonth: '2026-08', cents: 20000, atMs: edge - DAY_MS, source: 'card' }],
+    })
+    await textPayment('late', 200, new Date(edge + DAY_MS).toISOString())
+    await reconcileCardPayments(db, { ownerId: HID, now })
+    assert.deepEqual((await paymentsOf()).map((p) => p.id), ['c-old'])
+  })
+
   test('a rodada do sync do cartao nao trata o pagamento ligado como compra', async () => {
     await seedCard()
     await syncConnection(db, bankOnlyPluggy([payTx()]), connection())

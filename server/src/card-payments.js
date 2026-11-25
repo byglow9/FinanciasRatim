@@ -3,7 +3,9 @@
 //   sem conta CREDIT, paga a fatura do Nubank).
 // - reconcileCardPayments: liga as evidencias de pagamento a fatura certa pelo nucleo do 06-05 e
 //   grava cards/{id}.payments. Todo acesso e por consulta de igualdade com ownerId (o Admin SDK
-//   ignora as regras) e a janela de data e filtrada em memoria, sem indice novo.
+//   ignora as regras) e a janela de data e filtrada em memoria, sem indice novo. O pagamento ja
+//   guardado cuja evidencia saiu da janela continua em cards.payments (senao a fatura paga voltaria
+//   a ficar em aberto).
 // Nunca registra valores, descricoes nem ids em log.
 
 import { partsOfDate, shiftBillMonth } from '../../shared/core/cardBills.js'
@@ -19,6 +21,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const WINDOW_DAYS = 90
 /** Maximo de pagamentos guardados em cada cartao. */
 export const MAX_PAYMENTS = 24
+/** Mesma operacao vista por dois lados (a mesma janela de fusao do nucleo). */
+const MERGE_WINDOW_MS = 3 * DAY_MS
 
 function assertOwner(ownerId, who) {
   if (typeof ownerId !== 'string' || !ownerId) throw new Error(`${who} exige o ownerId do dono`)
@@ -41,18 +45,35 @@ function evidenceOf(doc, sinceMs) {
   return { d, dateMs, cents }
 }
 
+// Pagamentos ja guardados cuja evidencia saiu da janela: nao da para recalcular, entao continuam.
+function settledBefore(payments, sinceMs) {
+  if (!Array.isArray(payments)) return []
+  return payments.filter(
+    (p) =>
+      p && typeof p.id === 'string' && Number.isFinite(p.cents) && p.cents > 0 && Number.isFinite(p.atMs) && p.atMs < sinceMs
+  )
+}
+
 // billTotals traz o historico inteiro (D-13), mas as evidencias so cobrem a janela: fica de fora a
 // fatura que um pagamento da janela ja nao alcanca (anterior ao mes antes do inicio da janela),
-// senao o pagamento parcial abateria uma fatura de anos atras.
-function reachableBillTotals(billTotals, sinceMs) {
+// senao o pagamento parcial abateria uma fatura de anos atras. O que foi pago antes da janela ja
+// vem abatido.
+function reachableBillTotals(billTotals, settled, sinceMs) {
   const { year, month } = partsOfDate(sinceMs)
   const oldest = shiftBillMonth(`${year}-${String(month).padStart(2, '0')}`, -1)
   const totals = {}
   for (const [billMonth, total] of Object.entries(billTotals ?? {})) {
     if (billMonth >= oldest) totals[billMonth] = total
   }
+  for (const p of settled) {
+    if (totals[p.billMonth] !== undefined) totals[p.billMonth] -= p.cents
+  }
   return totals
 }
+
+// Evidencia que e o outro lado de um pagamento ja guardado (borda da janela).
+const sameOperation = (evidence, payment) =>
+  evidence.cents === payment.cents && Math.abs(evidence.dateMs - payment.atMs) <= MERGE_WINDOW_MS
 
 // Liga os pagamentos do dono as faturas de cada cartao e grava cards/{id}.payments.
 // Devolve so contagens: { cards, payments, linked }.
@@ -101,18 +122,24 @@ export async function reconcileCardPayments(db, { ownerId, now = new Date() }) {
       .where('ownerId', '==', ownerId)
       .where('cardId', '==', cardId)
       .get()
+    const settled = settledBefore(card.payments, sinceMs)
     const cardCredits = []
     for (const doc of creditsSnap.docs) {
       if (doc.data().reason !== 'card_payment') continue
       const ev = evidenceOf(doc, sinceMs)
-      if (ev) cardCredits.push({ id: doc.id, cents: ev.cents, dateMs: ev.dateMs })
+      if (!ev) continue
+      const credit = { id: doc.id, cents: ev.cents, dateMs: ev.dateMs }
+      if (settled.some((p) => p.source !== 'card' && sameOperation(credit, p))) continue
+      cardCredits.push(credit)
     }
 
     const detected = detectCardPayments({
-      billTotals: reachableBillTotals(card.billTotals, sinceMs),
+      billTotals: reachableBillTotals(card.billTotals, settled, sinceMs),
       closingDay,
       cardCredits,
-      bankOutflows: outflows.filter((o) => !claimed.has(o.id)),
+      bankOutflows: outflows.filter(
+        (o) => !claimed.has(o.id) && !settled.some((p) => p.source === 'card' && sameOperation(o, p))
+      ),
     })
 
     const kept = []
@@ -125,8 +152,8 @@ export async function reconcileCardPayments(db, { ownerId, now = new Date() }) {
       kept.push(p)
     }
 
-    kept.sort((a, b) => b.atMs - a.atMs)
-    const payments = kept.slice(0, MAX_PAYMENTS).map((p) => ({
+    const all = [...kept, ...settled].sort((a, b) => b.atMs - a.atMs)
+    const payments = all.slice(0, MAX_PAYMENTS).map((p) => ({
       id: p.id,
       billMonth: p.billMonth,
       cents: p.cents,

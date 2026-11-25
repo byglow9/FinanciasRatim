@@ -1,9 +1,16 @@
 import { buildBudgetView } from '../../../shared/core/budget.js'
 import { categoryDisplayName } from '../../../shared/core/categories.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
-import { billEvents, collapseHeld, eventDayKey, limitEvents } from '../../../shared/core/pushEvents.js'
-import { deliveryDecision, isQuiet } from '../../../shared/core/pushPrefs.js'
-import { buildPushPayload } from '../../../shared/core/vintemPhrasesPush.js'
+import {
+  billEvents,
+  collapseHeld,
+  eventDayKey,
+  limitEvents,
+  spontaneousEvent,
+} from '../../../shared/core/pushEvents.js'
+import { deliveryDecision, inWindow, isQuiet } from '../../../shared/core/pushPrefs.js'
+import { zonedParts } from '../../../shared/core/time.js'
+import { buildPushPayload, hashSeed } from '../../../shared/core/vintemPhrasesPush.js'
 import { readPushConfig } from './config.js'
 import { joinBillCards } from './repo.js'
 
@@ -12,6 +19,27 @@ export { readMaxPerDay } from './config.js'
 const PEOPLE = ['ele', 'ela']
 
 const isPair = (hid, person) => typeof hid === 'string' && hid !== '' && PEOPLE.includes(person)
+
+const DAY_MINUTES = 24 * 60
+
+const minutesOf = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
+
+/**
+ * Ja passou do horario do dia deste espontaneo? O minuto alvo dentro da janela vem do id do evento
+ * (muda por pessoa e por dia). O alvo deixa um intervalo do relogio livre no fim da janela, para
+ * sempre haver uma rodada depois dele.
+ * @param {string} id
+ * @param {Date} at
+ * @param {{ from: string, to: string }} window
+ * @param {number} tickMinutes
+ */
+function pastSpontaneousTarget(id, at, window, tickMinutes) {
+  const from = minutesOf(window.from)
+  const length = (minutesOf(window.to) - from + DAY_MINUTES) % DAY_MINUTES
+  const { hour, minute } = zonedParts(at)
+  const elapsed = (hour * 60 + minute - from + DAY_MINUTES) % DAY_MINUTES
+  return elapsed >= hashSeed(id) % Math.max(1, length - tickMinutes)
+}
 
 /** Situacao do banco de frases de push de um marcador. */
 function situationOf(marker) {
@@ -26,7 +54,7 @@ function logError(where, err) {
 }
 
 /**
- * Notificador (PUSH-02, PUSH-03, PUSH-04): limites e fatura de cartao. Cada funcao e idempotente por
+ * Notificador (PUSH-02, PUSH-03, PUSH-04): limites, fatura de cartao e o push espontaneo. Cada funcao e idempotente por
  * pessoa: calcula os eventos pela mesma conta do cliente e reivindica um marcador por evento com create() do
  * Firestore. Quem perde a corrida nao envia (D-07). O marcador guarda so ids, categoria, limiar e
  * chaves de ciclo e de dia, nunca o texto do aviso: o texto e montado na hora do envio (D-05).
@@ -37,12 +65,15 @@ function logError(where, err) {
  *   repo: ReturnType<typeof import('./repo.js').createRepo>,
  *   sender: { sendToFids(fids: string[], payload: object): Promise<{ sent: number, dead: number, failed: number }> },
  *   now?: () => Date,
- *   config?: { maxPerDay?: number },
+ *   config?: { maxPerDay?: number, spontPerDay?: number, spontWindow?: { from: string, to: string }, tickMinutes?: number },
  * }} deps
  */
 export function createNotifier({ repo, sender, now = () => new Date(), config = {} }) {
   const defaults = readPushConfig()
   const maxPerDay = Number.isInteger(config.maxPerDay) && config.maxPerDay >= 1 ? config.maxPerDay : defaults.maxPerDay
+  const spontPerDay = config.spontPerDay ?? defaults.spontPerDay
+  const spontWindow = config.spontWindow ?? defaults.spontWindow
+  const tickMinutes = config.tickMinutes ?? defaults.tickMinutes
 
   /**
    * Envia o aviso de um marcador ja reivindicado (status enviando) e fecha o marcador com o
@@ -247,6 +278,43 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
+   * Cutucada espontanea (D-12 c, D-21): no maximo uma por pessoa por dia de Sao Paulo, dentro da
+   * janela do servidor, fora do silencio e so para quem tem aparelho. No silencio ou com o tipo
+   * desligado apenas pula, sem marcador. Frase do banco de push: sem IA e sem dado financeiro.
+   * As checagens sem leitura vem primeiro, porque o relogio chama isto a cada rodada.
+   * @param {{ hid: string, person: string }} args
+   */
+  async function evaluateSpontaneous({ hid, person }) {
+    const summary = { events: 0, claimed: 0, sent: 0 }
+    if (!isPair(hid, person) || spontPerDay !== 1) return summary
+
+    const at = now()
+    if (!inWindow(at, spontWindow)) return summary
+    const event = spontaneousEvent({ hid, person, now: at })
+    if (!pastSpontaneousTarget(event.id, at, spontWindow, tickMinutes)) return summary
+
+    const prefs = await repo.readPrefs(hid, person)
+    if (deliveryDecision({ prefs, kind: 'espontanea', now: at }) !== 'enviar') return summary
+    if ((await repo.listFids(hid, person)).length === 0) return summary
+
+    summary.events = 1
+    const settings = await repo.readSettings(hid, person)
+    const marker = {
+      ownerId: hid,
+      person,
+      kind: 'espontanea',
+      tag: event.tag,
+      url: event.url,
+      dayKey: eventDayKey(at),
+      createdAt: at,
+    }
+    const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision: 'enviar', tone: settings.tone, at })
+    if (out.claimed) summary.claimed++
+    summary.sent += out.sent
+    return summary
+  }
+
+  /**
    * Entrega os avisos retidos pelo silencio que ja podem sair (D-21). Agrupa por casal e pessoa; a
    * pessoa que ainda esta no silencio fica como esta. Fora dele confere se o tipo continua ligado,
    * colapsa 80 e 100 da mesma categoria no mais alto e envia com o texto montado agora, no tom
@@ -309,5 +377,5 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     return summary
   }
 
-  return { evaluateLimits, evaluateBills, deliverHeld }
+  return { evaluateLimits, evaluateBills, evaluateSpontaneous, deliverHeld }
 }

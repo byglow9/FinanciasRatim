@@ -270,6 +270,25 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
     },
 
     /**
+     * Consulta de sistema: todas as inscricoes, sem filtro de dono, porque o relogio atende todos
+     * os casais. Cada inscricao carrega o proprio ownerId e person.
+     * @returns {Promise<Array<{ fid: string, ownerId: string, person: string, updatedAt: Date | null }>>}
+     */
+    async listRegistrations() {
+      const snap = await db.collection(REGISTRATIONS).get()
+      return snap.docs.map((d) => {
+        const data = d.data()
+        const at = typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate() : data.updatedAt
+        return { fid: d.id, ownerId: data.ownerId, person: data.person, updatedAt: at instanceof Date ? at : null }
+      })
+    },
+
+    /** @param {string} fid */
+    async deleteRegistration(fid) {
+      await db.collection(REGISTRATIONS).doc(fid).delete()
+    },
+
+    /**
      * Transicao de status por transacao: so aplica o patch se o marcador ainda esta em `from`.
      * Dois executores disputando o mesmo marcador: so um ganha. Devolve se este ganhou.
      * @param {string} id

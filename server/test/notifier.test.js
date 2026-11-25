@@ -729,3 +729,106 @@ describe('notificador de fatura', () => {
     assert.equal(repo.events.size, 0)
   })
 })
+
+// Dia de Sao Paulo (UTC-3) em passos de 15 minutos, como o relogio.
+const QUARTERS = Array.from({ length: 96 }, (_, i) => i * 15)
+const spAt = (day, minute) => at(`2026-11-${String(day).padStart(2, '0')}T03:00:00Z`) + minute * 60_000
+
+describe('notificador: push espontaneo', () => {
+  let clock
+  let repo
+  let sender
+  let notifier
+
+  const setup = (opts = {}, config = {}) => {
+    clock = { t: spAt(17, 0) }
+    repo = makeRepo({ fids: FIDS, ...opts })
+    repo.readCycleTransactions = async () => assert.fail('o espontaneo nunca le lancamentos')
+    sender = makeSender()
+    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t), config })
+  }
+
+  // Roda o dia inteiro e devolve os minutos (hora de Sao Paulo) em que saiu um aviso.
+  const runDay = async (day, person = 'ele') => {
+    const out = []
+    for (const minute of QUARTERS) {
+      clock.t = spAt(day, minute)
+      if ((await notifier.evaluateSpontaneous({ hid: HID, person })).sent > 0) out.push(minute)
+    }
+    return out
+  }
+
+  beforeEach(() => setup())
+
+  test('sai uma vez por dia, dentro da janela, com a frase do banco e sem dado financeiro', async () => {
+    const sent = await runDay(17)
+    assert.equal(sent.length, 1)
+    assert.ok(sent[0] >= 11 * 60 && sent[0] < 20 * 60, `fora da janela: ${sent[0]}`)
+    assert.equal(sender.calls.length, 1)
+    const { payload } = sender.calls[0]
+    const id = 'casalA__ele__espontanea__2026-11-17'
+    assert.equal(payload.tag, 'espontanea')
+    assert.equal(payload.url, '/')
+    assert.equal(payload.body, buildPushPayload({ situation: 'push-espontanea', tone: 'sem-filtro', seed: id }).body)
+    assert.doesNotMatch(payload.body, /\d|R\$/)
+    assert.deepEqual(
+      Object.keys(repo.events.get(id)).filter((k) => !['enviados', 'sentAt'].includes(k)).sort(),
+      ['createdAt', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'url']
+    )
+  })
+
+  test('o horario muda de pessoa para pessoa e de dia para dia, sempre um por dia', async () => {
+    const times = { ele: [], ela: [] }
+    for (let day = 1; day <= 14; day++) {
+      for (const person of ['ele', 'ela']) {
+        const sent = await runDay(day, person)
+        assert.equal(sent.length, 1, `dia ${day} ${person}`)
+        assert.ok(sent[0] >= 11 * 60 && sent[0] < 20 * 60)
+        times[person].push(sent[0])
+      }
+    }
+    assert.ok(new Set(times.ele).size >= 5, 'o horario quase nao varia entre os dias')
+    assert.notDeepEqual(times.ele, times.ela)
+  })
+
+  test('a janela vem da configuracao', async () => {
+    setup({}, { spontWindow: { from: '08:00', to: '09:00' } })
+    for (let day = 1; day <= 7; day++) {
+      const sent = await runDay(day)
+      assert.equal(sent.length, 1)
+      assert.ok(sent[0] >= 8 * 60 && sent[0] < 9 * 60)
+    }
+  })
+
+  test('nunca sai no silencio e no silencio nao cria marcador', async () => {
+    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '10:00', to: '21:00' } } })
+    assert.deepEqual(await runDay(17), [])
+    assert.equal(repo.events.size, 0)
+
+    // Silencio que acaba antes do fim da janela: sai depois dele, ainda dentro da janela.
+    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '10:00', to: '19:30' } } })
+    const sent = await runDay(17)
+    assert.equal(sent.length, 1)
+    assert.ok(sent[0] >= 19 * 60 + 30 && sent[0] < 20 * 60)
+  })
+
+  test('tipo desligado, parametro zero, sem aparelho ou entrada invalida nao criam marcador', async () => {
+    const off = { ...DEFAULT_PUSH_PREFS, types: { ...DEFAULT_PUSH_PREFS.types, espontanea: false } }
+    for (const [opts, config] of [[{ prefs: off }, {}], [{}, { spontPerDay: 0 }], [{ fids: {} }, {}]]) {
+      setup(opts, config)
+      assert.deepEqual(await runDay(17), [])
+      assert.equal(repo.events.size, 0)
+    }
+    setup()
+    clock.t = spAt(17, 19 * 60 + 45)
+    assert.equal((await notifier.evaluateSpontaneous({ hid: HID, person: 'porquinho' })).events, 0)
+    assert.equal((await notifier.evaluateSpontaneous({ hid: '', person: 'ele' })).events, 0)
+  })
+
+  test('um notificador novo no mesmo dia (reinicio) nao repete', async () => {
+    await runDay(17)
+    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t) })
+    assert.deepEqual(await runDay(17), [])
+    assert.equal(sender.calls.length, 1)
+  })
+})

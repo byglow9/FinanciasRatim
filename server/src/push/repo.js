@@ -15,6 +15,9 @@ const DEFAULT_DAYS_BEFORE = 3
 // Codigo gRPC 6 (ALREADY_EXISTS) do create() do Firestore.
 const ALREADY_EXISTS = 6
 
+/** Limite de marcadores pendentes lidos por rodada de entrega. */
+const PENDING_LIMIT = 500
+
 /**
  * Lancamento do documento para a forma que o nucleo de orcamento espera (a mesma do cliente).
  * Documento sem data valida e ignorado.
@@ -182,6 +185,55 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
     /** @param {string} id */
     async deleteEvent(id) {
       await db.collection(EVENTS).doc(id).delete()
+    },
+
+    /**
+     * Avisos ja enviados a pessoa no dia de Sao Paulo (base do teto diario). Contagem agregada:
+     * nao le os documentos.
+     * @param {string} hid
+     * @param {string} person
+     * @param {string} dayKey
+     * @returns {Promise<number>}
+     */
+    async countSent(hid, person, dayKey) {
+      const snap = await db
+        .collection(EVENTS)
+        .where('ownerId', '==', hid)
+        .where('person', '==', person)
+        .where('dayKey', '==', dayKey)
+        .where('status', '==', 'enviado')
+        .count()
+        .get()
+      return snap.data().count
+    },
+
+    /**
+     * Consulta de sistema: todos os marcadores pendentes (retidos pelo silencio), de qualquer casal.
+     * E a unica consulta sem filtro de dono; cada marcador carrega o proprio ownerId e person, e
+     * tudo depois dela e feito por casal e pessoa.
+     * @returns {Promise<Array<Record<string, any>>>}
+     */
+    async listPending() {
+      const snap = await db.collection(EVENTS).where('status', '==', 'pendente').limit(PENDING_LIMIT).get()
+      return snap.docs.map((d) => ({ ...d.data(), id: d.id }))
+    },
+
+    /**
+     * Transicao de status por transacao: so aplica o patch se o marcador ainda esta em `from`.
+     * Dois executores disputando o mesmo marcador: so um ganha. Devolve se este ganhou.
+     * @param {string} id
+     * @param {string} from
+     * @param {Record<string, any>} patch
+     * @returns {Promise<boolean>}
+     */
+    async transitionEvent(id, from, patch) {
+      const ref = db.collection(EVENTS).doc(id)
+      return db.runTransaction(async (t) => {
+        const snap = await t.get(ref)
+        if (!snap.exists || snap.data().status !== from) return false
+        t.update(ref, patch)
+        return true
+      })
     },
   }
 }

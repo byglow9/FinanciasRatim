@@ -81,6 +81,20 @@ function makeRepo({ settings = settingsFor(), txs = [], silentIds = [], fids = {
     async deleteEvent(id) {
       events.delete(id)
     },
+    async countSent(hid, person, dayKey) {
+      return [...events.values()].filter(
+        (e) => e.ownerId === hid && e.person === person && e.dayKey === dayKey && e.status === 'enviado'
+      ).length
+    },
+    async listPending() {
+      return [...events.entries()].filter(([, e]) => e.status === 'pendente').map(([id, e]) => ({ ...e, id }))
+    },
+    async transitionEvent(id, from, patch) {
+      const cur = events.get(id)
+      if (!cur || cur.status !== from) return false
+      events.set(id, { ...cur, ...patch })
+      return true
+    },
   }
   return repo
 }
@@ -219,5 +233,233 @@ describe('readMaxPerDay', () => {
     assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '-3' }), 8)
     assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '2.5' }), 8)
     assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '5' }), 5)
+  })
+})
+
+// Silencio das 22:00 as 08:00 (hora de Sao Paulo).
+const QUIET_PREFS = {
+  types: { limite80: true, limite100: true, espontanea: true },
+  quiet: { enabled: true, from: '22:00', to: '08:00' },
+}
+const at = (iso) => new Date(iso).getTime()
+// 23:30 em Sao Paulo (02:30Z do dia seguinte), 22:30, 08:05 e 10:00.
+const T_2330 = at('2026-11-18T02:30:00Z')
+const T_2230 = at('2026-11-18T01:30:00Z')
+const T_0805 = at('2026-11-18T11:05:00Z')
+const T_1000 = at('2026-11-18T13:00:00Z')
+
+const FIDS = { 'casalA:ele': ['fidEle-aparelho1', 'fidEle-aparelho2'], 'casalA:ela': ['fidEla-aparelho1'] }
+
+describe('notificador de limites: silencio, tipos, teto e falhas', () => {
+  let clock
+  let repo
+  let sender
+  let notifier
+
+  const setup = (opts = {}, config = {}) => {
+    clock = { t: T_1000 }
+    repo = makeRepo({ txs: [spend(120)], fids: FIDS, ...opts })
+    sender = makeSender()
+    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t), config })
+  }
+  const check = (extra = {}) => notifier.evaluateLimits({ hid: HID, person: 'ele', ...extra })
+
+  beforeEach(() => setup())
+
+  test('tipo limite100 desligado grava o marcador desligado e nao envia', async () => {
+    repo.state.prefs = { ...DEFAULT_PUSH_PREFS, types: { ...DEFAULT_PUSH_PREFS.types, limite100: false } }
+    await check()
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statuses(repo), ['100:desligado', '80:silencioso'])
+    // Desligado nao entrega depois: nem mesmo o deliverHeld.
+    const held = await notifier.deliverHeld()
+    assert.equal(held.sent, 0)
+    assert.equal(sender.calls.length, 0)
+  })
+
+  test('no silencio o aviso fica pendente e chega depois dele, uma so vez, com o tom atual', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statuses(repo), ['100:pendente', '80:silencioso'])
+    // O marcador retido tem o que e preciso para montar o texto depois, e nenhum texto.
+    const held = [...repo.events.entries()].find(([, e]) => e.status === 'pendente')
+    assert.equal(held[1].categoryLabel, 'Lazer')
+    assert.equal(held[1].threshold, 100)
+    assert.ok(!('body' in held[1]) && !('text' in held[1]))
+
+    // As 22:30 ainda e silencio: nada sai.
+    clock.t = T_2230
+    assert.equal((await notifier.deliverHeld()).sent, 0)
+    assert.equal(sender.calls.length, 0)
+
+    // O tom mudou durante a retencao: o texto sai no tom atual (montado so agora).
+    repo.state.settings = settingsFor({ tone: 'suave' })
+    clock.t = T_0805
+    const out = await notifier.deliverHeld()
+    assert.equal(out.sent, 2)
+    assert.equal(sender.calls.length, 1)
+    assert.equal(
+      sender.calls[0].payload.body,
+      buildPushPayload({ situation: 'push-limite-100', tone: 'suave', categoryName: 'Lazer', seed: held[0] }).body
+    )
+    assert.equal(repo.events.get(held[0]).status, 'enviado')
+    // O dia do marcador passa a ser o da entrega (base do teto diario).
+    assert.equal(repo.events.get(held[0]).dayKey, '2026-11-18')
+
+    // Uma segunda rodada, ou um novo check, nao repete.
+    await notifier.deliverHeld()
+    await check()
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('80 e 100 da mesma categoria retidos entregam so o de 100 e colapsam o outro', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    repo.state.txs = [spend(85)]
+    await check()
+    repo.state.txs = [spend(85), spend(30)]
+    await check()
+    assert.deepEqual(statuses(repo), ['100:pendente', '80:pendente'])
+
+    clock.t = T_0805
+    const out = await notifier.deliverHeld()
+    assert.equal(out.collapsed, 1)
+    assert.equal(sender.calls.length, 1)
+    assert.deepEqual(statuses(repo), ['100:enviado', '80:colapsado'])
+  })
+
+  test('tipo desligado durante a retencao marca desligado e nao envia', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    repo.state.prefs = { ...QUIET_PREFS, types: { ...QUIET_PREFS.types, limite100: false } }
+    clock.t = T_0805
+    const out = await notifier.deliverHeld()
+    assert.equal(out.off, 1)
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statuses(repo), ['100:desligado', '80:silencioso'])
+  })
+
+  test('a pessoa ainda no silencio nao bloqueia a entrega da outra', async () => {
+    repo.state.txs = [spend(120), spend(120, { person: 'ela' })]
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    await notifier.evaluateLimits({ hid: HID, person: 'ela' })
+    assert.equal(repo.events.size, 4)
+    // As prefs do falso valem para as duas pessoas; so Ela sai do silencio (muda o silencio dela).
+    const realRead = repo.readPrefs
+    repo.readPrefs = async (hid, person) => (person === 'ela' ? DEFAULT_PUSH_PREFS : realRead(hid, person))
+    clock.t = T_2230
+    const out = await notifier.deliverHeld()
+    assert.equal(out.sent, 1)
+    assert.deepEqual(sender.calls[0].fids, ['fidEla-aparelho1'])
+  })
+
+  test('o teto diario e respeitado: o oitavo aviso sai e o nono vira teto', async () => {
+    const settings = settingsFor()
+    settings.personConfig.limits.alimentacao = [{ from: '2026-01', cents: LIMIT_CENTS }]
+    const eight = () => [...repo.events.values()].filter((e) => e.status === 'enviado').length
+    setup({ settings, txs: [spend(120), spend(120, { categoryId: 'alimentacao', category: 'Alimentacao' })], fids: FIDS })
+    // Sete avisos ja enviados hoje a Ele.
+    for (let i = 0; i < 7; i++) {
+      repo.events.set(`antigo-${i}`, { ownerId: HID, person: 'ele', kind: 'limite', status: 'enviado', dayKey: '2026-11-18', cycleKey: 'x' })
+    }
+    await check()
+    // Duas categorias passaram de 100: uma sai (a oitava) e a outra bate no teto.
+    assert.equal(sender.calls.length, 1)
+    assert.equal(eight(), 8)
+    const own = [...repo.events.entries()].filter(([id]) => id.startsWith(`${HID}__limite__`) && id.endsWith('__100'))
+    assert.deepEqual(own.map(([, e]) => e.status).sort(), ['enviado', 'teto'])
+  })
+
+  test('PUSH_MAX_PER_DAY vem da configuracao do notificador', async () => {
+    setup({}, { maxPerDay: 1 })
+    repo.events.set('antigo', { ownerId: HID, person: 'ele', kind: 'limite', status: 'enviado', dayKey: '2026-11-18', cycleKey: 'x' })
+    await check()
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statuses(repo).filter((s) => s.startsWith('100')), ['100:teto'])
+  })
+
+  test('falha transitoria apaga o marcador e o check seguinte reenvia', async () => {
+    sender.result = { sent: 0, dead: 0, failed: 2 }
+    await check()
+    assert.equal(sender.calls.length, 1)
+    // O 100 foi apagado; o 80 silencioso continua.
+    assert.deepEqual(statuses(repo), ['80:silencioso'])
+    sender.result = null
+    await check()
+    assert.equal(sender.calls.length, 2)
+    assert.deepEqual(statuses(repo), ['100:enviado', '80:silencioso'])
+  })
+
+  test('envio que lanca excecao tambem e transitorio', async () => {
+    sender.sendToFids = async () => {
+      throw new Error('rede')
+    }
+    await check()
+    assert.deepEqual(statuses(repo), ['80:silencioso'])
+  })
+
+  test('FID morto nao apaga o marcador e nao tenta de novo', async () => {
+    sender.result = { sent: 0, dead: 2, failed: 0 }
+    await check()
+    assert.deepEqual(statuses(repo), ['100:sem-aparelho', '80:silencioso'])
+    sender.result = null
+    await check()
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('falha transitoria no envio de um retido volta o marcador a pendente', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    sender.result = { sent: 0, dead: 0, failed: 2 }
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    assert.deepEqual(statuses(repo), ['100:pendente', '80:silencioso'])
+    sender.result = null
+    await notifier.deliverHeld()
+    assert.deepEqual(statuses(repo), ['100:enviado', '80:silencioso'])
+  })
+
+  test('excludeFid pula so o aparelho em uso', async () => {
+    await check({ excludeFid: 'fidEle-aparelho1' })
+    assert.deepEqual(sender.calls[0].fids, ['fidEle-aparelho2'])
+  })
+
+  test('so o aparelho em uso ou nenhum aparelho vira sem-aparelho, sem envio', async () => {
+    setup({ fids: { 'casalA:ele': ['fidEle-aparelho1'] } })
+    await check({ excludeFid: 'fidEle-aparelho1' })
+    assert.equal(sender.calls.length, 0)
+    const marker = [...repo.events.values()].find((e) => e.threshold === 100)
+    assert.equal(marker.status, 'sem-aparelho')
+    assert.equal(marker.motivo, 'aparelho-em-uso')
+
+    setup({ fids: {} })
+    await check()
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statuses(repo), ['100:sem-aparelho', '80:silencioso'])
+  })
+
+  test('excludeFid nao vale na entrega dos retidos', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check({ excludeFid: 'fidEle-aparelho1' })
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    assert.deepEqual(sender.calls[0].fids.sort(), ['fidEle-aparelho1', 'fidEle-aparelho2'])
+  })
+
+  test('dois executores disputando o mesmo retido: so um envia', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    clock.t = T_0805
+    const [a, b] = await Promise.all([notifier.deliverHeld(), notifier.deliverHeld()])
+    assert.equal(a.sent + b.sent, 2)
+    assert.equal(sender.calls.length, 1)
   })
 })

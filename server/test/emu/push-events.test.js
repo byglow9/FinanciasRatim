@@ -148,4 +148,102 @@ describe('notificador de limites no emulador', () => {
     assert.equal(messaging.sent.length, 0)
     assert.equal((await markers()).length, 0)
   })
+
+  // Silencio das 22:00 as 08:00 em Sao Paulo.
+  const QUIET = { types: { limite80: true, limite100: true, espontanea: true }, quiet: { enabled: true, from: '22:00', to: '08:00' } }
+  const T_2330 = Date.parse('2026-11-18T02:30:00Z')
+  const T_2230 = Date.parse('2026-11-18T01:30:00Z')
+  const T_0805 = Date.parse('2026-11-18T11:05:00Z')
+  const putPrefs = (person, prefs) =>
+    db.collection('pushPrefs').doc(`casalA__${person}`).set({ ownerId: 'casalA', person, uid: `u-${person}`, ...prefs, updatedAt: NOW })
+
+  test('o aviso do silencio fica pendente, chega depois dele uma vez so e o 80 e o 100 colapsam', async () => {
+    await putPrefs('ele', QUIET)
+    const notifier = buildNotifier()
+    clock.t = T_2330
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.equal(messaging.sent.length, 0)
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`).sort(), ['100:pendente', '80:silencioso'])
+
+    clock.t = T_2230
+    assert.equal((await notifier.deliverHeld()).sent, 0)
+    assert.equal(messaging.sent.length, 0)
+
+    clock.t = T_0805
+    const out = await notifier.deliverHeld()
+    assert.equal(out.sent, 2)
+    assert.deepEqual(messaging.sent.map((m) => m.fid).sort(), [FID_ELE_1, FID_ELE_2])
+    const list = await markers()
+    assert.deepEqual(list.map((m) => `${m.threshold}:${m.status}`).sort(), ['100:enviado', '80:silencioso'])
+    assert.equal(list.find((m) => m.threshold === 100).dayKey, '2026-11-18')
+
+    await notifier.deliverHeld()
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.equal(messaging.sent.length, 2)
+  })
+
+  test('dois deliverHeld simultaneos enviam o retido uma so vez', async () => {
+    await putPrefs('ele', QUIET)
+    const notifier = buildNotifier()
+    clock.t = T_2330
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    clock.t = T_0805
+    const other = buildNotifier()
+    await Promise.all([notifier.deliverHeld(), other.deliverHeld()])
+    assert.equal(messaging.sent.length, 2)
+  })
+
+  test('tipo desligado vira marcador desligado e retido com tipo desligado depois nao chega', async () => {
+    await putPrefs('ele', { ...QUIET, types: { limite80: true, limite100: false, espontanea: true } })
+    const notifier = buildNotifier()
+    clock.t = T_2330
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`).sort(), ['100:desligado', '80:silencioso'])
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    assert.equal(messaging.sent.length, 0)
+  })
+
+  test('o teto diario conta os avisos enviados do dia no Firestore real', async () => {
+    const repo = createRepo({ db })
+    for (let i = 0; i < 3; i++) {
+      await db.collection('pushEvents').doc(`casalA__limite__x${i}`).set({ ownerId: 'casalA', person: 'ele', kind: 'limite', dayKey: '2026-11-17', status: 'enviado' })
+    }
+    await db.collection('pushEvents').doc('casalA__limite__outro-dia').set({ ownerId: 'casalA', person: 'ele', kind: 'limite', dayKey: '2026-11-16', status: 'enviado' })
+    await db.collection('pushEvents').doc('casalA__limite__ela').set({ ownerId: 'casalA', person: 'ela', kind: 'limite', dayKey: '2026-11-17', status: 'enviado' })
+    await db.collection('pushEvents').doc('casalA__limite__pendente').set({ ownerId: 'casalA', person: 'ele', kind: 'limite', dayKey: '2026-11-17', status: 'pendente' })
+    assert.equal(await repo.countSent('casalA', 'ele', '2026-11-17'), 3)
+
+    // Com teto 3, o aviso novo vira marcador teto e nada sai.
+    const notifier = buildNotifier({ config: { maxPerDay: 3 } })
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.equal(messaging.sent.length, 0)
+    const own = (await markers()).filter((m) => m.threshold === 100)
+    assert.deepEqual(own.map((m) => m.status), ['teto'])
+  })
+
+  test('falha transitoria apaga o marcador do Firestore e o check seguinte reenvia', async () => {
+    messaging.fail.set(FID_ELE_1, 'messaging/internal-error')
+    messaging.fail.set(FID_ELE_2, 'messaging/server-unavailable')
+    const notifier = buildNotifier()
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`), ['80:silencioso'])
+    messaging.fail.clear()
+    await notifier.evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`).sort(), ['100:enviado', '80:silencioso'])
+  })
+
+  test('FID morto apaga o registro e mantem o marcador', async () => {
+    messaging.fail.set(FID_ELE_1, 'messaging/installation-id-not-registered')
+    messaging.fail.set(FID_ELE_2, 'messaging/installation-id-not-registered')
+    await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.deepEqual((await markers()).map((m) => `${m.threshold}:${m.status}`).sort(), ['100:sem-aparelho', '80:silencioso'])
+    assert.equal((await db.collection('pushRegistrations').doc(FID_ELE_1).get()).exists, false)
+    assert.equal((await db.collection('pushRegistrations').doc(FID_ELA).get()).exists, true)
+  })
+
+  test('excludeFid pula so o aparelho em uso e nunca chega a outra pessoa', async () => {
+    await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele', excludeFid: FID_ELE_1 })
+    assert.deepEqual(messaging.sent.map((m) => m.fid), [FID_ELE_2])
+  })
 })

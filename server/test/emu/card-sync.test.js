@@ -7,6 +7,7 @@ import { Timestamp } from 'firebase-admin/firestore'
 import { initAdmin } from '../../scripts/lib/admin.js'
 import { syncConnection } from '../../src/sync.js'
 import { CARD_HISTORY_FLOOR } from '../../src/card-sync.js'
+import { accumulatedBalance } from '../../../shared/core/ledger.js'
 import { resetEmulators } from './_helpers.js'
 
 const HID = 'casal-aaaa-0001'
@@ -476,7 +477,10 @@ describe('agregados do cartao', () => {
     const before = await db.collection('transactions').get()
     const snapshot = Object.fromEntries(before.docs.map((d) => [d.id, JSON.stringify(d.data())]))
     const second = await run(state)
-    assert.deepEqual(second.cardTxs, { created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0 })
+    assert.deepEqual(second.cardTxs, {
+      created: 0, updated: 0, rebound: 0, removed: 0, skippedNoBrl: 0, payments: 0,
+      adopted: 0, adoptedLegacy: 0, rehomed: 0, nearMiss: 0, ambiguous: 0,
+    })
     const after = await db.collection('transactions').get()
     assert.deepEqual(Object.fromEntries(after.docs.map((d) => [d.id, JSON.stringify(d.data())])), snapshot)
     assert.deepEqual((await cardDoc()).billTotals, { '2026-12': 18141 })
@@ -636,5 +640,341 @@ describe('isolamento e privacidade do cartao', () => {
     assert.equal(d.categoryId, 'cat-dono')
     assert.equal(d.description, 'Meu mercado')
     assert.equal(d.billMonth, '2027-01')
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Adocao do lancamento manual pela compra importada (06-18: D-12, D-13, CARD-07).
+// ---------------------------------------------------------------------------------------------
+
+const stampOf = (iso) => Timestamp.fromDate(new Date(iso))
+
+// Lancamento manual no cartao, como a folha de lancamento grava (descricao igual a categoria).
+function manualDoc(isoDate, amount, extra = {}) {
+  return {
+    ownerId: HID,
+    person: 'ela',
+    type: 'saida',
+    amount,
+    description: 'Alimentacao',
+    category: 'Alimentacao',
+    categoryId: 'alimentacao',
+    note: 'nota do dono',
+    date: stampOf(isoDate),
+    createdAt: stampOf(isoDate),
+    cardId: 'acc-credit',
+    cardKind: 'purchase',
+    ...extra,
+  }
+}
+
+// Lancamento manual antigo, de antes do chip Cartao: sem cardId nem cardKind.
+function legacyDoc(isoDate, amount, extra = {}) {
+  const data = manualDoc(isoDate, amount, extra)
+  if (!('cardId' in extra)) delete data.cardId
+  if (!('cardKind' in extra)) delete data.cardKind
+  return data
+}
+
+// Retrato das colecoes, para provar que uma rodada nao alterou nada. Os carimbos de horario da
+// propria rodada (snapshot e agregados do cartao) ficam de fora.
+async function snapshotOf(db, names = ['transactions', 'bankImports']) {
+  const out = {}
+  for (const name of names) {
+    const snap = await db.collection(name).get()
+    for (const doc of snap.docs) {
+      const data = { ...doc.data() }
+      if (name === 'cards') {
+        delete data.syncedAt
+        delete data.aggregatesAt
+      }
+      out[`${name}/${doc.id}`] = JSON.stringify(Object.entries(data).sort(([a], [b]) => (a < b ? -1 : 1)))
+    }
+  }
+  return out
+}
+
+describe('adocao do lancamento manual (D-12, D-13)', () => {
+  let admin
+  let db
+
+  before(() => {
+    admin = initAdmin()
+    assert.equal(admin.mode, 'emulator')
+    db = admin.db
+  })
+  after(async () => {
+    await admin.app.delete()
+  })
+  beforeEach(async () => {
+    await resetEmulators()
+  })
+
+  const connection = (extra = {}) => ({
+    itemId: 'item-nubank',
+    ownerId: HID,
+    person: 'ela',
+    importFrom: Timestamp.fromDate(new Date(Date.now() - 30 * DAY_MS)),
+    ...extra,
+  })
+  const run = (state, extra) => syncConnection(db, cardPluggy(state), connection(extra))
+  const tx = (id) => db.collection('transactions').doc(id)
+  const read = async (id) => (await tx(id).get()).data()
+  const exists = async (id) => (await tx(id).get()).exists
+  const imp = async (id) => (await db.collection('bankImports').doc(id).get()).data()
+
+  test('adocao para a frente: um so lancamento, com os campos do dono e os do banco', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45)
+    const usd = purchase('c6', 'LOJA INTERNACIONAL', 5, { currencyCode: 'USD', amountInAccountCurrency: 30.08 })
+    await tx('manual-1').set(manualDoc(p.date, 45))
+    await tx('manual-2').set(manualDoc(usd.date, 30.08, { description: 'internacional', category: 'Lazer', categoryId: 'lazer' }))
+    const summary = await run({ card: [p, usd] })
+    assert.equal(summary.cardError, undefined)
+    assert.equal(summary.cardTxs.adopted, 2)
+    assert.equal(summary.cardTxs.adoptedLegacy, 0)
+    assert.equal(summary.cardTxs.created, 0)
+    assert.equal(await exists('bank_c1'), false)
+    assert.equal(await exists('bank_c6'), false)
+
+    const d = await read('manual-1')
+    assert.equal(d.description, 'Alimentacao')
+    assert.equal(d.category, 'Alimentacao')
+    assert.equal(d.categoryId, 'alimentacao')
+    assert.equal(d.note, 'nota do dono')
+    assert.equal(d.amount, 45)
+    assert.equal(d.type, 'saida')
+    assert.equal(d.date.toMillis(), new Date(p.date).getTime())
+    assert.equal(d.cardId, 'acc-credit')
+    assert.equal(d.cardKind, 'purchase')
+    assert.equal(d.cardStatus, 'pending')
+    assert.equal(d.billMonth, '2026-12')
+    assert.equal(d.billMonthSource, 'pluggy')
+    assert.equal(d.installment, null)
+    assert.equal(d.currency, null)
+    assert.equal(d.bankImportId, 'c1')
+    assert.equal(d.bankName, 'MeuPluggy')
+    assert.equal(d.bankDescription, 'Mercado Central')
+    assert.equal(d.originalDescription, 'MERCADO CENTRAL')
+    assert.equal(d.adoptedFromManual, true)
+    assert.equal(d.ownerId, HID)
+    assert.deepEqual((await read('manual-2')).currency, { code: 'USD', originalCents: 500 })
+
+    const i = await imp('c1')
+    assert.equal(i.status, 'imported')
+    assert.equal(i.transactionId, 'manual-1')
+    assert.equal(i.matchedTransactionId, 'manual-1')
+    assert.equal(i.ownerId, HID)
+    assert.equal(i.person, 'ela')
+    assert.equal(i.itemId, 'item-nubank')
+    assert.equal(i.accountId, 'acc-credit')
+    assert.equal(i.amount, 45)
+    const agg = (await db.collection('cards').doc('acc-credit').get()).data()
+    assert.deepEqual(agg.billTotals, { '2026-12': 7508 })
+  })
+
+  test('manual antigo sem cardId, de 10 meses atras, vira compra do cartao e deixa de baixar o saldo', async () => {
+    const old = purchase('o1', 'MERCADO CENTRAL', 80, { date: daysAgo(300), status: 'POSTED', billForecastDate: '2026-02' })
+    const other = purchase('o2', 'POSTO ESTRADA', 61, { date: daysAgo(200), status: 'POSTED' })
+    await tx('legacy-1').set(legacyDoc(old.date, 80))
+    const balance = async () => {
+      const d = await read('legacy-1')
+      return accumulatedBalance(
+        [{ type: d.type, amount: d.amount, date: d.date.toDate(), cardKind: d.cardKind, transfer: d.transfer }],
+        new Date()
+      )
+    }
+    const before = await balance()
+    const summary = await run({ card: [old, other] })
+    assert.equal(summary.cardTxs.adopted, 1)
+    assert.equal(summary.cardTxs.adoptedLegacy, 1)
+    assert.equal(summary.cardTxs.created, 1)
+    const d = await read('legacy-1')
+    assert.equal(d.cardId, 'acc-credit')
+    assert.equal(d.cardKind, 'purchase')
+    assert.equal(d.adoptedFromManual, true)
+    assert.equal(d.note, 'nota do dono')
+    assert.equal(await exists('bank_o1'), false)
+    assert.equal(await exists('bank_o2'), true)
+    assert.notEqual(before, 0)
+    assert.equal(await balance(), 0)
+  })
+
+  test('descricao especifica diferente nao e adotada: a compra e criada e o resumo conta nearMiss', async () => {
+    const p = purchase('c1', 'RESTAURANTE XYZ', 45)
+    await tx('manual-1').set(manualDoc(p.date, 45, { description: 'almoco com a ana' }))
+    const before = JSON.stringify(await read('manual-1'))
+    const summary = await run({ card: [p] })
+    assert.equal(summary.cardTxs.adopted, 0)
+    assert.equal(summary.cardTxs.nearMiss, 1)
+    assert.equal(summary.cardTxs.created, 1)
+    assert.equal(await exists('bank_c1'), true)
+    assert.equal(JSON.stringify(await read('manual-1')), before)
+  })
+
+  test('duas lojas diferentes igualmente proximas de um manual generico: nao adota e conta ambiguous', async () => {
+    const p = purchase('c1', 'PADARIA SOL', 20)
+    const q = purchase('c2', 'POSTO LUA', 20, { date: p.date })
+    await tx('manual-1').set(manualDoc(p.date, 20))
+    const state = { card: [p, q] }
+    const summary = await run(state)
+    assert.equal(summary.cardTxs.adopted, 0)
+    assert.equal(summary.cardTxs.ambiguous, 1)
+    assert.equal(summary.cardTxs.created, 2)
+    assert.equal((await read('manual-1')).bankImportId, undefined)
+    const snapshot = await snapshotOf(db)
+    const second = await run(state)
+    assert.equal(second.cardTxs.rehomed, 0)
+    assert.deepEqual(await snapshotOf(db), snapshot)
+  })
+
+  test('reassentamento: compra ja importada e manual lancado depois viram um so, sem recriar o importado', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45, { status: 'POSTED' })
+    const state = { card: [p] }
+    await run(state)
+    assert.equal(await exists('bank_c1'), true)
+    await tx('manual-1').set(manualDoc(p.date, 45, { category: 'Lazer', categoryId: 'lazer', description: 'Lazer' }))
+    const summary = await run(state)
+    assert.equal(summary.cardTxs.rehomed, 1)
+    assert.equal(summary.cardTxs.created, 0)
+    assert.equal(summary.cardTxs.removed, 0)
+    assert.equal(await exists('bank_c1'), false)
+    const d = await read('manual-1')
+    assert.equal(d.category, 'Lazer')
+    assert.equal(d.categoryId, 'lazer')
+    assert.equal(d.description, 'Lazer')
+    assert.equal(d.note, 'nota do dono')
+    assert.equal(d.bankImportId, 'c1')
+    assert.equal(d.cardStatus, 'posted')
+    assert.equal(d.billMonth, '2026-12')
+    assert.equal(d.bankDescription, 'Mercado Central')
+    assert.equal(d.adoptedFromManual, true)
+    const i = await imp('c1')
+    assert.equal(i.transactionId, 'manual-1')
+    assert.equal(i.matchedTransactionId, 'manual-1')
+    assert.equal(i.status, 'imported')
+    assert.equal(i.ownerId, HID)
+    assert.deepEqual((await db.collection('cards').doc('acc-credit').get()).data().billTotals, { '2026-12': 4500 })
+
+    const snapshot = await snapshotOf(db)
+    const third = await run(state)
+    assert.equal(third.cardTxs.rehomed + third.cardTxs.created + third.cardTxs.rebound + third.cardTxs.removed, 0)
+    assert.equal(await exists('bank_c1'), false)
+    assert.deepEqual(await snapshotOf(db), snapshot)
+  })
+
+  test('manual adotado e manual ainda sem par nunca sao removidos quando a pendente some', async () => {
+    const p = purchase('p1', 'MERCADO CENTRAL', 45)
+    const keep = purchase('keep', 'POSTO ESTRADA', 11)
+    await tx('manual-1').set(manualDoc(p.date, 45))
+    await tx('manual-2').set(manualDoc(p.date, 999))
+    const state = { card: [p, keep] }
+    await run(state)
+    assert.equal((await read('manual-1')).bankImportId, 'p1')
+    state.card = [keep]
+    const summary = await run(state)
+    assert.equal(summary.cardTxs.removed, 0)
+    assert.equal(await exists('manual-1'), true)
+    assert.equal(await exists('manual-2'), true)
+    assert.equal((await db.collection('bankImports').doc('p1').get()).exists, true)
+  })
+
+  test('segunda rodada depois da adocao nao altera nenhum lancamento nem importacao', async () => {
+    const state = { card: sixPurchases() }
+    await tx('manual-1').set(manualDoc(state.card[0].date, 45))
+    await tx('legacy-1').set(legacyDoc(state.card[1].date, 32))
+    const first = await run(state)
+    assert.equal(first.cardTxs.adopted, 2)
+    const snapshot = await snapshotOf(db)
+    const second = await run(state)
+    assert.equal(second.cardTxs.adopted + second.cardTxs.rehomed + second.cardTxs.created + second.cardTxs.updated, 0)
+    assert.deepEqual(await snapshotOf(db), snapshot)
+  })
+
+  test('id recriado em compra adotada: religa ao manual e a importacao nova continua ligada a ele', async () => {
+    const p = purchase('old-id', 'MERCADO CENTRAL', 45, { status: 'POSTED' })
+    await tx('manual-1').set(manualDoc(p.date, 45))
+    const state = { card: [p] }
+    await run(state)
+    state.card = [{ ...p, id: 'new-id' }]
+    const summary = await run(state)
+    assert.equal(summary.cardTxs.rebound, 1)
+    assert.equal(summary.cardTxs.created, 0)
+    assert.equal((await read('manual-1')).bankImportId, 'new-id')
+    assert.equal((await read('manual-1')).description, 'Alimentacao')
+    const i = await imp('new-id')
+    assert.equal(i.transactionId, 'manual-1')
+    assert.equal(i.matchedTransactionId, 'manual-1')
+  })
+
+  test('manual de outro casal ou pessoa, entrada, transferencia e ligado ao banco nunca sao adotados', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45)
+    const docs = {
+      'outro-casal': manualDoc(p.date, 45, { ownerId: 'casal-bbbb-0002' }),
+      'outra-pessoa': manualDoc(p.date, 45, { person: 'ele' }),
+      entrada: manualDoc(p.date, 45, { type: 'entrada' }),
+      transferencia: manualDoc(p.date, 45, { transfer: true }),
+      'ja-do-banco': manualDoc(p.date, 45, { bankImportId: 'outra-importacao', source: 'bank', cardId: 'acc-outro-cartao' }),
+      'antigo-outro-casal': legacyDoc(p.date, 45, { ownerId: 'casal-bbbb-0002' }),
+      'antigo-outra-pessoa': legacyDoc(p.date, 45, { person: 'ele' }),
+      'antigo-entrada': legacyDoc(p.date, 45, { type: 'entrada' }),
+      'antigo-transferencia': legacyDoc(p.date, 45, { transfer: true }),
+      'antigo-do-banco': legacyDoc(p.date, 45, { bankImportId: 'x', source: 'bank' }),
+      'antigo-pagamento': legacyDoc(p.date, 45, { cardKind: 'payment' }),
+    }
+    for (const [id, data] of Object.entries(docs)) await tx(id).set(data)
+    const before = await snapshotOf(db, ['transactions'])
+    const summary = await run({ card: [p] })
+    assert.equal(summary.cardTxs.adopted, 0)
+    assert.equal(summary.cardTxs.rehomed, 0)
+    assert.equal(summary.cardTxs.created, 1)
+    const after = await snapshotOf(db, ['transactions'])
+    for (const id of Object.keys(docs)) assert.equal(after[`transactions/${id}`], before[`transactions/${id}`], id)
+  })
+
+  test('manual antigo ja ligado a uma saida da conta nao e adotado pelo cartao', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 25.5, { date: daysAgo(2) })
+    await tx('legacy-1').set(legacyDoc(p.date, 25.5))
+    // a conta BANK vem antes e marca o manual como possivel duplicado da saida de 25,50
+    const summary = await run({ card: [p] })
+    assert.equal((await imp('tx-bank-1')).matchedTransactionId, 'legacy-1')
+    assert.equal(summary.cardTxs.adopted, 0)
+    assert.equal(summary.cardTxs.created, 1)
+    assert.equal((await read('legacy-1')).cardId, undefined)
+  })
+
+  test('privacidade: o documento adotado nao recebe numero, titular, documento nem adicionais', async () => {
+    const dirty = purchase('c1', 'MERCADO CENTRAL', 45, {
+      creditCardMetadata: { cardNumber: '4444333322221111' },
+      merchant: { name: 'Mercado', cnpj: '12.345.678/0001-90', category: 'Groceries' },
+      owner: 'Fulana de Tal',
+      taxNumber: '123.456.789-00',
+    })
+    const account = {
+      ...CREDIT_ACCOUNT,
+      owner: 'Fulana de Tal',
+      number: '4444333322221111',
+      creditData: { ...CREDIT_ACCOUNT.creditData, additionalCards: [{ number: '9999888877776666', holder: 'Beltrano' }] },
+    }
+    await tx('manual-1').set(manualDoc(dirty.date, 45))
+    await run({ card: [dirty], accounts: [BANK_ACCOUNT, account] })
+    assert.equal((await read('manual-1')).bankImportId, 'c1')
+    const text = JSON.stringify([await read('manual-1'), await imp('c1')])
+    for (const secret of ['4444333322221111', '9999888877776666', 'Fulana', 'Beltrano', '123.456.789', '12.345.678', 'additionalCards', 'taxNumber', 'cardNumber', '"owner"']) {
+      assert.ok(!text.includes(secret), `documento adotado nao pode conter ${secret}`)
+    }
+  })
+
+  test('a conta BANK continua com findDuplicate; no cartao valor e data sozinhos nao seguram a compra', async () => {
+    const p = purchase('c1', 'MERCADO CENTRAL', 45)
+    await tx('manual-banco').set(legacyDoc(daysAgo(2), 25.5))
+    await tx('manual-1').set(manualDoc(p.date, 45, { description: 'presente da mae' }))
+    const summary = await run({ card: [p] })
+    assert.equal((await imp('tx-bank-1')).status, 'review')
+    assert.equal((await imp('tx-bank-1')).reason, 'duplicate')
+    assert.equal(await exists('bank_tx-bank-1'), false)
+    assert.equal((await imp('c1')).status, 'imported')
+    assert.equal((await imp('c1')).matchedTransactionId, null)
+    assert.equal(await exists('bank_c1'), true)
+    assert.equal(summary.review, 1)
   })
 })

@@ -14,7 +14,7 @@ import { vintemToneOf, type PersonType, type VintemTone } from '@/types'
 import type { VintemHandle, VintemReaction } from '@/components/vintem/Vintem'
 import { VintemToastBody } from '@/components/vintem/VintemToast'
 import { useToast } from '@/components/ui/toast'
-import { askVintem, ASK_TIMEOUT_REACTION_MS, type AskArgs } from '@/services/vintemSpeech.service'
+import { askVintem, ASK_TIMEOUT_OPEN_MS, ASK_TIMEOUT_REACTION_MS, type AskArgs } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -57,7 +57,10 @@ export interface SpeakArgs extends PhraseArgs {
 
 export interface SpeakAiArgs {
   /** O que se pede a IA: so a situacao (lista fechada) e a categoria; nunca texto nem valor. */
-  ai: AskArgs
+  ai: Omit<AskArgs, 'timeoutMs'> & {
+    /** Prazo do pedido; sem ele vale o da abertura e da sincronizacao (ninguem esta esperando). */
+    timeoutMs?: number
+  }
   /** Reserva do banco de frases, usada sempre que a IA nao entrega a tempo. */
   fallback: SpeakArgs
 }
@@ -180,6 +183,13 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const [cheer, setCheer] = useState<Cheer | null>(null)
   const rand = useRef<(() => number) | null>(null)
   const popCounter = useRef(0)
+  // Geracao de fala: sobe a cada fala mostrada, dispensada ou troca de escopo. Resposta da IA que volta
+  // com outra geracao chegou atrasada e e descartada (a mais nova vence; nunca troca texto ja mostrado).
+  const speechGen = useRef(0)
+  // Um unico pedido a IA em voo por vez no cliente; o seguinte usa o banco de frases direto.
+  const askInFlight = useRef(false)
+  // Ultimo texto de IA anunciado na regiao viva (nunca anuncia o mesmo texto duas vezes).
+  const lastAnnounced = useRef('')
 
   // A fala sai ao trocar de rota e ao mudar o perfil visto (ajuste durante a renderizacao).
   const [scope, setScope] = useState({ pathname, viewPerson })
@@ -194,6 +204,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const scopeRef = useRef(scopeKey)
   useEffect(() => {
     scopeRef.current = scopeKey
+    speechGen.current += 1
   }, [scopeKey])
 
   const registerSlot = useCallback((handle: VintemHandle | null) => {
@@ -228,6 +239,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       const chosen = draw(args)
       if (chosen === null) return false
       popCounter.current += 1
+      speechGen.current += 1
       setSpeech({ id: chosen.id, text: chosen.text, situation: args.situation, popKey: popCounter.current })
       setAnnounced(announce ? chosen.text : '')
       return true
@@ -236,24 +248,35 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   const dismiss = useCallback(() => {
+    speechGen.current += 1
     setSpeech(null)
     setAnnounced('')
   }, [])
 
   const speakText = useCallback(({ text, situation, announce = false }: SpeakTextArgs): void => {
     popCounter.current += 1
+    speechGen.current += 1
     setSpeech({ id: `ia-${popCounter.current}`, text, situation, popKey: popCounter.current })
-    setAnnounced(announce ? text : '')
+    // Anuncia so na primeira exibicao do texto.
+    const say = announce && lastAnnounced.current !== text
+    if (say) lastAnnounced.current = text
+    setAnnounced(say ? text : '')
   }, [])
 
   // Pergunta a IA; devolve o texto, ou null para usar o banco, ou 'stale' se a tela mudou durante a espera.
   const askGuarded = useCallback(
     async (ai: AskArgs): Promise<string | null | 'stale'> => {
-      if (!canAsk) return null
+      if (!canAsk || askInFlight.current) return null
       const startedIn = scopeRef.current
-      const text = await askVintem(ai)
-      if (scopeRef.current !== startedIn) return 'stale'
-      return text
+      const startedGen = speechGen.current
+      askInFlight.current = true
+      try {
+        const text = await askVintem(ai)
+        if (scopeRef.current !== startedIn || speechGen.current !== startedGen) return 'stale'
+        return text
+      } finally {
+        askInFlight.current = false
+      }
     },
     [canAsk],
   )
@@ -261,7 +284,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const speakAi = useCallback(
     async ({ ai, fallback }: SpeakAiArgs): Promise<void> => {
       try {
-        const text = await askGuarded(ai)
+        const text = await askGuarded({ ...ai, timeoutMs: ai.timeoutMs ?? ASK_TIMEOUT_OPEN_MS })
         if (text === 'stale') return
         if (text !== null) {
           speakText({ text, situation: fallback.situation, announce: fallback.announce })
@@ -295,6 +318,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         }
         const text = aiText ?? draw({ situation, raw })?.text ?? null
         if (text !== null) {
+          speechGen.current += 1
           const spot = nextPeekSpot()
           toast.show('', {
             custom: <VintemToastBody text={text} reaction={reaction} side={spot.side} />,

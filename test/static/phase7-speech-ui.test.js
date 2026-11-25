@@ -66,7 +66,7 @@ test('contexto: so a pessoa logada, no proprio perfil e fora do somente leitura 
   const src = code(CONTEXT)
   assert.match(src, /const canAsk = user !== null && user\.person === viewPerson && !readOnly/)
   const guarded = body(src, 'askGuarded')
-  assert.match(guarded, /if \(!canAsk\) return null/, 'askGuarded sem o portao canAsk')
+  assert.match(guarded, /if \(!canAsk \|\| askInFlight\.current\) return null/, 'askGuarded sem o portao canAsk')
 })
 
 test('contexto: a fala da IA e texto React, sem HTML bruto, e o contexto nao registra nada', () => {
@@ -104,7 +104,9 @@ test('a situacao limite so vale para as tres situacoes de limite do nucleo', () 
 test('a situacao sync so vem do gasto importado do banco; toque e entrada nao chamam a IA', () => {
   const hook = code(HOME_HOOK)
   assert.equal((hook.match(/situation: 'sync'/g) ?? []).length, 1, 'sync fora do ramo do gasto importado')
-  assert.match(hook, /timeoutMs: ASK_TIMEOUT_OPEN_MS/, 'sync sem o prazo da abertura')
+  // O hook nao importa servico (guarda da Fase 4): o prazo da abertura e o padrao de speakAi.
+  assert.ok(!/vintemSpeech\.service/.test(hook), 'o hook importa o servico da fala')
+  assert.match(body(code(CONTEXT), 'speakAi'), /timeoutMs: ai\.timeoutMs \?\? ASK_TIMEOUT_OPEN_MS/, 'speakAi sem o prazo padrao da abertura')
   assert.match(hook, /categoryId: bankArrival\.categoryId/, 'sync sem a categoria da chegada')
   assert.equal((hook.match(/\bspeakAi\(/g) ?? []).length, 1, 'speakAi fora do ramo do gasto importado')
   const effect = hook.slice(hook.indexOf('const reactedKey'), hook.indexOf('// Toque:'))
@@ -118,4 +120,54 @@ test('a situacao sync so vem do gasto importado do banco; toque e entrada nao ch
   assert.ok(!/speakAi|askVintem/.test(entry), 'a fala de entrada chama a IA')
   assert.match(entry, /announce: false/)
   assert.ok(!/askVintem/.test(hook), 'o hook pede a IA direto')
+})
+
+test('resposta atrasada ou de outra tela e descartada: geracao e escopo conferidos antes de mostrar', () => {
+  const src = code(CONTEXT)
+  const guarded = body(src, 'askGuarded')
+  assert.match(guarded, /const startedGen = speechGen\.current/, 'askGuarded nao guarda a geracao do pedido')
+  assert.match(guarded, /const startedIn = scopeRef\.current/, 'askGuarded nao guarda o escopo do pedido')
+  assert.match(
+    guarded,
+    /scopeRef\.current !== startedIn \|\| speechGen\.current !== startedGen\) return 'stale'/,
+    'a resposta nao e conferida contra escopo e geracao',
+  )
+  // Toda fala mostrada, dispensada ou troca de escopo sobe a geracao.
+  const bumps = (src.match(/speechGen\.current \+= 1/g) ?? []).length
+  assert.ok(bumps >= 5, `a geracao sobe em poucos lugares (${bumps})`)
+  for (const name of ['speak', 'dismiss', 'speakText']) {
+    assert.ok(body(src, name).includes('speechGen.current += 1'), `${name} nao sobe a geracao`)
+  }
+  assert.match(src, /useEffect\(\(\) => \{\s*scopeRef\.current = scopeKey\s*speechGen\.current \+= 1/, 'troca de escopo nao sobe a geracao')
+  // As chamadas de speakAi e deliver descartam 'stale' sem mostrar nada.
+  assert.match(body(src, 'speakAi'), /if \(text === 'stale'\) return/)
+  assert.match(body(src, 'deliver'), /if \(answer === 'stale'\) return/)
+})
+
+test('no maximo um pedido a IA em voo por vez e uma unica variavel para isso', () => {
+  const src = code(CONTEXT)
+  assert.equal((src.match(/useRef\(false\)/g) ?? []).length, 1, 'mais de uma variavel de pedido em voo')
+  assert.match(src, /const askInFlight = useRef\(false\)/)
+  const guarded = body(src, 'askGuarded')
+  assert.match(guarded, /if \(!canAsk \|\| askInFlight\.current\) return null/, 'segundo pedido nao cai no banco')
+  assert.match(guarded, /askInFlight\.current = true/)
+  assert.match(guarded, /finally \{\s*askInFlight\.current = false/, 'o pedido em voo nao e liberado no finally')
+  assert.ok(guarded.indexOf('askInFlight.current = true') < guarded.indexOf('askVintem('), 'em voo marcado depois do pedido')
+})
+
+test('a fala da IA e anunciada uma vez so e speakAi nunca lanca, com reserva do banco', () => {
+  const src = code(CONTEXT)
+  const text = body(src, 'speakText')
+  assert.match(text, /lastAnnounced\.current !== text/, 'speakText anuncia o mesmo texto de novo')
+  assert.match(text, /setAnnounced\(say \? text : ''\)/)
+  const ai = body(src, 'speakAi')
+  assert.match(ai, /try \{/, 'speakAi sem try')
+  assert.match(ai, /catch \{\s*speak\(fallback\)/, 'speakAi sem reserva no catch')
+  assert.match(ai, /speak\(fallback\)/)
+  const deliver = body(src, 'deliver')
+  assert.match(deliver, /try \{/, 'deliver sem try')
+  assert.match(deliver, /catch \{/, 'deliver sem catch')
+  const launched = body(src, 'onLaunched')
+  assert.match(launched, /await deliver\(/, 'onLaunched nao espera o deliver (que nunca lanca)')
+  assert.match(launched, /catch \{/, 'onLaunched perdeu o catch')
 })

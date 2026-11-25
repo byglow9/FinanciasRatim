@@ -5,7 +5,6 @@ import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
 import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { useVintemInsights } from '@/hooks/useVintemInsights'
-import { ASK_TIMEOUT_OPEN_MS } from '@/services/vintemSpeech.service'
 import type { CategoryDef, Transaction } from '@/types'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { categoryDisplayName } from '@shared/core/categories.js'
@@ -222,7 +221,7 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     }
     // Fim de sincronizacao com gasto novo: tenta a IA (sem ninguem esperando) e cai na frase do banco.
     void speakAi({
-      ai: { situation: 'sync', categoryId: bankArrival.categoryId, timeoutMs: ASK_TIMEOUT_OPEN_MS },
+      ai: { situation: 'sync', categoryId: bankArrival.categoryId },
       fallback: { situation: result.situation, raw, announce: true },
     })
   }, [bankArrival, view, enabled, readOnly, entryKey, slot, speakAi, categoryDefs, insights, todayKey])

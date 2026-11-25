@@ -54,6 +54,8 @@ const CLOSED_KEYS = [
   'coinc:sw-reload:v1',
   // Fase 7: FID do aparelho, so no localStorage (src/lib/push/messaging.ts).
   'coinc:push:fid',
+  // Fase 7 (07-11): sinal local de avisos desativados neste aparelho.
+  'coinc:push:off',
 ]
 
 /** Lista os arquivos de um diretorio (recursivo) que nao sao testes, para varreduras de texto. */

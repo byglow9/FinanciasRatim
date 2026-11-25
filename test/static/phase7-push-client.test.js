@@ -7,6 +7,8 @@ import { code } from './helpers/phase3-1.js'
 const MESSAGING = 'src/lib/push/messaging.ts'
 const SERVICE = 'src/services/push.service.ts'
 const CARD = 'src/components/settings/NotificationsCard.tsx'
+// 07-11: os botoes e o preparo do aparelho moram na secao do cartao.
+const SECTION = 'src/components/settings/PushDeviceSection.tsx'
 
 /** Corpo (do abre-chaves ate o fecha-chaves correspondente) da funcao `name` no texto `src`. */
 function body(src, name) {
@@ -62,7 +64,7 @@ test('o FID so vai ao localStorage na chave coinc:push:fid; nada vai a log', () 
   assert.match(src, /'coinc:push:fid'/)
   assert.equal((src.match(/localStorage\.setItem/g) ?? []).length, 1)
   assert.doesNotMatch(src, /sessionStorage|indexedDB|document\.cookie/)
-  for (const file of [MESSAGING, SERVICE, CARD]) {
+  for (const file of [MESSAGING, SERVICE, CARD, SECTION]) {
     assert.doesNotMatch(code(file), /console\./, `${file} registra em console`)
   }
 })
@@ -73,12 +75,14 @@ test('push.service usa Authorization Bearer, mensagens fixas e as duas rotas do 
   assert.match(src, /\/api\/push\/register/)
   assert.match(src, /\/api\/push\/test/)
   assert.match(src, /getIdToken\(\)/)
-  assert.doesNotMatch(src, /res\.json|res\.text|\.statusText/, 'nao ecoa o corpo da resposta')
+  // 07-11: as leituras (status e preferencias) usam o corpo, mas nenhum erro o carrega nem o repassa.
+  assert.doesNotMatch(src, /res\.text|\.statusText/, 'nao ecoa o corpo da resposta')
+  assert.doesNotMatch(src, /new Error\([^)]*\$\{/, 'mensagem de erro com dado interpolado')
 })
 
 test('o cartao chama primePush ao montar, enablePush so no toque e mantem o id notificacoes', () => {
-  const src = code(CARD)
-  assert.match(src, /id="notificacoes"/)
+  assert.match(code(CARD), /id="notificacoes"/)
+  const src = code(SECTION)
   assert.match(src, /\bprimePush\(\)/)
   assert.match(src, /\benablePush\(\)/)
   assert.match(src, /Ativar avisos/)
@@ -114,11 +118,12 @@ test('depois da ativacao o preparo escuta controllerchange com prazo e so le o e
 })
 
 test('erro vira so o motivo: nenhum catch repassa a mensagem do SDK e nada e lancado com dado do aparelho', () => {
-  for (const file of [MESSAGING, SERVICE, CARD]) {
+  for (const file of [MESSAGING, SERVICE, CARD, SECTION]) {
     const src = code(file)
     assert.doesNotMatch(src, /\.message\b/, `${file} repassa mensagem de erro`)
     assert.doesNotMatch(src, /new Error\([^)]*(fid|token|vapid)/i, `${file} poe dado do aparelho em erro`)
   }
-  const card = code(CARD)
-  assert.doesNotMatch(card, /getLocalFid|localStorage/, 'o cartao nao mostra nem le o FID')
+  for (const file of [CARD, SECTION]) {
+    assert.doesNotMatch(code(file), /getLocalFid|localStorage/, `${file} nao mostra nem le o FID`)
+  }
 })

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
+import { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { Button } from '@/components/ui/button'
@@ -8,31 +8,11 @@ import { Notice } from '@/components/ui/notice'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 import { SettingsCard } from '@/components/settings/SettingsCard'
-import { enablePush, getPrimeState, primePush, subscribePrime, type PrimeStatus, type PushReason } from '@/lib/push/messaging'
-import { sendTestPush } from '@/services/push.service'
+import { PushDeviceSection } from '@/components/settings/PushDeviceSection'
 
 const READ_ONLY_HINT = 'Volte ao seu perfil para editar'
 const SAVE_FAILED = 'Não foi possível salvar. Confira a conexão e tente de novo.'
 const DAYS_MAX = 30
-
-const ENABLED_TEXT = 'Avisos ativados neste aparelho.'
-const REASON_TEXT: Record<PushReason, string> = {
-  'nao-configurado': 'Avisos ainda não configurados neste app.',
-  'nao-suportado': 'Este navegador não recebe avisos.',
-  'permissao-negada': 'Permissão negada. Libere as notificações nas configurações do aparelho.',
-  atualizando: 'O app está se atualizando. Tente de novo em instantes.',
-  falhou: 'Não foi possível ativar os avisos. Confira a conexão e tente de novo.',
-}
-const PRIME_TEXT: Record<PrimeStatus, string | null> = {
-  preparando: null,
-  pronto: null,
-  atualizando: REASON_TEXT.atualizando,
-  'nao-configurado': REASON_TEXT['nao-configurado'],
-  'nao-suportado': REASON_TEXT['nao-suportado'],
-  falhou: null,
-}
-const TEST_SENT = 'Aviso de teste enviado.'
-const TEST_FAILED = 'Não foi possível enviar o teste.'
 
 /** Inteiro de 0 a 30 escrito só com dígitos; qualquer outra coisa vale null. */
 function parseDays(text: string): number | null {
@@ -67,53 +47,6 @@ export function NotificationsCard() {
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const prime = useSyncExternalStore(subscribePrime, getPrimeState)
-  const [pushBusy, setPushBusy] = useState<'ativar' | 'testar' | null>(null)
-  const pushLock = useRef(false)
-  const [pushMessage, setPushMessage] = useState<string | null>(null)
-  // O preparo do worker acontece ao abrir o cartao; o pedido de permissao so sai no toque.
-  useEffect(() => {
-    void primePush()
-  }, [])
-
-  // Com versao em espera o toque e o consentimento para ativa-la; sem ela, espera o preparo terminar.
-  const canActivate =
-    prime.status !== 'preparando' && (prime.status !== 'atualizando' || prime.waiting)
-  const notice =
-    pushMessage === REASON_TEXT.atualizando && prime.status === 'pronto'
-      ? null
-      : (pushMessage ?? PRIME_TEXT[prime.status])
-
-  const activate = async () => {
-    if (readOnly || pushLock.current) return
-    pushLock.current = true
-    setPushBusy('ativar')
-    setPushMessage(null)
-    try {
-      const result = await enablePush()
-      setPushMessage(result.ok ? ENABLED_TEXT : REASON_TEXT[result.reason])
-    } finally {
-      pushLock.current = false
-      setPushBusy(null)
-    }
-  }
-
-  const test = async () => {
-    if (readOnly || pushLock.current) return
-    pushLock.current = true
-    setPushBusy('testar')
-    setPushMessage(null)
-    try {
-      await sendTestPush()
-      setPushMessage(TEST_SENT)
-    } catch {
-      setPushMessage(TEST_FAILED)
-    } finally {
-      pushLock.current = false
-      setPushBusy(null)
-    }
-  }
-
   const save = async () => {
     if (readOnly || saving) return
     const parsed = parseDays(days)
@@ -136,6 +69,7 @@ export function NotificationsCard() {
 
   return (
     <SettingsCard id="notificacoes" icon={Bell} title="Notificações" subtitle="Vencimentos e limites">
+      <PushDeviceSection readOnly={readOnly} />
       <div className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-surface-2 py-1 pl-4 pr-2">
         <Label htmlFor="notifications-enabled" className="font-normal">
           Avisos de vencimento
@@ -170,36 +104,6 @@ export function NotificationsCard() {
       <p className="text-xs font-normal text-muted-foreground">
         Avisos de limite: sempre ligados, em 80% e em 100%.
       </p>
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            className="flex-1"
-            onClick={() => void activate()}
-            disabled={readOnly || pushBusy !== null || !canActivate}
-            aria-busy={pushBusy === 'ativar'}
-          >
-            Ativar avisos
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            onClick={() => void test()}
-            disabled={readOnly || pushBusy !== null}
-            aria-busy={pushBusy === 'testar'}
-          >
-            Testar aviso
-          </Button>
-        </div>
-        {notice ? (
-          <p role="status" className="text-xs font-normal text-muted-foreground">
-            {notice}
-          </p>
-        ) : null}
-      </div>
       {readOnly ? <p className="text-xs font-normal text-muted-foreground">{READ_ONLY_HINT}</p> : null}
       {failed ? <Notice tone="danger">{SAVE_FAILED}</Notice> : null}
       <Button

@@ -18,6 +18,8 @@ export interface PrimeState {
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined
 const FID_STORAGE_KEY = 'coinc:push:fid'
+// Sinal local de "avisos desativados neste aparelho": a permissao do navegador continua concedida.
+const OFF_STORAGE_KEY = 'coinc:push:off'
 const READY_MS = 5000
 const SUPPORT_MS = 3000
 const PING_MS = 1500
@@ -53,12 +55,27 @@ export function subscribePrime(fn: () => void): () => void {
   }
 }
 
-/** Guarda o FID deste aparelho so no localStorage (o 07-10 o usa para nao avisar o aparelho em uso). */
-export function rememberFid(fid: string): void {
+/** Unico ponto de escrita no armazenamento local: so as chaves de push. */
+function store(key: string, value: string | null): void {
   try {
-    localStorage.setItem(FID_STORAGE_KEY, fid)
+    if (value === null) localStorage.removeItem(key)
+    else localStorage.setItem(key, value)
   } catch {
     /* sem armazenamento: o aparelho em uso so deixa de ser excluido do envio */
+  }
+}
+
+/** Guarda o FID deste aparelho so no localStorage (o 07-10 o usa para nao avisar o aparelho em uso). */
+export function rememberFid(fid: string): void {
+  store(FID_STORAGE_KEY, fid)
+}
+
+/** Os avisos foram desativados neste aparelho pelo usuario? */
+export function isPushOff(): boolean {
+  try {
+    return localStorage.getItem(OFF_STORAGE_KEY) === '1'
+  } catch {
+    return false
   }
 }
 
@@ -68,6 +85,20 @@ export function getLocalFid(): string | null {
   } catch {
     return null
   }
+}
+
+/** Chave VAPID, servidor e ambiente de producao presentes (fora do modo local de desenvolvimento). */
+export function isPushConfigured(): boolean {
+  return configReason() !== 'nao-configurado'
+}
+
+let supportCheck: Promise<boolean> | null = null
+
+/** O navegador recebe push (isSupported do FCM)? Resolvido uma vez; prazo curto, sem suporte vale falso. */
+export function checkPushSupported(): Promise<boolean> {
+  if (configReason() !== null) return Promise.resolve(false)
+  supportCheck ??= withTimeout(isSupported(), SUPPORT_MS).then((ok) => ok === true)
+  return supportCheck
 }
 
 /** Resolve com o valor da promessa, ou com null se passar do prazo ou se ela falhar. */

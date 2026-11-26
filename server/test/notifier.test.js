@@ -3,13 +3,16 @@ import assert from 'node:assert/strict'
 import { cycleOf } from '../../shared/core/cycle.js'
 import { formatReais } from '../../shared/core/format.js'
 import { composePush } from '../../shared/core/oincPush.js'
+import { OINC_PUSH_LINES } from '../../shared/core/oincLinesPush.js'
 import { DEFAULT_CATEGORY_DEFS } from '../../shared/core/categories.js'
 import { DEFAULT_PUSH_PREFS } from '../../shared/core/pushPrefs.js'
-import { PUSH_PHRASES, buildPushPayload } from '../../shared/core/vintemPhrasesPush.js'
+import { PUSH_PHRASES } from '../../shared/core/vintemPhrasesPush.js'
 import { createNotifier, readMaxPerDay } from '../src/push/notifier.js'
+import { createOincState } from '../src/ai/state.js'
 import { createApp } from '../src/app.js'
 import { createPushFeature } from '../src/push/index.js'
 import { createFakeFirestore } from './_fake-firestore.js'
+import { createMemoryDb } from './_ai-memory-db.js'
 
 // Notificador com repo e sender falsos em memoria. O repo falso imita o contrato do repo.js:
 // filtra por casal e pessoa, e claimEvent falha (false) quando o marcador ja existe.
@@ -79,6 +82,9 @@ function makeRepo({ settings = settingsFor(), txs = [], silentIds = [], fids = {
     },
     async listFids(hid, person) {
       return [...(state.fids[`${hid}:${person}`] ?? [])]
+    },
+    async eventExists(id) {
+      return events.has(id)
     },
     async claimEvent(id, data) {
       state.claimCalls++
@@ -1191,56 +1197,123 @@ describe('notificador de contas e compromissos', () => {
 const QUARTERS = Array.from({ length: 96 }, (_, i) => i * 15)
 const spAt = (day, minute) => at(`2026-11-${String(day).padStart(2, '0')}T03:00:00Z`) + minute * 60_000
 
+// Leitura falsa dos dados completos (a forma de snapshot.load), so do par pedido.
+function makeSnapshot(clock, settings, data = {}) {
+  const state = { txs: [], goals: [], calls: [], ...data }
+  const load = async ({ hid, person }) => {
+    state.calls.push(`${hid}:${person}`)
+    const own = (list) => list.filter((x) => (x.ownerId ?? HID) === hid && x.person === person)
+    const now = new Date(clock.t)
+    const { salaryDay } = settings().personConfig
+    return {
+      input: {
+        now,
+        person,
+        cycle: cycleOf(now, salaryDay),
+        config: settings().personConfig,
+        categoryDefs: settings().categoryDefs,
+        transactions: own(state.txs),
+        prevTransactions: [],
+        bills: [],
+        payments: [],
+        goals: own(state.goals),
+      },
+      reads: state.txs.length,
+    }
+  }
+  return { state, load }
+}
+
+const pushLine = (id) =>
+  Object.values(OINC_PUSH_LINES)
+    .flatMap((byTone) => Object.values(byTone))
+    .flat()
+    .find((line) => line.id === id)
+const sceneOfPhrase = (phraseId) => phraseId.replace(/-\d{3}$/, '')
+
+const SPONT_KEYS = ['createdAt', 'dayKey', 'kind', 'ownerId', 'person', 'phraseId', 'slot', 'status', 'tag', 'url']
+const BANDS = [1, 2, 3].map((slot) => ({ slot, from: 9 * 60 + (slot - 1) * 240, to: 9 * 60 + slot * 240 }))
+// Um instante em que a vaga ja esta liberada: 15 minutos antes do fim da faixa.
+const dueMinute = (slot) => BANDS[slot - 1].to - 15
+const spontId = (day, slot, person = 'ele', hid = HID) =>
+  `${hid}__${person}__espontanea__2026-11-${String(day).padStart(2, '0')}__${slot}`
+
 describe('notificador: push espontaneo', () => {
   let clock
   let repo
   let sender
+  let snapshot
+  let memory
+  let oincState
   let notifier
 
-  const setup = (opts = {}, config = {}) => {
+  const build = (config = {}) =>
+    createNotifier({ repo, sender, now: () => new Date(clock.t), config, loadSnapshot: snapshot.load, oincState })
+
+  const setup = (opts = {}, config = {}, data = {}) => {
     clock = { t: spAt(17, 0) }
     repo = makeRepo({ fids: FIDS, ...opts })
-    repo.readCycleTransactions = async () => assert.fail('o espontaneo nunca le lancamentos')
+    repo.readCycleTransactions = async () => assert.fail('o espontaneo le os dados so pelo loadSnapshot')
     sender = makeSender()
-    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t), config })
+    snapshot = makeSnapshot(clock, () => repo.state.settings, data)
+    memory = createMemoryDb()
+    oincState = createOincState({ db: memory, now: () => new Date(clock.t), log: { warn() {} } })
+    notifier = build(config)
   }
+
+  const spont = (person = 'ele', hid = HID) => notifier.evaluateSpontaneous({ hid, person })
+  const atSlot = async (slot, { day = 17, person = 'ele', hid = HID } = {}) => {
+    clock.t = spAt(day, dueMinute(slot))
+    return spont(person, hid)
+  }
+  const recentOf = (person = 'ele', hid = HID) => memory.read('oincState', `${hid}__${person}`)?.pushRecent ?? []
+  const lastBody = () => sender.calls.at(-1).payload.body
 
   // Roda o dia inteiro e devolve os minutos (hora de Sao Paulo) em que saiu um aviso.
   const runDay = async (day, person = 'ele') => {
     const out = []
     for (const minute of QUARTERS) {
       clock.t = spAt(day, minute)
-      if ((await notifier.evaluateSpontaneous({ hid: HID, person })).sent > 0) out.push(minute)
+      if ((await spont(person)).sent > 0) out.push(minute)
     }
     return out
+  }
+  const oneEachBand = (sent, label = '') => {
+    assert.equal(sent.length, 3, `${label} ${sent}`)
+    sent.forEach((minute, i) => assert.ok(minute >= BANDS[i].from && minute < BANDS[i].to, `${label} faixa ${i + 1}: ${minute}`))
   }
 
   beforeEach(() => setup())
 
-  test('sai uma vez por dia, dentro da janela, com a frase do banco e sem dado financeiro', async () => {
-    const sent = await runDay(17)
-    assert.equal(sent.length, 1)
-    assert.ok(sent[0] >= 9 * 60 && sent[0] < 21 * 60, `fora da janela: ${sent[0]}`)
-    assert.equal(sender.calls.length, 1)
-    const { payload } = sender.calls[0]
-    const id = 'casalA__ele__espontanea__2026-11-17'
-    assert.equal(payload.tag, 'espontanea')
-    assert.equal(payload.url, '/')
-    assert.equal(payload.body, buildPushPayload({ situation: 'push-espontanea', tone: 'sem-filtro', seed: id }).body)
-    assert.doesNotMatch(payload.body, /\d|R\$/)
-    assert.deepEqual(
-      Object.keys(repo.events.get(id)).filter((k) => !['enviados', 'sentAt'].includes(k)).sort(),
-      ['createdAt', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'url']
-    )
+  test('saem tres por dia, um por faixa, com id e tag por vaga e marcador so com ids', async () => {
+    oneEachBand(await runDay(17))
+    const ids = [1, 2, 3].map((slot) => spontId(17, slot))
+    assert.deepEqual([...repo.events.keys()], ids)
+    assert.deepEqual(sender.calls.map((c) => c.payload.tag), ['espontanea-1', 'espontanea-2', 'espontanea-3'])
+    assert.deepEqual(sender.calls.map((c) => c.payload.url), ['/', '/', '/'])
+    // sem compra: ritmo, depois do nada, depois ritmo de novo
+    const phrases = ids.map((id) => repo.events.get(id).phraseId)
+    assert.deepEqual(phrases.map(sceneOfPhrase), ['push-ritmo', 'push-nada', 'push-ritmo'])
+    assert.equal(new Set(phrases).size, 3)
+    assert.equal(sender.calls[1].payload.body, pushLine(phrases[1]).t)
+    assert.match(sender.calls[0].payload.body, /R\$/)
+    for (const [i, id] of ids.entries()) {
+      const marker = repo.events.get(id)
+      assert.deepEqual(keysOf(marker), SPONT_KEYS)
+      assert.equal(marker.slot, i + 1)
+      assert.equal(marker.status, 'enviado')
+      assert.doesNotMatch(JSON.stringify(marker), /R\$/)
+      assert.ok(!JSON.stringify(marker).includes(sender.calls[i].payload.body))
+    }
+    assert.deepEqual(recentOf(), phrases)
   })
 
-  test('o horario muda de pessoa para pessoa e de dia para dia, sempre um por dia', async () => {
+  test('o horario muda de pessoa para pessoa e de dia para dia, sempre um por faixa', async () => {
     const times = { ele: [], ela: [] }
     for (let day = 1; day <= 14; day++) {
       for (const person of ['ele', 'ela']) {
         const sent = await runDay(day, person)
-        assert.equal(sent.length, 1, `dia ${day} ${person}`)
-        assert.ok(sent[0] >= 9 * 60 && sent[0] < 21 * 60)
+        oneEachBand(sent, `dia ${day} ${person}`)
         times[person].push(sent[0])
       }
     }
@@ -1252,40 +1325,222 @@ describe('notificador: push espontaneo', () => {
     setup({}, { spontWindow: { from: '08:00', to: '09:00' } })
     for (let day = 1; day <= 7; day++) {
       const sent = await runDay(day)
-      assert.equal(sent.length, 1)
-      assert.ok(sent[0] >= 8 * 60 && sent[0] < 9 * 60)
+      assert.equal(sent.length, 3)
+      assert.ok(sent.every((m) => m >= 8 * 60 && m < 9 * 60), `${sent}`)
     }
+  })
+
+  test('a segunda rodada na mesma faixa nao le os dados de novo', async () => {
+    assert.equal((await atSlot(1)).sent, 2)
+    assert.equal(snapshot.state.calls.length, 1)
+    let settingsReads = 0
+    const readSettings = repo.readSettings
+    repo.readSettings = async (...args) => (settingsReads++, readSettings(...args))
+    assert.deepEqual(await spont(), { events: 0, claimed: 0, sent: 0 })
+    assert.equal(snapshot.state.calls.length, 1)
+    assert.equal(settingsReads, 0)
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('antes do minuto sorteado e fora da janela nada e lido', async () => {
+    const boom = async () => assert.fail('nao podia ler')
+    repo.readPrefs = repo.listFids = repo.eventExists = repo.readSettings = boom
+    for (const minute of [0, 8 * 60 + 59, 21 * 60, 23 * 60]) {
+      clock.t = spAt(17, minute)
+      assert.deepEqual(await spont(), { events: 0, claimed: 0, sent: 0 })
+    }
+    assert.equal(snapshot.state.calls.length, 0)
   })
 
   test('nunca sai no silencio e no silencio nao cria marcador', async () => {
     setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '09:00', to: '21:00' } } })
     assert.deepEqual(await runDay(17), [])
     assert.equal(repo.events.size, 0)
+    assert.equal(snapshot.state.calls.length, 0)
 
-    // Silencio que acaba antes do fim da janela: sai depois dele, ainda dentro da janela.
+    // Silencio que acaba antes do fim da janela: so a vaga da faixa atual sai, as perdidas nao voltam.
     setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '09:00', to: '19:30' } } })
     const sent = await runDay(17)
     assert.equal(sent.length, 1)
     assert.ok(sent[0] >= 19 * 60 + 30 && sent[0] < 21 * 60)
   })
 
-  test('tipo desligado, parametro zero, sem aparelho ou entrada invalida nao criam marcador', async () => {
+  test('tipo desligado, parametro zero, sem aparelho ou entrada invalida nao criam marcador nem leem dados', async () => {
     const off = { ...DEFAULT_PUSH_PREFS, types: { ...DEFAULT_PUSH_PREFS.types, espontanea: false } }
     for (const [opts, config] of [[{ prefs: off }, {}], [{}, { spontPerDay: 0 }], [{ fids: {} }, {}]]) {
       setup(opts, config)
+      repo.eventExists = repo.readSettings = async () => assert.fail('nao podia ler')
       assert.deepEqual(await runDay(17), [])
       assert.equal(repo.events.size, 0)
+      assert.equal(snapshot.state.calls.length, 0)
     }
     setup()
-    clock.t = spAt(17, 19 * 60 + 45)
-    assert.equal((await notifier.evaluateSpontaneous({ hid: HID, person: 'porquinho' })).events, 0)
-    assert.equal((await notifier.evaluateSpontaneous({ hid: '', person: 'ele' })).events, 0)
+    clock.t = spAt(17, dueMinute(3))
+    assert.equal((await spont('porquinho')).events, 0)
+    assert.equal((await spont('ele', '')).events, 0)
   })
 
   test('um notificador novo no mesmo dia (reinicio) nao repete', async () => {
     await runDay(17)
-    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t) })
+    notifier = build()
     assert.deepEqual(await runDay(17), [])
+    assert.equal(sender.calls.length, 3)
+  })
+
+  test('um reinicio no fim do dia nao solta em rajada as vagas perdidas', async () => {
+    clock.t = spAt(17, 20 * 60 + 55)
+    for (let i = 0; i < 4; i++) await spont()
     assert.equal(sender.calls.length, 1)
+    assert.deepEqual([...repo.events.keys()], [spontId(17, 3)])
+  })
+
+  test('compra de ontem sai dizendo ontem, com valor e marca, e nao e narrada duas vezes', async () => {
+    setup({}, {}, { txs: [spend(40, { id: 'bank_pedido-1', source: 'bank', description: 'IFOOD *PEDIDO 987' })] })
+    await atSlot(1)
+    const body = lastBody()
+    assert.match(body, /ontem/i)
+    assert.match(body, /iFood/)
+    assert.ok(body.includes(formatReais(4000)), body)
+    assert.doesNotMatch(body, /PEDIDO|987/)
+    const marker = repo.events.get(spontId(17, 1))
+    assert.equal(marker.txId, 'bank_pedido-1')
+    assert.equal(sceneOfPhrase(marker.phraseId), 'push-compra')
+    assert.deepEqual(keysOf(marker), [...SPONT_KEYS, 'txId'].sort())
+    assert.doesNotMatch(JSON.stringify(marker), /iFood|IFOOD|R\$|4000/)
+    assert.deepEqual(recentOf(), [marker.phraseId, 'tx:bank_pedido-1'])
+
+    await atSlot(2)
+    const second = repo.events.get(spontId(17, 2))
+    assert.equal(second.txId, undefined)
+    assert.notEqual(sceneOfPhrase(second.phraseId), 'push-compra')
+    assert.ok(!lastBody().includes(formatReais(4000)))
+  })
+
+  test('a compra de hoje vem antes da de ontem, uma por aviso; entrada e compra antiga ficam de fora', async () => {
+    setup({}, {}, {
+      txs: [
+        spend(11, { id: 'antiga', date: new Date('2026-11-14T15:00:00Z') }),
+        spend(22, { id: 'ontem' }),
+        spend(33, { id: 'hoje', date: new Date('2026-11-17T11:00:00Z') }),
+        spend(44, { id: 'entrada', type: 'entrada', date: new Date('2026-11-17T11:00:00Z') }),
+        spend(55, { id: 'transferencia', transfer: true, date: new Date('2026-11-17T11:00:00Z') }),
+      ],
+    })
+    for (const slot of [1, 2, 3]) await atSlot(slot)
+    const txIds = [1, 2, 3].map((slot) => repo.events.get(spontId(17, slot)).txId)
+    assert.deepEqual(txIds, ['hoje', 'ontem', undefined])
+    assert.ok(sender.calls[0].payload.body.includes(formatReais(3300)))
+    assert.match(sender.calls[1].payload.body, /ontem/i)
+    // a mesma cena nao repete a fala
+    assert.notEqual(repo.events.get(spontId(17, 1)).phraseId, repo.events.get(spontId(17, 2)).phraseId)
+  })
+
+  test('loja local, lancamento manual e Pix: so a categoria, nunca a descricao nem o nome da pessoa', async () => {
+    const cases = [
+      { source: 'bank', description: 'PADARIA DO ZE' },
+      { source: 'manual', description: 'ifood com a Maria' },
+      { source: 'bank', description: 'Pix enviado para Fulano de Tal' },
+      { source: 'bank', description: 'PIX FULANO DE TAL 123.456.789-09 UBER' },
+    ]
+    for (const over of cases) {
+      setup({}, {}, { txs: [spend(40, { id: 'compra-1', ...over })] })
+      await atSlot(1)
+      const body = lastBody()
+      assert.match(body, /Lazer/, over.description)
+      assert.match(body, /ontem/i, over.description)
+      assert.doesNotMatch(body, /iFood|Uber|PADARIA|Fulano|Maria|Pix|123/i, over.description)
+    }
+  })
+
+  test('marca conhecida aparece mesmo quando a cena da compra nao usa loja', async () => {
+    setup({}, {}, { txs: [spend(40, { id: 'corrida', source: 'bank', description: 'UBER *TRIP' })] })
+    await atSlot(1)
+    assert.match(lastBody(), /Uber/)
+  })
+
+  test('compra de ontem sem loja nem categoria nao e narrada, porque a fala nao diria ontem', async () => {
+    const bare = { categoryId: undefined, category: '' }
+    setup({}, {}, { txs: [spend(40, { id: 'sem-nada', ...bare })] })
+    await atSlot(1)
+    assert.equal(repo.events.get(spontId(17, 1)).txId, undefined)
+
+    // A de hoje pode: a fala sem quando nao afirma outro dia.
+    setup({}, {}, { txs: [spend(40, { id: 'sem-nada', ...bare, date: new Date('2026-11-17T11:00:00Z') })] })
+    await atSlot(1)
+    assert.equal(repo.events.get(spontId(17, 1)).txId, 'sem-nada')
+    assert.ok(lastBody().includes(formatReais(4000)))
+  })
+
+  test('sem compra, alterna ritmo, meta e do nada', async () => {
+    setup({}, {}, { goals: [{ person: 'ele', name: 'Viagem', targetCents: 100000, currentCents: 25000 }] })
+    for (const slot of [1, 2, 3]) await atSlot(slot)
+    const phrases = [1, 2, 3].map((slot) => repo.events.get(spontId(17, slot)).phraseId)
+    assert.deepEqual(phrases.map(sceneOfPhrase), ['push-ritmo', 'push-meta', 'push-nada'])
+    assert.match(sender.calls[1].payload.body, /Viagem|meta/i)
+    assert.ok(sender.calls[1].payload.body.includes(formatReais(75000)), sender.calls[1].payload.body)
+  })
+
+  test('sem renda configurada nem meta, fala do nada', async () => {
+    const settings = settingsFor()
+    settings.personConfig = { salaryDay: 1, expectedIncomeCents: 0, incomeOverrides: {}, limits: {} }
+    setup({ settings })
+    await atSlot(1)
+    assert.equal(sceneOfPhrase(repo.events.get(spontId(17, 1)).phraseId), 'push-nada')
+    assert.doesNotMatch(lastBody(), /R\$/)
+  })
+
+  test('cada par fala so do proprio gasto, no proprio aparelho', async () => {
+    const bank = { source: 'bank' }
+    setup({ fids: { ...FIDS, 'casalB:ele': ['fidB-ele-aparelho'] } }, {}, {
+      txs: [
+        spend(40, { ...bank, id: 'a-ele', description: 'IFOOD *PEDIDO' }),
+        spend(25, { ...bank, id: 'a-ela', person: 'ela', description: 'UBER *TRIP' }),
+        spend(99, { ...bank, id: 'b-ele', ownerId: 'casalB', description: 'NETFLIX.COM' }),
+      ],
+    })
+    await atSlot(1, { person: 'ele' })
+    await atSlot(1, { person: 'ela' })
+    await atSlot(1, { hid: 'casalB' })
+    assert.deepEqual(sender.calls.map((c) => c.fids), [FIDS['casalA:ele'], FIDS['casalA:ela'], ['fidB-ele-aparelho']])
+    const [ele, ela, b] = sender.calls.map((c) => c.payload.body)
+    assert.ok(ele.includes(formatReais(4000)) && !ele.includes(formatReais(2500)) && !ele.includes(formatReais(9900)), ele)
+    assert.ok(ela.includes(formatReais(2500)) && !ela.includes(formatReais(4000)), ela)
+    assert.ok(b.includes(formatReais(9900)) && !b.includes(formatReais(4000)), b)
+    assert.deepEqual(recentOf('ela').filter((k) => k.startsWith('tx:')), ['tx:a-ela'])
+  })
+
+  test('em suave e direto sai o texto de aviso de hoje, sem repetir e sem ler os dados', async () => {
+    for (const tone of ['suave', 'direto']) {
+      setup({ settings: settingsFor({ tone }) }, {}, { txs: [spend(40, { source: 'bank', description: 'IFOOD' })] })
+      for (const day of [17, 18]) for (const slot of [1, 2, 3]) await atSlot(slot, { day })
+      const bank = PUSH_PHRASES['push-espontanea'][tone].map((p) => p.t)
+      const bodies = sender.calls.map((c) => c.payload.body)
+      assert.equal(bodies.length, 6)
+      for (const body of bodies) assert.ok(bank.includes(body), body)
+      // 6 falas no banco: as 6 saem antes de qualquer repeticao
+      assert.equal(new Set(bodies).size, 6)
+      assert.equal(snapshot.state.calls.length, 0)
+      assert.equal(sender.calls[0].payload.body, composePush({ scene: 'push-nada', tone, seed: spontId(17, 1) }).body)
+    }
+  })
+
+  test('fala reprovada no estado da pessoa nao sai', async () => {
+    const first = composePush({ scene: 'push-nada', tone: 'suave', seed: spontId(17, 1) }).phraseId
+    setup({ settings: settingsFor({ tone: 'suave' }) })
+    await memory.collection('oincState').doc('casalA__ele').set({ ownerId: HID, person: 'ele', rejected: [first] })
+    await atSlot(1)
+    assert.notEqual(repo.events.get(spontId(17, 1)).phraseId, first)
+  })
+
+  test('envio que falha nao conta como narrado e a mesma faixa tenta de novo', async () => {
+    setup({}, {}, { txs: [spend(40, { id: 'compra-1' })] })
+    sender.result = { sent: 0, dead: 0, failed: 2 }
+    await atSlot(1)
+    assert.equal(repo.events.size, 0)
+    assert.deepEqual(recentOf(), [])
+    sender.result = null
+    await spont()
+    assert.equal(repo.events.get(spontId(17, 1)).txId, 'compra-1')
+    assert.equal(recentOf().at(-1), 'tx:compra-1')
   })
 })

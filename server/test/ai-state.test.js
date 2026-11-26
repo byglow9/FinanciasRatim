@@ -505,6 +505,59 @@ describe('oinc reposicao do acervo', () => {
     await stop()
   })
 
+  test('addPushRecent guarda falas de aviso e compras, corta em 60 e move a repetida para o fim', async () => {
+    const memory = createMemoryDb()
+    const store = createOincState({ db: memory, log: silent })
+    const who = { hid: 'casalA', person: 'ele' }
+    const keyAt = (i) => (i % 2 === 0 ? `push-nada-${String(i).padStart(3, '0')}` : `tx:bank_Ab-${i}`)
+    await store.vote({ ...who, id: LINE.id, voto: 'sim' })
+    for (let i = 0; i < 70; i += 2) assert.deepEqual(await store.addPushRecent({ ...who, keys: [keyAt(i), keyAt(i + 1)] }), { ok: true })
+    let doc = memory.read('oincState', 'casalA__ele')
+    assert.equal(doc.pushRecent.length, 60)
+    assert.deepEqual(doc.pushRecent.slice(0, 2), [keyAt(10), keyAt(11)])
+    assert.equal(doc.liked.length, 1)
+    await store.addPushRecent({ ...who, keys: [keyAt(11), 'pe-su-01'] })
+    doc = memory.read('oincState', 'casalA__ele')
+    assert.equal(doc.pushRecent.length, 60)
+    assert.deepEqual(doc.pushRecent.slice(-2), [keyAt(11), 'pe-su-01'])
+    assert.equal(doc.pushRecent.filter((k) => k === keyAt(11)).length, 1)
+    assert.deepEqual((await store.read(who)).pushRecent, doc.pushRecent)
+    // um voto depois nao apaga as chaves de compra
+    await store.vote({ ...who, id: LINE.id, voto: 'nao' })
+    assert.deepEqual(memory.read('oincState', 'casalA__ele').pushRecent, doc.pushRecent)
+  })
+
+  test('addPushRecent descarta chave estranha, recusa par invalido e ignora documento de outro dono', async () => {
+    const memory = createMemoryDb()
+    const lines = []
+    const store = createOincState({ db: memory, log: { warn: (l) => lines.push(l) } })
+    const who = { hid: 'casalA', person: 'ele' }
+    for (const keys of [[], ['COM ESPACO', 'tx:', 'tx:a/b', 7, null], 'push-nada-001', undefined]) {
+      assert.deepEqual(await store.addPushRecent({ ...who, keys }), { ok: false })
+    }
+    assert.deepEqual(await store.addPushRecent({ hid: 'casalA', person: 'porquinho', keys: ['pe-su-01'] }), { ok: false })
+    assert.equal(Object.keys(memory.all('oincState')).length, 0)
+
+    await memory.collection('oincState').doc('casalA__ele').set({ ownerId: 'casalB', person: 'ele', pushRecent: ['pe-su-02'] })
+    assert.deepEqual((await store.read(who)).pushRecent, [])
+    assert.deepEqual(await store.addPushRecent({ ...who, keys: ['pe-su-01'] }), { ok: true })
+    const doc = memory.read('oincState', 'casalA__ele')
+    assert.equal(doc.ownerId, 'casalA')
+    assert.deepEqual(doc.pushRecent, ['pe-su-01'])
+
+    const broken = createOincState({
+      db: {
+        collection: () => ({ doc: () => ({}) }),
+        runTransaction: async () => {
+          throw Object.assign(new Error('segredo do banco'), { code: 14 })
+        },
+      },
+      log: { warn: (l) => lines.push(l) },
+    })
+    assert.deepEqual(await broken.addPushRecent({ ...who, keys: ['pe-su-01'] }), { ok: false })
+    assert.ok(lines.length === 1 && !lines[0].includes('segredo'))
+  })
+
   test('addGenerated corta em 200, nao duplica id e preserva votos', async () => {
     const memory = createMemoryDb()
     const store = createOincState({ db: memory, log: silent })

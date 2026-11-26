@@ -153,7 +153,7 @@ describe('ciclo completo no emulador', () => {
   const QUIET = { types: { limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true }, quiet: { enabled: true, from: '22:00', to: '08:00' } }
   const T_2330 = Date.parse('2026-11-18T02:30:00Z')
   const T_0805 = Date.parse('2026-11-18T11:05:00Z')
-  const SPONT_ID = 'casalA__ele__espontanea__2026-11-18'
+  const SPONT_ID = 'casalA__ele__espontanea__2026-11-18__3'
 
   let db
   let messaging
@@ -258,13 +258,71 @@ describe('ciclo completo no emulador', () => {
     assert.equal(messaging.sent.length, 1)
   })
 
-  test('o espontaneo sai uma vez no dia, mesmo com relogios novos e simultaneos', async () => {
-    // 20:50 em Sao Paulo: depois de qualquer horario alvo da janela padrao.
+  test('o espontaneo sai uma vez na vaga, mesmo com relogios novos e simultaneos', async () => {
+    // 20:50 em Sao Paulo: so a terceira vaga pode estar livre, e o alvo dela ja passou.
     clock.t = Date.parse('2026-11-18T23:50:00Z')
     await boot().tick.runOnce()
     await Promise.all([boot().tick.runOnce(), boot().tick.runOnce(), boot().tick.runOnce()])
-    assert.deepEqual(messaging.sent.map((m) => m.data.tag), ['espontanea'])
+    assert.deepEqual(messaging.sent.map((m) => m.data.tag), ['espontanea-3'])
     assert.equal((await db.collection('pushEvents').doc(SPONT_ID).get()).data().status, 'enviado')
+  })
+
+  test('o relogio narra a compra de ontem lida do banco, guarda os recentes e nao repete', async () => {
+    await db.collection('transactions').doc('bank_pedido-1').set({
+      ownerId: 'casalA',
+      person: 'ele',
+      type: 'saida',
+      source: 'bank',
+      category: 'Lazer',
+      categoryId: 'lazer',
+      amount: 40,
+      description: 'IFOOD *PEDIDO 987',
+      date: Timestamp.fromDate(new Date('2026-11-17T15:00:00Z')),
+    })
+    clock.t = Date.parse('2026-11-18T23:50:00Z')
+    await boot().tick.runOnce()
+    const { body } = messaging.sent[0].data
+    assert.match(body, /ontem/i)
+    assert.match(body, /iFood/)
+    assert.doesNotMatch(body, /PEDIDO|987/)
+    const marker = (await db.collection('pushEvents').doc(SPONT_ID).get()).data()
+    assert.equal(marker.txId, 'bank_pedido-1')
+    assert.doesNotMatch(JSON.stringify(marker), /iFood|IFOOD|R\$/)
+    const state = (await db.collection('oincState').doc('casalA__ele').get()).data()
+    assert.equal(state.ownerId, 'casalA')
+    assert.deepEqual(state.pushRecent, [marker.phraseId, 'tx:bank_pedido-1'])
+
+    // Mesma compra, dia seguinte de manha: ja e antiga e ja foi narrada.
+    clock.t = Date.parse('2026-11-19T15:45:00Z')
+    await boot().tick.runOnce()
+    const spontaneous = messaging.sent.filter((m) => m.data.tag.startsWith('espontanea-'))
+    assert.equal(spontaneous.length, 2)
+    assert.ok(!spontaneous[1].data.body.includes('iFood'))
+  })
+
+  test('um dia inteiro custa uma carga de dados por vaga e por pessoa', async (t) => {
+    await db.collection('pushRegistrations').doc(FID_ELA).set({ ownerId: 'casalA', person: 'ela', uid: 'u-ela', platform: 'ios', updatedAt: NOW })
+    const loader = createSnapshotLoader({ db, now: () => new Date(clock.t) })
+    const loads = []
+    const notifier = createNotifier({
+      repo: createRepo({ db }),
+      sender: createSender({ db, messaging }),
+      now: () => new Date(clock.t),
+      loadSnapshot: async (args) => {
+        const out = await loader.load(args)
+        loads.push(out.reads)
+        return out
+      },
+    })
+    // De 09:00 a 21:00 em Sao Paulo, de 15 em 15 minutos, como o relogio.
+    for (let at = Date.parse('2026-11-18T12:00:00Z'); at < Date.parse('2026-11-19T00:00:00Z'); at += 15 * 60_000) {
+      clock.t = at
+      await notifier.evaluateSpontaneous({ hid: 'casalA', person: 'ele' })
+      await notifier.evaluateSpontaneous({ hid: 'casalA', person: 'ela' })
+    }
+    assert.equal(loads.length, 6)
+    assert.equal(messaging.sent.length, 6)
+    t.diagnostic(`cargas=${loads.length} documentos lidos por carga=${loads.join(',')}`)
   })
 
   test('o relogio poda no Firestore so o aparelho sem renovacao ha mais de 30 dias', async () => {

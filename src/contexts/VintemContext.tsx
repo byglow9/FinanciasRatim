@@ -236,7 +236,7 @@ function writeRecent(recent: Recent): void {
 }
 
 export function VintemProvider({ children }: { children: ReactNode }) {
-  const { settings, categoryDefs, personConfigFor, readOnly } = useArea()
+  const { settings, settingsStatus, categoryDefs, personConfigFor, readOnly } = useArea()
   const { viewPerson, now } = useCycle()
   const { pathname } = useLocation()
   const tone = vintemToneOf(settings)
@@ -455,9 +455,9 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       const startedGen = speechGen.current
       askInFlight.current = true
       try {
-        const text = await askVintem(ai)
+        const answer = await askVintem(ai)
         if (scopeRef.current !== startedIn || speechGen.current !== startedGen) return 'stale'
-        return text
+        return answer?.text ?? null
       } finally {
         askInFlight.current = false
       }
@@ -534,7 +534,24 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     },
     [askGuarded, speakText, peekToast],
   )
-  useVintemPeek({ canAsk, viewPerson, espiar })
+  // Fala de entrada (D-17): na carga fora da Home e ao voltar ao app. Nunca por cima de um formulario.
+  const entrar = useCallback((): void => {
+    if (document.visibilityState !== 'visible' || isBusy()) return
+    if (slot.current !== null) {
+      if (speak({ situation: 'inicio' })) slot.current.react('wake')
+      return
+    }
+    const spoken = draw({ situation: 'inicio' })
+    if (spoken !== null) peekToast(spoken, 'wake')
+  }, [speak, draw, peekToast])
+  // So depois das configuracoes lidas: antes disso o tom ainda e o padrao.
+  useVintemPeek({
+    canAsk: canAsk && settingsStatus === 'ready',
+    viewPerson,
+    espiar,
+    entrar,
+    naHome: pathname === '/',
+  })
 
   // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo dos hints) ou do banco. Na Home
   // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de

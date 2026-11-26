@@ -6,6 +6,7 @@ import { OINC_DINHEIRO } from './oincLinesDinheiro.js'
 import { OINC_VIDA } from './oincLinesVida.js'
 import { OINC_SCENES } from './oincScenes.js'
 import { checkOincBank, bankStats } from './oincRules.js'
+import { needsOf } from './phrasePicker.js'
 
 const all = Object.entries(OINC_LINES).flatMap(([cena, lines]) => lines.map((line) => ({ cena, ...line })))
 
@@ -27,12 +28,12 @@ test('todo slug de OINC_SCENES tem ao menos 1 linha para homem e 1 para mulher',
   }
 })
 
-test('o acervo inteiro passa pela regua, com as proporcoes definidas', () => {
+test('o acervo inteiro passa pela regua, com as proporcoes finais', () => {
   const problems = checkOincBank(OINC_LINES, {
-    minPerScene: 2,
-    minPerGender: 1,
-    laughShare: [0.18, 0.4],
-    perSceneLaugh: 0.7,
+    minPerScene: 5,
+    minPerGender: 3,
+    laughShare: [0.25, 0.4],
+    perSceneLaugh: 0.45,
     profanityMax: 0.35,
     suffixShare: 0.25,
     smokeShare: [0.02, 0.15],
@@ -40,10 +41,54 @@ test('o acervo inteiro passa pela regua, com as proporcoes definidas', () => {
   assert.deepEqual(problems, [])
 })
 
-test('cenas frequentes tem mais modelos que as demais', () => {
+test('toda cena com 5 falas ou mais tem risada entre 20% e 45% (D-05)', () => {
+  const stats = bankStats(OINC_LINES)
+  const fora = Object.entries(stats.byScene)
+    .filter(([, s]) => s.total >= 5)
+    .filter(([, s]) => s.risada / s.total < 0.2 || s.risada / s.total > 0.45)
+    .map(([cena, s]) => `${cena}: ${s.risada} de ${s.total}`)
+  assert.deepEqual(fora, [])
+})
+
+test('a marca -uxo aparece no acervo, sem sumir (D-30)', () => {
+  const stats = bankStats(OINC_LINES)
+  assert.ok(stats.uxo / stats.total >= 0.03, `-uxo em ${stats.uxo} de ${stats.total}`)
+})
+
+/** Linhas de uma cena que servem ao leitor: as dele e as neutras. */
+const forReader = (cena, g) => OINC_LINES[cena].filter((l) => l.g === g || l.g === 'x')
+
+test('minimos de volume por cena: 5 (3 por leitor), frequentes 12 (8), entrou 20 e do-nada 60 (D-13)', () => {
+  const faltas = []
   for (const [cena, meta] of Object.entries(OINC_SCENES)) {
-    if (meta.frequente) assert.ok(OINC_LINES[cena].length >= 4, `${cena}: ${OINC_LINES[cena].length} linhas`)
+    let min = meta.frequente ? 12 : 5
+    if (cena === 'entrou') min = 20
+    if (cena === 'do-nada') min = 60
+    const porLeitor = meta.frequente ? 8 : 3
+    const total = OINC_LINES[cena].length
+    if (total < min) faltas.push(`${cena}: ${total} linhas, minimo ${min}`)
+    for (const g of ['m', 'f']) {
+      const n = forReader(cena, g).length
+      if (n < porLeitor) faltas.push(`${cena}: ${n} para leitor ${g}, minimo ${porLeitor}`)
+    }
   }
+  assert.deepEqual(faltas, [])
+})
+
+test('cenas de compra se preenchem sem nome de loja, com 2 falas ou mais por leitor (D-02, D-09)', () => {
+  const compras = [
+    'posto', 'farmacia', 'assinaturas', 'compra-madrugada', 'pix-pessoa', 'gasto-minusculo', 'parcelamento',
+    'padaria', 'app-corrida', 'roupa', 'pet', 'delivery', 'mercado', 'compra-grande', 'compra', 'tabacaria', 'pod',
+  ]
+  const semMarca = new Set(['valor', 'vezes', 'quando'])
+  const faltas = []
+  for (const cena of compras) {
+    for (const g of ['m', 'f']) {
+      const n = forReader(cena, g).filter((l) => !l.se && needsOf(l.t).every((slot) => semMarca.has(slot))).length
+      if (n < 2) faltas.push(`${cena}: ${n} sem loja para leitor ${g}`)
+    }
+  }
+  assert.deepEqual(faltas, [])
 })
 
 test('martelo em no maximo 1 de cada 10 falas e fumaca dentro da dose (regua dos lotes 4A a 4C)', () => {
@@ -73,11 +118,9 @@ test('toda fala no masculino tem a irma no feminino, na mesma cena, com a mesma 
   }
 })
 
-test('as cenas novas (compra, meta-status e porquinho-status) tem 2 falas do lote 4 para voto', () => {
+test('as cenas novas (compra, meta-status e porquinho-status) so tem falas do lote 4 para voto', () => {
   for (const cena of ['compra', 'meta-status', 'porquinho-status']) {
-    const lines = OINC_LINES[cena]
-    assert.equal(lines.length, 2, cena)
-    for (const l of lines) {
+    for (const l of OINC_LINES[cena]) {
       assert.equal(l.lote, 4)
       assert.equal(l.reescrita, true)
     }

@@ -117,10 +117,12 @@ function limitFact(facts, categoryId) {
  * fato cujo assunto ainda nao saiu e so conta (teto e assunto) quando ha texto para mostrar. Sem fato,
  * a resposta e text null antes de qualquer provedor.
  * `bank` (padrao OINC_LINES) e o acervo de onde saem os exemplos do sem filtro.
+ * `config.live` falso desliga a fala (D-15): nada e lido nem chamado. `config.tokensFactor` multiplica
+ * o limite de tokens. Ausentes, valem verdadeiro e 1.
  * @param {{
  *   snapshot: { load: (args: { hid: string, person: string, fresh: boolean }) => Promise<any> },
  *   providers: { complete: (args: any) => Promise<{ ok: boolean, text?: string, providerId?: string }>, available?: () => boolean },
- *   config: { requireProfanity?: boolean, totalBudgetMs?: number, cacheVariants?: number, providers?: unknown[], openPerDay?: number, peekPerDay?: number },
+ *   config: { requireProfanity?: boolean, totalBudgetMs?: number, cacheVariants?: number, providers?: unknown[], openPerDay?: number, peekPerDay?: number, live?: boolean, tokensFactor?: number },
  *   budget?: {
  *     consume: (args: { hid: string, person: string }) => Promise<{ ok: boolean }>,
  *     readDay: (args: { hid: string, person: string }) => Promise<{ ok: boolean, abertura: number, espiar: number, assuntos: string[] }>,
@@ -153,7 +155,7 @@ export function createSpeech({
    */
   async function run({ hid, person, situation, categoryId, transactionId, latestTx }, abandoned) {
     const key = /** @type {keyof typeof PROMPT_SITUATION} */ (situation)
-    if (!SITUATIONS.includes(situation)) return { text: null }
+    if (config.live === false || !SITUATIONS.includes(situation)) return { text: null }
     const reaction = REACTION_SITUATIONS.includes(situation)
     const spontaneous = SPONTANEOUS.includes(situation)
 
@@ -281,7 +283,7 @@ export function createSpeech({
       }
       const result = await providers.complete({
         messages,
-        maxTokens: maxTokens(ctx.length),
+        maxTokens: maxTokens(ctx.length, config.tokensFactor),
         temperature: TEMPERATURE,
         validate: judge,
       })

@@ -33,9 +33,10 @@ function retryAfterOf(headers) {
  * Provedor unico. `call` faz uma requisicao e devolve sempre um objeto (nunca lanca):
  *   { ok: true, text, status, ms }
  *   { ok: false, reason: 'timeout' | 'rede' | 'vazio' | 'http', status, code, retryAfterMs, ms }
- * @param {{ id: string, baseUrl: string, apiKey: string, model: string, fetch?: typeof fetch, timeoutMs?: number }} spec
+ * `reasoningEffort` so vai no corpo quando configurado; sem ele o pedido nao muda.
+ * @param {{ id: string, baseUrl: string, apiKey: string, model: string, reasoningEffort?: string, fetch?: typeof fetch, timeoutMs?: number }} spec
  */
-export function createProvider({ id, baseUrl, apiKey, model, fetch: fetchFn = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+export function createProvider({ id, baseUrl, apiKey, model, reasoningEffort, fetch: fetchFn = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   /**
    * @param {{ messages: Array<{ role: string, content: string }>, maxTokens: number, temperature: number, timeoutMs?: number }} args
    */
@@ -48,7 +49,8 @@ export function createProvider({ id, baseUrl, apiKey, model, fetch: fetchFn = gl
         method: 'POST',
         signal: AbortSignal.timeout(callTimeout ?? timeoutMs),
         headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
+        // Campo indefinido some no JSON.stringify.
+        body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens, reasoning_effort: reasoningEffort }),
       })
     } catch (err) {
       const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError'
@@ -118,7 +120,7 @@ export function approved(validate, text) {
 
 /**
  * Provedores ligados da configuracao, na ordem de AI_PROVIDERS.
- * @param {{ providers: Array<{ id: string, baseUrl: string, apiKey: string, model: string }>, timeoutMs: number }} config
+ * @param {{ providers: Array<{ id: string, baseUrl: string, apiKey: string, model: string, reasoningEffort?: string }>, timeoutMs: number }} config
  * @param {{ fetch?: typeof fetch }} [deps]
  */
 export function createProviders(config, { fetch: fetchFn = globalThis.fetch } = {}) {

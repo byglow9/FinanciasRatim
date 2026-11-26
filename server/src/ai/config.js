@@ -14,6 +14,8 @@ const ACCOUNT_RE = /^[A-Za-z0-9]{6,64}$/
 const KEY_RE = /^[\x21-\x7E]{8,512}$/
 // Id de modelo: letras, numeros e os sinais usuais de caminho e versao.
 const MODEL_RE = /^[A-Za-z0-9@._:/+-]{1,120}$/
+// Lista fechada: o valor vai no corpo da chamada, nada alem destes passa (T-07.1-20).
+const REASONING_EFFORTS = Object.freeze(['none', 'low', 'medium', 'high', 'xhigh'])
 
 /**
  * Inteiro lido do ambiente: valor invalido ou fora da faixa volta ao padrao.
@@ -39,6 +41,16 @@ function boolOf(raw, fallback) {
   if (['false', '0', 'nao', 'no', 'off'].includes(v)) return false
   if (['true', '1', 'sim', 'yes', 'on'].includes(v)) return true
   return fallback
+}
+
+/**
+ * Esforco de raciocinio pedido ao provedor, ou undefined (nao vai no corpo).
+ * @param {unknown} raw
+ * @returns {string | undefined}
+ */
+function effortOf(raw) {
+  const v = typeof raw === 'string' ? raw.trim().toLowerCase() : ''
+  return REASONING_EFFORTS.includes(v) ? v : undefined
 }
 
 /**
@@ -107,6 +119,11 @@ export function readAiConfig(env = process.env, log = console) {
     burstPerMin: intOf(e.AI_BURST_PER_MIN, 20),
     // Prazo que o app espera a IA nas reacoes a lancamento e a limite (devolvido em GET /hints, 07-16).
     reactionTimeoutMs: intOf(e.AI_REACTION_TIMEOUT_MS, 2500, { min: 1500, max: 4000 }),
+    // Multiplica o limite de tokens: quem raciocina gasta parte dele antes de escrever a fala.
+    tokensFactor: intOf(e.AI_MAX_TOKENS_FACTOR, 1, { min: 1, max: 8 }),
+    // Desligar a IA ao vivo ou a geracao de falas novas sem mexer em codigo: fica o acervo (D-15).
+    live: boolOf(e.AI_LIVE, true),
+    refill: boolOf(e.AI_REFILL, true),
   }
 }
 
@@ -114,7 +131,7 @@ export function readAiConfig(env = process.env, log = console) {
  * Especificacao de um provedor ligado, ou null se faltar chave, modelo ou id de conta valido.
  * @param {string} id
  * @param {Record<string, string | undefined>} e
- * @returns {{ id: string, baseUrl: string, apiKey: string, model: string } | null}
+ * @returns {{ id: string, baseUrl: string, apiKey: string, model: string, reasoningEffort?: string } | null}
  */
 function providerSpec(id, e) {
   /** @type {string | undefined} */
@@ -123,15 +140,19 @@ function providerSpec(id, e) {
   let model
   /** @type {string} */
   let baseUrl
+  /** @type {string | undefined} */
+  let reasoningEffort
   if (id === 'cloudflare') {
     const account = (e.AI_CF_ACCOUNT_ID ?? '').trim()
     if (!ACCOUNT_RE.test(account)) return null
     key = e.AI_CF_API_TOKEN
     model = e.AI_CF_MODEL
+    reasoningEffort = effortOf(e.AI_CF_REASONING_EFFORT)
     baseUrl = `https://api.cloudflare.com/client/v4/accounts/${account}/ai/v1`
   } else if (id === 'groq') {
     key = e.AI_GROQ_API_KEY
     model = e.AI_GROQ_MODEL
+    reasoningEffort = effortOf(e.AI_GROQ_REASONING_EFFORT)
     baseUrl = GROQ_BASE
   } else {
     key = e.AI_XAI_API_KEY
@@ -141,5 +162,5 @@ function providerSpec(id, e) {
   const apiKey = (key ?? '').trim()
   const modelId = (model ?? '').trim()
   if (!KEY_RE.test(apiKey) || !MODEL_RE.test(modelId)) return null
-  return { id, baseUrl, apiKey, model: modelId }
+  return { id, baseUrl, apiKey, model: modelId, ...(reasoningEffort ? { reasoningEffort } : {}) }
 }

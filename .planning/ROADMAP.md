@@ -521,6 +521,17 @@ Plans:
 
 - [ ] 07-19-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
+### Phase 07.1: Falas do OINC com qualidade (INSERTED)
+
+**Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
+**Requirements**: TBD
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 07.1 to break down)
+
 ### Phase 8: Visão do casal e multiusuário
 
 **Goal:** O casal vê os números somados de Ele e Ela em uma aba somente leitura, e o amigo usa o Coinc com os próprios dados, separados, depois de uma migração segura

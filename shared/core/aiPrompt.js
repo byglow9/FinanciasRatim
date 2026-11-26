@@ -38,8 +38,8 @@ export const LONG_SCENES = Object.freeze(
 /** Maximo de exemplos no pedido e quantos podem vir do voto do dono (D-08). */
 const EXAMPLES_MAX = 5
 const LIKED_MAX = 3
-/** So os lotes ja aprovados na leitura do dono viram exemplo (o lote 4 ainda esta a votar). */
-const EXAMPLE_LOTS = Object.freeze([2, 3])
+/** Lotes que viram exemplo. Do lote 4, so a fala ja votada (sem a marca reescrita). */
+const EXAMPLE_LOTS = Object.freeze([2, 3, 4])
 
 /**
  * Exemplos de estilo de suave e direto: so o jeito de falar, sem numero e sem nome. O modelo e
@@ -192,7 +192,7 @@ function fillTemplate(template, slots) {
 /**
  * Exemplos do pedido. Suave e direto levam os de STYLE_EXAMPLES e nada do acervo novo (D-35). No sem
  * filtro: primeiro ate 3 falas aprovadas pelo voto na mesma cena (`liked`, texto ou `{ text, cena }`),
- * depois falas dos lotes 2 e 3 do banco, da mesma cena, no genero de quem le e so com encaixes que o
+ * depois falas aprovadas dos lotes 2 a 4 do banco, da mesma cena, no genero de quem le e so com encaixes que o
  * fato tem, ate 5 no total. A semente apenas gira a lista (D-08). Cena sem fala nem voto: lista vazia.
  * @param {{ cena: string, person?: string | null, slots?: Record<string, string>, liked?: ReadonlyArray<unknown> | null,
  *   seed?: number, tone?: string, bank?: Record<string, ReadonlyArray<any>> | null, conds?: ReadonlyArray<string> | null }} args
@@ -227,7 +227,7 @@ export function examplesFor({ cena, person, slots, liked, seed = 0, tone = 'sem-
   const lines = Array.isArray(source[cena]) ? source[cena] : []
   const holds = new Set(conds ?? [])
   const fits = lines.filter((line) => {
-    if (!line || typeof line.t !== 'string' || !EXAMPLE_LOTS.includes(line.lote)) return false
+    if (!line || typeof line.t !== 'string' || !EXAMPLE_LOTS.includes(line.lote) || line.reescrita === true) return false
     if (line.g === 'm' || line.g === 'f') {
       if (line.g !== gender) return false
     } else if (line.g !== 'x') return false

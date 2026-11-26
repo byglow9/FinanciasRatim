@@ -39,7 +39,7 @@ const BANK = Object.freeze({
     { id: 'd1', t: '{valor} no {loja} de novo, magreluxo?', g: 'm', lote: 2 },
     { id: 'd2', t: 'Mais um {loja}. O fogão pediu demissão.', g: 'x', lote: 3 },
     { id: 'd3', t: 'Já veio {valor} de {loja}, minha filha.', g: 'f', lote: 2 },
-    { id: 'd4', t: 'Lote quatro nunca entra no exemplo {loja}.', g: 'x', lote: 4 },
+    { id: 'd4', t: 'Fala sem voto nunca entra no exemplo {loja}.', g: 'x', lote: 4, reescrita: true },
     { id: 'd5', t: 'Sobrou {restante}, mas foi tudo pro {loja}.', g: 'x', lote: 2 },
     { id: 'd6', t: 'Sexta de {loja}, claro.', g: 'x', lote: 2, se: ['sexta'] },
     { id: 'd7', t: 'O motoboy já te chama de patrão, {loja}.', g: 'x', lote: 3 },
@@ -229,13 +229,13 @@ test('nenhuma mensagem leva uid, hid, e-mail nem identificador de banco', () => 
 
 const BASE = { cena: 'delivery', person: 'ele', slots: FACT.slots, seed: 0, tone: 'sem-filtro', bank: BANK }
 
-test('examplesFor sem-filtro: so da cena, so lotes 2 e 3, no genero certo, ate 5 e so com encaixes que o fato tem', () => {
+test('examplesFor sem-filtro: so da cena, so lotes votados, no genero certo, ate 5 e so com encaixes que o fato tem', () => {
   const out = examplesFor(BASE)
   assert.ok(out.length >= 1 && out.length <= 5)
   assert.equal(new Set(out).size, out.length)
   const all = out.join('\n')
   assert.doesNotMatch(all, /\{|\}/, 'encaixes preenchidos')
-  assert.doesNotMatch(all, /Lote quatro/, 'lote 4 fica de fora')
+  assert.doesNotMatch(all, /Fala sem voto/, 'fala ainda sem voto fica de fora')
   assert.doesNotMatch(all, /Sobrou/, 'fala que pede encaixe que o fato nao tem')
   assert.doesNotMatch(all, /Sexta/, 'fala com condicao que o fato nao tem')
   assert.doesNotMatch(all, /minha filha/, 'fala no feminino para quem le no masculino')

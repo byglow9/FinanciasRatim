@@ -173,3 +173,19 @@ test('os eventos nao carregam texto de aviso nem valor financeiro', () => {
     for (const key of forbidden) assert.ok(!(key in e), `${e.kind} carrega ${key}`)
   }
 })
+
+test('collapseHeld: com daysLeft nos dois, fica o de menos dias, nao o de maior id', () => {
+  const stage = (daysLeft) => ({
+    kind: 'conta',
+    id: `h1__ele__conta__b1__2026-11-20__d${daysLeft}`,
+    tag: 'conta-b1-2026-11-20',
+    daysLeft,
+  })
+  const { keep, drop } = collapseHeld([stage(2), stage(0), stage(1)])
+  assert.deepEqual(keep, [stage(0)])
+  assert.deepEqual(drop, [stage(2), stage(1)])
+  // mesmos dias: volta para o id mais recente
+  const a = { kind: 'fatura', id: 'h1__a', tag: 't', daysLeft: 1 }
+  const b = { kind: 'fatura', id: 'h1__b', tag: 't', daysLeft: 1 }
+  assert.deepEqual(collapseHeld([b, a]).keep, [b])
+})

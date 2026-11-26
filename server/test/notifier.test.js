@@ -128,6 +128,23 @@ function statuses(repo) {
   return [...repo.events.values()].map((e) => `${e.threshold}:${e.status}`).sort()
 }
 
+// Texto esperado de um aviso de limite do Ele (07.1-11): o mesmo composePush do servidor.
+function limitBody(id, { tone = 'sem-filtro', threshold = 100, spent, remaining = 0, pct, loja = null }) {
+  return composePush({
+    scene: threshold === 100 ? 'push-limite-100' : 'push-limite-80',
+    tone,
+    slots: { categoria: 'Lazer', valor: formatReais(spent), restante: formatReais(remaining), pct, loja },
+    gender: 'm',
+    seed: id,
+  }).body
+}
+
+const limitId = (repo, threshold = 100) => [...repo.events.keys()].find((k) => k.endsWith(`__lazer__${threshold}`))
+
+// Frases de limite de hoje (suave e direto), com a categoria ja encaixada.
+const legacyLimit = (threshold, tone) =>
+  Object.values(PUSH_PHRASES[`push-limite-${threshold}`][tone]).map((p) => p.t.replaceAll('{categoria}', 'Lazer'))
+
 describe('notificador de limites: tracer', () => {
   let repo
   let sender
@@ -140,7 +157,7 @@ describe('notificador de limites: tracer', () => {
     notifier = createNotifier({ repo, sender, now: () => NOW })
   })
 
-  test('cruzar 100 por cento envia uma notificacao a pessoa certa, com texto do banco de push', async () => {
+  test('cruzar 100 por cento envia uma notificacao a pessoa certa, com a categoria e o gasto em reais', async () => {
     const out = await notifier.evaluateLimits({ hid: HID, person: 'ele' })
     assert.equal(sender.calls.length, 1)
     assert.deepEqual(sender.calls[0].fids.sort(), ['fidEle-aparelho1', 'fidEle-aparelho2'])
@@ -149,19 +166,72 @@ describe('notificador de limites: tracer', () => {
     assert.equal(payload.title, 'OINC')
     assert.equal(payload.tag, `limite-lazer-${cycleOf(NOW, 1).key}`)
     assert.equal(payload.url, '/')
-    // Sem digito, sem moeda: so o nome da categoria pode aparecer (D-05, D-19).
-    assert.doesNotMatch(payload.body, /\d|R\$/)
-    const candidates = Object.values(PUSH_PHRASES['push-limite-100']['sem-filtro']).map((p) => p.t.replaceAll('{categoria}', 'Lazer'))
-    assert.ok(candidates.includes(payload.body), 'texto fora do banco de push')
+    // Voz do OINC com a categoria e o total gasto (D-22, D-27).
+    assert.equal(payload.body, limitBody(limitId(repo), { spent: 12000, pct: '120%' }))
+    assert.match(payload.body, /Lazer/)
+    assert.ok(payload.body.includes(formatReais(12000)), 'sem o gasto em reais')
     assert.equal(out.sent, 2)
   })
 
-  test('o texto e o do banco de push escolhido pelo id do evento, no tom das configuracoes', async () => {
-    repo.state.settings = settingsFor({ tone: 'suave' })
+  test('em suave e direto sai a frase de limite de hoje, no tom das configuracoes, sem valor nem loja', async () => {
+    for (const tone of ['suave', 'direto']) {
+      for (const [amount, threshold] of [[120, 100], [85, 80]]) {
+        repo = makeRepo({
+          settings: settingsFor({ tone }),
+          txs: [spend(amount, { source: 'bank', description: 'IFOOD *PEDIDO' })],
+          fids: FIDS,
+        })
+        sender = makeSender()
+        await createNotifier({ repo, sender, now: () => NOW }).evaluateLimits({ hid: HID, person: 'ele' })
+        const { body } = sender.calls[0].payload
+        const spentCents = amount * 100
+        assert.equal(
+          body,
+          limitBody(limitId(repo, threshold), {
+            tone,
+            threshold,
+            spent: spentCents,
+            remaining: Math.max(LIMIT_CENTS - spentCents, 0),
+            pct: `${amount}%`,
+            loja: 'iFood',
+          })
+        )
+        assert.ok(legacyLimit(threshold, tone).includes(body), `fora do banco de hoje: ${body}`)
+        assert.doesNotMatch(body, /R\$|iFood/)
+      }
+    }
+  })
+
+  test('a marca conhecida da ultima compra da categoria pode aparecer', async () => {
+    repo.state.txs = [
+      spend(100, { source: 'bank', description: 'PADARIA DO ZE', date: new Date('2026-11-10T15:00:00Z') }),
+      spend(20, { source: 'bank', description: 'IFOOD *PEDIDO 123' }),
+    ].reverse()
     await notifier.evaluateLimits({ hid: HID, person: 'ele' })
-    const [id] = [...repo.events.keys()].filter((k) => k.endsWith('__100'))
-    const expected = buildPushPayload({ situation: 'push-limite-100', tone: 'suave', categoryName: 'Lazer', seed: id })
-    assert.equal(sender.calls[0].payload.body, expected.body)
+    const { body } = sender.calls[0].payload
+    assert.equal(body, limitBody(limitId(repo), { spent: 12000, pct: '120%', loja: 'iFood' }))
+    assert.match(body, /iFood/)
+    assert.doesNotMatch(body, /PEDIDO|PADARIA/i)
+  })
+
+  test('padaria local, lancamento manual e Pix: so a categoria, nunca a descricao nem o nome da pessoa', async () => {
+    const olderBrand = spend(100, { source: 'bank', description: 'IFOOD *PEDIDO', date: new Date('2026-11-10T15:00:00Z') })
+    const latest = [
+      { source: 'bank', description: 'PADARIA DO ZE' },
+      { source: 'manual', description: 'ifood com a Maria' },
+      { source: 'bank', description: 'Pix enviado para Fulano de Tal' },
+      { source: 'bank', description: 'PIX FULANO DE TAL 123.456.789-09 UBER' },
+    ]
+    for (const over of latest) {
+      // A compra de marca e mais antiga: so a mais recente decide.
+      repo = makeRepo({ txs: [spend(20, over), olderBrand], fids: FIDS })
+      sender = makeSender()
+      await createNotifier({ repo, sender, now: () => NOW }).evaluateLimits({ hid: HID, person: 'ele' })
+      const { body } = sender.calls[0].payload
+      assert.equal(body, limitBody(limitId(repo), { spent: 12000, pct: '120%' }), over.description)
+      assert.match(body, /Lazer/)
+      assert.doesNotMatch(body, /iFood|Uber|PADARIA|Fulano|Maria|Pix|123/i, over.description)
+    }
   })
 
   test('o limiar menor sai silencioso e um segundo check nao repete nada', async () => {
@@ -173,7 +243,8 @@ describe('notificador de limites: tracer', () => {
     assert.equal(repo.events.size, 2)
   })
 
-  test('o marcador guarda ids e chaves, nunca o texto do aviso nem valor', async () => {
+  test('o marcador guarda ids e chaves, nunca o texto do aviso, valor nem loja', async () => {
+    repo.state.txs = [spend(120, { source: 'bank', description: 'IFOOD *PEDIDO' })]
     await notifier.evaluateLimits({ hid: HID, person: 'ele' })
     for (const marker of repo.events.values()) {
       assert.deepEqual(
@@ -183,8 +254,13 @@ describe('notificador de limites: tracer', () => {
       assert.equal(marker.ownerId, HID)
       assert.equal(marker.person, 'ele')
     }
-    assert.equal(sender.calls[0].payload.body.length > 0, true)
-    assert.ok(![...repo.events.values()].some((m) => JSON.stringify(m).includes(sender.calls[0].payload.body)))
+    const { body } = sender.calls[0].payload
+    assert.ok(body.includes(formatReais(12000)) && body.includes('iFood'), 'o corpo leva valor e loja')
+    for (const marker of repo.events.values()) {
+      const json = JSON.stringify(marker)
+      assert.ok(!json.includes(body))
+      assert.doesNotMatch(json, /R\$|iFood|IFOOD|PEDIDO|12000|120%/)
+    }
   })
 
   test('so a pessoa do gasto recebe: a outra pessoa e outro casal nao recebem nada', async () => {
@@ -312,10 +388,8 @@ describe('notificador de limites: silencio, tipos, teto e falhas', () => {
     const out = await notifier.deliverHeld()
     assert.equal(out.sent, 2)
     assert.equal(sender.calls.length, 1)
-    assert.equal(
-      sender.calls[0].payload.body,
-      buildPushPayload({ situation: 'push-limite-100', tone: 'suave', categoryName: 'Lazer', seed: held[0] }).body
-    )
+    assert.equal(sender.calls[0].payload.body, limitBody(held[0], { tone: 'suave', spent: 12000, pct: '120%' }))
+    assert.ok(legacyLimit(100, 'suave').includes(sender.calls[0].payload.body))
     assert.equal(repo.events.get(held[0]).status, 'enviado')
     // O dia do marcador passa a ser o da entrega (base do teto diario).
     assert.equal(repo.events.get(held[0]).dayKey, '2026-11-18')
@@ -324,6 +398,65 @@ describe('notificador de limites: silencio, tipos, teto e falhas', () => {
     await notifier.deliverHeld()
     await check()
     assert.equal(sender.calls.length, 1)
+  })
+
+  test('o aviso retido e montado com os valores do momento da entrega', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    repo.state.txs.push(spend(30, { source: 'bank', description: 'UBER *TRIP', date: new Date('2026-11-18T03:00:00Z') }))
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    const { body } = sender.calls[0].payload
+    assert.equal(body, limitBody(limitId(repo), { spent: 15000, pct: '150%', loja: 'Uber' }))
+    assert.ok(body.includes(formatReais(15000)) && body.includes('Uber'))
+  })
+
+  test('retido cuja categoria voltou para baixo do limiar sai sem numero nenhum', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    repo.state.txs = [spend(50)]
+    clock.t = T_0805
+    await notifier.deliverHeld()
+    assert.equal(sender.calls.length, 1)
+    assert.doesNotMatch(sender.calls[0].payload.body, /\d|R\$/)
+  })
+
+  test('retido entregue no ciclo seguinte leva os valores do ciclo do aviso', async () => {
+    repo.state.prefs = QUIET_PREFS
+    repo.state.txs = [spend(120, { date: new Date('2026-11-30T15:00:00Z') })]
+    clock.t = at('2026-12-01T02:30:00Z') // 30/11 23:30 em Sao Paulo
+    await check()
+    repo.state.txs.push(spend(7, { date: new Date('2026-12-01T05:00:00Z') }))
+    clock.t = at('2026-12-01T11:05:00Z')
+    await notifier.deliverHeld()
+    const { body } = sender.calls[0].payload
+    assert.equal(body, limitBody(limitId(repo), { spent: 12000, pct: '120%' }))
+  })
+
+  test('sem conseguir ler os lancamentos, o retido de limite fica pendente e o log leva so o codigo', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = T_2330
+    await check()
+    const read = repo.readCycleTransactions
+    repo.readCycleTransactions = async () => {
+      throw Object.assign(new Error('Internet da Maria'), { code: 'unavailable' })
+    }
+    const error = mock.method(console, 'error', () => {})
+    try {
+      clock.t = T_0805
+      assert.equal((await notifier.deliverHeld()).sent, 0)
+      assert.equal(sender.calls.length, 0)
+      assert.deepEqual(statuses(repo), ['100:pendente', '80:silencioso'])
+      const text = error.mock.calls.map((c) => c.arguments.join(' ')).join('\n')
+      assert.match(text, /unavailable/)
+      assert.doesNotMatch(text, /Internet|Maria/)
+    } finally {
+      error.mock.restore()
+    }
+    repo.readCycleTransactions = read
+    assert.equal((await notifier.deliverHeld()).sent, 2)
   })
 
   test('80 e 100 da mesma categoria retidos entregam so o de 100 e colapsam o outro', async () => {

@@ -4,6 +4,7 @@
 import { test, describe, beforeEach, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { Timestamp } from 'firebase-admin/firestore'
+import { formatReais } from '../../../shared/core/format.js'
 import { initAdmin } from '../../scripts/lib/admin.js'
 import { createNotifier } from '../../src/push/notifier.js'
 import { createRepo } from '../../src/push/repo.js'
@@ -112,7 +113,10 @@ describe('notificador de limites no emulador', () => {
     assert.deepEqual(messaging.sent.map((m) => m.fid).sort(), [FID_ELE_1, FID_ELE_2])
     for (const m of messaging.sent) {
       assert.deepEqual(Object.keys(m.data).sort(), ['body', 'tag', 'title', 'url'])
-      assert.doesNotMatch(m.data.body, /\d|R\$/)
+      // Categoria e gasto em reais; a descricao crua do lancamento nunca aparece (D-27, D-28).
+      assert.match(m.data.body, /Lazer/)
+      assert.ok(m.data.body.includes(formatReais(12000)), 'sem o gasto em reais')
+      assert.doesNotMatch(m.data.body, /LOJA QUALQUER|CPF|\d{3}\.\d{3}\.\d{3}/i)
       assert.equal(m.data.title, 'OINC')
     }
 
@@ -128,6 +132,21 @@ describe('notificador de limites no emulador', () => {
       assert.equal('text' in m, false)
       assert.ok(!JSON.stringify(m).includes(messaging.sent[0].data.body), 'o marcador guardou o texto do aviso')
     }
+  })
+
+  test('a marca conhecida sai do lancamento do banco lido no Firestore, nunca a descricao nem o Pix', async () => {
+    await addTx({ ownerId: 'casalA', person: 'ele', amount: 10, description: 'IFOOD *PEDIDO 987', date: ts('2026-11-17T12:00:00Z') })
+    await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.match(messaging.sent[0].data.body, /iFood/)
+    assert.doesNotMatch(messaging.sent[0].data.body, /PEDIDO|987/)
+    for (const m of await markers()) assert.doesNotMatch(JSON.stringify(m), /iFood|PEDIDO|R\$/i)
+  })
+
+  test('com um Pix como ultima compra da categoria, o nome da pessoa nao aparece', async () => {
+    await addTx({ ownerId: 'casalA', person: 'ele', amount: 10, description: 'Pix para Fulano de Tal', date: ts('2026-11-17T12:00:00Z') })
+    await buildNotifier().evaluateLimits({ hid: 'casalA', person: 'ele' })
+    assert.match(messaging.sent[0].data.body, /Lazer/)
+    assert.doesNotMatch(messaging.sent[0].data.body, /Fulano|Pix/i)
   })
 
   test('um segundo check, mesmo seguido, nao envia nada e nao cria marcador', async () => {

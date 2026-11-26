@@ -247,14 +247,14 @@ describe('relogio do notificador', () => {
   })
 })
 
-// Relogio com o notificador real sobre um repo falso: prova que o retido sai uma vez e que a rodada
-// nunca le lancamentos.
+// Relogio com o notificador real sobre um repo falso: prova que o retido sai uma vez, com os
+// lancamentos relidos so para montar o texto do aviso de limite.
 describe('relogio com o notificador real', () => {
   const T_2330 = Date.parse('2026-11-18T02:30:00Z')
   const T_0805 = Date.parse('2026-11-18T11:05:00Z')
   const QUIET = { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '22:00', to: '08:00' } }
 
-  test('o aviso retido chega as 08:05 uma so vez, sem ler lancamentos', async () => {
+  test('o aviso retido chega as 08:05 uma so vez, com os lancamentos relidos na entrega', async () => {
     const clock = { t: T_2330 }
     const events = new Map([
       [
@@ -264,6 +264,7 @@ describe('relogio com o notificador real', () => {
           person: 'ele',
           kind: 'limite',
           threshold: 100,
+          categoryId: 'lazer',
           categoryLabel: 'Lazer',
           cycleKey: '2026-11',
           tag: 'limite-lazer-2026-11',
@@ -276,10 +277,17 @@ describe('relogio com o notificador real', () => {
     const registry = makeRegistry([reg('fidEle-aparelho1', 'casalA', 'ele')])
     const repo = {
       ...registry,
-      readCycleTransactions: async () => assert.fail('o relogio nao pode ler lancamentos'),
+      readCycleTransactions: async () => [
+        { id: 't1', person: 'ele', type: 'saida', amount: 120, categoryId: 'lazer', date: new Date('2026-11-16T15:00:00Z') },
+      ],
       readCards: async () => [],
       readPrefs: async () => QUIET,
-      readSettings: async () => ({ tone: 'suave', categoryDefs: DEFAULT_CATEGORY_DEFS, faturaEnabled: true }),
+      readSettings: async () => ({
+        tone: 'suave',
+        categoryDefs: DEFAULT_CATEGORY_DEFS,
+        personConfig: { salaryDay: 1, limits: { lazer: [{ from: '2026-01', cents: 10000 }] } },
+        faturaEnabled: true,
+      }),
       listFids: async () => ['fidEle-aparelho1'],
       claimEvent: async (id, data) => (events.has(id) ? false : (events.set(id, data), true)),
       updateEvent: async (id, patch) => events.set(id, { ...events.get(id), ...patch }),

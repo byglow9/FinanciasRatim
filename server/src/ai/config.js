@@ -98,7 +98,8 @@ export function readAiConfig(env = process.env, log = console) {
       groq: intOf(e.AI_PROVIDER_CAP_GROQ, 0, { min: 0 }),
       xai: intOf(e.AI_PROVIDER_CAP_XAI, 0, { min: 0 }),
     },
-    requireProfanity: boolOf(e.AI_REQUIRE_PROFANITY, true),
+    // Palavrao so quando couber (07.1, D-04): exigir e escolha de quem configura o servidor.
+    requireProfanity: boolOf(e.AI_REQUIRE_PROFANITY, false),
     openPerDay: intOf(e.AI_OPEN_PER_DAY, 3, { min: 0 }),
     peekPerDay: intOf(e.AI_PEEK_PER_DAY, 6, { min: 0 }),
     peekMinMs: peekMin,

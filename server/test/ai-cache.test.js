@@ -18,6 +18,7 @@ const T2 = 'Outro iFood, seu trouxa. Seu bolso já pediu socorro faz tempo.'
 const T3 = 'iFood de novo, seu trouxa. Cozinhar em casa não mata ninguém.'
 const T_MONEY = 'Mais um iFood de R$ 45,90, seu trouxa. Isso aqui vira hábito rapidinho.'
 const T_UBER = 'Mais um Uber, seu trouxa. Você vai ficar sem grana no fim do mês desse jeito.'
+const T_RAPPI = 'Mais um Rappi, seu trouxa. Você vai ficar sem grana no fim do mês desse jeito.'
 // Sem marca: servem ao fato de anotacao (a regua reprova marca fora do fato).
 const N1 = 'Segura a onda, teu bucho agradece e o cofre também.'
 const N2 = 'Anota aí e cumpre, porque o cofre está de olho em você.'
@@ -200,12 +201,12 @@ describe('revalidacao antes de servir', () => {
   })
 
   test('a chave do lancamento muda quando a loja muda', async () => {
-    const s = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '50' }, { queue: [T1, T_UBER] })
+    const s = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '50' }, { queue: [T1, T_RAPPI] })
     await say(s)
-    s.snapshot.txs = [...s.snapshot.txs, tx('t3', 'UBER *TRIP', 12, 17, 'transporte', 'Transporte')]
+    s.snapshot.txs = [...s.snapshot.txs, tx('t3', 'RAPPI *PEDIDO', 12, 17, 'alimentacao', 'Alimentacao')]
     const out = await say(s)
     assert.equal(out.source, 'ia', 'outra loja, outra chave, sem acerto')
-    assert.equal(out.text, T_UBER)
+    assert.equal(out.text, T_RAPPI)
     assert.equal(new Set(s.canonicals).size, 2)
     assert.match(s.canonicals[0], /\|m[0-9a-f]{8}\|f[0-9a-f]{8}$/)
     assert.notEqual(s.canonicals[0], s.canonicals[1])

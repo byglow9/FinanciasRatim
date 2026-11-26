@@ -385,11 +385,10 @@ describe('ai fala', () => {
     await start()
     snapshot.extra = { goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }], porquinhoCents: 123400 }
     await post('tok-a-ele', { situation: 'lancamento' })
-    const sent = JSON.stringify(fetchFn.requests[0].body)
-    for (const bad of ['Uber', 'UBER', '23,50', 'Viagem', '1.234', 'podeGastar', 'ultimoLancamento', 'porquinho":', 'assuntos', 'semLimite', 'lojas']) {
-      // "Uber" so poderia aparecer nos exemplos; o fato nunca o leva.
-      assert.ok(!JSON.stringify(factOf(fetchFn.requests[0])).includes(bad), `fato: ${bad}`)
-      if (bad !== 'Uber') assert.ok(!sent.includes(bad), `corpo: ${bad}`)
+    const sent = promptOf(fetchFn.requests[0])
+    // Descricao e valor do outro lancamento, dados de meta e Porquinho e os campos do resumo antigo.
+    for (const bad of ['Uber', 'UBER', '23,50', 'Viagem', '1.234', 'podeGastar', 'ultimoLancamento', '"porquinho"', '"assuntos"', 'semLimite', '"lojas"']) {
+      assert.ok(!sent.includes(bad), `corpo: ${bad}`)
     }
     assert.deepEqual(Object.keys(factOf(fetchFn.requests[0])).sort(), ['cena', 'loja', 'quando', 'valor'])
     await stop()
@@ -686,10 +685,10 @@ describe('ai fala', () => {
   test('meta e categoria com nome de pessoa nao aparecem no corpo enviado ao provedor', async () => {
     queue = [NEUTRAL]
     const extra = {
-      categoryDefs: [{ id: 'alimentacao', name: 'Waldisney', kind: 'gasto' }],
+      categoryDefs: [{ id: 'alimentacao', name: 'Mesada do Waldisney', kind: 'gasto' }],
       config: { salaryDay: 1, expectedIncomeCents: 500000, limits: { alimentacao: [{ from: '2026-11', cents: 4000 }] } },
       goals: [{ name: 'Presente do Hermenegildo', targetCents: 100000, currentCents: 25000 }],
-      transactions: [tx('t1', 'LOJINHA 123', 45.9, 16, 'alimentacao', 'Waldisney')],
+      transactions: [tx('t1', 'LOJINHA 123', 45.9, 16, 'alimentacao', 'Mesada do Waldisney')],
     }
     // a meta so vira fala espontanea em suave e direto
     await start(AI_ENV, { spontaneous: true })

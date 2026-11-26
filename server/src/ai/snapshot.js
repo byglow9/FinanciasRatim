@@ -85,6 +85,9 @@ export function mapTransaction(id, d) {
     source: d.source,
     bankImportId: d.bankImportId,
     transfer: d.transfer,
+    // Cartao: o fato separa estorno, pagamento de fatura e compra parcelada.
+    cardKind: d.cardKind,
+    installment: d.installment,
     person: d.person,
     date,
   }

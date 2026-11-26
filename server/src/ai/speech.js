@@ -1,12 +1,13 @@
-import { buildAiSummary, collectAllowed, reactionLabels, summaryToPromptText } from '../../../shared/core/aiSummary.js'
-import { TEMPERATURE, buildMessages, isEdgy, lengthFor, maxTokens } from '../../../shared/core/aiPrompt.js'
+import { buildFacts, factOfTransaction } from '../../../shared/core/oincFacts.js'
+import { TEMPERATURE, buildMessages, examplesFor, maxTokens, promptFact, speechContext } from '../../../shared/core/aiPrompt.js'
 import { findLeaks } from '../../../shared/core/aiPrivacy.js'
 import { validateSpeech } from '../../../shared/core/aiValidate.js'
-import { normalize } from '../../../shared/core/classify.js'
-import { canonicalKey } from '../../../shared/core/aiCacheKey.js'
+import { canonicalKey, labelHash } from '../../../shared/core/aiCacheKey.js'
+import { OINC_LINES } from '../../../shared/core/oincLines.js'
+import { isNearCopy } from '../../../shared/core/oincRules.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
 import { normalizePersonConfig } from '../../../shared/core/limits.js'
-import { SPONTANEOUS, dailyCapOf, pickTopic } from './topics.js'
+import { SPONTANEOUS, dailyCapOf } from './topics.js'
 
 /** Situacoes do pedido (lista fechada da rota) e o nome que o prompt usa para cada uma. */
 export const SITUATIONS = Object.freeze(['lancamento', 'limite', 'sync', 'abertura', 'espiar'])
@@ -47,33 +48,75 @@ function partnerLabelsOf(person, tabNames) {
   return typeof label === 'string' && label.trim() !== '' ? [label.trim()] : []
 }
 
-/** Nome do ritmo do resumo na lista da chave de cache; "acima do ritmo" nao tem vaga e cai em "x". */
-const RHYTHM_SLUG = Object.freeze({
-  folgado: 'folgado',
-  'no ritmo': 'no-ritmo',
-  'atenção': 'atencao',
-  estourou: 'estourou',
-})
+/** Chave do fato de limite no seletor: `limite:estourou:{categoria}` ou `limite:quase:{categoria}`. */
+const LIMIT_KEY_RE = /^limite:(?:estourou|quase):(.+)$/
+/** Cena que so existe na voz nova do sem filtro: nunca vai ao pedido de suave e direto (D-35). */
+const WILD_ONLY_SCENES = Object.freeze(['porco-chapaduxo'])
 
 /**
- * Porcentagem de um texto do resumo ("73%"), ou null.
+ * Porcentagem de um encaixe do fato ("85%"), ou null.
  * @param {unknown} text
  * @returns {number | null}
  */
-function pctOfUso(text) {
+function pctOf(text) {
   const m = /(\d+)%/.exec(String(text ?? ''))
   return m ? Number(m[1]) : null
 }
 
 /**
- * Gerador da fala: snapshot da pessoa, resumo, prompt, cadeia de provedores e validacao, com o
- * cache de variantes e o teto diario por pessoa na frente da cadeia (07-12, D-02, D-03).
- * Devolve sempre { text } (texto validado) ou { text: null } (o app usa o banco de frases);
- * `source` diz de onde veio ('cache' ou 'ia'). Nunca registra resumo, prompt, descricao nem texto.
- * Ordem: cache (revalidado contra o resumo atual) -> teto da pessoa -> cadeia -> guarda no cache.
+ * Assunto contado no teto do dia: a cena e o hash da chave do fato (cabe no ID_RE do budget.js).
+ * @param {{ cena: string, key: string }} fact
+ * @returns {string}
+ */
+const topicOf = (fact) => `${fact.cena}-${labelHash(fact.key)}`
+
+/**
+ * Fato da fala sem gatilho (abertura e espiar): o de maior prioridade cujo assunto ainda nao saiu no
+ * dia, ou null. No sem filtro so valem os fatos de IA (anotacao, compromisso com local ou detalhe e
+ * padrao guardado, D-10): o resto o acervo ja cobre. Em suave e direto vale qualquer origem (D-35),
+ * menos a cena propria da voz nova e o "sempre presente" sem nenhum dado para comentar.
+ * @param {ReadonlyArray<any>} facts
+ * @param {{ tone?: string, used?: ReadonlyArray<string> | null }} [opts]
+ * @returns {any | null}
+ */
+export function pickSpontaneousFact(facts, { tone, used } = {}) {
+  const done = new Set(Array.isArray(used) ? used : [])
+  const wild = tone === 'sem-filtro'
+  const pool = (Array.isArray(facts) ? facts : []).filter((f) => {
+    if (wild) return f.via === 'ia'
+    if (WILD_ONLY_SCENES.includes(f.cena)) return false
+    return !(String(f.key).startsWith('sempre:') && Object.keys(f.slots ?? {}).length === 0)
+  })
+  // Ordenacao estavel: empate mantem a ordem do seletor.
+  const ranked = [...pool].sort((a, b) => (b.prioridade ?? 0) - (a.prioridade ?? 0))
+  return ranked.find((f) => !done.has(topicOf(f))) ?? null
+}
+
+/**
+ * Fato do aviso de limite: o da categoria pedida; sem categoria conhecida, o de maior prioridade.
+ * Categoria conhecida sem aviso devolve null, para a fala nunca ser sobre outra.
+ * @param {ReadonlyArray<any>} facts
+ * @param {string | null} categoryId
+ * @returns {any | null}
+ */
+function limitFact(facts, categoryId) {
+  const limits = facts.filter((f) => LIMIT_KEY_RE.test(f.key))
+  if (categoryId === null) return limits[0] ?? null
+  return limits.find((f) => LIMIT_KEY_RE.exec(f.key)?.[1] === categoryId) ?? null
+}
+
+/**
+ * Gerador da fala: snapshot da pessoa, UM fato escolhido pelo codigo (D-09), prompt, cadeia de
+ * provedores e validacao, com o cache de variantes e o teto diario por pessoa na frente da cadeia
+ * (07-12, D-02, D-03). Devolve sempre { text } (texto validado) ou { text: null } (o app usa o banco
+ * de frases); `source` diz de onde veio ('cache' ou 'ia'). Nunca registra fato, prompt, descricao nem
+ * texto.
+ * Ordem: cache (revalidado contra o fato atual) -> teto da pessoa -> cadeia -> guarda no cache.
  * Acerto de cache nao consome teto; sem teto e sem cache valido a resposta e text null.
  * Fala espontanea (abertura e espiar, D-12): antes de tudo confere o teto do tipo no dia, escolhe um
- * assunto ainda nao usado e so conta (teto e assunto) quando ha texto para mostrar.
+ * fato cujo assunto ainda nao saiu e so conta (teto e assunto) quando ha texto para mostrar. Sem fato,
+ * a resposta e text null antes de qualquer provedor.
+ * `bank` (padrao OINC_LINES) e o acervo de onde saem os exemplos do sem filtro.
  * @param {{
  *   snapshot: { load: (args: { hid: string, person: string, fresh: boolean }) => Promise<any> },
  *   providers: { complete: (args: any) => Promise<{ ok: boolean, text?: string, providerId?: string }>, available?: () => boolean },
@@ -90,9 +133,19 @@ function pctOfUso(text) {
  *   } | null,
  *   log?: { warn?: (line: string) => void },
  *   leakCheck?: (text: string) => string[],
+ *   bank?: Record<string, ReadonlyArray<any>>,
  * }} deps
  */
-export function createSpeech({ snapshot, providers, config, budget = null, cache = null, log = console, leakCheck = findLeaks }) {
+export function createSpeech({
+  snapshot,
+  providers,
+  config,
+  budget = null,
+  cache = null,
+  log = console,
+  leakCheck = findLeaks,
+  bank = OINC_LINES,
+}) {
   /**
    * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
    * @param {() => boolean} abandoned verdadeiro quando ninguem mais espera a resposta
@@ -114,91 +167,86 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
 
     const snap = await snapshot.load({ hid, person, fresh: FRESH_SITUATIONS.includes(situation) })
     const input = { ...snap.input, person }
-
-    // O lancamento da reacao: o ja revalidado pela rota, o do id dentro do snapshot (que e so da
-    // pessoa) ou o mais recente do ciclo.
-    if (reaction) {
-      const txs = Array.isArray(input.transactions) ? input.transactions : []
-      input.latestTx =
-        latestTx ?? (transactionId ? txs.find((t) => t.id === transactionId) : undefined) ?? newest(txs) ?? undefined
-    }
-
-    const summary = buildAiSummary(input)
-    // Defesa final: um resumo com qualquer vazamento nunca sai de casa (T-07-33).
-    const summaryText = summaryToPromptText(summary)
-    if (leakCheck(summaryText).length > 0) {
-      log.warn?.('[ai] resumo barrado: vazamento acusado, fala vira banco de frases')
-      return { text: null }
-    }
-    if (reaction && !summary.ultimoLancamento) return { text: null }
-
-    // categoryId so vale se a categoria existe para a pessoa; desconhecido e descartado em silencio.
+    const tone = snap.tone
     const defs = Array.isArray(input.categoryDefs) ? input.categoryDefs : []
+    // categoryId so vale se a categoria existe para a pessoa; desconhecido e descartado em silencio.
     const category = typeof categoryId === 'string' ? defs.find((d) => d.id === categoryId) : undefined
 
-    /** @type {string | null} */
-    let topic = null
-    if (situation === 'limite') topic = 'limites'
-    else if (spontaneous) {
-      topic = pickTopic({ summary, used: day?.assuntos })
-      if (topic === null) return { text: null }
+    /** @type {any} */
+    let fact = null
+    if (reaction) {
+      // O lancamento da reacao: o ja revalidado pela rota, o do id dentro do snapshot (que e so da
+      // pessoa) ou o mais recente do ciclo.
+      const txs = Array.isArray(input.transactions) ? input.transactions : []
+      const target = latestTx ?? (transactionId ? txs.find((t) => t.id === transactionId) : undefined) ?? newest(txs)
+      const other = (target?.person === 'ele' || target?.person === 'ela') && target.person !== person
+      fact = target && !other ? factOfTransaction(target, defs, { surface: 'ia', now: input.now }) : null
+    } else {
+      const facts = buildFacts(input, { surface: 'ia' })
+      fact =
+        situation === 'limite'
+          ? limitFact(facts, category?.id ?? null)
+          : pickSpontaneousFact(facts, { tone, used: day?.assuntos })
+    }
+    // Sem fato nao ha o que dizer: nenhum provedor, nenhum teto e nenhum assunto.
+    if (!fact) return { text: null }
+
+    // Defesa final: um fato com qualquer vazamento nunca sai de casa (T-07.1-15).
+    const shown = promptFact(fact)
+    if (leakCheck(JSON.stringify(shown)).length > 0) {
+      log.warn?.('[ai] fato barrado: vazamento acusado, fala vira banco de frases')
+      return { text: null }
     }
 
-    let overLimit = false
-    if (topic === 'limites') {
-      const rows = Array.isArray(summary.limites) ? summary.limites : []
-      const mine = category ? rows.find((r) => normalize(r.categoria) === normalize(category.name)) : undefined
-      overLimit = mine ? mine.estado === 'estourou' : rows.some((r) => r.estado === 'estourou')
-    }
-
-    const length = lengthFor({ situation, topic, overLimit })
-    const edgy = isEdgy(situation, topic)
-    const tone = snap.tone
-    const messages = buildMessages({
+    const ctx = speechContext(fact, {
       tone,
-      length,
-      situation: PROMPT_SITUATION[key],
-      topic,
-      summaryText,
+      partnerLabels: partnerLabelsOf(person, snap.tabNames),
+      requireProfanity: config.requireProfanity === true,
+    })
+    const examples = examplesFor({
+      cena: fact.cena,
       person,
-      // Semente do repertorio comico: muda o angulo e os exemplos a cada pedido.
+      slots: fact.slots,
+      conds: fact.conds,
+      tone,
+      bank,
+      // Semente so gira os exemplos a cada pedido.
       seed: Math.floor(input.now.getTime() / 1000),
     })
-
-    const ctx = {
-      length,
+    const messages = buildMessages({
       tone,
-      edgy,
-      allowed: collectAllowed(summary),
-      partnerLabels: partnerLabelsOf(person, snap.tabNames),
-      requireProfanity: config.requireProfanity !== false,
-      ...(reaction ? reactionLabels(summary) : {}),
+      fact,
+      examples,
+      person,
+      length: ctx.length,
+      situation: PROMPT_SITUATION[key],
+    })
+
+    /** A regua da saida e mais a recusa de quase copia dos exemplos. */
+    const judge = (/** @type {string} */ text) => {
+      const v = validateSpeech(text, ctx)
+      if (v.ok && isNearCopy(v.text, examples)) return { ok: /** @type {const} */ (false), reason: 'copia' }
+      return v
     }
     /** Texto aprovado e normalizado pela regua atual, ou null (revalida o que veio do cache). */
-    const validate = (text) => {
-      const v = validateSpeech(text, ctx)
+    const validate = (/** @type {string} */ text) => {
+      const v = judge(text)
       return v.ok ? v.text : null
     }
 
-    // Fatos da fala para a chave do cache: so listas fechadas, faixas de 5 pontos e o hash da loja.
-    const limitRows = Array.isArray(summary.limites) ? summary.limites : []
-    let focusRow
-    if (situation === 'limite' || topic === 'limites') {
-      const mine = category ? limitRows.find((r) => normalize(r.categoria) === normalize(category.name)) : undefined
-      focusRow = mine ?? limitRows.reduce((best, r) => ((pctOfUso(r.uso) ?? -1) > (pctOfUso(best?.uso) ?? -1) ? r : best), undefined)
-    }
+    // Chave do cache: listas fechadas, faixa de 5 pontos e hashes. O texto livre do fato entra no hash
+    // da parte do fato, senao a fala sobre o detalhe antigo de um compromisso voltaria.
     const cycle = input.cycle ?? cycleOf(input.now, normalizePersonConfig(input.config).salaryDay)
-    const ritmo = summary.podeGastar?.ritmo
     const canonical = canonicalKey({
       cycleKey: cycle.key,
       tone,
       situation,
-      topic,
+      topic: fact.cena,
       categoryId: situation === 'limite' ? category?.id : null,
-      pct: pctOfUso(focusRow?.uso),
-      rhythm: typeof ritmo === 'string' ? (RHYTHM_SLUG[ritmo] ?? 'acima-do-ritmo') : null,
-      merchant: reaction ? reactionLabels(summary).focusLabel : null,
-      content: topic === 'agenda' || topic === 'anotacoes' ? JSON.stringify(summary[topic] ?? []) : null,
+      pct: pctOf(fact.slots?.pct),
+      rhythm: null,
+      merchant: reaction ? fact.slots?.loja : null,
+      fact: fact.livre ? `${fact.key}|${JSON.stringify(fact.livre)}` : fact.key,
     })
 
     /**
@@ -210,11 +258,11 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
     const serve = async (out) => {
       if (out.text === null || !spontaneous || !budget) return out
       if (abandoned()) return { text: null }
-      const counted = await budget.commitSpontaneous({ hid, person, kind: situation, topic: String(topic) })
+      const counted = await budget.commitSpontaneous({ hid, person, kind: situation, topic: topicOf(fact) })
       return counted.ok ? out : { text: null }
     }
 
-    // 1. Cache: variante revalidada contra o resumo atual. Acerto nao consome teto nem chama a rede.
+    // 1. Cache: variante revalidada contra o fato atual. Acerto nao consome teto nem chama a rede.
     let hit = { text: /** @type {string | null} */ (null), count: 0 }
     if (cache) hit = await cache.lookup({ hid, person, canonical, validate })
     const wanted = Math.max(1, Math.trunc(Number(config.cacheVariants)) || 3)
@@ -233,16 +281,16 @@ export function createSpeech({ snapshot, providers, config, budget = null, cache
       }
       const result = await providers.complete({
         messages,
-        maxTokens: maxTokens(length),
+        maxTokens: maxTokens(ctx.length),
         temperature: TEMPERATURE,
-        validate: (text) => validateSpeech(text, ctx),
+        validate: judge,
       })
       if (!(result.ok && typeof result.text === 'string')) return null
       if (cache) await cache.store({ hid, person, canonical, text: result.text })
       return result.text
     }
     const generated = cache ? await cache.coalesce({ hid, person, canonical }, generateOnce) : await generateOnce()
-    // Quem entrou na geracao de outro revalida com o proprio resumo antes de mostrar.
+    // Quem entrou na geracao de outro revalida com o proprio fato antes de mostrar.
     const approved = generated === null ? null : validate(generated)
     return serve(approved !== null ? { text: approved, source: 'ia' } : fallback)
   }

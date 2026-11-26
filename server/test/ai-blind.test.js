@@ -3,6 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import vm from 'node:vm'
+import { createHash } from 'node:crypto'
+import { main as scoreMain, scoreVotes } from '../scripts/ai-blind-score.js'
+import { main as votos } from '../../scripts/oinc-votos.mjs'
+import { OINC_LINES } from '../../shared/core/oincLines.js'
+import { OINC_PUSH_LINES } from '../../shared/core/oincLinesPush.js'
 import { BLIND_CANDIDATES, armRequest, main } from '../scripts/ai-blind.js'
 import { BLIND_SCENES, blindCases } from '../scripts/lib/ai-blind-fixtures.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
@@ -286,4 +292,450 @@ describe('rodada cega', () => {
     const fixtures = fs.readFileSync(new URL('../scripts/lib/ai-blind-fixtures.js', import.meta.url), 'utf8')
     assert.doesNotMatch(fixtures, /readFile|process\.env|fetch\(/)
   })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Placar
+// ---------------------------------------------------------------------------------------------
+
+/** Votos e chave de um braco: `sim` aprovadas, `nao` reprovadas, `vazias` sem texto. */
+function arm(prefix, { prompt, model, sim = 0, nao = 0, semVoto = 0, vazias = 0, invalidas = 0, preview = false }) {
+  const falas = []
+  const votes = []
+  const push = (voto, extra = {}) => {
+    const id = `${prefix}-${falas.length}`
+    falas.push({ id, prompt, provider: 'groq', model, preview, valido: true, vazio: false, ...extra })
+    if (!extra.vazio) votes.push({ id, voto, comentario: '' })
+  }
+  for (let i = 0; i < sim; i += 1) push('sim', i < invalidas ? { valido: false } : {})
+  for (let i = 0; i < nao; i += 1) push(i === 0 ? 'não' : 'nao')
+  for (let i = 0; i < semVoto; i += 1) push('')
+  for (let i = 0; i < vazias; i += 1) push('', { vazio: true, valido: false })
+  return { falas, votes }
+}
+
+describe('placar do teste cego', () => {
+  const arms = [
+    arm('a', { prompt: 'novo', model: 'bom', sim: 24, nao: 6, invalidas: 4, vazias: 2, preview: true }),
+    arm('b', { prompt: 'atual', model: 'bom', sim: 23, nao: 7 }),
+    arm('c', { prompt: 'novo', model: 'pouco-voto', sim: 29, semVoto: 3 }),
+  ]
+  const chave = { versao: 1, falas: arms.flatMap((a) => a.falas) }
+  const votes = arms.flatMap((a) => a.votes)
+  const of = (bracos, prompt, model) => bracos.find((b) => b.prompt === prompt && b.model === model)
+
+  test('por braco: votadas, aprovadas, taxa, utilizaveis e vazias', () => {
+    const { bracos, desconhecidos } = scoreVotes(votes, chave)
+    assert.deepEqual(desconhecidos, [])
+    const a = of(bracos, 'novo', 'bom')
+    assert.deepEqual(
+      [a.geradas, a.votadas, a.aprovadas, a.taxa, a.utilizaveis, a.vazias, a.passa, a.preview],
+      [32, 30, 24, 0.8, 20, 2, true, true],
+    )
+    assert.equal(of(bracos, 'atual', 'bom').passa, false)
+  })
+
+  test('so passa com 30 ou mais votadas e 8 em cada 10', () => {
+    const { bracos } = scoreVotes(votes, chave)
+    const few = of(bracos, 'novo', 'pouco-voto')
+    assert.deepEqual([few.votadas, few.taxa, few.passa], [29, 1, false])
+    assert.equal(of(bracos, 'atual', 'bom').taxa, 23 / 30)
+    assert.deepEqual(scoreVotes([{ id: 'zzz', voto: 'sim' }], chave).desconhecidos, ['zzz'])
+  })
+
+  test('a linha de comando imprime a tabela e o veredito', () => {
+    const dir = tmp('ai-score-')
+    const v = path.join(dir, 'v.json')
+    const k = path.join(dir, 'k.json')
+    fs.writeFileSync(v, JSON.stringify(votes))
+    fs.writeFileSync(k, JSON.stringify(chave))
+    const out = []
+    const io = { log: (l) => out.push(String(l)), logError: (l) => out.push(String(l)) }
+    assert.equal(scoreMain({ argv: [v, k], ...io }), 0)
+    const text = out.join('\n')
+    assert.match(text, /novo +groq:bom \(preview\)/)
+    assert.match(text, /80%/)
+    assert.match(text, /passam com o prompt novo: groq:bom \(preview\)/i)
+    assert.match(text, /3 sem voto/)
+    assert.equal(scoreMain({ argv: [v], ...io }), 1)
+    assert.equal(scoreMain({ argv: [v, path.join(dir, 'nada.json')], ...io }), 1)
+  })
+
+  test('sem nenhum braco aprovado o veredito e ficar no acervo', () => {
+    const dir = tmp('ai-score-')
+    const lost = arm('x', { prompt: 'novo', model: 'ruim', sim: 10, nao: 22 })
+    fs.writeFileSync(path.join(dir, 'v.json'), JSON.stringify(lost.votes))
+    fs.writeFileSync(path.join(dir, 'k.json'), JSON.stringify({ falas: lost.falas }))
+    const out = []
+    scoreMain({ argv: [path.join(dir, 'v.json'), path.join(dir, 'k.json')], log: (l) => out.push(String(l)) })
+    assert.match(out.join('\n'), /nenhum braço passou com o prompt novo/i)
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Voto de todas as falas novas
+// ---------------------------------------------------------------------------------------------
+
+const appLines = Object.values(OINC_LINES).flat()
+const pushLines = Object.values(OINC_PUSH_LINES).flatMap((tones) => Object.values(tones).flat())
+const realLines = [...appLines, ...pushLines]
+
+/** Acervo falso pequeno: nova, reescrita, ja aprovada antes, aprovada e depois mudada e antiga. */
+function fakeBank() {
+  const line = (id, t, extra = {}) => ({ id, t, g: 'x', lote: 4, origem: `4:novo-${id}`, reescrita: true, ...extra })
+  const bank = {
+    posto: [
+      line('posto-001', '{valor} no posto, <img src=x onerror=alert(1)></script> porra.'),
+      line('posto-002', '{valor} no posto. Já aprovada.', { origem: '4:v-1', reescrita: undefined }),
+      line('posto-003', '{valor} no posto. Texto mexido depois.', { origem: '4:v-2', reescrita: undefined }),
+      line('posto-004', '{valor} posto. Encurtada junto do encaixe.', { origem: '4:v-3', reescrita: undefined }),
+      line('posto-005', 'Antiga do lote 3.', { lote: 3, origem: '3:s1', reescrita: undefined }),
+      line('posto-006', 'Reescrita de fala antiga.', { lote: 2, origem: '2:s1', g: 'f' }),
+    ],
+    entrou: [line('entrou-001', 'Chegou. Sobram {restante} para {dias}.')],
+  }
+  const pushBank = {
+    'push-conta-d0': {
+      'sem-filtro': [line('push-conta-d0-001', 'Hoje vence {conta}, {valor}.')],
+      suave: [line('push-conta-d0-101', 'Hoje vence {conta}.')],
+      direto: [line('push-conta-d0-201', 'Pague {conta} hoje.')],
+    },
+  }
+  const approvedBefore = {
+    'v-1': { v: 'sim', texto: 'R$ 180 no posto. Já aprovada.' },
+    'v-2': { v: 'sim', texto: 'R$ 180 no posto. Texto de antes.' },
+    'v-3': { v: 'sim', texto: 'R$ 180 no posto. Encurtada junto do encaixe.' },
+  }
+  return { bank, pushBank, approvedBefore }
+}
+const FAKE_PENDING = [
+  'posto-001', 'posto-003', 'posto-004', 'posto-006', 'entrou-001',
+  'push-conta-d0-001', 'push-conta-d0-101', 'push-conta-d0-201',
+]
+
+function voting(deps = {}) {
+  const dir = tmp('oinc-votos-')
+  const out = []
+  const run = (...argv) => {
+    out.length = 0
+    return votos({ argv, cwd: dir, log: (l) => out.push(String(l)), logError: (l) => out.push(String(l)), ...deps })
+  }
+  const files = () => fs.readdirSync(dir).sort()
+  const read = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'))
+  const exported = () => files().filter((f) => /^lote4-votos-\d+\.json$/.test(f))
+  /** Responde um arquivo exportado: `votoDe(item)` da o voto. */
+  const answer = (file, votoDe = () => 'sim', name = file.replace('votos', 'respondido')) => {
+    const items = read(file).map((i) => ({ ...i, voto: votoDe(i) }))
+    fs.writeFileSync(path.join(dir, name), JSON.stringify(items))
+  }
+  return { dir, out, run, files, read, exported, answer, text: () => out.join('\n') }
+}
+
+describe('oinc-votos: exportacao', () => {
+  test('traz todas as falas novas do app e dos avisos, nos tres tons, em ate 40 por arquivo', () => {
+    const t = voting()
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    const files = t.exported()
+    const items = files.flatMap((f) => t.read(f))
+    assert.ok(files.every((f) => t.read(f).length >= 1 && t.read(f).length <= 40))
+    assert.equal(files.length, Math.ceil(items.length / 40))
+    const ids = new Set(items.map((i) => i.id))
+    assert.equal(ids.size, items.length)
+
+    // Toda fala marcada para voto e toda fala do lote 4 escrita depois dos votos 4A a 4C.
+    for (const l of realLines) {
+      const nova = l.reescrita === true || (l.lote === 4 && !l.origem.startsWith('4:l4'))
+      if (nova) assert.ok(ids.has(l.id), `faltou ${l.id}`)
+      if (!ids.has(l.id)) assert.ok(l.reescrita !== true && (l.lote !== 4 || l.origem.startsWith('4:l4')), l.id)
+    }
+    for (const i of items) {
+      const line = realLines.find((l) => l.id === i.id)
+      assert.ok(line.lote === 4 || line.reescrita === true, i.id)
+      assert.equal(i.modelo, line.t, i.id)
+      assert.deepEqual(Object.keys(i), ['id', 'cenario', 'situacao', 'texto', 'voto', 'comentario', 'lote', 'modelo', 'tom'])
+      assert.doesNotMatch(i.texto, /[{}]/, i.id)
+      assert.ok(i.cenario && i.situacao && i.cenario !== i.id, i.id)
+      assert.ok(['sem-filtro', 'suave', 'direto'].includes(i.tom), i.id)
+    }
+    for (const tom of ['sem-filtro', 'suave', 'direto']) assert.ok(items.some((i) => i.tom === tom && i.id.startsWith('push-')), tom)
+  })
+
+  test('toda cena do acervo e dos avisos tem nome para o voto', () => {
+    const everything = {
+      bank: Object.fromEntries(Object.keys(OINC_LINES).map((c) => [c, [{ id: `${c}-x`, t: 'a', g: 'x', lote: 4, origem: '4:novo' }]])),
+      pushBank: Object.fromEntries(
+        Object.keys(OINC_PUSH_LINES).map((c) => [c, { 'sem-filtro': [{ id: `${c}-x`, t: 'a', lote: 4, origem: '4:novo' }] }]),
+      ),
+      approvedBefore: {},
+    }
+    const t = voting(everything)
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    for (const i of t.exported().flatMap((f) => t.read(f))) {
+      const cena = i.id.slice(0, -2)
+      assert.notEqual(i.cenario, cena, `sem nome para ${cena}`)
+    }
+  })
+
+  test('ja aprovada antes nao volta; mudada depois do voto volta', () => {
+    const t = voting(fakeBank())
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    assert.deepEqual(t.read('lote4-votos-01.json').map((i) => i.id), FAKE_PENDING)
+    const entrou = t.read('lote4-votos-01.json').find((i) => i.id === 'entrou-001')
+    assert.equal(entrou.texto, 'Chegou. Sobram R$ 320 para 3 dias.')
+    assert.match(t.read('lote4-votos-01.json').find((i) => i.id === 'posto-006').situacao, /mulher/)
+  })
+
+  test('segunda exportacao traz so o que nao tem voto e nao sobrescreve', () => {
+    const deps = fakeBank()
+    const t = voting(deps)
+    t.run('lote4', '--out', t.dir)
+    const before = fs.readFileSync(path.join(t.dir, 'lote4-votos-01.json'), 'utf8')
+    t.answer('lote4-votos-01.json', (i) => (i.id === 'posto-001' ? '' : i.id === 'posto-003' ? 'nao' : 'sim'))
+
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    assert.deepEqual(t.exported(), ['lote4-votos-01.json', 'lote4-votos-02.json'])
+    assert.equal(fs.readFileSync(path.join(t.dir, 'lote4-votos-01.json'), 'utf8'), before)
+    assert.deepEqual(t.read('lote4-votos-02.json').map((i) => i.id), ['posto-001'])
+
+    // Texto mudado depois do voto pede voto de novo.
+    deps.bank.entrou[0] = { ...deps.bank.entrou[0], t: 'Chegou outra vez.' }
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    assert.deepEqual(t.read('lote4-votos-03.json').map((i) => i.id), ['posto-001', 'entrou-001'])
+
+    t.answer('lote4-votos-03.json')
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    assert.equal(t.exported().length, 3)
+    assert.match(t.text(), /nada a votar/)
+  })
+
+  test('mais de 40 falas viram varios arquivos, sem teto', () => {
+    const many = Array.from({ length: 1000 }, (_, n) => ({ id: `posto-${n}`, t: `fala ${n}`, g: 'x', lote: 4, origem: `4:novo-${n}` }))
+    const t = voting({ bank: { posto: many }, pushBank: {}, approvedBefore: {} })
+    assert.equal(t.run('lote4', '--out', t.dir), 0)
+    assert.equal(t.exported().length, 25)
+    assert.equal(t.exported().flatMap((f) => t.read(f)).length, 1000)
+  })
+
+  test('uso errado nao grava nada', () => {
+    const t = voting(fakeBank())
+    for (const argv of [[], ['lote4'], ['lote4', '--out'], ['pagina'], ['aplicar'], ['conferir'], ['apagar', t.dir]]) {
+      assert.equal(t.run(...argv), 1, argv.join(' '))
+    }
+    assert.deepEqual(t.files(), [])
+  })
+})
+
+describe('oinc-votos: aplicar e conferir', () => {
+  test('conferir falha sem voto e lista os ids', () => {
+    const t = voting(fakeBank())
+    assert.equal(t.run('conferir', t.dir), 1)
+    for (const id of FAKE_PENDING) assert.ok(t.text().includes(id), id)
+    assert.ok(!t.text().includes('posto-002'))
+    assert.ok(!t.text().includes('posto-005'))
+  })
+
+  test('conferir so passa com sim para o mesmo id e o mesmo modelo', () => {
+    const deps = fakeBank()
+    const t = voting(deps)
+    t.run('lote4', '--out', t.dir)
+    t.answer('lote4-votos-01.json', (i) => (i.id === 'posto-003' ? 'nao' : 'sim'))
+    assert.equal(t.run('conferir', t.dir), 1)
+    assert.match(t.text(), /posto-003 .*reprovada/)
+    assert.ok(!t.text().includes('posto-001'))
+
+    // A reprovada sai do acervo e a aprovada perde a marca: continua conferido pelo voto.
+    deps.bank.posto = deps.bank.posto.filter((l) => l.id !== 'posto-003')
+    deps.bank.entrou[0] = { ...deps.bank.entrou[0], reescrita: undefined }
+    assert.equal(t.run('conferir', t.dir), 0)
+
+    deps.bank.entrou[0] = { ...deps.bank.entrou[0], t: 'Texto trocado sem voto.' }
+    assert.equal(t.run('conferir', t.dir), 1)
+    assert.match(t.text(), /entrou-001/)
+  })
+
+  test('votos que se contradizem contam como reprovada', () => {
+    const t = voting(fakeBank())
+    t.run('lote4', '--out', t.dir)
+    t.answer('lote4-votos-01.json')
+    assert.equal(t.run('conferir', t.dir), 0)
+    t.answer('lote4-votos-01.json', (i) => (i.id === 'posto-001' ? 'nao' : 'sim'), 'lote4-respondido-01 (1).json')
+    assert.equal(t.run('conferir', t.dir), 1)
+    assert.match(t.text(), /posto-001/)
+  })
+
+  test('arquivo respondido ilegivel nao passa por conferido', () => {
+    const t = voting(fakeBank())
+    fs.writeFileSync(path.join(t.dir, 'lote4-respondido-01.json'), '{ quebrado')
+    for (const argv of [['conferir', t.dir], ['aplicar', t.dir], ['lote4', '--out', t.dir]]) {
+      assert.equal(t.run(...argv), 1)
+      assert.match(t.text(), /lote4-respondido-01\.json/)
+    }
+    assert.deepEqual(t.files(), ['lote4-respondido-01.json'])
+  })
+
+  test('aplicar lista reprovadas, taxa e quem pode perder a marca, sem editar nada', () => {
+    const t = voting(fakeBank())
+    t.run('lote4', '--out', t.dir)
+    assert.equal(t.run('aplicar', t.dir), 1)
+    const items = t.read('lote4-votos-01.json').map((i) => ({ ...i, voto: i.id === 'posto-001' ? 'nao' : 'sim' }))
+    items[0].comentario = 'sem graça'
+    fs.writeFileSync(path.join(t.dir, 'lote4-respondido-01.json'), JSON.stringify(items))
+    const before = t.files()
+    assert.equal(t.run('aplicar', t.dir), 0)
+    assert.match(t.text(), /7 aprovadas de 8 votadas \(87%\)/)
+    assert.match(t.text(), /Reprovadas \(1\)[\s\S]*posto-001.*sem graça/)
+    assert.match(t.text(), /marca reescrita \(7\)[\s\S]*entrou-001/)
+    assert.deepEqual(t.files(), before)
+  })
+
+  test('taxa abaixo de 8 em cada 10 e avisada', () => {
+    const t = voting(fakeBank())
+    t.run('lote4', '--out', t.dir)
+    t.answer('lote4-votos-01.json', (i) => (i.id.startsWith('push') ? 'nao' : 'sim'))
+    assert.equal(t.run('aplicar', t.dir), 0)
+    assert.match(t.text(), /abaixo de 8 em cada 10/)
+  })
+})
+
+// ---------------------------------------------------------------------------------------------
+// Pagina de voto
+// ---------------------------------------------------------------------------------------------
+
+/** DOM minimo para rodar o script da pagina sem navegador. */
+function runPage(html, storage = new Map()) {
+  const data = /<script type="application\/json" id="dados">([\s\S]*?)<\/script>/.exec(html)[1]
+  const script = /<script>([\s\S]*?)<\/script>/.exec(html)[1]
+  const saved = []
+  const el = (tag) => {
+    const node = {
+      tag,
+      children: [],
+      attrs: {},
+      listeners: {},
+      textContent: '',
+      value: '',
+      className: '',
+      append: (...kids) => node.children.push(...kids),
+      setAttribute: (k, v) => (node.attrs[k] = String(v)),
+      addEventListener: (k, fn) => (node.listeners[k] = fn),
+      click: () => {
+        if (tag === 'a') saved.push({ name: node.download, blob: node.href })
+        else node.listeners.click?.()
+      },
+    }
+    Object.defineProperty(node, 'innerHTML', {
+      set: () => {
+        throw new Error('innerHTML proibido')
+      },
+    })
+    return node
+  }
+  const byId = { dados: { textContent: data }, lista: el('main'), progresso: el('p'), baixar: el('button'), aviso: el('p') }
+  const context = {
+    document: { getElementById: (id) => byId[id], createElement: el },
+    localStorage: { getItem: (k) => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)) },
+    Blob: class {
+      constructor(parts) {
+        this.text = parts.join('')
+      }
+    },
+    URL: { createObjectURL: (blob) => blob, revokeObjectURL: () => {} },
+  }
+  vm.runInNewContext(script, context)
+  const all = (node) => [node, ...node.children.flatMap(all)]
+  const cards = byId.lista.children
+  const buttons = (card) => all(card).filter((n) => n.tag === 'button')
+  return {
+    storage,
+    saved,
+    byId,
+    cards,
+    texts: (card) => all(card).map((n) => n.textContent),
+    vote: (i, label) => buttons(cards[i]).find((b) => b.textContent === label).click(),
+    comment: (i, value) => {
+      const input = all(cards[i]).find((n) => n.tag === 'textarea')
+      input.value = value
+      input.listeners.input()
+    },
+    pressed: (i) => buttons(cards[i]).filter((b) => b.attrs['aria-pressed'] === 'true').map((b) => b.textContent),
+    download: () => byId.baixar.click(),
+  }
+}
+
+describe('oinc-votos: pagina', () => {
+  const t = voting(fakeBank())
+  t.run('lote4', '--out', t.dir)
+  const items = t.read('lote4-votos-01.json')
+  const code = t.run('pagina', path.join(t.dir, 'lote4-votos-01.json'))
+  const html = fs.readFileSync(path.join(t.dir, 'lote4-votos-01.html'), 'utf8')
+
+  test('um html por arquivo, sem dependencia e sem o texto virar marcacao', () => {
+    assert.equal(code, 0)
+    assert.doesNotMatch(html, /<img|onerror=alert\(1\)><\/script>/)
+    assert.doesNotMatch(html, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/)
+    assert.doesNotMatch(html, /https?:\/\/|<link|src=["']/)
+    assert.equal(html.split('</script>').length, 3)
+    const hash = createHash('sha256').update(/<script>([\s\S]*?)<\/script>/.exec(html)[1]).digest('base64')
+    assert.ok(html.includes(`script-src 'sha256-${hash}'`))
+  })
+
+  test('mostra o texto como escrito, guarda o voto parcial e baixa no mesmo formato', () => {
+    const page = runPage(html)
+    assert.equal(page.cards.length, items.length)
+    assert.ok(page.texts(page.cards[0]).includes(items[0].texto))
+    assert.ok(items[0].texto.includes('<img src=x'))
+    assert.match(page.byId.progresso.textContent, /0 de 8/)
+
+    page.vote(0, 'Sim')
+    page.vote(1, 'Sim')
+    page.vote(1, 'Não')
+    page.comment(1, 'fraca')
+    assert.deepEqual(page.pressed(1), ['Não'])
+    assert.match(page.byId.progresso.textContent, /2 de 8/)
+
+    // Fechou e abriu de novo: o voto parcial volta.
+    const again = runPage(html, page.storage)
+    assert.deepEqual(again.pressed(0), ['Sim'])
+    assert.deepEqual(again.pressed(1), ['Não'])
+    again.download()
+    assert.equal(again.saved[0].name, 'lote4-respondido-01.json')
+    const out = JSON.parse(again.saved[0].blob.text)
+    assert.deepEqual(out[0], { ...items[0], voto: 'sim' })
+    assert.deepEqual(out[1], { ...items[1], voto: 'nao', comentario: 'fraca' })
+    assert.deepEqual(out.slice(2), items.slice(2))
+    assert.match(again.byId.aviso.textContent, /faltam 6/i)
+  })
+
+  test('voto guardado de um texto antigo nao vale para o texto novo', () => {
+    const page = runPage(html)
+    page.vote(0, 'Sim')
+    const changed = html.replace(JSON.stringify(items[1].texto).slice(1, -1), 'outro texto').replace('no posto, \\u003cimg', 'na bomba, \\u003cimg')
+    assert.deepEqual(runPage(changed, page.storage).pressed(0), [])
+  })
+
+  test('teste cego baixa com o nome proprio e sem origem', () => {
+    const file = path.join(t.dir, 'cego-votos.json')
+    fs.writeFileSync(file, JSON.stringify([{ id: 'c1', cenario: 'X', situacao: 'Y', texto: 'Z', voto: '', comentario: '' }]))
+    assert.equal(t.run('pagina', file), 0)
+    const blind = runPage(fs.readFileSync(path.join(t.dir, 'cego-votos.html'), 'utf8'))
+    blind.vote(0, 'Sim')
+    blind.download()
+    assert.equal(blind.saved[0].name, 'cego-votos-respondido.json')
+  })
+
+  test('arquivo que nao e de voto e recusado', () => {
+    const file = path.join(t.dir, 'outro.json')
+    fs.writeFileSync(file, JSON.stringify({ falas: [] }))
+    assert.equal(t.run('pagina', file), 1)
+    assert.equal(t.run('pagina', path.join(t.dir, 'nao-existe.json')), 1)
+    assert.ok(!t.files().includes('outro.html'))
+  })
+})
+
+test('o script de voto nao le .env, nao importa Firebase e nao usa rede', () => {
+  const src = fs
+    .readFileSync(new URL('../../scripts/oinc-votos.mjs', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+  assert.doesNotMatch(src, /process\.env|loadEnvFile|dotenv|firebase|fetch\(|node:https?/i)
 })

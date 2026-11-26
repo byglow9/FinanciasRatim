@@ -28,6 +28,9 @@ function codeOf(err) {
 
 const isPair = (hid, person) => typeof hid === 'string' && ID_RE.test(hid) && PEOPLE.includes(person)
 
+/** Verdadeiro quando o documento existe e e deste casal e desta pessoa. */
+const isMine = (snap, hid, person) => Boolean(snap?.exists) && snap.data()?.ownerId === hid && snap.data()?.person === person
+
 /**
  * Lista de ids (so textos no formato de id de fala).
  * @param {unknown} value
@@ -129,14 +132,40 @@ export function createOincState({ db, now = () => new Date(), log = console }) {
             pushRecent: state.pushRecent,
             updatedAt: now(),
           }
-          const mine = snap.exists && snap.data()?.ownerId === hid && snap.data()?.person === person
-          if (mine) tx.update(ref, patch)
+          if (isMine(snap, hid, person)) tx.update(ref, patch)
           else tx.set(ref, { ownerId: hid, person, ...patch })
           return { ok: true }
         }, TX_OPTIONS)
       } catch (err) {
         log.warn?.(`[ai] voto do OINC nao gravado codigo=${codeOf(err)}`)
         return { ok: false, reason: 'erro' }
+      }
+    },
+
+    /**
+     * Guarda a fala de IA que vai ser mostrada, para ela poder receber voto e nao voltar tao cedo.
+     * A repetida vai para o fim da lista; ficam as ultimas 30. Nunca lanca.
+     * @param {{ hid: string, person: string, id: string, cena: string, text: string }} args
+     * @returns {Promise<{ ok: boolean }>}
+     */
+    async recordServed({ hid, person, id, cena, text }) {
+      if (!isPair(hid, person)) return { ok: false }
+      if (typeof id !== 'string' || !LINE_ID_RE.test(id) || typeof text !== 'string' || text === '') return { ok: false }
+      try {
+        const ref = refOf(hid, person)
+        return await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref)
+          const state = stateOf(snap, hid, person)
+          const entry = { id, cena: typeof cena === 'string' ? cena : '', text }
+          const served = [...state.served.filter((x) => x.id !== id), entry].slice(-MAX_SERVED)
+          // So `served` muda no documento que ja e da pessoa: os votos nao sao regravados.
+          if (isMine(snap, hid, person)) tx.update(ref, { served, updatedAt: now() })
+          else tx.set(ref, { ownerId: hid, person, ...state, served, updatedAt: now() })
+          return { ok: true }
+        }, TX_OPTIONS)
+      } catch (err) {
+        log.warn?.(`[ai] fala servida nao guardada codigo=${codeOf(err)}`)
+        return { ok: false }
       }
     },
   }

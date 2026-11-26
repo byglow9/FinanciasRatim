@@ -36,10 +36,11 @@ export function createAiFeature({
   const chain = createChain({ providers, config, now, log, gate: budget.consumeProvider })
 
   const snapshot = createSnapshotLoader({ db, now })
-  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log })
+  // Estado por pessoa (votos, geradas e servidas): a fala usa e as rotas tambem.
+  const state = createOincState({ db, now, log })
+  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log, state })
   // Freio de rajada por usuario com o limitador proprio.
   const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => now().getTime() })
-  const state = createOincState({ db, now, log })
   const router = createAiRouter({ speech, config, db, state, limiter, log })
   return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

@@ -218,7 +218,7 @@ describe('oinc voto e acervo', () => {
   test('recordServed recusa par, id ou texto invalidos e falha de banco nunca lanca', async () => {
     const memory = createMemoryDb()
     const state = createOincState({ db: memory, log: silent })
-    const good = { hid: 'casalA', person: 'ele', id: 'ia-0000000000000001', cena: 'entrou', text: 'fala' }
+    const good = { hid: 'casalA', person: 'ele', id: 'ia-0000000000000001', cena: 'entrou', text: 'TEXTO-PRIVADO' }
     for (const bad of [{ person: 'porquinho' }, { hid: 'a/b' }, { id: 'COM ESPACO' }, { text: '' }, { text: 7 }]) {
       assert.deepEqual(await state.recordServed({ ...good, ...bad }), { ok: false }, JSON.stringify(bad))
     }
@@ -234,7 +234,7 @@ describe('oinc voto e acervo', () => {
       log: { warn: (l) => lines.push(l) },
     })
     assert.deepEqual(await broken.recordServed(good), { ok: false })
-    assert.ok(lines.length === 1 && !lines[0].includes('segredo') && !lines[0].includes('fala '))
+    assert.ok(lines.length === 1 && !lines[0].includes('segredo') && !lines[0].includes('TEXTO-PRIVADO'))
   })
 
   test('sem dono no pedido nada e lido', async () => {

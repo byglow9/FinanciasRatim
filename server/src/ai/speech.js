@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { buildFacts, factOfTransaction } from '../../../shared/core/oincFacts.js'
 import { TEMPERATURE, buildMessages, examplesFor, maxTokens, promptFact, speechContext } from '../../../shared/core/aiPrompt.js'
 import { findLeaks } from '../../../shared/core/aiPrivacy.js'
@@ -5,6 +6,7 @@ import { validateSpeech } from '../../../shared/core/aiValidate.js'
 import { canonicalKey, labelHash } from '../../../shared/core/aiCacheKey.js'
 import { OINC_LINES } from '../../../shared/core/oincLines.js'
 import { isNearCopy } from '../../../shared/core/oincRules.js'
+import { fill } from '../../../shared/core/phrasePicker.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
 import { normalizePersonConfig } from '../../../shared/core/limits.js'
 import { SPONTANEOUS, dailyCapOf } from './topics.js'
@@ -117,6 +119,43 @@ function limitFact(facts, categoryId) {
 }
 
 /**
+ * Id da fala de IA, derivado so do texto: o mesmo texto tem sempre o mesmo id (voto e reprovadas).
+ * @param {string} text
+ * @returns {string}
+ */
+const idOf = (text) => `ia-${createHash('sha256').update(text).digest('hex').slice(0, 16)}`
+
+/**
+ * Estado da pessoa para a fala: reprovadas, aprovadas da mesma cena (modelo do acervo ja preenchido
+ * com o fato; o que pede encaixe que o fato nao tem fica de fora) e textos servidos ha pouco. Sem
+ * estado ou com falha de leitura, tudo vazio: a fala sai do mesmo jeito.
+ * @param {{ read: (who: { hid: string, person: string }) => Promise<any> } | null} state
+ * @param {{ hid: string, person: string }} who
+ * @param {any} fact
+ */
+async function memoryOf(state, who, fact) {
+  let data = null
+  if (state) {
+    try {
+      data = await state.read(who)
+    } catch {
+      data = null
+    }
+  }
+  const liked = []
+  for (const e of data?.liked ?? []) {
+    if (e.cena !== fact.cena) continue
+    const text = fill(e.text, fact.slots ?? {})
+    if (text !== null) liked.push({ cena: e.cena, text })
+  }
+  return {
+    rejected: new Set(data?.rejected ?? []),
+    liked,
+    served: (data?.served ?? []).map((/** @type {any} */ e) => e.text),
+  }
+}
+
+/**
  * Gerador da fala: snapshot da pessoa, UM fato escolhido pelo codigo (D-09), prompt, cadeia de
  * provedores e validacao, com o cache de variantes e o teto diario por pessoa na frente da cadeia
  * (07-12, D-02, D-03). Devolve sempre { text } (texto validado) ou { text: null } (o app usa o banco
@@ -127,6 +166,9 @@ function limitFact(facts, categoryId) {
  * Fala espontanea (abertura e espiar, D-12): antes de tudo confere o teto do tipo no dia, escolhe um
  * fato pelo rodizio de pickSpontaneousFact e so conta (teto e assunto) quando ha texto para mostrar.
  * Sem fato, a resposta e text null antes de qualquer provedor.
+ * Com `state` (07.1, D-12) a fala ganha id do servidor e entra em `served` para poder receber voto; as
+ * aprovadas da mesma cena viram exemplo (so no sem filtro, D-35), a reprovada nunca sai (nem do cache) e
+ * a saida do provedor quase igual a uma das ultimas servidas e recusada. Sem `state` a fala sai sem id.
  * `bank` (padrao OINC_LINES) e o acervo de onde saem os exemplos do sem filtro.
  * `config.live` falso desliga a fala (D-15): nada e lido nem chamado. `config.tokensFactor` multiplica
  * o limite de tokens. Ausentes, valem verdadeiro e 1.
@@ -147,7 +189,14 @@ function limitFact(facts, categoryId) {
  *   log?: { warn?: (line: string) => void },
  *   leakCheck?: (text: string) => string[],
  *   bank?: Record<string, ReadonlyArray<any>>,
+ *   state?: {
+ *     read: (who: { hid: string, person: string }) => Promise<any>,
+ *     recordServed: (args: { hid: string, person: string, id: string, cena: string, text: string }) => Promise<{ ok: boolean }>,
+ *   } | null,
  * }} deps
+ */
+/**
+ * @typedef {{ text: string | null, id?: string, cena?: string, source?: 'cache' | 'ia' }} Spoken
  */
 export function createSpeech({
   snapshot,
@@ -158,11 +207,12 @@ export function createSpeech({
   log = console,
   leakCheck = findLeaks,
   bank = OINC_LINES,
+  state = null,
 }) {
   /**
    * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any }} args
    * @param {() => boolean} abandoned verdadeiro quando ninguem mais espera a resposta
-   * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
+   * @returns {Promise<Spoken>}
    */
   async function run({ hid, person, situation, categoryId, transactionId, latestTx }, abandoned) {
     const key = /** @type {keyof typeof PROMPT_SITUATION} */ (situation)
@@ -216,7 +266,9 @@ export function createSpeech({
       partnerLabels: partnerLabelsOf(person, snap.tabNames),
       requireProfanity: config.requireProfanity === true,
     })
+    const memory = await memoryOf(state, { hid, person }, fact)
     const examples = examplesFor({
+      liked: memory.liked,
       cena: fact.cena,
       person,
       slots: fact.slots,
@@ -235,10 +287,21 @@ export function createSpeech({
       situation: PROMPT_SITUATION[key],
     })
 
-    /** A regua da saida e mais a recusa de quase copia dos exemplos. */
+    /** A regua da saida e mais a recusa de quase copia dos exemplos e da fala reprovada pelo voto. */
     const judge = (/** @type {string} */ text) => {
       const v = validateSpeech(text, ctx)
-      if (v.ok && isNearCopy(v.text, examples)) return { ok: /** @type {const} */ (false), reason: 'copia' }
+      if (!v.ok) return v
+      if (isNearCopy(v.text, examples)) return { ok: /** @type {const} */ (false), reason: 'copia' }
+      if (memory.rejected.has(idOf(v.text))) return { ok: /** @type {const} */ (false), reason: 'reprovada' }
+      return v
+    }
+    /**
+     * So para a saida nova do provedor: tambem nao pode repetir o que acabou de ser servido. O cache
+     * nao passa por aqui, porque as variantes dele ja foram servidas e existem para voltar.
+     */
+    const judgeNew = (/** @type {string} */ text) => {
+      const v = judge(text)
+      if (v.ok && isNearCopy(v.text, memory.served)) return { ok: /** @type {const} */ (false), reason: 'repetida' }
       return v
     }
     /** Texto aprovado e normalizado pela regua atual, ou null (revalida o que veio do cache). */
@@ -263,16 +326,35 @@ export function createSpeech({
     })
 
     /**
+     * Com estado, a fala que sai ganha id e entra em `served`. Pedido abandonado nao e guardado
+     * (ninguem viu), e falha ao gravar nao segura a fala.
+     * @param {Spoken} out
+     * @returns {Promise<Spoken>}
+     */
+    const identify = async (out) => {
+      if (!state || out.text === null) return out
+      const id = idOf(out.text)
+      if (!abandoned()) {
+        try {
+          await state.recordServed({ hid, person, id, cena: fact.cena, text: out.text })
+        } catch {
+          // O estado ja registra o proprio codigo de erro; a fala segue.
+        }
+      }
+      return { text: out.text, id, cena: fact.cena, source: out.source }
+    }
+
+    /**
      * A fala espontanea so conta quando ha texto para mostrar. Se a transacao negar (teto tomado por
      * um pedido simultaneo) ou ninguem mais esperar, nada sai e nada e consumido.
-     * @param {{ text: string | null, source?: 'cache' | 'ia' }} out
-     * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
+     * @param {Spoken} out
+     * @returns {Promise<Spoken>}
      */
     const serve = async (out) => {
-      if (out.text === null || !spontaneous || !budget) return out
+      if (out.text === null || !spontaneous || !budget) return identify(out)
       if (abandoned()) return { text: null }
       const counted = await budget.commitSpontaneous({ hid, person, kind: situation, topic: topicOf(fact) })
-      return counted.ok ? out : { text: null }
+      return counted.ok ? identify(out) : { text: null }
     }
 
     // 1. Cache: variante revalidada contra o fato atual. Acerto nao consome teto nem chama a rede.
@@ -296,7 +378,7 @@ export function createSpeech({
         messages,
         maxTokens: maxTokens(ctx.length, config.tokensFactor),
         temperature: TEMPERATURE,
-        validate: judge,
+        validate: judgeNew,
       })
       if (!(result.ok && typeof result.text === 'string')) return null
       if (cache) await cache.store({ hid, person, canonical, text: result.text })
@@ -314,7 +396,7 @@ export function createSpeech({
    * `gone` (opcional) diz que quem pediu ja desistiu: com o prazo vencido ou o pedido abandonado, a
    * fala espontanea nao consome o teto nem o assunto.
    * @param {{ hid: string, person: 'ele' | 'ela', situation: string, categoryId?: string | null, transactionId?: string | null, latestTx?: any, gone?: () => boolean }} args
-   * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
+   * @returns {Promise<Spoken>}
    */
   async function generate(args) {
     let expired = false

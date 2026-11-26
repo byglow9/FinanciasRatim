@@ -9,6 +9,7 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 /**
  * Rotas da fala por IA, montadas em /api/vintem depois do requireOwner.
+ * POST /fala responde { text, id } quando ha fala com id do servidor (07.1, D-12) e { text: null } sem fala.
  * O corpo traz so { situation } (lista fechada) e, opcionais, categoryId e transactionId, que o
  * servidor revalida contra o casal e a pessoa do token (IDOR, T-07-32). Qualquer outro campo do
  * corpo e ignorado. Dono e pessoa vem so de req.owner (D-14). Falha de geracao nunca vira 5xx:
@@ -19,7 +20,7 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
  * GET /hints devolve so numeros da configuracao do servidor: frequencias da fala espontanea e o prazo
  * que o app espera nas reacoes (D-12).
  * @param {{
- *   speech: { generate: (args: any) => Promise<{ text: string | null }> },
+ *   speech: { generate: (args: any) => Promise<{ text: string | null, id?: string }> },
  *   config?: Parameters<typeof hintsOf>[0],
  *   db?: any,
  *   state?: { read: (who: { hid: string, person: string }) => Promise<any>, vote: (args: any) => Promise<{ ok: boolean, reason?: string }> } | null,
@@ -116,15 +117,18 @@ export function createAiRouter({ speech, config = {}, db = null, state = null, l
     }
 
     let text = null
+    let id = null
     try {
       const out = await speech.generate({ hid, person, situation, categoryId, latestTx, gone: () => gone })
       text = typeof out?.text === 'string' && out.text !== '' ? out.text : null
+      if (text !== null && typeof out?.id === 'string') id = out.id
     } catch (err) {
       // So o codigo do erro: nunca a mensagem, que poderia carregar dado.
       log.warn?.(`[ai] fala falhou codigo=${String(err?.code ?? err?.name ?? 'erro').slice(0, 40)}`)
     }
     log.warn?.(`[ai] fala situacao=${situation} resultado=${text === null ? 'nulo' : 'ok'} ms=${Date.now() - started}`)
-    res.json({ text })
+    // Com id a fala pode receber voto; o app antigo ignora o campo.
+    res.json(id === null ? { text } : { text, id })
   })
 
   return router

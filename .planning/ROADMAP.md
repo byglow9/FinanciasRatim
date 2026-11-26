@@ -536,13 +536,13 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07.1-02-PLAN.md — Régua do acervo e conversão das 228 falas aprovadas
+- [ ] 07.1-02-PLAN.md — Régua do acervo, conversão das 228 falas aprovadas, régua da saída da IA e teste lado a lado preso ao prompt congelado
 - [ ] 07.1-03-PLAN.md — Seletor de fatos, texto livre filtrado, sorteio sem repetição, reais sem centavos e porcentagem sem corte
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 07.1-04-PLAN.md — Lote 4: falas novas para completar o volume de todas as cenas
-- [ ] 07.1-05-PLAN.md — Prompt novo por fato e régua da saída
+- [ ] 07.1-05-PLAN.md — Prompt novo por fato, chave de cache v2, IA ao vivo só onde o acervo não cobre e testes do servidor migrados
 - [ ] 07.1-07-PLAN.md — App: acervo em todas as situações, cena da compra na reação, voto fora da Home e fatos locais
 - [ ] 07.1-09-PLAN.md — Núcleo do push: estágios D-2, D-1 e D-0, texto na voz do OINC, filtro de nomes e máscara de números
 

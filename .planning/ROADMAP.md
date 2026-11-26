@@ -526,7 +526,7 @@ Plans:
 **Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
 **Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-35 de 07.1-CONTEXT.md
 **Depends on:** Phase 7
-**Plans:** 8/17 plans executed
+**Plans:** 9/17 plans executed
 
 Plans:
 
@@ -550,7 +550,7 @@ Plans:
 
 - [x] 07.1-06-PLAN.md — Servidor: reasoning_effort, ritmo novo e chaves de desligar
 - [ ] 07.1-08-PLAN.md — App: fala ao entrar, 1 minuto, depois 3 minutos, e IA só na exceção
-- [ ] 07.1-10-PLAN.md — Avisos fixos no notificador: contas, faturas e compromissos
+- [x] 07.1-10-PLAN.md — Avisos fixos no notificador: contas, faturas e compromissos
 
 **Wave 5** *(blocked on Wave 4 completion)*
 

@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 12
+open_count: 13
 waived_count: 0
 fixed_count: 0
-total_count: 12
-last_updated: 2026-11-26T19:17:45.978Z
+total_count: 13
+last_updated: 2026-11-26T19:37:49.563Z
 ---
 
 # Broken Windows Ledger
@@ -27,6 +27,7 @@ last_updated: 2026-11-26T19:17:45.978Z
 | 10 | 07.1 | unrun-verify | src/components/ui/toast.tsx |  | 07.1-07: voto no toast fora da Home sem conferencia visual (claro, escuro, reduzir movimento); extensao do Chrome desconectada | open |  | 2026-11-26T19:03:21.432Z |  |
 | 11 | 07.1 | unmet-truth | src/contexts/VintemContext.tsx |  | 07.1-07: falas com reescrita ficam fora do app ate o voto; o plano 07.1-14 precisa tirar a marca das aprovadas, senao nunca vao ao ar | open |  | 2026-11-26T19:03:21.628Z |  |
 | 12 | 07.1 | unrun-verify | src/contexts/VintemContext.tsx |  | 07.1-08: ritmo das falas (entrada, 1 min, 3 min, volta de 5 min) nao conferido em navegador; so testes com relogio e React falsos | open |  | 2026-11-26T19:17:45.978Z |  |
+| 13 | 07.1 | unrun-verify | src/components/settings/NotificationsCard.tsx |  | 07.1-11: alinhamento dos interruptores novos e do texto dos dias de antecedencia sem conferencia visual (claro e escuro) | open |  | 2026-11-26T19:37:49.563Z |  |
 
 ````json
 [
@@ -183,6 +184,19 @@ last_updated: 2026-11-26T19:17:45.978Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-11-26T19:17:45.978Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 13,
+    "kind": "unrun-verify",
+    "phase": "07.1",
+    "file": "src/components/settings/NotificationsCard.tsx",
+    "line": null,
+    "description": "07.1-11: alinhamento dos interruptores novos e do texto dos dias de antecedencia sem conferencia visual (claro e escuro)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-26T19:37:49.563Z",
     "resolved_at": null,
     "milestone": null
   }

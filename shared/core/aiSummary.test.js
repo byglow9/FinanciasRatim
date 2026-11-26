@@ -9,6 +9,9 @@ import {
   TOPICS,
   SUMMARY_LIMITS,
   PCT_CAP,
+  buildAgenda,
+  buildNotes,
+  buildPatterns,
 } from './aiSummary.js'
 import { findLeaks } from './aiPrivacy.js'
 import { validateSpeech, extractNumbers } from './aiValidate.js'
@@ -574,4 +577,17 @@ test('porcentagem real: uso de R$ 2.661,84 sobre R$ 200 aparece como 1330% e o t
   })
   assert.equal(s.limites[0].uso, '1330%')
   assert.deepEqual(findLeaks(summaryToPromptText(s)), [])
+})
+
+test('buildAgenda, buildNotes e buildPatterns saem exportados e filtram item a item', () => {
+  const ctx = { person: 'ele', now: NOW, tz: 'America/Sao_Paulo' }
+  const agenda = buildAgenda([{ title: 'Dentista', date: NOW, person: 'ele', location: 'sala de espera' }, { title: 'Dela', date: NOW, person: 'ela' }], ctx)
+  assert.equal(agenda.length, 1)
+  assert.equal(agenda[0].evento, 'Dentista')
+  assert.equal(agenda[0].local, 'sala de espera')
+  const notes = buildNotes([{ title: 'Senha', content: 'a senha e 1234', person: 'ele' }, { title: 'Ideia', content: 'pintar a parede', person: 'ele' }], ctx)
+  assert.deepEqual(notes.map((n) => n.titulo), ['Ideia'])
+  const padroes = buildPatterns([INSIGHT], { person: 'ele', cycleKey: INSIGHT.cycleKey, defs: DEFS })
+  assert.equal(padroes.length, 1)
+  assert.deepEqual(buildPatterns([{ ...INSIGHT, severity: 1 }], { person: 'ele', cycleKey: INSIGHT.cycleKey, defs: DEFS }), [])
 })

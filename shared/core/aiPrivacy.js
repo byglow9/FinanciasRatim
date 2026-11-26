@@ -255,6 +255,29 @@ export function freeText(text, opts = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// userSlot: encaixe digitado pelo usuario (categoria, meta, conta, titulo) - 07.1, D-28, D-31
+// ---------------------------------------------------------------------------------------------
+
+// nome.sobrenome: duas partes de 2 ou mais letras unidas por ponto (login de pessoa).
+const DOTTED_NAME = /^\p{L}{2,}\.\p{L}{2,}$/u
+
+/**
+ * Texto que o usuario digitou e que vira encaixe de fala (nome de categoria, meta, conta ou titulo).
+ * Passa por freeText; devolve nulo quando freeText devolve nulo, o rotulo generico quando o texto
+ * bruto tem a forma nome.sobrenome e, senao, o resultado de freeText. Risco residual aceito (07, D-20):
+ * nome de uma palavra so no comeco do texto, ou todo em minusculas, passa pelo removedor.
+ * @param {unknown} text
+ * @param {{ max?: number }} [opts]
+ * @returns {string | null}
+ */
+export function userSlot(text, opts = {}) {
+  const raw = String(text ?? '').replace(SPACE_LIKE, ' ').replace(/\s+/g, ' ').trim()
+  const label = freeText(raw, { max: opts.max })
+  if (label === null) return null
+  return DOTTED_NAME.test(raw) ? PERSON_LABEL : label
+}
+
+// ---------------------------------------------------------------------------------------------
 // merchantLabel
 // ---------------------------------------------------------------------------------------------
 

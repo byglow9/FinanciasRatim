@@ -574,7 +574,7 @@ function dayAndMonth(date, tz) {
  * @param {{ person: unknown, now: Date, tz: string }} ctx
  * @returns {AiSummary[]}
  */
-function buildAgenda(raw, { person, now, tz }) {
+export function buildAgenda(raw, { person, now, tz }) {
   const items = list(raw)
     .filter((e) => e && typeof e === 'object' && isValidDate(e.date) && !isOtherPerson(e, person))
     .map((e) => ({ e, when: whenOf(e.date, now, tz) }))
@@ -602,7 +602,7 @@ function buildAgenda(raw, { person, now, tz }) {
  * @param {{ person: unknown, now: Date, tz: string }} ctx
  * @returns {AiSummary[]}
  */
-function buildNotes(raw, { person, now, tz }) {
+export function buildNotes(raw, { person, now, tz }) {
   /** @type {AiSummary[]} */
   const out = []
   for (const n of list(raw)) {
@@ -681,7 +681,7 @@ function patternSubject(insight, defs) {
  * @param {{ person: unknown, cycleKey: string, defs: CategoryDef[] }} ctx
  * @returns {AiSummary[]}
  */
-function buildPatterns(raw, { person, cycleKey, defs }) {
+export function buildPatterns(raw, { person, cycleKey, defs }) {
   return list(raw)
     .filter(
       (i) =>

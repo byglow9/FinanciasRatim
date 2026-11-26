@@ -8,6 +8,7 @@ import {
   safeLabel,
   merchantLabel,
   findLeaks,
+  userSlot,
 } from './aiPrivacy.js'
 import { normalize } from './classify.js'
 
@@ -232,4 +233,23 @@ test('findLeaks: devolve a lista de codigos, sem repetir', () => {
   const r = findLeaks('a@b.com 123456789')
   assert.deepEqual(r, [...new Set(r)])
   assert.ok(r.includes('email') && r.includes('digitos'))
+})
+
+test('userSlot: texto comum passa, senha some e login nome.sobrenome vira o rotulo generico (D-28, D-31)', () => {
+  assert.equal(userSlot('Alimentação', { max: 40 }), 'Alimentação')
+  assert.equal(userSlot('Viagem', { max: 40 }), 'Viagem')
+  assert.equal(userSlot('senha do banco', { max: 40 }), null)
+  assert.equal(userSlot('', { max: 40 }), null)
+  assert.equal(userSlot(null), null)
+  assert.equal(userSlot('joao.silva', { max: 40 }), PERSON_LABEL)
+  assert.equal(userSlot('Maria.Souza'), PERSON_LABEL)
+  assert.equal(userSlot('v1.2', { max: 40 }), 'v1.2', 'so letras dos dois lados contam como nome.sobrenome')
+})
+
+test('userSlot: nome proprio depois de preposicao e nome composto somem; o tamanho respeita max', () => {
+  assert.doesNotMatch(userSlot('Presente da Maria') ?? '', /Maria/)
+  assert.doesNotMatch(userSlot('Mesada do Pedro') ?? '', /Pedro/)
+  assert.equal(userSlot('Joao Silva'), PERSON_LABEL)
+  const long = userSlot('uma categoria com um nome bem comprido mesmo', { max: 20 })
+  assert.ok(long !== null && Array.from(long).length <= 20)
 })

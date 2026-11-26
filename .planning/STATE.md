@@ -161,7 +161,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P10 | 8 min | 2 tasks | 11 files |
 | Phase 07.1 P08 | 8 min | 2 tasks | 6 files |
 | Phase 07.1 P17 | 5 min | 2 tasks | 8 files |
-| Phase 07.1 P16 | 12 min | 2 tasks | 9 files |
+| Phase 07.1 P16 | 10 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 

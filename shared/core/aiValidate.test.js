@@ -38,9 +38,9 @@ test('aprova fala curta com numeros do resumo, por tom e comprimento', () => {
   }
 })
 
-test('aprova fala longa de ate 3 frases e 280 caracteres', () => {
+test('aprova fala longa de ate 3 frases e 200 caracteres', () => {
   const t = 'O mês está indo bem, mas a comida já passou da metade do limite. Segura a mão no delivery. Ainda dá tempo de fechar no azul.'
-  assert.ok(t.length <= 280)
+  assert.ok(t.length <= 200)
   assert.equal(reason(t, { ...base, length: 'longa' }), 'ok')
 })
 
@@ -72,10 +72,12 @@ test('emoji e travessao', () => {
   assert.equal(reason('Você gastou demais – de novo'), 'travessao')
 })
 
-test('marca-ia: reaproveita AI_TELLS de phraseRules', () => {
+test('marca-ia: reaproveita AI_TELLS de phraseRules, menos "Espero que" (voz aprovada)', () => {
   assert.equal(reason('Olá, você gastou demais hoje'), 'marca-ia')
   assert.equal(reason('Que tal gastar menos amanhã'), 'marca-ia')
-  assert.equal(reason('Espero que você gaste menos amanhã'), 'marca-ia')
+  assert.equal(reason('Notei que você gastou demais hoje'), 'marca-ia')
+  assert.equal(reason('Espero que você gaste menos amanhã'), 'ok')
+  assert.equal(reason('Saindo dinheiro. Espero que seja urgência e não promoção.'), 'ok')
 })
 
 test('recusa: assistente em portugues e em ingles, sem pegar fala normal', () => {
@@ -98,19 +100,51 @@ test('idioma: ingles e texto sem cara de portugues reprovam', () => {
   assert.equal(reason('Porra, de novo?'), 'ok')
 })
 
-test('tamanho: curta ate 140 caracteres e 4 frases; longa ate 280 e 5 frases', () => {
+test('tamanho: curta ate 120 caracteres e 4 frases; longa ate 200 e 5 frases (D-02)', () => {
   // Fala surtada usa frases curtinhas: o que segura o tamanho sao os caracteres.
-  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 140, sentences: 4 })
-  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 280, sentences: 5 })
+  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 120, sentences: 4 })
+  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 200, sentences: 5 })
   const longoCurta = `Você gastou demais ${'e de novo '.repeat(14)}hoje.`
-  assert.ok(longoCurta.length > 140)
+  assert.ok(longoCurta.length > 120)
   assert.equal(reason(longoCurta), 'tamanho')
+  // a fronteira: 120 passa, 121 reprova (curta); 200 passa, 201 reprova (longa)
+  const fala = (n) => `Você gastou demais ${'a'.repeat(n - 20)}.`
+  assert.equal(fala(120).length, 120)
+  assert.equal(reason(fala(120)), 'ok')
+  assert.equal(reason(fala(121)), 'tamanho')
+  assert.equal(reason(fala(200), { ...base, length: 'longa' }), 'ok')
+  assert.equal(reason(fala(201), { ...base, length: 'longa' }), 'tamanho')
   assert.equal(reason('Você gastou demais. De novo. Que absurdo. Para com isso.'), 'ok')
   const cinco = 'Você gastou demais. De novo. Que absurdo. Para com isso. Sério.'
   assert.equal(reason(cinco), 'tamanho')
   assert.equal(reason(cinco, { ...base, length: 'longa' }), 'ok')
   assert.equal(reason(`${cinco} Chega.`, { ...base, length: 'longa' }), 'tamanho')
   assert.equal(reason(`Você gastou demais ${'e de novo '.repeat(30)}hoje.`, { ...base, length: 'longa' }), 'tamanho')
+})
+
+test('Pix: "Pix de R$ 150" passa; "Pix de Fulano" e "pix para a loja" continuam dado-proibido', () => {
+  const ctx = { ...base, allowed: { moneyCents: [15000, 4800], pcts: [], ints: [] } }
+  assert.equal(reason(`Saiu um Pix de R$${NB}150 pra uma pessoa, hein.`, ctx), 'ok')
+  assert.equal(reason('Saiu um Pix de R$ 150 pra uma pessoa, hein.', ctx), 'ok')
+  assert.equal(reason('Foi um Pix de 150 reais pra uma pessoa, hein.', ctx), 'ok')
+  assert.equal(reason('Saiu um Pix de Fulano pra uma pessoa, hein.', ctx), 'dado-proibido')
+  assert.equal(reason('Saiu um Pix de R$ 150 e um Pix de Fulano, hein.', ctx), 'dado-proibido')
+  assert.equal(reason('Foi um pix para a loja de novo', ctx), 'dado-proibido')
+  assert.equal(reason('Mandou pix para o Fulano ontem', ctx), 'dado-proibido')
+})
+
+test('vetada: a palavra mulambo e derivados reprovam com o motivo proprio (D-30)', () => {
+  for (const w of ['mulambo', 'Mulambuxo', 'MULAMBA', 'mulambos']) {
+    assert.equal(reason(`Você é um ${w}, hein`), 'vetada', w)
+  }
+  assert.equal(reason('Você é um safaduxo, hein'), 'ok')
+})
+
+test('numero grande por extenso continua reprovando; o exagero com numero pequeno passa', () => {
+  assert.equal(reason('Foram duzentos e vinte no posto, absurdo'), 'numero-extenso')
+  assert.equal(reason('Foram vinte reais no posto, absurdo'), 'numero-extenso')
+  assert.equal(reason('Foi mil vezes pior, absurdo'), 'numero-extenso')
+  assert.equal(reason('Vi duas moedas e era uma só, absurdo'), 'ok')
 })
 
 test('palavrao esticado ou gritado conta como sem filtro', () => {

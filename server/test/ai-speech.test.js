@@ -1,5 +1,6 @@
 import { test, describe, before, after, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { createApp } from '../src/app.js'
 import { readAiConfig } from '../src/ai/config.js'
 import { createChain, createProviders } from '../src/ai/providers.js'
@@ -7,6 +8,7 @@ import { createLimiter } from '../src/limiter.js'
 import { createAiRouter } from '../src/ai/routes.js'
 import { createBudget } from '../src/ai/budget.js'
 import { createCache } from '../src/ai/cache.js'
+import { createOincState } from '../src/ai/state.js'
 import { createMemoryDb } from './_ai-memory-db.js'
 import { createSpeech, pickSpontaneousFact } from '../src/ai/speech.js'
 import { hintsOf } from '../src/ai/topics.js'
@@ -15,6 +17,7 @@ import { labelHash } from '../../shared/core/aiCacheKey.js'
 import { DATA_CLOSE, DATA_OPEN } from '../../shared/core/aiPrompt.js'
 import { buildFacts, factOfTransaction } from '../../shared/core/oincFacts.js'
 import { OINC_SCENES } from '../../shared/core/oincScenes.js'
+import { OINC_LINES } from '../../shared/core/oincLines.js'
 import { createFakeFirestore } from './_fake-firestore.js'
 
 // Testes HTTP da fala por IA com snapshot, provedor e fetch injetados (sem rede, sem Firestore).
@@ -162,6 +165,8 @@ describe('ai fala', () => {
   let db
   let clock
   let usage
+  let oinc
+  let speechUnderTest
 
   async function start(env = AI_ENV, opts = {}) {
     snapshot = fakeSnapshot()
@@ -176,9 +181,13 @@ describe('ai fala', () => {
     usage = createMemoryDb()
     const budget = opts.spontaneous ? createBudget({ db: usage, config, now: () => NOW, log }) : null
     const cache = opts.spontaneous ? createCache({ db: usage, config, now: () => NOW, log }) : null
-    const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log, bank: opts.bank ?? {} })
+    // Com opts.state entra o estado do OINC de verdade (banco em memoria); true usa o padrao.
+    oinc = createMemoryDb()
+    const state = opts.state === true ? createOincState({ db: oinc, now: () => NOW, log }) : (opts.state ?? null)
+    const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log, bank: opts.bank ?? {}, state })
+    speechUnderTest = speech
     const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => clock.t })
-    const router = createAiRouter({ speech, config, db, limiter, log })
+    const router = createAiRouter({ speech, config, db, limiter, log, state })
     const app = createApp({
       verifyToken,
       db: {},
@@ -960,6 +969,121 @@ describe('ai fala', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
     assert.equal(usageDoc().espiar, undefined)
     assert.equal(usageDoc().assuntos, undefined)
+    await stop()
+  })
+
+  const idOf = (text) => `ia-${createHash('sha256').update(text).digest('hex').slice(0, 16)}`
+  const mine = () => oinc.read('oincState', 'casalA__ele')
+  const seed = (data) => oinc.collection('oincState').doc('casalA__ele').set({ ownerId: 'casalA', person: 'ele', ...data })
+  const vote = (token, body) =>
+    fetch(`${base}/api/vintem/voto`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+  const toned = (tone) => {
+    const load = snapshot.load.bind(snapshot)
+    snapshot.load = async (args) => ({ ...(await load(args)), tone })
+  }
+
+  test('com estado, /fala devolve { text, id }, guarda em served e aceita voto com o texto do servidor', async () => {
+    await start(AI_ENV, { state: true })
+    const out = await (await post('tok-a-ele', { situation: 'lancamento' })).json()
+    assert.deepEqual(out, { text: GOOD, id: idOf(GOOD) })
+    assert.match(out.id, /^ia-[0-9a-f]{16}$/)
+    assert.deepEqual(mine().served, [{ id: out.id, cena: 'delivery', text: GOOD }])
+    assert.equal((await vote('tok-a-ele', { id: out.id, voto: 'sim', text: 'texto do cliente' })).status, 200)
+    assert.deepEqual(mine().liked, [{ id: out.id, cena: 'delivery', text: GOOD }])
+    // a outra pessoa nao alcanca a fala servida
+    assert.equal((await vote('tok-a-ela', { id: out.id, voto: 'sim' })).status, 404)
+    await stop()
+  })
+
+  test('com estado, sem texto a resposta e so { text: null } e nada e guardado', async () => {
+    queue = [WRONG_STORE]
+    await start(AI_ENV, { state: true })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: null })
+    assert.equal(mine(), undefined)
+    await stop()
+  })
+
+  test('fala reprovada nao e servida de novo, nem do cache', async () => {
+    await start({ ...AI_ENV, AI_CACHE_VARIANTS: '1' }, { spontaneous: true, state: true })
+    const first = await say('lancamento')
+    assert.equal(first.text, GOOD)
+    assert.equal((await say('lancamento')).text, GOOD, 'antes do voto o cache serve')
+    assert.equal(fetchFn.requests.length, 1)
+    assert.equal((await vote('tok-a-ele', { id: first.id, voto: 'nao' })).status, 200)
+    assert.deepEqual(await say('lancamento'), { text: null })
+    assert.equal(fetchFn.requests.length, 2, 'a do cache foi recusada e o provedor repetiu a mesma')
+    await stop()
+  })
+
+  test('saida quase igual a uma das ultimas servidas vira text null; fala nova passa', async () => {
+    await start(AI_ENV, { state: true })
+    seed({ served: [{ id: 'ia-0000000000000000', cena: 'delivery', text: GOOD }] })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: null })
+    queue.splice(0, queue.length, NEUTRAL)
+    assert.equal((await (await post('tok-a-ele', { situation: 'lancamento' })).json()).text, NEUTRAL)
+    await stop()
+  })
+
+  test('no sem filtro a aprovada da mesma cena entra nos exemplos; em suave e direto, nao (D-35)', async () => {
+    queue = [NEUTRAL]
+    const liked = [
+      { id: 'ia-1111111111111111', cena: 'delivery', text: 'Aprovada ao vivo sobre o motoboy teu padrinho.' },
+      { id: OINC_LINES.delivery[0].id, cena: 'delivery', text: 'Modelo aprovado: o {loja} virou teu fogão.' },
+      { id: 'ia-2222222222222222', cena: 'mercado', text: 'Aprovada de outra cena sobre o carrinho.' },
+    ]
+    await start(AI_ENV, { state: true })
+    seed({ liked })
+    await post('tok-a-ele', { situation: 'lancamento' })
+    const wild = fetchFn.requests[0].body.messages[0].content
+    assert.ok(wild.includes(liked[0].text), 'aprovada ao vivo')
+    assert.ok(wild.includes('Modelo aprovado: o iFood virou teu fogão.'), 'modelo preenchido com o fato')
+    assert.ok(!wild.includes('{loja}'))
+    assert.ok(!wild.includes('carrinho'), 'outra cena fica de fora')
+    await stop()
+
+    for (const tone of ['suave', 'direto']) {
+      await start(AI_ENV, { state: true })
+      seed({ liked })
+      toned(tone)
+      await post('tok-a-ele', { situation: 'lancamento' })
+      const sent = promptOf(fetchFn.requests[0])
+      for (const part of ['motoboy teu padrinho', 'Modelo aprovado', 'carrinho']) assert.ok(!sent.includes(part), `${tone}: ${part}`)
+      await stop()
+    }
+  })
+
+  test('falha ao ler ou gravar o estado nao impede a fala nem leva texto ao log', async () => {
+    const broken = {
+      read: async () => {
+        throw new Error('segredo-do-estado')
+      },
+      recordServed: async () => {
+        throw new Error('segredo-do-estado')
+      },
+      vote: async () => ({ ok: false }),
+    }
+    await start(AI_ENV, { state: broken })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: GOOD, id: idOf(GOOD) })
+    const everything = log.lines.join('\n')
+    for (const secret of ['segredo-do-estado', 'trouxa', 'iFood']) assert.ok(!everything.includes(secret), secret)
+    await stop()
+  })
+
+  test('com estado generate devolve text, id, cena e source; pedido abandonado nao entra em served', async () => {
+    await start(AI_ENV, { state: true })
+    const who = { hid: 'casalA', person: 'ele', situation: 'lancamento' }
+    const gone = await speechUnderTest.generate({ ...who, gone: () => true })
+    assert.equal(gone.text, GOOD)
+    assert.equal(mine(), undefined, 'ninguem viu: nada em served')
+    const out = await speechUnderTest.generate(who)
+    assert.equal(out.id, idOf(GOOD))
+    assert.equal(out.cena, 'delivery')
+    assert.equal(out.source, 'ia')
+    assert.equal(mine().served.length, 1)
     await stop()
   })
 

@@ -192,6 +192,51 @@ describe('oinc voto e acervo', () => {
     await stop()
   })
 
+  test('recordServed guarda por pessoa, corta em 30, move o repetido para o fim e a servida aceita voto', async () => {
+    const memory = createMemoryDb()
+    const state = createOincState({ db: memory, now: () => new Date('2026-11-26T12:00:00Z'), log: silent })
+    const who = { hid: 'casalA', person: 'ele' }
+    const idAt = (i) => `ia-${String(i).padStart(16, '0')}`
+    for (let i = 0; i < 33; i += 1) {
+      assert.deepEqual(await state.recordServed({ ...who, id: idAt(i), cena: 'entrou', text: `fala ${i}` }), { ok: true })
+    }
+    let served = memory.read('oincState', 'casalA__ele').served
+    assert.equal(served.length, 30)
+    assert.equal(served[0].id, idAt(3))
+    await state.recordServed({ ...who, id: idAt(3), cena: 'entrou', text: 'fala 3' })
+    served = memory.read('oincState', 'casalA__ele').served
+    assert.equal(served.length, 30)
+    assert.deepEqual(served.at(-1), { id: idAt(3), cena: 'entrou', text: 'fala 3' })
+    assert.deepEqual(await state.vote({ ...who, id: idAt(10), voto: 'sim' }), { ok: true })
+    assert.deepEqual(memory.read('oincState', 'casalA__ele').liked, [{ id: idAt(10), cena: 'entrou', text: 'fala 10' }])
+    // gravar depois do voto nao apaga o que foi votado
+    await state.recordServed({ ...who, id: idAt(40), cena: 'entrou', text: 'fala 40' })
+    assert.equal(memory.read('oincState', 'casalA__ele').liked.length, 1)
+    assert.equal((await state.vote({ hid: 'casalA', person: 'ela', id: idAt(10), voto: 'sim' })).reason, 'desconhecida')
+  })
+
+  test('recordServed recusa par, id ou texto invalidos e falha de banco nunca lanca', async () => {
+    const memory = createMemoryDb()
+    const state = createOincState({ db: memory, log: silent })
+    const good = { hid: 'casalA', person: 'ele', id: 'ia-0000000000000001', cena: 'entrou', text: 'fala' }
+    for (const bad of [{ person: 'porquinho' }, { hid: 'a/b' }, { id: 'COM ESPACO' }, { text: '' }, { text: 7 }]) {
+      assert.deepEqual(await state.recordServed({ ...good, ...bad }), { ok: false }, JSON.stringify(bad))
+    }
+    assert.equal(Object.keys(memory.all('oincState')).length, 0)
+    const lines = []
+    const broken = createOincState({
+      db: {
+        collection: () => ({ doc: () => ({}) }),
+        runTransaction: async () => {
+          throw Object.assign(new Error('segredo do banco'), { code: 14 })
+        },
+      },
+      log: { warn: (l) => lines.push(l) },
+    })
+    assert.deepEqual(await broken.recordServed(good), { ok: false })
+    assert.ok(lines.length === 1 && !lines[0].includes('segredo') && !lines[0].includes('fala '))
+  })
+
   test('sem dono no pedido nada e lido', async () => {
     await start()
     const res = await fetch(`${base}/api/vintem/acervo`)

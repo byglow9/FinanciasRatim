@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 07
 current_phase_name: Push e Vintém com IA
 status: executing
-stopped_at: Completed 07.1-08-PLAN.md
-last_updated: "2026-11-26T19:18:33.959Z"
+stopped_at: Completed 07.1-17-PLAN.md
+last_updated: "2026-11-26T19:24:10.568Z"
 last_activity: 2026-11-25
 last_activity_desc: Phase 06 execution started
-state_head: acb3b76c13bc69c8faed76686b1f7fedf181ace1
+state_head: d87f6937d1660d645a43179db539e11190891ec1
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 165
-  completed_plans: 155
+  completed_plans: 156
   percent: 20
 ---
 
@@ -160,6 +160,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P06 | 8min | 2 tasks | 9 files |
 | Phase 07.1 P10 | 8 min | 2 tasks | 11 files |
 | Phase 07.1 P08 | 8 min | 2 tasks | 6 files |
+| Phase 07.1 P17 | 5 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -256,6 +257,7 @@ Recent decisions affecting current work:
 - [Phase 07.1]: 07.1-10: nao publicar o servidor antes do 07.1-14, porque a fatura ja usa evaluateDue com falas ainda sem voto
 - [Phase 07.1]: 07.1-08: no sem filtro a terceira fala sem gatilho e da IA; as outras e as reacoes saem do acervo
 - [Phase 07.1]: 07.1-08: troca de aba curta reinicia o intervalo da fala; rever se o dono ouvir pouco no uso real
+- [Phase 07.1]: 07.1-17: publicar o servidor liga conta, fatura e compromisso de uma vez; esperar o voto do 07.1-14
 
 ### Pending Todos
 
@@ -289,8 +291,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-26T19:18:33.788Z
-Stopped at: Completed 07.1-08-PLAN.md
+Last session: 2026-11-26T19:24:10.405Z
+Stopped at: Completed 07.1-17-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

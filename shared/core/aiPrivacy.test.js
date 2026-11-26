@@ -9,8 +9,11 @@ import {
   merchantLabel,
   findLeaks,
   userSlot,
+  maskSensitiveNumbers,
 } from './aiPrivacy.js'
 import { normalize } from './classify.js'
+import { readFileSync, readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 const DEFS = [
   { id: 'alimentacao', name: 'Alimentacao' },
@@ -252,4 +255,81 @@ test('userSlot: nome proprio depois de preposicao e nome composto somem; o taman
   assert.equal(userSlot('Joao Silva'), PERSON_LABEL)
   const long = userSlot('uma categoria com um nome bem comprido mesmo', { max: 20 })
   assert.ok(long !== null && Array.from(long).length <= 20)
+})
+
+test('userSlot: nome composto so de palavras comuns de categoria ou meta fica como escrito', () => {
+  for (const name of ['Casa e Lazer', 'Casa Nova', 'Contas da Casa', 'Comida para Pets', 'Reserva de Emergência', 'Saúde e Beleza', 'Carro/Transporte']) {
+    const out = userSlot(name, { max: 40 })
+    assert.ok(out !== null && !out.includes(PERSON_LABEL), `${name} virou ${out}`)
+    assert.equal(normalize(out), normalize(name.replace('/', ' ')), name)
+  }
+})
+
+test('userSlot: uma palavra fora da lista comum continua valendo o filtro de pessoa (D-28)', () => {
+  for (const name of ['Casa da Maria', 'Lazer e Pedro', 'Presente da Maria', 'Mesada do Pedro', 'Contas Ana Paula', 'Casa Joao', 'Joao Silva', 'joao.silva', 'casa.lazer']) {
+    const out = userSlot(name, { max: 40 })
+    assert.doesNotMatch(normalize(out), /(maria|pedro|ana paula|joao|silva|casa\.lazer)/, `${name} virou ${out}`)
+  }
+  assert.equal(userSlot('senha de Casa', { max: 40 }), null)
+})
+
+test('maskSensitiveNumbers: CPF, CNPJ, conta, cartao e final saem; o nome no titulo continua', () => {
+  const cases = [
+    ['CPF 123.456.789-09 da Maria', 'CPF *** da Maria'],
+    ['cpf 12345678909', 'cpf ***'],
+    ['CNPJ 12.345.678/0001-90', 'CNPJ ***'],
+    ['Conta 12345-6 do Joao', 'Conta *** do Joao'],
+    ['Cartao 4111 1111 1111 1111', 'Cartao ***'],
+    ['Cartão 4111-1111-1111-1111', 'Cartão ***'],
+    ['Nubank final 4321', 'Nubank final ***'],
+    ['cartão 4321', 'cartão ***'],
+    ['agência 0123 conta 98765', 'agência *** conta ***'],
+    ['Ag. 1234', 'Ag. ***'],
+    ['Visa **** 4321', 'Visa **** ***'],
+    ['ligar 99999-1234', 'ligar ***'],
+    ['R$ 123.456.789-09', 'R$ ***'],
+  ]
+  for (const [input, expected] of cases) assert.equal(maskSensitiveNumbers(input), expected, input)
+})
+
+test('maskSensitiveNumbers: digitos de outras escritas e separadores invisiveis nao escapam', () => {
+  const wide = String.fromCharCode(0xff11, 0xff12, 0xff13, 0xff14, 0xff15)
+  assert.equal(maskSensitiveNumbers(`conta ${wide}`), 'conta ***')
+  const zw = String.fromCharCode(0x200b)
+  assert.equal(maskSensitiveNumbers(`123${zw}456${zw}789`), '***')
+  const soft = String.fromCharCode(0xad)
+  assert.equal(maskSensitiveNumbers(`123${soft}456`), '***')
+})
+
+test('maskSensitiveNumbers: datas, valores em reais e numeros curtos continuam', () => {
+  for (const text of [
+    'Entrega 12/10',
+    'Prova 12/10/2026',
+    'Seguro 12/2026',
+    'Reunião 2026-10-12',
+    'Sinal de R$ 15.000',
+    'Parcela de R$ 1.234,56.',
+    'Pagar R$ 15000 ao Joao',
+    'IPTU 2026',
+    'Apto 402 bloco 3',
+    'Parcela 3 de 12',
+  ]) {
+    assert.equal(maskSensitiveNumbers(text), text)
+  }
+  assert.equal(maskSensitiveNumbers(null), '')
+  assert.equal(maskSensitiveNumbers(undefined), '')
+})
+
+test('maskSensitiveNumbers nao e usada por nada que fala com a IA (D-31)', () => {
+  const url = (p) => fileURLToPath(new URL(p, import.meta.url))
+  const files = [
+    url('./aiPrompt.js'),
+    url('./aiSummary.js'),
+    url('./oincFacts.js'),
+    ...readdirSync(url('../../server/src/ai/'), { recursive: true })
+      .filter((f) => String(f).endsWith('.js'))
+      .map((f) => url(`../../server/src/ai/${f}`)),
+  ]
+  assert.ok(files.length > 5)
+  for (const f of files) assert.ok(!readFileSync(f, 'utf8').includes('maskSensitiveNumbers'), f)
 })

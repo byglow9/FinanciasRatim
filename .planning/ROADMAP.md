@@ -524,9 +524,9 @@ Plans:
 ### Phase 07.1: Falas do OINC com qualidade (INSERTED)
 
 **Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
-**Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-33 de 07.1-CONTEXT.md
+**Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-35 de 07.1-CONTEXT.md
 **Depends on:** Phase 7
-**Plans:** 15 plans
+**Plans:** 17 plans
 
 Plans:
 
@@ -537,32 +537,37 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 07.1-02-PLAN.md — Régua do acervo e conversão das 228 falas aprovadas
-- [ ] 07.1-03-PLAN.md — Seletor de fatos, sorteio sem repetição, reais sem centavos e porcentagem sem corte
+- [ ] 07.1-03-PLAN.md — Seletor de fatos, texto livre filtrado, sorteio sem repetição, reais sem centavos e porcentagem sem corte
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 07.1-04-PLAN.md — Lote 4: falas novas para completar o volume de todas as cenas
-- [ ] 07.1-05-PLAN.md — Prompt novo por fato, régua da saída e voto na fala da IA
-- [ ] 07.1-07-PLAN.md — App: acervo em todas as situações, voto fora da Home e fatos locais
-- [ ] 07.1-09-PLAN.md — Núcleo do push: estágios D-2, D-1 e D-0, texto na voz do OINC e máscara de números
+- [ ] 07.1-05-PLAN.md — Prompt novo por fato e régua da saída
+- [ ] 07.1-07-PLAN.md — App: acervo em todas as situações, cena da compra na reação, voto fora da Home e fatos locais
+- [ ] 07.1-09-PLAN.md — Núcleo do push: estágios D-2, D-1 e D-0, texto na voz do OINC, filtro de nomes e máscara de números
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 07.1-06-PLAN.md — Servidor: reasoning_effort, ritmo novo, chaves de desligar e acervo que se renova
+- [ ] 07.1-06-PLAN.md — Servidor: reasoning_effort, ritmo novo e chaves de desligar
 - [ ] 07.1-08-PLAN.md — App: fala ao entrar, 1 minuto, depois 3 minutos, e IA só na exceção
-- [ ] 07.1-10-PLAN.md — Avisos fixos no servidor: contas, faturas e compromissos
+- [ ] 07.1-10-PLAN.md — Avisos fixos no notificador: contas, faturas e compromissos
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07.1-11-PLAN.md — Limites na voz nova com loja e valor, interruptores e documentos (D-27)
-- [ ] 07.1-13-PLAN.md — Ferramentas do teste cego e voto do lote 4
+- [ ] 07.1-13-PLAN.md — Ferramentas do teste cego e do voto de todas as falas novas
+- [ ] 07.1-16-PLAN.md — Voto na fala da IA e reposição do acervo
+- [ ] 07.1-17-PLAN.md — Relógio, gatilho pós-sincronização e limpeza dos avisos fixos
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 07.1-12-PLAN.md — Três avisos aleatórios por dia, um por faixa, com assunto real
-- [ ] 07.1-14-PLAN.md — Gate do dono: teste cego, voto do lote 4 e decisão do modelo ou só acervo
+- [ ] 07.1-11-PLAN.md — Limites na voz nova com loja e valor, interruptores e documentos (D-27)
+- [ ] 07.1-14-PLAN.md — Gate do dono: teste cego, voto de todas as falas novas e decisão do modelo ou só acervo
 
 **Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 07.1-12-PLAN.md — Três avisos aleatórios por dia, um por faixa, com assunto real
+
+**Wave 8** *(blocked on Wave 7 completion)*
 
 - [ ] 07.1-15-PLAN.md — Gate de produção: suíte completa, publicação (servidor antes do site), iPhone real e aceite de 8 em cada 10
 

@@ -2334,5 +2334,293 @@
   "texto": "Teve um dia que contei até 3 e me perdi. Agora só conto até 2 e peço ajuda. Tô economizando número.",
   "lote": 4,
   "comentario": ""
+ },
+ {
+  "id": "l4c-01-1",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "Caiu o salário! Ronc, acordei pelado e já tô gostoso. Separa o Porquinho antes que eu me apaixone.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-2",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "R$ 3.200 de salário. Em dois dias tu faz sumir tudo, caloteiro de si mesmo. Me dá metade ou eu grito.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-3",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "Entrou o malote, R$ 3.200. Respira, seu playboy, e paga o aluguel antes de pedir delivery.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-4",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "Salário na conta! Sou porco, mas hoje me sinto um banqueiro pelado. rsrsrs",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-5",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "Caiu a grana. Primeiro as contas, depois o Porquinho, depois o pod. Nessa ordem, chapaduxo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-6",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "R$ 3.200 entrando. Me aperta bem forte antes que saia tudo em dois dias, huehuehue.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-01-7",
+  "cenario": "Salário caiu",
+  "situacao": "Salário na conta",
+  "texto": "Pingou o salário e eu já sinto cheiro de boleto. Pode vir, tô pelado e sem medo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-1",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "Internet vence em 2 dias, R$ 119. Sem net tu não vive, nem eu. Paga, porra.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-2",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "A luz de R$ 240 vence amanhã. Quer ficar no escuro comigo? Eu até gosto, mas paga antes.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-3",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "Aluguel de R$ 1.100 vence hoje. Paga e não me enche, que eu já tô pelado de nervoso.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-4",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "Água vence em 2 dias, R$ 85. Se cortarem, tu toma banho de chuva e eu fico aqui sujuxo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-5",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "Conta de R$ 119 vencendo amanhã. Paga logo, caloteiro, senão eu conto pros outros porcos.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-02-6",
+  "cenario": "Conta fixa vencendo",
+  "situacao": "Conta vence em 0 a 2 dias",
+  "texto": "Vence hoje, R$ 240. Se atrasar vem juros, o único que entra em mim sem pedir licença. rsrsrs",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-03-2",
+  "cenario": "Fatura chegando",
+  "situacao": "Fatura do cartão perto de fechar ou vencer",
+  "texto": "A fatura veio gorda, R$ 2.100. Gordinho aqui sou eu, e me acho gostoso. Tu não tem esse direito.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-03-3",
+  "cenario": "Fatura chegando",
+  "situacao": "Fatura do cartão perto de fechar ou vencer",
+  "texto": "Fatura de R$ 1.850 vencendo. Paga inteira ou paga o mínimo e vira meu escravo de juros, HIHIHI.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-03-6",
+  "cenario": "Fatura chegando",
+  "situacao": "Fatura do cartão perto de fechar ou vencer",
+  "texto": "R$ 2.100 de fatura e tu ainda quer pod? Tá chapaduxo ou só sem noção?",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-04-1",
+  "cenario": "Meta nova",
+  "situacao": "Meta criada no app",
+  "texto": "Meta nova: viagem, R$ 3.000. Quem é você e onde enfiou meu dono gastão? Gostei, ronc.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-04-2",
+  "cenario": "Meta nova",
+  "situacao": "Meta criada no app",
+  "texto": "Criou meta de R$ 5.000 pra moto. Vou fingir que acredito, malote por malote.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-04-3",
+  "cenario": "Meta nova",
+  "situacao": "Meta criada no app",
+  "texto": "Meta nova! Me enche de dindin, que eu vou crescer até virar porco de luxo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-04-4",
+  "cenario": "Meta nova",
+  "situacao": "Meta criada no app",
+  "texto": "Meta de R$ 2.000 pro notebook. Se for só pra jogo, faz o favor de me avisar antes.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-04-5",
+  "cenario": "Meta nova",
+  "situacao": "Meta criada no app",
+  "texto": "Nova meta criada. Agora falta o principal: depositar. Eu espero pelado, de boa.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-05-1",
+  "cenario": "Meta batida",
+  "situacao": "Meta chegou a 100%",
+  "texto": "META BATIDA! Ronc, tô emocionado, vou chorar dentro do cofre.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-05-2",
+  "cenario": "Meta batida",
+  "situacao": "Meta chegou a 100%",
+  "texto": "Bateu a meta de R$ 3.000! Quem diria, o caloteiro virou poupador. Tô orgulhuxo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-05-3",
+  "cenario": "Meta batida",
+  "situacao": "Meta chegou a 100%",
+  "texto": "Meta concluída. Pode comemorar, mas só com um pãozuxo, não com um malote.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-05-4",
+  "cenario": "Meta batida",
+  "situacao": "Meta chegou a 100%",
+  "texto": "Fechou a meta da viagem. Vai e volta, mas deixa o Porquinho de pé, seu safaduxo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-05-5",
+  "cenario": "Meta batida",
+  "situacao": "Meta chegou a 100%",
+  "texto": "Meta batida, R$ 5.000. Agora me beija na testa e deposita mais, que eu gosto de ser bem tratado. rsrsrs",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-06-1",
+  "cenario": "Sacou do Porquinho",
+  "situacao": "Retirada do Porquinho",
+  "texto": "Tirou R$ 300 do Porquinho. Eu sou só o porco, mas senti o vazio. Devolve, caloteiro.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-06-2",
+  "cenario": "Sacou do Porquinho",
+  "situacao": "Retirada do Porquinho",
+  "texto": "Sacou R$ 500 e nem avisou. Doeu aqui no bucho, tá me ouvindo? Volta a depositar.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-06-3",
+  "cenario": "Sacou do Porquinho",
+  "situacao": "Retirada do Porquinho",
+  "texto": "R$ 300 saíram de mim. Tomara que seja pra algo bom e não pra pod, chapaduxo. HIHIHI",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-06-4",
+  "cenario": "Sacou do Porquinho",
+  "situacao": "Retirada do Porquinho",
+  "texto": "Mexeu no Porquinho, R$ 500 a menos. Pelado e abandonado, assim que eu me sinto.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-07-1",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app",
+  "texto": "Ronc... chegou o dono e eu tô pelado. Vira de costas que eu me ajeito.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-07-2",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app",
+  "texto": "Entrou e eu nem terminei meu sonho. Era com uma moeda de ouro e um porco gostoso.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-07-3",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app",
+  "texto": "Hoje tô chapaduxo de ficar sozinho. Fica um pouco, mexe em tudo, só não me deixa no escuro.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-08-1",
+  "cenario": "Do nada",
+  "situacao": "Fala solta",
+  "texto": "Tô aqui coçando o bucho no escuro. Se tu não depositar, eu coço mais.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-08-2",
+  "cenario": "Do nada",
+  "situacao": "Fala solta",
+  "texto": "Dizem que rico dorme em cima do dinheiro. Eu durmo dentro. Sou mais rico que eles, rsrsrs.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4c-08-3",
+  "cenario": "Do nada",
+  "situacao": "Fala solta",
+  "texto": "Pensei em ligar pro cofre do vizinho. Dizem que o porco de lá é magreluxo e fofoqueiro.",
+  "lote": 4,
+  "comentario": ""
  }
 ]

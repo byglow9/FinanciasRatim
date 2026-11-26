@@ -95,6 +95,11 @@ export const OINC_DINHEIRO = Object.freeze({
     ['limite-estourou-006', 'Estourou antes da hora. {categoria} em {pct} e o mês ainda nem acabou. Que pressa é essa, campeão?', 'm', false, false, 4, '4:l4b-02-7'],
     ['limite-estourou-007', 'Passou {valor} do limite de {categoria}, caralho. Foi tu que escolheu, sua mentirosa.', 'f', false, false, 4, '2:s06-1', { reescrita: true }],
     ['limite-estourou-008', 'Estourou antes da hora. {categoria} em {pct} e o mês ainda nem acabou. Que pressa é essa, campeã?', 'f', false, false, 4, '4:l4b-02-7', { reescrita: true }],
+    ['limite-estourou-009', '{pct} de {categoria}. Passou do limite, caralho. Enfiou tudo e nem pediu licença pro porco.', 'x', false, false, 4, '4:novo-limite-estourou-1', { reescrita: true }],
+    ['limite-estourou-010', 'Estourou o limite de {categoria}, {valor} a mais. Põe a mão na consciência, porra, que a do bolso já tá vazia.', 'x', false, false, 4, '4:novo-limite-estourou-2', { reescrita: true }],
+    ['limite-estourou-011', '{categoria} estourou em {valor}. Merda feita. Agora respira, anota e segura a mão, que o mês ainda não acabou.', 'x', false, false, 4, '4:novo-limite-estourou-3', { reescrita: true }],
+    ['limite-estourou-012', 'Limite de {categoria} furado, {valor} a mais. Isso aí é buraco no bolso e quem sente é o meu bucho, AHAHAHA.', 'x', true, false, 4, '4:novo-limite-estourou-4', { reescrita: true }],
+    ['limite-estourou-013', '{categoria} bateu {pct}. Foi sem querer ou querendo muito? Pode falar que eu guardo segredo, hehehe.', 'x', true, false, 4, '4:novo-limite-estourou-5', { reescrita: true }],
   ]),
   'limite-novo': list([
     ['limite-novo-001', 'Limite de {valor} em {categoria}. Bonito. Quero ver na terça de preguiça.', 'x', false, false, 4, '3:s25-1', { reescrita: true }],

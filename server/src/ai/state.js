@@ -16,6 +16,7 @@ const MAX_REJECTED = 500
 const MAX_LIKED = 100
 const MAX_GENERATED = 200
 const MAX_SERVED = 30
+const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
  * Codigo curto do erro, nunca a mensagem (poderia carregar dado).
@@ -41,7 +42,7 @@ function idsOf(value) {
 }
 
 /**
- * Lista de falas { id, cena, text } saneada.
+ * Lista de falas { id, cena, text } saneada. A gerada guarda tambem o lote (zero).
  * @param {unknown} value
  * @returns {Array<{ id: string, cena: string, text: string }>}
  */
@@ -50,10 +51,23 @@ function entriesOf(value) {
   const out = []
   for (const e of value) {
     if (e && typeof e.id === 'string' && LINE_ID_RE.test(e.id) && typeof e.text === 'string') {
-      out.push({ id: e.id, cena: typeof e.cena === 'string' ? e.cena : '', text: e.text })
+      const entry = { id: e.id, cena: typeof e.cena === 'string' ? e.cena : '', text: e.text }
+      out.push(Number.isInteger(e.lote) ? { ...entry, lote: e.lote } : entry)
     }
   }
   return out
+}
+
+/**
+ * Dia da ultima reposicao por cena: so chaves de cena e dias no formato aaaa-mm-dd.
+ * @param {unknown} value
+ * @returns {Record<string, string>}
+ */
+function daysOf(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value).filter(([cena, day]) => LINE_ID_RE.test(cena) && typeof day === 'string' && DAY_KEY_RE.test(day)),
+  )
 }
 
 /**
@@ -65,7 +79,7 @@ function entriesOf(value) {
 function stateOf(snap, hid, person) {
   const data = snap?.exists ? snap.data() : null
   if (!data || data.ownerId !== hid || data.person !== person) {
-    return { rejected: [], liked: [], generated: [], served: [], pushRecent: [] }
+    return { rejected: [], liked: [], generated: [], served: [], pushRecent: [], refillDays: {} }
   }
   return {
     rejected: idsOf(data.rejected),
@@ -73,6 +87,7 @@ function stateOf(snap, hid, person) {
     generated: entriesOf(data.generated),
     served: entriesOf(data.served),
     pushRecent: idsOf(data.pushRecent),
+    refillDays: daysOf(data.refillDays),
   }
 }
 
@@ -95,6 +110,59 @@ export function createOincState({ db, now = () => new Date(), log = console }) {
       } catch (err) {
         log.warn?.(`[ai] estado do OINC nao lido codigo=${codeOf(err)}`)
         return stateOf(null, '', '')
+      }
+    },
+
+    /**
+     * Marca a cena como reposta no dia, por transacao: so o primeiro pedido do dia recebe ok. Falha de
+     * banco nega, para a duvida nunca gastar cota.
+     * @param {{ hid: string, person: string, cena: string, dayKey: string }} args
+     * @returns {Promise<{ ok: boolean }>}
+     */
+    async claimRefill({ hid, person, cena, dayKey }) {
+      if (!isPair(hid, person) || typeof cena !== 'string' || !LINE_ID_RE.test(cena)) return { ok: false }
+      if (typeof dayKey !== 'string' || !DAY_KEY_RE.test(dayKey)) return { ok: false }
+      try {
+        const ref = refOf(hid, person)
+        return await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref)
+          const state = stateOf(snap, hid, person)
+          if (state.refillDays[cena] === dayKey) return { ok: false }
+          const refillDays = { ...state.refillDays, [cena]: dayKey }
+          if (isMine(snap, hid, person)) tx.update(ref, { refillDays, updatedAt: now() })
+          else tx.set(ref, { ownerId: hid, person, ...state, refillDays, updatedAt: now() })
+          return { ok: true }
+        }, TX_OPTIONS)
+      } catch (err) {
+        log.warn?.(`[ai] reposicao nao marcada codigo=${codeOf(err)}`)
+        return { ok: false }
+      }
+    },
+
+    /**
+     * Guarda falas geradas e ja conferidas; id repetido nao entra e ficam as ultimas 200.
+     * @param {{ hid: string, person: string, lines: Array<{ id: string, cena: string, text: string, lote: number }> }} args
+     * @returns {Promise<{ ok: boolean, added: number }>}
+     */
+    async addGenerated({ hid, person, lines }) {
+      if (!isPair(hid, person)) return { ok: false, added: 0 }
+      const incoming = entriesOf(lines)
+      if (incoming.length === 0) return { ok: true, added: 0 }
+      try {
+        const ref = refOf(hid, person)
+        return await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref)
+          const state = stateOf(snap, hid, person)
+          const have = new Set(state.generated.map((g) => g.id))
+          const fresh = incoming.filter((g) => !have.has(g.id))
+          const generated = [...state.generated, ...fresh].slice(-MAX_GENERATED)
+          if (isMine(snap, hid, person)) tx.update(ref, { generated, updatedAt: now() })
+          else tx.set(ref, { ownerId: hid, person, ...state, generated, updatedAt: now() })
+          return { ok: true, added: fresh.length }
+        }, TX_OPTIONS)
+      } catch (err) {
+        log.warn?.(`[ai] falas geradas nao guardadas codigo=${codeOf(err)}`)
+        return { ok: false, added: 0 }
       }
     },
 

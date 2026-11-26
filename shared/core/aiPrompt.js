@@ -309,6 +309,44 @@ export function buildMessages({ tone, fact, examples, person, length, situation 
 }
 
 /**
+ * Mensagens para repor o acervo de uma cena (D-11): ate cinco modelos de fala na voz do sem filtro, um
+ * por linha, com marcas de encaixe no lugar dos dados. Nenhum fato vai neste pedido, e os exemplos sao
+ * modelos com encaixes (quem chama nunca manda fala ja preenchida). Cena fora do catalogo nao vira
+ * texto do pedido, e marca de encaixe fora do formato e descartada.
+ * @param {{ cena: string, examples?: ReadonlyArray<string> | null, person?: string | null,
+ *   slots?: ReadonlyArray<string> | null }} args
+ * @returns {Array<{ role: 'system' | 'user', content: string }>}
+ */
+export function buildRefillMessages({ cena, examples, person, slots }) {
+  const known = Object.prototype.hasOwnProperty.call(OINC_SCENES, cena) ? OINC_SCENES[cena] : null
+  const marks = (Array.isArray(slots) ? slots : (known?.slots ?? [])).filter((s) => /^[a-z]+$/.test(s))
+  const reader = person === 'ele' || person === 'ela' ? READER_TEXT[person] : READER_UNKNOWN
+  const lines = [
+    'Você é o OINC, o porquinho-cofre do Coinc, app em que um casal controla o dinheiro.',
+    PERSONA['sem-filtro'],
+    'Escreva modelos de fala para usar depois: até cinco falas diferentes sobre a cena pedida, uma por linha, sem numeração, título ou comentário. Uma tirada só em cada uma.',
+    known?.longa ? 'Cada fala tem até cento e trinta caracteres.' : 'Cada fala tem até oitenta caracteres.',
+    marks.length > 0
+      ? `No lugar de dado da pessoa escreva só estas marcas, com as chaves: ${marks.map((s) => `{${s}}`).join(', ')}.`
+      : 'Não use marcas entre chaves.',
+    'Sem dígitos, número por extenso, nome de pessoa, loja ou marca. Não cite dia nem momento, como hoje, ontem, amanhã, sexta ou madrugada.',
+    'Fale com quem lê e nunca cite a outra pessoa nem a relação do casal. Nada de ofensa a raça, cor, orientação sexual, religião, deficiência, origem ou grupo.',
+    'Não chame ninguém de trapo nem de maltrapilho (apelido vetado); prefira safaduxo.',
+    'Responda só as falas, em texto simples: sem aspas, markdown, emoji ou travessão. Não diga que é IA.',
+    reader,
+  ]
+  const models = Array.isArray(examples) ? examples : []
+  if (models.length > 0) {
+    lines.push('Modelos aprovados desta cena, imite o jeito e as marcas e nunca copie:')
+    for (const e of models) lines.push(`"${stripMarks(String(e))}"`)
+  }
+  return [
+    { role: 'system', content: lines.join('\n') },
+    { role: 'user', content: `Cena: ${known ? cena : 'o mês da pessoa'}. Escreva agora as falas.` },
+  ]
+}
+
+/**
  * Contexto do validador da saida (aiValidate), derivado SO do fato: numeros permitidos (o que o fato
  * mostra), tamanho pela cena, marca em foco (a loja do fato) e as outras marcas conhecidas que o fato
  * nao cita, para a fala nunca inventar uma loja (T-07.1-17).

@@ -3,6 +3,7 @@ import { createBudget } from './budget.js'
 import { createCache } from './cache.js'
 import { readAiConfig } from './config.js'
 import { createChain, createProviders } from './providers.js'
+import { createRefill } from './refill.js'
 import { createAiRouter } from './routes.js'
 import { createSnapshotLoader } from './snapshot.js'
 import { createOincState } from './state.js'
@@ -41,6 +42,8 @@ export function createAiFeature({
   const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log, state })
   // Freio de rajada por usuario com o limitador proprio.
   const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => now().getTime() })
-  const router = createAiRouter({ speech, config, db, state, limiter, log })
+  // Reposicao do acervo (D-11): mesma cadeia e mesmo teto da pessoa que a fala ao vivo.
+  const refill = createRefill({ state, providers: chain, budget, config, now, log })
+  const router = createAiRouter({ speech, config, db, state, limiter, refill, log })
   return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { OINC_SCENES } from '../../../shared/core/oincScenes.js'
 import { mapTransaction } from './snapshot.js'
 import { SITUATIONS } from './speech.js'
 import { hintsOf } from './topics.js'
@@ -17,6 +18,8 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
  * GET /acervo devolve as falas reprovadas e as geradas da pessoa; POST /voto grava gostei ou nao gostei
  * (07.1, D-12). O voto le do corpo so `id` e `voto`: o texto vem do acervo ou do estado no servidor.
  * Sem `state` o acervo vem vazio e o voto responde { ok: false }.
+ * POST /repor pede falas novas para uma cena do catalogo (07.1, D-11): le so `cena` e responde
+ * { ok: true, novas }; sem `refill` ou em falha, { ok: false }.
  * GET /hints devolve so numeros da configuracao do servidor: frequencias da fala espontanea e o prazo
  * que o app espera nas reacoes (D-12).
  * @param {{
@@ -25,12 +28,23 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
  *   db?: any,
  *   state?: { read: (who: { hid: string, person: string }) => Promise<any>, vote: (args: any) => Promise<{ ok: boolean, reason?: string }> } | null,
  *   limiter?: { take: (key: string) => { ok: boolean, retryAfterMs: number } } | null,
+ *   refill?: { refill: (args: { hid: string, person: string, cena: string }) => Promise<{ novas: number }> } | null,
  *   log?: { warn?: (line: string) => void },
  * }} deps
  */
-export function createAiRouter({ speech, config = {}, db = null, state = null, limiter = null, log = console }) {
+export function createAiRouter({ speech, config = {}, db = null, state = null, limiter = null, refill = null, log = console }) {
   const router = Router()
   const hints = hintsOf(config)
+
+  /** Freio de rajada por usuario (T-07-36): barrado, ja responde 429 e devolve verdadeiro. */
+  const braked = (res, uid) => {
+    if (!limiter) return false
+    const gate = limiter.take(uid)
+    if (gate.ok) return false
+    res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
+    res.status(429).json({ error: 'Muitos pedidos' })
+    return true
+  }
 
   router.get('/hints', (req, res) => {
     if (!PEOPLE.includes(req.owner.person)) return res.status(403).json({ error: 'Sem acesso' })
@@ -48,13 +62,7 @@ export function createAiRouter({ speech, config = {}, db = null, state = null, l
   router.post('/voto', async (req, res) => {
     const { uid, hid, person } = req.owner
     if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
-    if (limiter) {
-      const gate = limiter.take(uid)
-      if (!gate.ok) {
-        res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
-        return res.status(429).json({ error: 'Muitos pedidos' })
-      }
-    }
+    if (braked(res, uid)) return
     // So id e voto sao lidos; qualquer outro campo (inclusive texto) e ignorado.
     const body = req.body && typeof req.body === 'object' ? req.body : {}
     const { id, voto } = body
@@ -67,18 +75,30 @@ export function createAiRouter({ speech, config = {}, db = null, state = null, l
     res.json({ ok: false })
   })
 
+  router.post('/repor', async (req, res) => {
+    const { uid, hid, person } = req.owner
+    if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+    if (braked(res, uid)) return
+    // So a cena e lida, e ela precisa ser do catalogo fechado (T-07.1-54).
+    const body = req.body && typeof req.body === 'object' ? req.body : {}
+    const cena = body.cena
+    if (typeof cena !== 'string' || !Object.hasOwn(OINC_SCENES, cena)) return res.status(400).json({ error: 'Cena invalida' })
+    if (!refill) return res.json({ ok: false })
+    try {
+      const out = await refill.refill({ hid, person, cena })
+      res.json({ ok: true, novas: out.novas })
+    } catch (err) {
+      log.warn?.(`[ai] reposicao falhou codigo=${String(err?.code ?? err?.name ?? 'erro').slice(0, 40)}`)
+      res.json({ ok: false })
+    }
+  })
+
   router.post('/fala', async (req, res) => {
     const { uid, hid, person } = req.owner
     if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
 
-    // Freio de rajada por usuario (T-07-36): o app trata 429 como "sem fala".
-    if (limiter) {
-      const gate = limiter.take(uid)
-      if (!gate.ok) {
-        res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
-        return res.status(429).json({ error: 'Muitos pedidos' })
-      }
-    }
+    // O app trata 429 como "sem fala".
+    if (braked(res, uid)) return
 
     // So estes tres campos do corpo sao lidos; o resto e ignorado.
     const body = req.body && typeof req.body === 'object' ? req.body : {}

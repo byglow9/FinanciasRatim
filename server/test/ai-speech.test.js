@@ -8,8 +8,13 @@ import { createAiRouter } from '../src/ai/routes.js'
 import { createBudget } from '../src/ai/budget.js'
 import { createCache } from '../src/ai/cache.js'
 import { createMemoryDb } from './_ai-memory-db.js'
-import { createSpeech } from '../src/ai/speech.js'
+import { createSpeech, pickSpontaneousFact } from '../src/ai/speech.js'
 import { hintsOf } from '../src/ai/topics.js'
+import { mapTransaction } from '../src/ai/snapshot.js'
+import { labelHash } from '../../shared/core/aiCacheKey.js'
+import { DATA_CLOSE, DATA_OPEN } from '../../shared/core/aiPrompt.js'
+import { buildFacts, factOfTransaction } from '../../shared/core/oincFacts.js'
+import { OINC_SCENES } from '../../shared/core/oincScenes.js'
 import { createFakeFirestore } from './_fake-firestore.js'
 
 // Testes HTTP da fala por IA com snapshot, provedor e fetch injetados (sem rede, sem Firestore).
@@ -99,6 +104,48 @@ function fakeFetch(queue) {
   return fn
 }
 
+/** O fato que foi ao provedor: o JSON entre as marcas da mensagem de usuario. */
+function factOf(request) {
+  const user = request.body.messages.find((m) => m.role === 'user').content
+  return JSON.parse(user.slice(user.indexOf(DATA_OPEN) + DATA_OPEN.length, user.indexOf(DATA_CLOSE)))
+}
+
+const promptOf = (request) => request.body.messages.map((m) => m.content).join('\n')
+
+// Banco proprio dos testes: as provas de exemplo e de quase copia nao dependem do acervo real.
+const BANK_LINE = 'O fogão pediu demissão porque o {loja} virou o dono da casa inteira.'
+const BANK = { delivery: [{ id: 'delivery-t01', t: BANK_LINE, g: 'x', lote: 2 }] }
+
+// Textos livres que geram fatos de IA (anotacao, compromisso com local e detalhe, padrao guardado),
+// cada um com um nome proprio no meio, que nunca pode sair de casa.
+const AI_SOURCES = {
+  notes: [{ title: 'Parar de pedir comida', content: 'Combinado com o Fulgencio', date: null, person: 'ele' }],
+  events: [
+    {
+      title: 'Dentista',
+      date: new Date('2026-11-18T15:00:00Z'),
+      time: '14:00',
+      location: 'sala da Doutora Zulmira',
+      notes: 'levar o exame para o Belarmino',
+      person: 'ele',
+    },
+  ],
+  insights: [
+    {
+      id: 'ele__i1',
+      person: 'ele',
+      type: 'delivery-heavy',
+      severity: 3,
+      cycleKey: '2026-11',
+      subjectKind: 'category',
+      subjectKey: 'alimentacao',
+      metrics: { count: 4 },
+    },
+  ],
+}
+const PRIVATE_NAMES = ['Fulgencio', 'Zulmira', 'Belarmino']
+const NEUTRAL = 'Segura a onda, teu bucho agradece e o cofre também.'
+
 function captureLog() {
   const lines = []
   const push = (...a) => lines.push(a.map(String).join(' '))
@@ -129,7 +176,7 @@ describe('ai fala', () => {
     usage = createMemoryDb()
     const budget = opts.spontaneous ? createBudget({ db: usage, config, now: () => NOW, log }) : null
     const cache = opts.spontaneous ? createCache({ db: usage, config, now: () => NOW, log }) : null
-    const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log })
+    const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log, bank: opts.bank ?? {} })
     const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => clock.t })
     const router = createAiRouter({ speech, config, db, limiter, log })
     const app = createApp({
@@ -175,9 +222,10 @@ describe('ai fala', () => {
     assert.equal(req.init.headers.authorization, 'Bearer chave-secreta-de-teste-1234')
     assert.equal(req.body.model, 'modelo-de-teste')
     assert.ok(req.body.max_tokens > 0)
-    const prompt = req.body.messages.map((m) => m.content).join('\n')
-    assert.ok(prompt.includes('iFood'), 'o resumo do lancamento vai no prompt')
-    assert.ok(!prompt.includes('IFOOD *RESTAURANTE'), 'a descricao crua nunca vai ao provedor')
+    const fact = factOf(req)
+    assert.equal(fact.cena, 'delivery')
+    assert.equal(fact.loja, 'iFood', 'o fato do lancamento mais recente vai no prompt')
+    assert.ok(!promptOf(req).includes('IFOOD *RESTAURANTE'), 'a descricao crua nunca vai ao provedor')
     await stop()
   })
 
@@ -299,8 +347,7 @@ describe('ai fala', () => {
     const res = await post('tok-a-ele', { situation: 'lancamento', transactionId: 'mine' })
     assert.equal(res.status, 200)
     assert.equal((await res.json()).text, 'Mais um Rappi, seu trouxa. Assim o mês acaba antes de começar.')
-    const prompt = fetchFn.requests[0].body.messages.map((m) => m.content).join('\n')
-    assert.ok(prompt.includes('"loja":"Rappi"'), 'o ultimoLancamento e o do id')
+    assert.equal(factOf(fetchFn.requests[0]).loja, 'Rappi', 'o fato e o do lancamento do id')
     await stop()
   })
 
@@ -332,6 +379,101 @@ describe('ai fala', () => {
       assert.equal(res.status, 200, String(categoryId))
     }
     await stop()
+  })
+
+  test('so o fato vai ao provedor: nada de outro lancamento nem campo do resumo antigo', async () => {
+    await start()
+    snapshot.extra = { goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }], porquinhoCents: 123400 }
+    await post('tok-a-ele', { situation: 'lancamento' })
+    const sent = JSON.stringify(fetchFn.requests[0].body)
+    for (const bad of ['Uber', 'UBER', '23,50', 'Viagem', '1.234', 'podeGastar', 'ultimoLancamento', 'porquinho":', 'assuntos', 'semLimite', 'lojas']) {
+      // "Uber" so poderia aparecer nos exemplos; o fato nunca o leva.
+      assert.ok(!JSON.stringify(factOf(fetchFn.requests[0])).includes(bad), `fato: ${bad}`)
+      if (bad !== 'Uber') assert.ok(!sent.includes(bad), `corpo: ${bad}`)
+    }
+    assert.deepEqual(Object.keys(factOf(fetchFn.requests[0])).sort(), ['cena', 'loja', 'quando', 'valor'])
+    await stop()
+  })
+
+  test('fala que cita marca fora do fato ou quase copia um exemplo vira text null', async () => {
+    queue = ['R$ 45,90 no iFood e o Uber ainda esperando, seu trouxa.']
+    await start()
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: null })
+    await stop()
+
+    const copy = BANK_LINE.replace('{loja}', 'iFood')
+    queue = [copy]
+    await start(AI_ENV, { bank: BANK })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: null })
+    assert.ok(fetchFn.requests[0].body.messages[0].content.includes(copy), 'o exemplo do banco injetado foi no pedido')
+    await stop()
+
+    // sem o banco do teste a mesma frase passa: so o exemplo a reprovava
+    await start(AI_ENV, { bank: {} })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: copy })
+    await stop()
+  })
+
+  test('sem AI_REQUIRE_PROFANITY a fala sem palavrao passa; com ele ligado, nao', async () => {
+    queue = [NEUTRAL]
+    await start()
+    assert.equal(readAiConfig(AI_ENV, { warn() {} }).requireProfanity, false)
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: NEUTRAL })
+    await stop()
+
+    await start({ ...AI_ENV, AI_REQUIRE_PROFANITY: 'true' })
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'lancamento' })).json(), { text: null })
+    await stop()
+  })
+
+  test('limite fala da categoria pedida e categoria sem aviso nao vira fala de outra', async () => {
+    queue = [NEUTRAL]
+    await start()
+    snapshot.extra = {
+      config: {
+        salaryDay: 1,
+        expectedIncomeCents: 500000,
+        limits: {
+          alimentacao: [{ from: '2026-11', cents: 4000 }],
+          transporte: [{ from: '2026-11', cents: 2500 }],
+        },
+      },
+    }
+    await post('tok-a-ele', { situation: 'limite', categoryId: 'transporte' })
+    assert.equal(factOf(fetchFn.requests[0]).cena, 'limite-quase')
+    assert.equal(factOf(fetchFn.requests[0]).categoria, 'Transporte')
+    await post('tok-a-ele', { situation: 'limite', categoryId: 'alimentacao' })
+    assert.equal(factOf(fetchFn.requests[1]).cena, 'limite-estourou')
+    assert.equal(fetchFn.requests[1].body.max_tokens, 200, 'estouro aceita fala longa (D-02)')
+    // categoria desconhecida: o aviso de maior prioridade
+    await post('tok-a-ele', { situation: 'limite', categoryId: 'naoexiste' })
+    assert.equal(factOf(fetchFn.requests[2]).categoria, 'Alimentacao')
+    await stop()
+
+    await start()
+    snapshot.extra = { config: { salaryDay: 1, expectedIncomeCents: 500000, limits: { alimentacao: [{ from: '2026-11', cents: 4000 }] } } }
+    assert.deepEqual(await (await post('tok-a-ele', { situation: 'limite', categoryId: 'transporte' })).json(), { text: null })
+    assert.equal(fetchFn.requests.length, 0)
+    await stop()
+  })
+
+  test('parcela do cartao chega ao fato porque o snapshot repassa installment e cardKind', async () => {
+    const mapped = mapTransaction('p1', {
+      type: 'saida',
+      amount: 120,
+      description: 'LOJA QUALQUER 1/10',
+      source: 'bank',
+      cardKind: 'purchase',
+      installment: { n: 1, total: 10, source: 'banco' },
+      date: NOW,
+    })
+    assert.equal(mapped.cardKind, 'purchase')
+    assert.deepEqual(mapped.installment, { n: 1, total: 10, source: 'banco' })
+    const fact = factOfTransaction(mapped, [], { surface: 'ia', now: NOW })
+    assert.equal(fact.cena, 'parcelamento')
+    assert.equal(fact.slots.vezes, '10 vezes')
+    const payment = mapTransaction('p2', { type: 'saida', amount: 10, cardKind: 'payment', date: NOW })
+    assert.equal(factOfTransaction(payment, [], { surface: 'ia', now: NOW }), null)
   })
 
   test('rajada acima de AI_BURST_PER_MIN responde 429 e libera depois de um minuto', async () => {
@@ -371,16 +513,18 @@ describe('ai fala', () => {
     await stop()
   })
 
-  test('o log capturado nao tem nada do resumo, da descricao, do texto gerado nem da chave', async () => {
+  test('o log capturado nao tem nada do fato, da descricao, do texto gerado nem da chave', async () => {
     await start()
     putTx('mine', { ownerId: 'casalA', person: 'ele', description: 'RAPPI *PEDIDO' })
     await post('tok-a-ele', { situation: 'lancamento' })
     await post('tok-a-ele', { situation: 'lancamento', transactionId: 'mine' })
     queue.splice(0, queue.length, WRONG_STORE)
     await post('tok-a-ela', { situation: 'abertura' })
+    snapshot.extra = AI_SOURCES
+    await post('tok-a-ele', { situation: 'abertura' })
     const everything = log.lines.join('\n')
     assert.ok(everything.length > 0)
-    for (const secret of ['chave-secreta-de-teste', GOOD, 'trouxa', 'iFood', 'IFOOD', 'Rappi', 'R$', 'alimentacao', 'Alimentacao', 'casalA', 'u-a-ele', 'tok-a-ele']) {
+    for (const secret of ['chave-secreta-de-teste', GOOD, 'trouxa', 'iFood', 'IFOOD', 'Rappi', 'R$', 'alimentacao', 'Alimentacao', 'casalA', 'u-a-ele', 'tok-a-ele', 'Dentista', 'comida', ...PRIVATE_NAMES]) {
       assert.ok(!everything.includes(secret), `vazou no log: ${secret}`)
     }
     await stop()
@@ -417,7 +561,7 @@ describe('ai fala', () => {
     assert.equal(c.dailyCapPerUser, 100)
     assert.equal(c.cacheTtlHours, 24)
     assert.equal(c.cacheVariants, 3)
-    assert.equal(c.requireProfanity, true)
+    assert.equal(c.requireProfanity, false)
     assert.equal(c.openPerDay, 3)
     assert.equal(c.peekPerDay, 6)
     assert.equal(c.peekMinMs, 360000)
@@ -507,37 +651,96 @@ describe('ai fala', () => {
     await stop()
   })
 
-  // Resumo com sete assuntos, para o teto de espiadas acabar antes dos assuntos.
-  const MANY_TOPICS = {
-    goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }],
-    porquinhoCents: 123400,
-    insights: [{ id: 'i1', type: 'delivery-heavy', severity: 3, subject: { kind: 'category', key: 'alimentacao' }, metrics: {} }],
-  }
   const usageDoc = (person = 'ele') => usage.read('aiUsage', `casalA__${person}__2026-11-17`)
   const say = async (situation, token = 'tok-a-ele', body = {}) => (await post(token, { situation, ...body })).json()
+  const TOPIC_RE = /^(.+)-[0-9a-f]{8}$/
+  const sceneOf = (topic) => TOPIC_RE.exec(topic)?.[1]
 
-  test('a sexta espiada do dia passa e a setima devolve null; padrao notado sai mais longo', async () => {
+  /** Os fatos de IA que a entrada atual do snapshot falso produz, na ordem de prioridade. */
+  async function aiFacts() {
+    const other = fakeSnapshot()
+    other.extra = AI_SOURCES
+    const snap = await other.load({ person: 'ele' })
+    return buildFacts(snap.input, { surface: 'ia' }).filter((f) => f.via === 'ia')
+  }
+
+  test('anotacao, local, detalhe e padrao chegam ao provedor filtrados, sem nome proprio', async () => {
+    queue = [NEUTRAL]
     await start(AI_ENV, { spontaneous: true })
-    snapshot.extra = MANY_TOPICS
-    for (let i = 1; i <= 6; i += 1) assert.equal((await say('espiar')).text, GOOD, `espiada ${i}`)
-    const day = usageDoc()
-    assert.equal(day.espiar, 6)
-    assert.equal(day.abertura, undefined)
-    assert.equal(new Set(day.assuntos).size, 6)
-    assert.equal(day.calls, 6, 'a fala espontanea conta no teto diario da pessoa (D-03)')
+    snapshot.extra = AI_SOURCES
+    for (let i = 0; i < 3; i += 1) assert.equal((await say('espiar')).text, NEUTRAL, `espiada ${i}`)
+    const facts = fetchFn.requests.map(factOf)
+    const note = facts.find((f) => f.anotacao)
+    const event = facts.find((f) => f.local)
+    const pattern = facts.find((f) => f.padrao)
+    assert.match(note.anotacao, /Parar de pedir comida/)
+    assert.match(note.texto, /Combinado com/)
+    assert.match(event.local, /sala/)
+    assert.match(event.detalhe, /levar o exame/)
+    assert.ok(pattern.cena, 'o padrao guardado vai como fato')
+    const bodies = fetchFn.requests.map((r) => JSON.stringify(r.body)).join('\n')
+    for (const name of PRIVATE_NAMES) assert.ok(!bodies.includes(name), `nome saiu: ${name}`)
+    await stop()
+  })
+
+  test('meta e categoria com nome de pessoa nao aparecem no corpo enviado ao provedor', async () => {
+    queue = [NEUTRAL]
+    const extra = {
+      categoryDefs: [{ id: 'alimentacao', name: 'Waldisney', kind: 'gasto' }],
+      config: { salaryDay: 1, expectedIncomeCents: 500000, limits: { alimentacao: [{ from: '2026-11', cents: 4000 }] } },
+      goals: [{ name: 'Presente do Hermenegildo', targetCents: 100000, currentCents: 25000 }],
+      transactions: [tx('t1', 'LOJINHA 123', 45.9, 16, 'alimentacao', 'Waldisney')],
+    }
+    // a meta so vira fala espontanea em suave e direto
+    await start(AI_ENV, { spontaneous: true })
+    snapshot.extra = extra
+    const load = snapshot.load.bind(snapshot)
+    snapshot.load = async (args) => ({ ...(await load(args)), tone: 'direto' })
+    await say('limite', 'tok-a-ele', { categoryId: 'alimentacao' })
+    await say('lancamento')
+    for (let i = 0; i < 6; i += 1) await say('espiar')
+    assert.ok(fetchFn.requests.length >= 3)
+    const bodies = fetchFn.requests.map((r) => JSON.stringify(r.body)).join('\n')
+    assert.ok(!bodies.includes('Waldisney'), 'nome de categoria')
+    assert.ok(!bodies.includes('Hermenegildo'), 'nome na meta')
+    await stop()
+  })
+
+  test('sem-filtro sem fato de IA: abertura e espiada devolvem null sem provedor, teto nem assunto (D-10)', async () => {
+    await start(AI_ENV, { spontaneous: true })
+    // ha muito o que comentar pelo acervo (compras, metas, Porquinho), mas nada para a IA
+    snapshot.extra = { goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }], porquinhoCents: 123400 }
+    assert.deepEqual(await say('abertura'), { text: null })
     assert.deepEqual(await say('espiar'), { text: null })
-    assert.equal(fetchFn.requests.length, 6)
-    assert.equal(day.assuntos[0], 'padroes')
-    assert.equal(fetchFn.requests[0].body.max_tokens, 200, 'padrao notado pede fala longa (D-15)')
-    assert.equal(fetchFn.requests[day.assuntos.indexOf('ritmo')].body.max_tokens, 120)
-    const prompt = fetchFn.requests[0].body.messages.map((m) => m.content).join('\n')
-    assert.ok(prompt.includes('espiando o app'), 'o prompt e o da espiada')
+    assert.equal(fetchFn.requests.length, 0)
+    assert.deepEqual(Object.keys(usage.all('aiUsage') ?? {}), [], 'nenhum teto nem assunto consumido')
+    await stop()
+  })
+
+  test('assunto cena-hash, sem repetir no dia, do fato de IA de maior prioridade para o menor', async () => {
+    queue = [NEUTRAL]
+    await start({ ...AI_ENV, AI_PEEK_PER_DAY: '3' }, { spontaneous: true })
+    snapshot.extra = AI_SOURCES
+    const expected = (await aiFacts()).map((f) => `${f.cena}-${labelHash(f.key)}`)
+    assert.equal(expected.length, 3)
+    for (let i = 1; i <= 3; i += 1) assert.equal((await say('espiar')).text, NEUTRAL, `espiada ${i}`)
+    const day = usageDoc()
+    assert.deepEqual(day.assuntos, expected)
+    for (const topic of day.assuntos) assert.ok(Object.hasOwn(OINC_SCENES, sceneOf(topic)), topic)
+    assert.equal(day.espiar, 3)
+    assert.equal(day.abertura, undefined)
+    assert.equal(day.calls, 3, 'a fala espontanea conta no teto diario da pessoa (D-03)')
+    assert.deepEqual(await say('espiar'), { text: null }, 'teto do dia')
+    assert.equal(fetchFn.requests.length, 3)
+    assert.ok(promptOf(fetchFn.requests[0]).includes('espiando o app'), 'o prompt e o da espiada')
+    for (const request of fetchFn.requests) assert.equal(request.body.max_tokens, 120)
     await stop()
   })
 
   test('abertura e espiada dividem a lista de assuntos do dia', async () => {
+    queue = [NEUTRAL]
     await start(AI_ENV, { spontaneous: true })
-    snapshot.extra = MANY_TOPICS
+    snapshot.extra = AI_SOURCES
     await say('abertura')
     await say('espiar')
     const day = usageDoc()
@@ -547,27 +750,69 @@ describe('ai fala', () => {
     await stop()
   })
 
+  test('suave e direto: a fala espontanea segue podendo falar de qualquer fato (D-35)', async () => {
+    for (const tone of ['suave', 'direto']) {
+      queue = [NEUTRAL]
+      await start(AI_ENV, { spontaneous: true, bank: BANK })
+      const load = snapshot.load.bind(snapshot)
+      snapshot.load = async (args) => ({ ...(await load(args)), tone })
+      assert.equal((await say('abertura')).text, NEUTRAL, tone)
+      assert.equal((await say('espiar')).text, NEUTRAL, tone)
+      const day = usageDoc()
+      assert.equal(day.assuntos.length, 2)
+      // o de maior prioridade e o gasto de ontem (iFood), via acervo
+      assert.equal(sceneOf(day.assuntos[0]), 'delivery')
+      assert.ok(!promptOf(fetchFn.requests[0]).includes('fogão pediu demissão'), 'sem exemplo do acervo')
+      await stop()
+    }
+  })
+
+  test('pickSpontaneousFact: via ia no sem filtro, qualquer origem nos outros, sempre sem repetir', () => {
+    const f = (cena, prioridade, via, slots = { dias: '2 dias' }) => ({ cena, prioridade, via, slots, key: `k:${cena}` })
+    const facts = [
+      f('compra', 70, 'acervo'),
+      f('delivery', 60, 'ia'),
+      f('agenda-notas', 35, 'ia'),
+      f('porco-chapaduxo', 8, 'acervo'),
+      { ...f('do-nada', 10, 'acervo', {}), key: 'sempre:do-nada' },
+    ]
+    const topic = (fact) => `${fact.cena}-${labelHash(fact.key)}`
+    const pick = (tone, used) => pickSpontaneousFact(facts, { tone, used })?.cena ?? null
+    assert.equal(pick('sem-filtro', []), 'delivery')
+    assert.equal(pick('sem-filtro', [topic(facts[1])]), 'agenda-notas')
+    assert.equal(pick('sem-filtro', [topic(facts[1]), topic(facts[2])]), null)
+    assert.equal(pick('direto', []), 'compra')
+    assert.equal(pick('suave', [topic(facts[0])]), 'delivery')
+    // fora do sem filtro: nada da voz nova nem pedido vazio
+    assert.equal(pick('direto', [facts[0], facts[1], facts[2]].map(topic)), null)
+    assert.equal(pickSpontaneousFact([], { tone: 'direto' }), null)
+    assert.equal(pickSpontaneousFact([...facts].reverse(), { tone: 'direto' }).cena, 'compra')
+  })
+
   test('o teto diario da pessoa vale para a espiada e o acerto de cache nao conta', async () => {
+    queue = [NEUTRAL]
     await start({ ...AI_ENV, AI_DAILY_CAP_PER_USER: '1', AI_CACHE_VARIANTS: '1' }, { spontaneous: true })
-    snapshot.extra = MANY_TOPICS
-    assert.equal((await say('espiar')).text, GOOD)
+    snapshot.extra = AI_SOURCES
+    assert.equal((await say('espiar')).text, NEUTRAL)
     assert.deepEqual(await say('espiar'), { text: null })
     assert.equal(fetchFn.requests.length, 1)
     // Sem o contador do dia, o mesmo assunto sai do cache: conta a espiada, nao a chamada.
     await usage.collection('aiUsage').doc('casalA__ele__2026-11-17').delete()
-    assert.equal((await say('espiar')).text, GOOD)
+    assert.equal((await say('espiar')).text, NEUTRAL)
     assert.equal(fetchFn.requests.length, 1)
     assert.deepEqual([usageDoc().espiar, usageDoc().calls], [1, 0])
     await stop()
   })
 
   test('na fala espontanea pessoa e casal vem so do token', async () => {
+    queue = [NEUTRAL]
     await start(AI_ENV, { spontaneous: true })
-    snapshot.extra = MANY_TOPICS
+    snapshot.extra = AI_SOURCES
+    const first = (await aiFacts())[0]
     await say('espiar', 'tok-a-ele', { person: 'ela', hid: 'casalB', ownerId: 'casalB', topic: 'porquinho' })
     assert.deepEqual(Object.keys(usage.all('aiUsage')), ['casalA__ele__2026-11-17'])
     assert.deepEqual(snapshot.calls, [{ hid: 'casalA', person: 'ele', fresh: false }])
-    assert.deepEqual(usageDoc().assuntos, ['padroes'])
+    assert.deepEqual(usageDoc().assuntos, [`${first.cena}-${labelHash(first.key)}`])
     await stop()
   })
 
@@ -584,11 +829,11 @@ describe('ai fala', () => {
       complete: async () => {
         asked()
         await held
-        return { ok: true, text: GOOD }
+        return { ok: true, text: NEUTRAL }
       },
     }
     await start(AI_ENV, { spontaneous: true, chain: slow })
-    snapshot.extra = MANY_TOPICS
+    snapshot.extra = AI_SOURCES
     const control = new AbortController()
     const pending = fetch(`${base}/api/vintem/fala`, {
       method: 'POST',

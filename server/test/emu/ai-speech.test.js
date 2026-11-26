@@ -1,5 +1,5 @@
 // Escopo da fala por IA contra o emulador do Firestore, com o provedor falso (fetch injetado).
-// Prova que o resumo enviado ao provedor so tem a pessoa do token e o que e do casal.
+// Prova que o fato enviado ao provedor so tem a pessoa do token e o que e do casal.
 // Rodar: npm run test:emu
 import { test, describe, beforeEach, before, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,6 +12,7 @@ import { createAiRouter } from '../../src/ai/routes.js'
 import { createSnapshotLoader } from '../../src/ai/snapshot.js'
 import { createSpeech } from '../../src/ai/speech.js'
 import { createLimiter } from '../../src/limiter.js'
+import { DATA_CLOSE, DATA_OPEN } from '../../../shared/core/aiPrompt.js'
 import { resetEmulators } from './_helpers.js'
 
 const ORIGIN = 'https://app.exemplo.test'
@@ -126,6 +127,11 @@ describe('fala por IA no emulador', () => {
     })
 
   const promptOf = (req) => req.messages.map((m) => m.content).join('\n')
+  /** O fato que foi ao provedor: o JSON entre as marcas da mensagem de usuario. */
+  const factOf = (req) => {
+    const user = req.messages.find((m) => m.role === 'user').content
+    return JSON.parse(user.slice(user.indexOf(DATA_OPEN) + DATA_OPEN.length, user.indexOf(DATA_CLOSE)))
+  }
 
   test('a fala de Ele usa so os lancamentos de Ele: nada de categoria nem loja que so a Ela tem', async () => {
     await start()
@@ -133,9 +139,9 @@ describe('fala por IA no emulador', () => {
     assert.equal(res.status, 200)
     assert.equal(requests.length, 1)
     const prompt = promptOf(requests[0])
-    assert.ok(prompt.includes('iFood') && prompt.includes('Uber'), 'o que e dele esta no resumo')
+    assert.equal(factOf(requests[0]).loja, 'iFood', 'o que e dele esta no fato')
     for (const hers of ['Rappi', 'Spotify', 'Viagem', '77,70', '19,90']) {
-      assert.ok(!prompt.includes(hers), `o resumo de Ele nao pode ter: ${hers}`)
+      assert.ok(!prompt.includes(hers), `o pedido de Ele nao pode ter: ${hers}`)
     }
     assert.ok(!prompt.includes('Netflix'), 'nem nada de outro casal')
   })
@@ -144,9 +150,9 @@ describe('fala por IA no emulador', () => {
     await start()
     await post('tok-a-ela', { situation: 'lancamento' })
     const prompt = promptOf(requests[0])
-    assert.ok(prompt.includes('Rappi') && prompt.includes('Spotify'))
+    assert.equal(factOf(requests[0]).loja, 'Rappi')
     for (const his of ['iFood', 'Uber', '45,90', '23,50']) {
-      assert.ok(!prompt.includes(his), `o resumo de Ela nao pode ter: ${his}`)
+      assert.ok(!prompt.includes(his), `o pedido de Ela nao pode ter: ${his}`)
     }
   })
 
@@ -154,7 +160,7 @@ describe('fala por IA no emulador', () => {
     await start()
     await post('tok-b-ele', { situation: 'lancamento' })
     const prompt = promptOf(requests[0])
-    assert.ok(prompt.includes('Netflix'))
+    assert.equal(factOf(requests[0]).loja, 'Netflix')
     for (const a of ['iFood', 'Uber', 'Rappi', 'Spotify', 'Viagem', 'Nirigua']) {
       assert.ok(!prompt.includes(a), `o casalB nao pode ver: ${a}`)
     }
@@ -176,10 +182,10 @@ describe('fala por IA no emulador', () => {
     assert.equal(res.status, 200)
     const prompt = promptOf(requests[0])
     assert.ok(!/Maria|Souza|maria|souza/.test(prompt), 'o nome nao pode sair de casa')
-    assert.ok(prompt.includes('ultimoLancamento'), 'o lancamento entra no resumo, so sem o nome')
+    assert.equal(factOf(requests[0]).cena, 'pix-pessoa', 'o lancamento vira fato, so sem o nome')
   })
 
-  test('um resumo com vazamento forcado nunca e enviado ao provedor', async () => {
+  test('um fato com vazamento forcado nunca e enviado ao provedor', async () => {
     await start({ leakCheck: () => ['digitos'] })
     const res = await post('tok-a-ele', { situation: 'lancamento' })
     assert.equal(res.status, 200)

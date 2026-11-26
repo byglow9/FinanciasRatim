@@ -13,6 +13,10 @@ const NOW = new Date('2026-11-17T15:00:00Z')
 const HID = 'casal-teste-1'
 
 const GOOD = 'Mais um iFood, seu trouxa. Você vai ficar sem grana no fim do mês desse jeito.'
+/** Fala sem marca nem numero: serve a qualquer fato de IA (a regua reprova marca fora do fato). */
+const NEUTRAL = 'Segura a onda, teu bucho agradece e o cofre também.'
+const NOTE = { title: 'Parar de pedir comida', content: 'ate sexta', date: null }
+const sceneOf = (topic) => /^(.+)-[0-9a-f]{8}$/.exec(topic)?.[1]
 
 const quiet = { log() {}, warn() {}, info() {}, error() {} }
 
@@ -36,6 +40,7 @@ function fakeSnapshot() {
             tx('t1', 'IFOOD *RESTAURANTE', 45.9, 16, 'alimentacao', 'Alimentacao'),
             tx('t2', 'UBER *TRIP', 23.5, 15, 'transporte', 'Transporte'),
           ],
+          notes: [NOTE],
         },
         reads: 3,
         tone: 'sem-filtro',
@@ -45,10 +50,13 @@ function fakeSnapshot() {
   }
 }
 
-function fakeFetch(text = GOOD) {
+// Sem texto fixo, responde pelo fato do pedido: a fala do iFood so para o lancamento do iFood.
+function fakeFetch(fixed) {
   const requests = []
   const fn = async (url, init) => {
-    requests.push({ url: String(url), body: JSON.parse(init.body) })
+    const body = JSON.parse(init.body)
+    requests.push({ url: String(url), body })
+    const text = fixed ?? (body.messages.at(-1).content.includes('"loja":"iFood"') ? GOOD : NEUTRAL)
     return new Response(JSON.stringify({ choices: [{ message: { content: text } }] }), { status: 200 })
   }
   fn.requests = requests
@@ -67,7 +75,7 @@ function build(envExtra = {}, { db = createMemoryDb(), clock = { t: NOW.getTime(
   const budget = createBudget({ db, config, now, log: quiet })
   const cache = createCache({ db, config, now, rand: () => 0.5, log: quiet })
   const chain = createChain({ providers: createProviders(config, { fetch: fetchFn }), config, now, log: quiet, gate: budget.consumeProvider })
-  const speech = createSpeech({ snapshot: fakeSnapshot(), providers: chain, config, budget, cache, log: quiet })
+  const speech = createSpeech({ snapshot: fakeSnapshot(), providers: chain, config, budget, cache, log: quiet, bank: {} })
   return { db, clock, fetchFn, config, budget, cache, speech }
 }
 
@@ -234,7 +242,7 @@ describe('config', () => {
 const DAY_DOC = `${HID}__ele__2026-11-17`
 
 // Mesmo snapshot dos outros testes, com contagem das cargas e extras na entrada do resumo.
-function spontaneousSetup(envExtra = {}, { extra = {}, fetchFn = fakeFetch(), db = createMemoryDb() } = {}) {
+function spontaneousSetup(envExtra = {}, { extra = {}, fetchFn = fakeFetch(NEUTRAL), db = createMemoryDb() } = {}) {
   const env = {
     AI_PROVIDERS: 'groq',
     AI_GROQ_API_KEY: 'chave-secreta-de-teste-1234',
@@ -264,23 +272,36 @@ function spontaneousSetup(envExtra = {}, { extra = {}, fetchFn = fakeFetch(), db
     },
   }
   const chain = createChain({ providers: createProviders(config, { fetch: fetchFn }), config, now, log: quiet, gate: budget.consumeProvider })
-  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log: quiet })
+  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log: quiet, bank: {} })
   const open = (args = {}) => speech.generate({ hid: HID, person: 'ele', situation: 'abertura', ...args })
   const day = () => db.read('aiUsage', DAY_DOC)
   return { db, clock, config, budget, speech, fetchFn, keys, loads, open, day }
 }
 
-// Uma meta e saldo no Porquinho para o resumo ter mais assuntos.
+// Anotacao, compromisso com local e padrao guardado: os tres fatos que a IA pode comentar sozinha
+// no sem filtro (D-10).
 const RICH = {
-  goals: [{ name: 'Viagem', targetCents: 100000, currentCents: 25000 }],
-  porquinhoCents: 123400,
+  notes: [NOTE],
+  events: [{ title: 'Dentista', date: new Date('2026-11-18T15:00:00Z'), time: '14:00', location: 'no centro', person: 'ele' }],
+  insights: [
+    {
+      id: 'ele__i1',
+      person: 'ele',
+      type: 'delivery-heavy',
+      severity: 3,
+      cycleKey: '2026-11',
+      subjectKind: 'category',
+      subjectKey: 'alimentacao',
+      metrics: { count: 4 },
+    },
+  ],
 }
 
 describe('fala espontanea: abertura do app', () => {
   test('devolve a fala com o assunto do dia, que entra na chave do cache e no aiUsage', async () => {
     const s = spontaneousSetup({}, { extra: RICH })
     const out = await s.open()
-    assert.equal(out.text, GOOD)
+    assert.equal(out.text, NEUTRAL)
     const day = s.day()
     assert.equal(day.abertura, 1)
     assert.equal(day.assuntos.length, 1)
@@ -288,17 +309,17 @@ describe('fala espontanea: abertura do app', () => {
     assert.equal(day.calls, 1, 'a fala espontanea gerada conta no teto diario da pessoa (D-03)')
     assert.equal(s.keys.length, 1)
     assert.equal(s.keys[0].split('|')[3], 'abertura')
-    assert.equal(s.keys[0].split('|')[4], day.assuntos[0], 'o assunto escolhido entra na chave do cache')
+    assert.equal(s.keys[0].split('|')[4], sceneOf(day.assuntos[0]), 'a cena do assunto escolhido entra na chave do cache')
     assert.deepEqual(s.loads, [{ hid: HID, person: 'ele', fresh: false }])
   })
 
   test('a segunda abertura do dia usa outro assunto e a quarta (teto 3) devolve null sem ler nada', async () => {
     const s = spontaneousSetup({ AI_CACHE_VARIANTS: '1' }, { extra: RICH })
-    for (let i = 0; i < 3; i += 1) assert.equal((await s.open()).text, GOOD, `abertura ${i + 1}`)
+    for (let i = 0; i < 3; i += 1) assert.equal((await s.open()).text, NEUTRAL, `abertura ${i + 1}`)
     const day = s.day()
     assert.equal(day.abertura, 3)
     assert.equal(new Set(day.assuntos).size, 3, 'assunto repetido no mesmo dia')
-    assert.deepEqual(s.keys.map((k) => k.split('|')[4]), day.assuntos)
+    assert.deepEqual(s.keys.map((k) => k.split('|')[4]), day.assuntos.map(sceneOf))
 
     const requests = s.fetchFn.requests.length
     const loads = s.loads.length
@@ -321,7 +342,7 @@ describe('fala espontanea: abertura do app', () => {
     const fetchFn = async (url, init) => {
       requests.push(JSON.parse(init.body))
       if (fail) return new Response('{}', { status: 500 })
-      return new Response(JSON.stringify({ choices: [{ message: { content: GOOD } }] }), { status: 200 })
+      return new Response(JSON.stringify({ choices: [{ message: { content: NEUTRAL } }] }), { status: 200 })
     }
     fetchFn.requests = requests
     const s = spontaneousSetup({}, { extra: RICH, fetchFn })
@@ -331,9 +352,9 @@ describe('fala espontanea: abertura do app', () => {
 
     fail = false
     s.clock.t += 61_000 // passa o freio do 5xx
-    assert.equal((await s.open()).text, GOOD)
+    assert.equal((await s.open()).text, NEUTRAL)
     assert.equal(s.day().abertura, 1)
-    assert.equal(s.keys[1].split('|')[4], s.keys[0].split('|')[4], 'o assunto da tentativa falha volta a ser o escolhido')
+    assert.equal(s.keys[1], s.keys[0], 'o assunto da tentativa falha volta a ser o escolhido')
   })
 
   test('sem assunto novo devolve null, mesmo com teto de sobra', async () => {
@@ -346,7 +367,7 @@ describe('fala espontanea: abertura do app', () => {
     const day = s.day()
     assert.equal(day.abertura, spoken)
     assert.equal(new Set(day.assuntos).size, spoken)
-    assert.ok(day.assuntos.includes('porquinho') && day.assuntos.includes('metas') && day.assuntos.includes('entradas'))
+    assert.deepEqual(day.assuntos.map(sceneOf).sort(), ['agenda-notas', 'compromisso', 'delivery'])
     const requests = s.fetchFn.requests.length
     assert.deepEqual(await s.open(), { text: null })
     assert.equal(s.fetchFn.requests.length, requests)
@@ -367,7 +388,7 @@ describe('fala espontanea: abertura do app', () => {
 
   test('teto diario da pessoa esgotado corta a fala espontanea sem consumir abertura', async () => {
     const s = spontaneousSetup({ AI_DAILY_CAP_PER_USER: '1', AI_CACHE_VARIANTS: '1' }, { extra: RICH })
-    assert.equal((await s.open()).text, GOOD)
+    assert.equal((await s.open()).text, NEUTRAL)
     assert.deepEqual(await s.open(), { text: null })
     assert.equal(s.day().abertura, 1)
     assert.equal(s.day().assuntos.length, 1)
@@ -388,7 +409,7 @@ describe('fala espontanea: abertura do app', () => {
 
     const slow = async () => {
       await new Promise((resolve) => setTimeout(resolve, 80))
-      return new Response(JSON.stringify({ choices: [{ message: { content: GOOD } }] }), { status: 200 })
+      return new Response(JSON.stringify({ choices: [{ message: { content: NEUTRAL } }] }), { status: 200 })
     }
     const late = spontaneousSetup({ AI_TOTAL_BUDGET_MS: '20' }, { extra: RICH, fetchFn: slow })
     assert.deepEqual(await late.open(), { text: null })

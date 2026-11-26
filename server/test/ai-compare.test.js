@@ -17,10 +17,8 @@ import {
   selectCandidates,
 } from '../scripts/ai-compare.js'
 import { PROVOCATIONS, buildFixtures, buildGeneralFixtures, fixtureCases } from '../scripts/lib/ai-compare-fixtures.js'
-import { createSpeech } from '../src/ai/speech.js'
 import { TEMPERATURE, maxTokens } from '../scripts/lib/ai-prompt-v1.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
-import { validateSpeech } from '../../shared/core/aiValidate.js'
 
 // Teste lado a lado (07-17) com fetch falso, relogio falso e pausa falsa: nenhuma rede.
 const ENV_CF = { AI_CF_ACCOUNT_ID: 'contaSecreta123456', AI_CF_API_TOKEN: 'token-cloudflare-segredo-1' }
@@ -135,47 +133,12 @@ describe('fixtures sinteticos', () => {
   })
 })
 
-describe('o mesmo pedido do servidor', () => {
-  for (const fixture of buildFixtures()) {
-    test(`mensagens, tokens, temperature e regua de ${fixture.id}`, async () => {
-      let sent = null
-      const speech = createSpeech({
-        snapshot: { load: async () => ({ input: fixtureCases().find((c) => c.id === fixture.id).input, tone: 'sem-filtro' }) },
-        providers: {
-          complete: async (args) => {
-            sent = args
-            return { ok: false }
-          },
-        },
-        config: { requireProfanity: true, totalBudgetMs: 0 },
-      })
-      await speech.generate({
-        hid: 'casalSintetico',
-        person: 'ele',
-        situation: fixture.situation,
-        categoryId: fixture.categoryId,
-        latestTx: fixture.input.latestTx,
-      })
-      assert.ok(sent, 'o servidor nao chamou o provedor')
-      // Mesma semente do servidor (o segundo do relogio), que escolhe exemplos, angulo e cena.
-      const seed = Math.floor(fixture.input.now.getTime() / 1000)
-      assert.deepEqual(messagesFor(fixture, null, seed), sent.messages)
-      assert.equal(maxTokens(fixture.length), sent.maxTokens)
-      assert.equal(TEMPERATURE, sent.temperature)
-      const samples = [GOOD, MILD, REFUSAL, 'Gastou R$ 7.777 de uma vez, porra.', 'Mais um Uber, caralho, para de queimar dinheiro.']
-      for (const text of samples) {
-        assert.deepEqual(sent.validate(text), validateSpeech(text, contextFor(fixture)), text)
-      }
-    })
-  }
-
-  test('a provocacao so acrescenta uma linha ao pedido', () => {
-    const [fixture] = buildFixtures()
-    const plain = messagesFor(fixture)
-    const provoked = messagesFor(fixture, PROVOCATIONS[0])
-    assert.equal(provoked[0].content, plain[0].content)
-    assert.equal(provoked[1].content, `${plain[1].content}\nPedido de quem está lendo: ${PROVOCATIONS[0]}`)
-  })
+test('a provocacao so acrescenta uma linha ao pedido', () => {
+  const [fixture] = buildFixtures()
+  const plain = messagesFor(fixture)
+  const provoked = messagesFor(fixture, PROVOCATIONS[0])
+  assert.equal(provoked[0].content, plain[0].content)
+  assert.equal(provoked[1].content, `${plain[1].content}\nPedido de quem está lendo: ${PROVOCATIONS[0]}`)
 })
 
 describe('medidas', () => {

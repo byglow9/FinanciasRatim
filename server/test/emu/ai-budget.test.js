@@ -10,11 +10,14 @@ import { createCache } from '../../src/ai/cache.js'
 import { createChain, createProviders } from '../../src/ai/providers.js'
 import { createSpeech } from '../../src/ai/speech.js'
 import { TOPICS } from '../../../shared/core/aiSummary.js'
+import { OINC_SCENES } from '../../../shared/core/oincScenes.js'
 import { resetEmulators } from './_helpers.js'
 
 const NOW = new Date('2026-11-17T15:00:00Z')
 const HID = 'casal-emu-0001'
 const GOOD = 'Mais um iFood, seu trouxa. Você vai ficar sem grana no fim do mês desse jeito.'
+/** Fala sem marca nem numero: serve a qualquer fato de IA (a regua reprova marca fora do fato). */
+const NEUTRAL = 'Segura a onda, teu bucho agradece e o cofre também.'
 const quiet = { log() {}, warn() {}, info() {}, error() {} }
 
 function tx(id, description, amount, day, categoryId, category) {
@@ -37,6 +40,20 @@ function fakeSnapshot() {
             tx('t1', 'IFOOD *RESTAURANTE', 45.9, 16, 'alimentacao', 'Alimentacao'),
             tx('t2', 'UBER *TRIP', 23.5, 15, 'transporte', 'Transporte'),
           ],
+          // Anotacao e padrao guardado: a abertura e a espiada tem fato de IA (D-10).
+          notes: [{ title: 'Parar de pedir comida', content: 'ate sexta', date: null }],
+          insights: [
+            {
+              id: 'ele__i1',
+              person: 'ele',
+              type: 'delivery-heavy',
+              severity: 3,
+              cycleKey: '2026-11',
+              subjectKind: 'category',
+              subjectKey: 'alimentacao',
+              metrics: { count: 4 },
+            },
+          ],
         },
         reads: 3,
         tone: 'sem-filtro',
@@ -46,10 +63,13 @@ function fakeSnapshot() {
   }
 }
 
-function fakeFetch(text = GOOD) {
+// Responde pelo fato do pedido: a fala do iFood so para o lancamento do iFood.
+function fakeFetch() {
   const requests = []
   const fn = async (url, init) => {
-    requests.push({ url: String(url), body: JSON.parse(init.body) })
+    const body = JSON.parse(init.body)
+    requests.push({ url: String(url), body })
+    const text = body.messages.at(-1).content.includes('"loja":"iFood"') ? GOOD : NEUTRAL
     return new Response(JSON.stringify({ choices: [{ message: { content: text } }] }), { status: 200 })
   }
   fn.requests = requests
@@ -256,7 +276,10 @@ describe('teto diario e cache no emulador', () => {
         ? ['calls', 'day', 'providerId', 'updatedAt']
         : ['abertura', 'assuntos', 'calls', 'dayKey', 'espiar', 'ownerId', 'person', 'updatedAt']
       assert.deepEqual(Object.keys(doc).sort(), allowed)
-      for (const topic of doc.assuntos ?? []) assert.ok(TOPICS.includes(topic), `assunto fora da lista: ${topic}`)
+      for (const topic of doc.assuntos ?? []) {
+        const scene = /^(.+)-[0-9a-f]{8}$/.exec(topic)?.[1]
+        assert.ok(scene && Object.hasOwn(OINC_SCENES, scene), `assunto fora do formato: ${topic}`)
+      }
     }
   })
 

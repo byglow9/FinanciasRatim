@@ -18,6 +18,9 @@ const T2 = 'Outro iFood, seu trouxa. Seu bolso já pediu socorro faz tempo.'
 const T3 = 'iFood de novo, seu trouxa. Cozinhar em casa não mata ninguém.'
 const T_MONEY = 'Mais um iFood de R$ 45,90, seu trouxa. Isso aqui vira hábito rapidinho.'
 const T_UBER = 'Mais um Uber, seu trouxa. Você vai ficar sem grana no fim do mês desse jeito.'
+// Sem marca: servem ao fato de anotacao (a regua reprova marca fora do fato).
+const N1 = 'Segura a onda, teu bucho agradece e o cofre também.'
+const N2 = 'Anota aí e cumpre, porque o cofre está de olho em você.'
 
 function tx(id, description, amount, day, categoryId, category) {
   return { id, type: 'saida', amount, category, categoryId, description, source: 'bank', person: 'ele', date: new Date(Date.UTC(2026, 10, day, 15)) }
@@ -40,6 +43,10 @@ function mutableSnapshot(clock) {
             { id: 'transporte', name: 'Transporte', kind: 'gasto' },
           ],
           transactions: state.txs,
+          notes: [
+            { title: 'Parar de pedir comida', content: 'ate sexta', date: null },
+            { title: 'Guardar um pouco', content: 'todo mes', date: null },
+          ],
         },
         reads: 1,
         tone: 'sem-filtro',
@@ -88,7 +95,7 @@ function build(envExtra = {}, { queue = [T1], delayMs = 0, rand = () => 0.5 } = 
   }
   const chain = createChain({ providers: createProviders(config, { fetch: fetchFn }), config, now, log: quiet, gate: budget.consumeProvider })
   const snapshot = mutableSnapshot(clock)
-  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log: quiet })
+  const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log: quiet, bank: {} })
   return { db, clock, config, fetchFn, budget, cache: realCache, canonicals, snapshot, speech }
 }
 
@@ -200,7 +207,7 @@ describe('revalidacao antes de servir', () => {
     assert.equal(out.source, 'ia', 'outra loja, outra chave, sem acerto')
     assert.equal(out.text, T_UBER)
     assert.equal(new Set(s.canonicals).size, 2)
-    assert.match(s.canonicals[0], /\|m[0-9a-f]{8}$/)
+    assert.match(s.canonicals[0], /\|m[0-9a-f]{8}\|f[0-9a-f]{8}$/)
     assert.notEqual(s.canonicals[0], s.canonicals[1])
   })
 
@@ -208,8 +215,11 @@ describe('revalidacao antes de servir', () => {
     const s = build({ AI_CACHE_VARIANTS: '1', AI_DAILY_CAP_PER_USER: '50' })
     await say(s)
     const key = s.canonicals[0]
-    assert.match(key, /^v1\|2026-11\|sem-filtro\|lancamento\|/)
-    for (const forbidden of ['IFOOD', 'ifood', '45', 'Alimentacao']) assert.equal(key.includes(forbidden), false)
+    assert.match(key, /^v2\|2026-11\|sem-filtro\|lancamento\|delivery\|/)
+    assert.match(key, /\|m[0-9a-f]{8}\|f[0-9a-f]{8}$/)
+    // So as partes de texto: um hash hexadecimal pode conter "45" por acaso.
+    const text = key.split('|').filter((part) => !/^[mf][0-9a-f]{8}$/.test(part)).join('|')
+    for (const forbidden of ['IFOOD', 'ifood', '45', 'Alimentacao']) assert.equal(text.includes(forbidden), false, forbidden)
   })
 })
 
@@ -245,24 +255,24 @@ describe('freio por provedor', () => {
   const hosts = (s) => s.fetchFn.requests.map((r) => (r.url.includes('cloudflare') ? 'cloudflare' : 'groq'))
 
   test('provedor no teto proprio e pulado sem rede e o seguinte e usado', async () => {
-    const s = build({ ...TWO, AI_PROVIDER_CAP_CLOUDFLARE: '1' }, { queue: [T1, T2] })
+    const s = build({ ...TWO, AI_PROVIDER_CAP_CLOUDFLARE: '1' }, { queue: [T1, N1] })
     assert.equal((await say(s, 'lancamento')).text, T1)
     // Outra situacao para nao cair no cache: o cloudflare ja gastou o unico lugar do dia.
-    assert.equal((await say(s, 'abertura')).text, T2)
+    assert.equal((await say(s, 'abertura')).text, N1)
     assert.deepEqual(hosts(s), ['cloudflare', 'groq'])
     assert.equal(s.db.read('aiUsage', 'provider__cloudflare__2026-11-17').calls, 1)
   })
 
   test('sem teto proprio o provedor so e contado, nunca bloqueado', async () => {
-    const s = build({ ...TWO }, { queue: [T1, T2] })
+    const s = build({ ...TWO }, { queue: [T1, N1] })
     await say(s, 'lancamento')
-    await say(s, 'abertura')
+    assert.equal((await say(s, 'abertura')).text, N1)
     assert.deepEqual(hosts(s), ['cloudflare', 'cloudflare'])
     assert.equal(s.db.read('aiUsage', 'provider__cloudflare__2026-11-17').calls, 2)
   })
 
   test('todos os provedores no teto proprio: nenhum fetch e resposta nula', async () => {
-    const s = build({ ...TWO, AI_PROVIDER_CAP_CLOUDFLARE: '1', AI_PROVIDER_CAP_GROQ: '1' }, { queue: [T1, T2, T3] })
+    const s = build({ ...TWO, AI_PROVIDER_CAP_CLOUDFLARE: '1', AI_PROVIDER_CAP_GROQ: '1' }, { queue: [T1, N1, N2] })
     await say(s, 'lancamento')
     await say(s, 'abertura')
     const before = s.fetchFn.requests.length

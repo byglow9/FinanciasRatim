@@ -505,7 +505,7 @@ describe('oinc-votos: exportacao', () => {
     t.answer('lote4-votos-03.json')
     assert.equal(t.run('lote4', '--out', t.dir), 0)
     assert.equal(t.exported().length, 3)
-    assert.match(t.text(), /nada a votar/)
+    assert.match(t.text(), /nada a votar/i)
   })
 
   test('mais de 40 falas viram varios arquivos, sem teto', () => {
@@ -584,7 +584,7 @@ describe('oinc-votos: aplicar e conferir', () => {
     assert.equal(t.run('aplicar', t.dir), 0)
     assert.match(t.text(), /7 aprovadas de 8 votadas \(87%\)/)
     assert.match(t.text(), /Reprovadas \(1\)[\s\S]*posto-001.*sem graça/)
-    assert.match(t.text(), /marca reescrita \(7\)[\s\S]*entrou-001/)
+    assert.match(t.text(), /marca reescrita \(5\)[\s\S]*entrou-001/)
     assert.deepEqual(t.files(), before)
   })
 

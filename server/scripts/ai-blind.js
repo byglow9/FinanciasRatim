@@ -477,14 +477,11 @@ export async function main({
     if ((i + 1) % 20 === 0) say(`${PREFIX} ${i + 1} de ${tasks.length}`)
   }
 
-  const total = cases.length * BLIND_PROMPTS.length * ready.filter((c) => !gone.has(labelOf(c))).length
   const have = new Set(falas.map((f) => comboOf(f.caso, f.prompt, f)))
-  let missing = total
-  for (const raw of cases) {
-    for (const prompt of BLIND_PROMPTS) {
-      for (const c of ready) if (!gone.has(labelOf(c)) && have.has(comboOf(raw.id, prompt, c))) missing -= 1
-    }
-  }
+  const usable = ready.filter((c) => !gone.has(labelOf(c)))
+  const missing = cases
+    .flatMap((raw) => BLIND_PROMPTS.flatMap((prompt) => usable.map((c) => comboOf(raw.id, prompt, c))))
+    .filter((combo) => !have.has(combo)).length
   say(`${PREFIX} ${added} fala(s) nova(s); ${votos.length} no arquivo de voto`)
   if (missing > 0) say(`${PREFIX} faltam ${missing}: rode de novo (amanhã, se foi cota) que continua daqui`)
   if (votos.length > 0) {

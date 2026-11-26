@@ -1,7 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { limitEvents, spontaneousEvent, collapseHeld, eventDayKey } from './pushEvents.js'
-import { DEFAULT_PUSH_PREFS, deliveryDecision } from './pushPrefs.js'
+import * as pushEvents from './pushEvents.js'
+import { DEFAULT_PUSH_PREFS, DEFAULT_SPONTANEOUS_WINDOW, deliveryDecision } from './pushPrefs.js'
+
+const { limitEvents, spontaneousEvent, collapseHeld, eventDayKey } = pushEvents
 
 // 23:30 em Sao Paulo (UTC-3) e 02:30 UTC do dia seguinte.
 const AT_2330 = new Date('2026-11-26T02:30:00Z')
@@ -38,18 +40,93 @@ const at = (day) => new Date(`${day}T15:00:00Z`)
 
 test('o id do espontaneo muda a meia-noite de Sao Paulo e nao a de UTC', () => {
   // 02:30 UTC do dia 26 ainda e 23:30 do dia 25 em Sao Paulo.
-  const lateSp = spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T02:30:00Z') })
-  assert.equal(lateSp.id, 'h1__ela__espontanea__2026-11-25')
+  const lateSp = spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T02:30:00Z'), slot: 3 })
+  assert.equal(lateSp.id, 'h1__ela__espontanea__2026-11-25__3')
   assert.equal(eventDayKey(new Date('2026-11-26T02:30:00Z')), '2026-11-25')
   // 03:00 UTC e a meia-noite de Sao Paulo: vira o dia 26.
-  const next = spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T03:00:00Z') })
-  assert.equal(next.id, 'h1__ela__espontanea__2026-11-26')
+  const next = spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T03:00:00Z'), slot: 1 })
+  assert.equal(next.id, 'h1__ela__espontanea__2026-11-26__1')
   assert.equal(next.kind, 'espontanea')
-  assert.equal(next.tag, 'espontanea')
+  assert.equal(next.tag, 'espontanea-1')
   assert.equal(next.url, '/')
-  // mesmo dia, mesmo id; outra pessoa, outro id
-  assert.equal(spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T14:00:00Z') }).id, next.id)
-  assert.notEqual(spontaneousEvent({ hid: 'h1', person: 'ele', now: new Date('2026-11-26T14:00:00Z') }).id, next.id)
+  // mesmo dia e vaga, mesmo id; outra vaga ou outra pessoa, outro id
+  const same = { hid: 'h1', person: 'ela', now: new Date('2026-11-26T14:00:00Z'), slot: 1 }
+  assert.equal(spontaneousEvent(same).id, next.id)
+  const second = spontaneousEvent({ ...same, slot: 2 })
+  assert.notEqual(second.id, next.id)
+  assert.notEqual(second.tag, next.tag)
+  assert.notEqual(spontaneousEvent({ ...same, person: 'ele' }).id, next.id)
+})
+
+// Hora de parede de Sao Paulo (UTC-3) em um dia de novembro, em minutos do dia.
+const spMinute = (day, minute) => new Date(Date.parse(`2026-11-${String(day).padStart(2, '0')}T03:00:00Z`) + minute * 60_000)
+
+const slotAt = (now, extra = {}) =>
+  pushEvents.spontaneousSlot({
+    now,
+    window: DEFAULT_SPONTANEOUS_WINDOW,
+    total: 3,
+    tickMinutes: 15,
+    hid: 'h1',
+    person: 'ele',
+    ...extra,
+  })
+
+// Primeiro minuto liberado de cada vaga, andando o dia de um em um.
+const targets = (day, extra) => {
+  const out = new Map()
+  for (let minute = 0; minute < 24 * 60; minute += 1) {
+    const got = slotAt(spMinute(day, minute), extra)
+    if (got?.due && !out.has(got.slot)) out.set(got.slot, minute)
+  }
+  return out
+}
+
+test('com 3 vagas de 09:00 a 21:00, cada alvo cai na propria faixa de 4 horas, com folga de um relogio', () => {
+  const seen = { 1: new Set(), 2: new Set(), 3: new Set() }
+  for (const person of ['ele', 'ela']) {
+    for (let day = 1; day <= 28; day += 1) {
+      const got = targets(day, { person })
+      assert.deepEqual([...got.keys()], [1, 2, 3])
+      for (const [slot, minute] of got) {
+        const bandStart = 9 * 60 + (slot - 1) * 240
+        assert.ok(minute >= bandStart && minute < bandStart + 240 - 15, `dia ${day} vaga ${slot}: ${minute}`)
+        seen[slot].add(minute - bandStart)
+      }
+    }
+  }
+  // sorteado de verdade: o minuto muda de dia para dia e de pessoa para pessoa
+  for (const set of Object.values(seen)) assert.ok(set.size >= 20, `poucos minutos distintos: ${set.size}`)
+  assert.notDeepEqual([...targets(5)], [...targets(5, { person: 'ela' })])
+})
+
+test('depois do alvo a vaga segue liberada ate o fim da faixa, e a vaga perdida e perdida', () => {
+  const first = targets(17).get(1)
+  assert.deepEqual(slotAt(spMinute(17, first - 1)), { slot: 1, due: false })
+  assert.deepEqual(slotAt(spMinute(17, 13 * 60 - 1)), { slot: 1, due: true })
+  // as 13:00 ja e a segunda faixa: a primeira nao volta
+  assert.equal(slotAt(spMinute(17, 13 * 60)).slot, 2)
+  // reinicio no fim do dia: so a terceira vaga pode estar liberada
+  for (let day = 1; day <= 28; day += 1) {
+    assert.deepEqual(slotAt(spMinute(day, 20 * 60 + 55)), { slot: 3, due: true })
+  }
+})
+
+test('fora da janela ou com total zero nao ha vaga', () => {
+  assert.equal(slotAt(spMinute(17, 8 * 60 + 59)), null)
+  assert.equal(slotAt(spMinute(17, 21 * 60)), null)
+  assert.equal(slotAt(spMinute(17, 2 * 60)), null)
+  assert.equal(slotAt(spMinute(17, 12 * 60), { total: 0 }), null)
+  assert.notEqual(slotAt(spMinute(17, 9 * 60)), null)
+})
+
+test('outro total e outra janela redividem as faixas', () => {
+  const window = { from: '08:00', to: '09:00' }
+  const got = targets(17, { window, total: 2, tickMinutes: 15 })
+  assert.deepEqual([...got.keys()], [1, 2])
+  assert.ok(got.get(1) >= 8 * 60 && got.get(1) < 8 * 60 + 15)
+  assert.ok(got.get(2) >= 8 * 60 + 30 && got.get(2) < 8 * 60 + 45)
+  assert.deepEqual([...targets(17, { total: 6 }).keys()], [1, 2, 3, 4, 5, 6])
 })
 
 test('ids de limite e espontaneo sao deterministicos e sem barra', () => {
@@ -57,9 +134,10 @@ test('ids de limite e espontaneo sao deterministicos e sem barra', () => {
   const a = limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows })
   const b = limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows })
   assert.deepEqual(a, b)
-  const all = [...a, spontaneousEvent({ hid: 'h/1', person: 'ele', now: at('2026-11-25') })]
+  const all = [...a, spontaneousEvent({ hid: 'h/1', person: 'ele', now: at('2026-11-25'), slot: 2 })]
   assert.equal(all.length, 2)
   for (const e of all) assert.ok(!e.id.includes('/'), e.id)
+  assert.equal(all[1].id, 'h_1__ele__espontanea__2026-11-25__2')
 })
 
 test('limitEvents respeita os marcadores ja conhecidos (ids sem o prefixo do casal)', () => {
@@ -98,11 +176,15 @@ test('collapseHeld: 80 e 100 da mesma categoria mantem o de 100', () => {
 })
 
 test('collapseHeld: nos demais tipos fica o mais recente por id; entrada vazia nao lanca', () => {
-  const d1 = spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-24') })
-  const d2 = spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25') })
+  // mesma vaga em dois dias: mesma tag, fica o mais novo por id
+  const d1 = spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-24'), slot: 2 })
+  const d2 = spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25'), slot: 2 })
   const { keep, drop } = collapseHeld([d2, d1])
   assert.deepEqual(keep, [d2])
   assert.deepEqual(drop, [d1])
+  // vagas diferentes tem tags diferentes e nao se colapsam
+  const other = spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25'), slot: 3 })
+  assert.deepEqual(collapseHeld([d2, other]).keep, [d2, other])
   assert.deepEqual(collapseHeld([]), { keep: [], drop: [] })
   assert.deepEqual(collapseHeld(/** @type {any} */ (null)), { keep: [], drop: [] })
 })
@@ -110,7 +192,7 @@ test('collapseHeld: nos demais tipos fica o mais recente por id; entrada vazia n
 test('os eventos nao carregam texto de aviso nem valor financeiro', () => {
   const events = [
     ...limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows: [{ categoryId: 'c', spentCents: 9000, limitCents: 10000 }] }),
-    spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25') }),
+    spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25'), slot: 1 }),
   ]
   const forbidden = ['text', 'body', 'title', 'name', 'amount', 'amountCents', 'spentCents', 'limitCents']
   for (const e of events) {

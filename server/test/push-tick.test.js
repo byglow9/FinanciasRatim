@@ -65,7 +65,7 @@ describe('readPushConfig', () => {
   const DEFAULTS = {
     maxPerDay: 20,
     dueHour: 9,
-    spontPerDay: 1,
+    spontPerDay: 3,
     spontWindow: { from: '09:00', to: '21:00' },
     tickMinutes: 15,
     billCheckMinutes: 60,
@@ -87,7 +87,8 @@ describe('readPushConfig', () => {
       }
       assert.deepEqual(readPushConfig(env), DEFAULTS, JSON.stringify(bad))
     }
-    assert.equal(readPushConfig({ PUSH_SPONT_PER_DAY: '3' }).spontPerDay, 1)
+    assert.equal(readPushConfig({ PUSH_SPONT_PER_DAY: '7' }).spontPerDay, 3)
+    for (const n of [0, 1, 3, 6]) assert.equal(readPushConfig({ PUSH_SPONT_PER_DAY: String(n) }).spontPerDay, n)
     assert.equal(readPushConfig({ PUSH_PRUNE_DAYS: '0' }).pruneDays, 30)
     assert.equal(readPushConfig({ PUSH_DUE_HOUR: '24' }).dueHour, 9)
     assert.equal(readPushConfig({ PUSH_DUE_HOUR: '0' }).dueHour, 0)

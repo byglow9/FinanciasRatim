@@ -16,7 +16,7 @@ test('OINC_LINES junta os tres grupos sem cena repetida e cobre o catalogo intei
   assert.deepEqual(Object.keys(OINC_LINES).sort(), keys.sort())
   assert.deepEqual(Object.keys(OINC_LINES).sort(), Object.keys(OINC_SCENES).sort())
   assert.ok(Object.isFrozen(OINC_LINES))
-  assert.ok(all.every((l) => Object.isFrozen(l)))
+  assert.ok(Object.values(OINC_LINES).every((lines) => Object.isFrozen(lines) && lines.every((l) => Object.isFrozen(l))))
 })
 
 test('todo slug de OINC_SCENES tem ao menos 1 linha para homem e 1 para mulher', () => {

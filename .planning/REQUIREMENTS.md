@@ -98,7 +98,7 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 - [ ] **PUSH-01**: Usuário ativa notificações no celular e vê o estado (não suportado, app não instalado, negado, ativo, inscrição perdida)
 - [ ] **PUSH-02**: Usuário recebe notificação ao chegar a 80% e ao passar de 100% de um limite, e quando uma fatura está perto de vencer
 - [ ] **PUSH-03**: Usuário escolhe quais tipos de notificação quer e os horários de silêncio
-- [ ] **PUSH-04**: Cada evento gera uma única notificação, sem duplicar quando o servidor reinicia, e o texto da tela de bloqueio não mostra valores nem nomes de lojas
+- [ ] **PUSH-04**: Cada evento gera uma única notificação, sem duplicar quando o servidor reinicia, e o texto da tela de bloqueio pode citar valor e marca de loja conhecida, nunca CPF, número de conta ou cartão nem nome de pessoa vindo de lançamento; nome de conta fixa e título de compromisso aparecem como escritos (Fase 7.1, D-27, D-31, D-32)
 - [ ] **PUSH-05**: O push funciona em um iPhone real com o app instalado
 
 ### Vintém com IA (IA)

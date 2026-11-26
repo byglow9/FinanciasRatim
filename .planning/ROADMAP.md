@@ -470,7 +470,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. O usuário ativa as notificações no celular e vê o estado (não suportado, app não instalado, negado, ativo, inscrição perdida); o push funciona em um iPhone real com o app instalado
-  2. O usuário recebe uma notificação ao chegar a 80%, ao passar de 100% de um limite e quando uma fatura está perto de vencer, uma única vez por evento (mesmo se o servidor reiniciar), e o texto da tela de bloqueio não mostra valores nem nomes de lojas
+  2. O usuário recebe uma notificação ao chegar a 80%, ao passar de 100% de um limite e quando uma fatura está perto de vencer, uma única vez por evento (mesmo se o servidor reiniciar), e o texto da tela de bloqueio pode citar valor e marca de loja conhecida, nunca CPF, número de conta ou cartão nem nome de pessoa vindo de lançamento; nome de conta fixa e título de compromisso aparecem como escritos (Fase 7.1, D-27, D-31, D-32)
   3. O usuário escolhe quais tipos de notificação quer e os horários de silêncio
   4. O Vintém comenta os gastos com frases geradas por IA no tom escolhido (inclusive sem filtro), exibidas como texto simples e validadas antes de aparecer, com limite diário por usuário e cache; a IA recebe totais por categoria e nomes de lojas, e nunca CPF, números de conta ou cartão, nem nomes de pessoas (Pix para pessoa vira um rótulo genérico)
   5. Quando a IA falha, demora ou passa do limite, o Vintém usa o banco de frases sem o usuário ver erro, e o provedor pode ser trocado por configuração do servidor, com os termos de uso de dados da escolha registrados na data

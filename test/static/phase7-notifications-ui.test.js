@@ -153,11 +153,28 @@ test('o cartao mantem o interruptor de vencimento em settings e os tipos novos v
   assert.match(card, /getPushPrefs\(\)/)
   assert.match(card, /DEFAULT_PUSH_PREFS/)
   assert.match(card, /Não foi possível carregar os avisos\./)
-  for (const label of ['Limite chegando a 80%', 'Limite estourado (100%)', 'Avisos de vencimento', 'OINC espontâneo']) {
+  for (const label of [
+    'Limite chegando a 80%',
+    'Limite estourado (100%)',
+    'Avisos de vencimento',
+    'Contas fixas',
+    'Compromissos da agenda',
+    'OINC espontâneo',
+  ]) {
     assert.ok(card.includes(label), `cartao sem "${label}"`)
   }
   assert.ok(card.includes('Vale para o sino do app e para o aviso de fatura no celular.'))
-  assert.ok(card.includes('Uma cutucada por dia, no máximo.'))
+  assert.ok(card.includes('Algumas por dia, em horários sorteados.'))
+  // Tipos novos da Fase 7.1: salvos pelo servidor junto com os outros.
+  for (const key of ['conta', 'compromisso']) {
+    assert.match(card, new RegExp(`id="push-${key}"`))
+    assert.match(card, new RegExp(`checked=\\{prefs\\.types\\.${key}\\}`))
+    assert.match(card, new RegExp(`setType\\('${key}', v\\)`))
+  }
+  assert.ok(card.includes('Dois dias antes, um dia antes e no dia, se não estiver paga.'))
+  assert.ok(card.includes('Dois dias antes e um dia antes.'))
+  // Os dias de antecedencia valem so para o sino: o texto nao pode sugerir que mudam o aviso no celular.
+  assert.match(card, /Só para o sino do app\. No celular, a fatura avisa dois dias antes/)
   const quiet = code(QUIET)
   assert.ok(quiet.includes('Durante o silêncio os avisos esperam e chegam quando ele acabar.'))
   assert.ok(quiet.includes('Escolha horas diferentes.'))

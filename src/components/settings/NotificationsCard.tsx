@@ -19,7 +19,7 @@ const LOAD_FAILED = 'Não foi possível carregar os avisos.'
 const IN_APP_HINT = 'Dentro do app, os alertas de limite continuam sempre ligados.'
 const DAYS_MAX = 30
 
-/** Cópia mutável dos padrões do núcleo (D-06, D-21): três tipos ligados e silêncio desligado. */
+/** Cópia mutável dos padrões do núcleo (D-06, D-21): tipos ligados e silêncio desligado. */
 function defaultPrefs(): PushPrefs {
   return { types: { ...DEFAULT_PUSH_PREFS.types }, quiet: { ...DEFAULT_PUSH_PREFS.quiet } }
 }
@@ -57,9 +57,11 @@ function SwitchRow({ id, label, hint, checked, onChange, disabled }: SwitchRowPr
 }
 
 /**
- * Cartão "Notificações" (PUSH-01, PUSH-03, D-08, D-21): estado dos avisos neste aparelho, os quatro tipos
- * (80%, 100%, vencimento e espontâneo) e o horário de silêncio. O vencimento é o interruptor legado e continua
- * em settings (vale também para o sino do app); o resto vai ao servidor. O botão de ativar vive só aqui.
+ * Cartão "Notificações" (PUSH-01, PUSH-03, D-08, D-21): estado dos avisos neste aparelho, os seis tipos
+ * (80%, 100%, vencimento, contas fixas, compromissos e espontâneo) e o horário de silêncio. O vencimento é o
+ * interruptor legado e continua em settings (vale também para o sino do app); o resto vai ao servidor. Os dias
+ * de antecedência valem só para o sino: no celular os estágios são fixos (07.1, D-21, D-24). O botão de ativar
+ * vive só aqui.
  */
 export function NotificationsCard() {
   const { settings, updateNotifications, readOnly } = useArea()
@@ -168,8 +170,13 @@ export function NotificationsCard() {
       />
       <div className="space-y-1">
         <Label htmlFor="days-before-due">Dias de antecedência</Label>
+        <p id="days-before-due-hint" className="text-xs font-normal text-muted-foreground">
+          Só para o sino do app. No celular, a fatura avisa dois dias antes, um dia antes e no dia, se não estiver
+          paga.
+        </p>
         <Input
           id="days-before-due"
+          aria-describedby="days-before-due-hint"
           inputMode="numeric"
           value={days}
           maxLength={2}
@@ -187,9 +194,25 @@ export function NotificationsCard() {
         </p>
       ) : null}
       <SwitchRow
+        id="push-conta"
+        label="Contas fixas"
+        hint="Dois dias antes, um dia antes e no dia, se não estiver paga."
+        checked={prefs.types.conta}
+        onChange={(v) => setType('conta', v)}
+        disabled={locked}
+      />
+      <SwitchRow
+        id="push-compromisso"
+        label="Compromissos da agenda"
+        hint="Dois dias antes e um dia antes."
+        checked={prefs.types.compromisso}
+        onChange={(v) => setType('compromisso', v)}
+        disabled={locked}
+      />
+      <SwitchRow
         id="push-espontanea"
         label="OINC espontâneo"
-        hint="Uma cutucada por dia, no máximo."
+        hint="Algumas por dia, em horários sorteados."
         checked={prefs.types.espontanea}
         onChange={(v) => setType('espontanea', v)}
         disabled={locked}

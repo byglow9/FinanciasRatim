@@ -140,7 +140,8 @@ test('AppearanceCard tem os nomes das abas e delega o tema ao ThemeGroup, sem in
 })
 
 // O PUSH-03 da Fase 7 (07-11) substitui o PR-13 no que e push: o cartao deixa de ter um so interruptor e passa a
-// ter os tipos (80, 100, vencimento, espontaneo) e o silencio; o alerta de limite DENTRO do app segue sempre ligado.
+// ter os tipos (80, 100, vencimento, conta, compromisso, espontaneo) e o silencio; o alerta de limite DENTRO do app
+// segue sempre ligado.
 test('NotificationsCard tem os tipos de aviso, o silencio, a antecedencia de 0 a 30 e o alerta de limite do app sempre ligado (PUSH-03)', () => {
   const QUIET = 'src/components/settings/QuietHoursFields.tsx'
   const SECTION = 'src/components/settings/PushDeviceSection.tsx'
@@ -162,10 +163,11 @@ test('NotificationsCard tem os tipos de aviso, o silencio, a antecedencia de 0 a
   assertIncludes(QUIET, ['Horário de silêncio'])
   const src = code(NOTIFICATIONS)
   assert.doesNotMatch(src, /Avisos de limite: sempre ligados/, 'o texto antigo de limite sempre ligado saiu')
-  // Cinco interruptores: 80, 100, vencimento e espontaneo (linhas do cartao) e o silencio (QuietHoursFields).
+  // Sete interruptores: 80, 100, vencimento, conta, compromisso e espontaneo (linhas do cartao) e o silencio
+  // (QuietHoursFields).
   const rows = (src.match(/<SwitchRow\b/g) ?? []).length
   const quietSwitches = (code(QUIET).match(/<Switch\b/g) ?? []).length
-  assert.equal(rows + quietSwitches, 5, 'interruptores: 80, 100, vencimento, espontaneo e silencio')
+  assert.equal(rows + quietSwitches, 7, 'interruptores: 80, 100, vencimento, conta, compromisso, espontaneo e silencio')
   assert.match(src, /import\s*\{\s*Switch\s*\}\s*from\s+'@\/components\/ui\/switch'/)
   assert.match(src, /DAYS_MAX\s*=\s*30/)
 })

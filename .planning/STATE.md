@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 current_phase: 07
 current_phase_name: Push e Vintém com IA
 status: executing
-stopped_at: Completed 07.1-16-PLAN.md
-last_updated: "2026-11-26T19:30:37.002Z"
+stopped_at: Completed 07.1-13-PLAN.md
+last_updated: "2026-11-26T19:30:54.380Z"
 last_activity: 2026-11-25
 last_activity_desc: Phase 06 execution started
-state_head: 94ffbf5742aca94dfaa033224d74af0f4b0b31e1
+state_head: 7c268d1bbb7420248e829e0b367974462864c818
 progress:
   total_phases: 10
   completed_phases: 2
@@ -162,6 +162,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P08 | 8 min | 2 tasks | 6 files |
 | Phase 07.1 P17 | 5 min | 2 tasks | 8 files |
 | Phase 07.1 P16 | 10 min | 2 tasks | 9 files |
+| Phase 07.1 P13 | 10 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -261,6 +262,8 @@ Recent decisions affecting current work:
 - [Phase 07.1]: 07.1-17: publicar o servidor liga conta, fatura e compromisso de uma vez; esperar o voto do 07.1-14
 - [Phase 07.1]: 07.1-16: fala gerada pela IA passa pela regua da saida e pela do acervo, sem citar marca conhecida
 - [Phase 07.1]: 07.1-16: so a saida nova e comparada com as servidas; o cache pode repetir, menos a reprovada
+- [Phase 07.1]: 07.1-13: voto cobre 423 falas (295 do app, 128 de aviso); as 91 aprovadas nos votos 4A a 4C nao voltam
+- [Phase 07.1]: 07.1-13: 12 dos 32 casos do prompt novo vao sem exemplo (so lotes 2 e 3); avaliar antes do teste cego do 07.1-14
 
 ### Pending Todos
 
@@ -294,8 +297,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-26T19:30:36.818Z
-Stopped at: Completed 07.1-16-PLAN.md
+Last session: 2026-11-26T19:30:54.221Z
+Stopped at: Completed 07.1-13-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

@@ -737,10 +737,6 @@ describe('notificador de fatura', () => {
     assert.deepEqual(billStatuses(), ['enviado'])
   })
 
-  test('o nome antigo continua valendo ate o relogio trocar os chamadores', async () => {
-    assert.equal(notifier.evaluateBills, notifier.evaluateDue)
-  })
-
   test('entrada invalida nao faz nada', async () => {
     assert.equal((await bills('porquinho')).events, 0)
     assert.equal((await bills('ele', '')).events, 0)

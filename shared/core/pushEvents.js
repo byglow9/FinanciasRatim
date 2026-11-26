@@ -5,7 +5,6 @@
 // texto de aviso nem valor (o texto e do servidor). Sem relogio implicito.
 
 import { alertId, thresholdsToFire } from './alerts.js'
-import { cardBillAlerts } from './cardCalendar.js'
 import { dayKeyOf } from './dayKey.js'
 
 /**
@@ -20,19 +19,6 @@ import { dayKeyOf } from './dayKey.js'
  *   tag: string,
  *   url: string,
  * }} LimitEvent
- */
-
-/**
- * @typedef {{
- *   kind: 'fatura',
- *   id: string,
- *   cardId: string,
- *   billMonth: string,
- *   overdue: boolean,
- *   person: string,
- *   tag: string,
- *   url: string,
- * }} BillEvent
  */
 
 /**
@@ -72,27 +58,6 @@ export function limitEvents({ hid, person, cycleKey, rows, knownAlertIds = [] })
     person,
     tag: `limite-${d.categoryId}-${cycleKey}`,
     url: '/',
-  }))
-}
-
-/**
- * Eventos de fatura perto de vencer: reaproveita cardBillAlerts (fechada ou
- * atrasada, nao paga, vence em ate `daysBefore` dias). Sem fechamento e
- * vencimento do dono nao ha evento; interruptor desligado devolve lista vazia.
- * @param {{ hid: string, person: string, cards?: import('./cardCalendar.js').CalendarCard[], now: Date, daysBefore?: number, enabled?: boolean }} input
- * @returns {BillEvent[]}
- */
-export function billEvents({ hid, person, cards, now, daysBefore, enabled }) {
-  const alerts = cardBillAlerts({ cards, now, daysBefore, enabled })
-  return alerts.map((a) => ({
-    kind: 'fatura',
-    id: docId(`${hid}__fatura__${a.cardId}__${a.billMonth}`),
-    cardId: a.cardId,
-    billMonth: a.billMonth,
-    overdue: a.overdue,
-    person,
-    tag: `fatura-${a.cardId}`,
-    url: '/cartoes',
   }))
 }
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { limitEvents, billEvents, spontaneousEvent, collapseHeld, eventDayKey } from './pushEvents.js'
+import { limitEvents, spontaneousEvent, collapseHeld, eventDayKey } from './pushEvents.js'
 import { DEFAULT_PUSH_PREFS, deliveryDecision } from './pushPrefs.js'
 
 // 23:30 em Sao Paulo (UTC-3) e 02:30 UTC do dia seguinte.
@@ -36,57 +36,6 @@ test('tracer: o 100 que cai as 23:30 no silencio e retido; as 10:00 e enviado', 
 // Meio-dia em Sao Paulo (15:00 UTC): nunca cruza a virada do dia em UTC nem em Tokyo.
 const at = (day) => new Date(`${day}T15:00:00Z`)
 
-const nubank = (extra = {}) => ({
-  id: 'acc1',
-  displayName: 'Nubank',
-  name: 'Mastercard Gold',
-  closingDay: 7,
-  dueDay: 14,
-  billTotals: { '2026-12': 18141 },
-  payments: [],
-  paidMonths: [],
-  ...extra,
-})
-
-const bills = (cards, now, extra = {}) =>
-  billEvents({ hid: 'h1', person: 'ele', cards, now, daysBefore: 5, enabled: true, ...extra })
-
-test('fatura fechada e nao paga que vence em N dias gera evento com id, tag e rota', () => {
-  const events = bills([nubank()], at('2026-12-10'))
-  assert.deepEqual(events, [
-    {
-      kind: 'fatura',
-      id: 'h1__fatura__acc1__2026-12',
-      cardId: 'acc1',
-      billMonth: '2026-12',
-      overdue: false,
-      person: 'ele',
-      tag: 'fatura-acc1',
-      url: '/cartoes',
-    },
-  ])
-})
-
-test('fatura paga, aberta ou longe do vencimento nao gera evento', () => {
-  assert.deepEqual(bills([nubank({ paidMonths: ['2026-12'] })], at('2026-12-10')), [])
-  assert.deepEqual(bills([nubank({ payments: [{ billMonth: '2026-12', cents: 18141 }] })], at('2026-12-10')), [])
-  assert.deepEqual(bills([nubank()], at('2026-11-24')), [])
-  assert.deepEqual(bills([nubank()], at('2026-12-10'), { daysBefore: 3 }), [])
-})
-
-test('fatura atrasada gera evento com overdue', () => {
-  const [e] = bills([nubank()], at('2026-12-16'), { daysBefore: 3 })
-  assert.equal(e.overdue, true)
-  assert.equal(e.id, 'h1__fatura__acc1__2026-12')
-})
-
-test('interruptor desligado e cartao sem datas do dono nao geram evento', () => {
-  assert.deepEqual(bills([nubank()], at('2026-12-10'), { enabled: false }), [])
-  assert.deepEqual(bills([nubank({ dueDay: null })], at('2026-12-10')), [])
-  assert.deepEqual(bills([nubank({ closingDay: null })], at('2026-12-10')), [])
-  assert.deepEqual(bills(undefined, at('2026-12-10')), [])
-})
-
 test('o id do espontaneo muda a meia-noite de Sao Paulo e nao a de UTC', () => {
   // 02:30 UTC do dia 26 ainda e 23:30 do dia 25 em Sao Paulo.
   const lateSp = spontaneousEvent({ hid: 'h1', person: 'ela', now: new Date('2026-11-26T02:30:00Z') })
@@ -103,17 +52,13 @@ test('o id do espontaneo muda a meia-noite de Sao Paulo e nao a de UTC', () => {
   assert.notEqual(spontaneousEvent({ hid: 'h1', person: 'ele', now: new Date('2026-11-26T14:00:00Z') }).id, next.id)
 })
 
-test('ids dos tres tipos sao deterministicos e sem barra', () => {
+test('ids de limite e espontaneo sao deterministicos e sem barra', () => {
   const rows = [{ categoryId: 'lazer', spentCents: 9000, limitCents: 10000 }]
   const a = limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows })
   const b = limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows })
   assert.deepEqual(a, b)
-  const all = [
-    ...a,
-    ...bills([nubank({ id: 'a/b' })], at('2026-12-10')),
-    spontaneousEvent({ hid: 'h/1', person: 'ele', now: at('2026-11-25') }),
-  ]
-  assert.equal(all.length, 3)
+  const all = [...a, spontaneousEvent({ hid: 'h/1', person: 'ele', now: at('2026-11-25') })]
+  assert.equal(all.length, 2)
   for (const e of all) assert.ok(!e.id.includes('/'), e.id)
 })
 
@@ -165,7 +110,6 @@ test('collapseHeld: nos demais tipos fica o mais recente por id; entrada vazia n
 test('os eventos nao carregam texto de aviso nem valor financeiro', () => {
   const events = [
     ...limitEvents({ hid: 'h1', person: 'ele', cycleKey: '2026-11', rows: [{ categoryId: 'c', spentCents: 9000, limitCents: 10000 }] }),
-    ...bills([nubank()], at('2026-12-10')),
     spontaneousEvent({ hid: 'h1', person: 'ele', now: at('2026-11-25') }),
   ]
   const forbidden = ['text', 'body', 'title', 'name', 'amount', 'amountCents', 'spentCents', 'limitCents']

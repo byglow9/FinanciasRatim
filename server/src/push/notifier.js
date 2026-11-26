@@ -468,7 +468,5 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     return summary
   }
 
-  // evaluateBills e o nome antigo: o relogio, a pos-sincronizacao e a rota de verificacao ainda o
-  // chamam; o plano 07.1-17 troca os chamadores e remove o apelido.
-  return { evaluateLimits, evaluateDue, evaluateBills: evaluateDue, evaluateSpontaneous, deliverHeld }
+  return { evaluateLimits, evaluateDue, evaluateSpontaneous, deliverHeld }
 }

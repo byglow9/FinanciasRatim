@@ -1,0 +1,818 @@
+[
+ {
+  "id": "s01-1",
+  "cenario": "Gasolina",
+  "situacao": "Posto, R$ 220",
+  "texto": "R$ 220 de gasolina. O carro bebeu mais que tu no sábado.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s01-2",
+  "cenario": "Gasolina",
+  "situacao": "Posto, R$ 220",
+  "texto": "Encheu o tanque com R$ 220 e me deixou aqui no vazio. Egoistuxo.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s01-3",
+  "cenario": "Gasolina",
+  "situacao": "Posto, R$ 220",
+  "texto": "Duzentos e vinte no posto. Agora vai a pé até a esquina de carro de novo, vai. KKKKKJ",
+  "voto": "nao",
+  "comentario": "n fez sentido pra min"
+ },
+ {
+  "id": "s02-1",
+  "cenario": "Farmácia",
+  "situacao": "Farmácia, R$ 87",
+  "texto": "R$ 87 na farmácia. Se for remédio, melhoras. Se for creme caro, vergonha.",
+  "voto": "sim",
+  "comentario": "perfeito,"
+ },
+ {
+  "id": "s02-2",
+  "cenario": "Farmácia",
+  "situacao": "Farmácia, R$ 87",
+  "texto": "Entrou pra comprar dipirona e saiu com R$ 87. Aquela cestinha é armadilha.",
+  "voto": "nao",
+  "comentario": ""
+ },
+ {
+  "id": "s02-3",
+  "cenario": "Farmácia",
+  "situacao": "Farmácia, R$ 87",
+  "texto": "Oitenta e sete conto de farmácia. Comprou camisinha ou comprou juízo? Um dos dois faltava. rsrsrs",
+  "voto": "sim",
+  "comentario": "perfeitoperfeitoperfeito"
+ },
+ {
+  "id": "s03-1",
+  "cenario": "Assinaturas acumuladas",
+  "situacao": "5 assinaturas no mês, R$ 164",
+  "texto": "Cinco assinaturas, R$ 164. Tu não tem olho pra assistir isso tudo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s03-2",
+  "cenario": "Assinaturas acumuladas",
+  "situacao": "5 assinaturas no mês, R$ 164",
+  "texto": "R$ 164 em assinatura. Tem streaming aí que nem lembra da tua cara.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s03-3",
+  "cenario": "Assinaturas acumuladas",
+  "situacao": "5 assinaturas no mês, R$ 164",
+  "texto": "Assinou cinco, usa um e meio. O resto é caridade pra bilionário, HIHIHI.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s04-1",
+  "cenario": "Compra de madrugada",
+  "situacao": "Compra online, R$ 189, às 3h12",
+  "texto": "R$ 189 às 3h12 da manhã. Isso não é compra, é possessão.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s04-2",
+  "cenario": "Compra de madrugada",
+  "situacao": "Compra online, R$ 189, às 3h12",
+  "texto": "Três e doze da madrugada e o dedinho passeando no carrinho. Vai DORMIR, porra.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s04-3",
+  "cenario": "Compra de madrugada",
+  "situacao": "Compra online, R$ 189, às 3h12",
+  "texto": "Compra às 3h. Quando a caixa chegar tu vai abrir sem saber o que é. huehue",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s05-1",
+  "cenario": "Pix pra uma pessoa",
+  "situacao": "Pix de R$ 150 pra uma pessoa",
+  "texto": "Pix de R$ 150 pra uma pessoa. Dívida, rolo ou chantagem? Pisca duas vezes.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s05-2",
+  "cenario": "Pix pra uma pessoa",
+  "situacao": "Pix de R$ 150 pra uma pessoa",
+  "texto": "Saíram R$ 150 no Pix. Espero que a criatura pelo menos te mande bom dia.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s05-3",
+  "cenario": "Pix pra uma pessoa",
+  "situacao": "Pix de R$ 150 pra uma pessoa",
+  "texto": "R$ 150 voando no Pix, e pra mim nunca sobra nem um pixuxo.",
+  "voto": "sim",
+  "comentario": "pixzuxo seria o certo"
+ },
+ {
+  "id": "s06-1",
+  "cenario": "Gasto minúsculo",
+  "situacao": "Banca, R$ 3,50",
+  "texto": "R$ 3,50 na banca. Anotei. Aqui ninguém passa batido, nem bala.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s06-2",
+  "cenario": "Gasto minúsculo",
+  "situacao": "Banca, R$ 3,50",
+  "texto": "Três e cinquenta, é? Começa assim, daqui a pouco tá financiando chiclete.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s06-3",
+  "cenario": "Gasto minúsculo",
+  "situacao": "Banca, R$ 3,50",
+  "texto": "TRÊS REAIS E CINQUENTA. Alerta máximo, chamem o exército. Brincadeira. Mas anotei.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s07-1",
+  "cenario": "Parcelamento",
+  "situacao": "Compra de R$ 960 em 12x de R$ 80",
+  "texto": "12x de R$ 80. Parabéns, adotou um boleto e ele fica um ano.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s07-2",
+  "cenario": "Parcelamento",
+  "situacao": "Compra de R$ 960 em 12x de R$ 80",
+  "texto": "Parcelou em doze. Quando acabar, o produto já tá no lixo e tu ainda pagando.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s07-3",
+  "cenario": "Parcelamento",
+  "situacao": "Compra de R$ 960 em 12x de R$ 80",
+  "texto": "Oitentinha por mês, tu falou. Doze vezes, tu não falou. rsrsrsrs",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s08-1",
+  "cenario": "Padaria todo dia",
+  "situacao": "Padaria, 6 vezes na semana, R$ 94",
+  "texto": "Seis idas à padaria. O padeiro já separa teu pão quando ouve o chinelo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s08-2",
+  "cenario": "Padaria todo dia",
+  "situacao": "Padaria, 6 vezes na semana, R$ 94",
+  "texto": "R$ 94 de padaria na semana. Isso é muito pãozuxo pra uma barriga só.",
+  "voto": "sim",
+  "comentario": "PERFEITO USO DO PAOZUXO"
+ },
+ {
+  "id": "s08-3",
+  "cenario": "Padaria todo dia",
+  "situacao": "Padaria, 6 vezes na semana, R$ 94",
+  "texto": "Padaria seis vezes. Ou é o pão ou é alguém atrás do balcão, hein. HIHIHI",
+  "voto": "nao",
+  "comentario": ""
+ },
+ {
+  "id": "s09-1",
+  "cenario": "Transporte por app",
+  "situacao": "Uber, 5 corridas na semana, R$ 118",
+  "texto": "Cinco corridas, R$ 118. Tuas pernas pediram baixa por falta de uso.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s09-2",
+  "cenario": "Transporte por app",
+  "situacao": "Uber, 5 corridas na semana, R$ 118",
+  "texto": "R$ 118 de Uber. O motorista já sabe até com quem tu brigou.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s09-3",
+  "cenario": "Transporte por app",
+  "situacao": "Uber, 5 corridas na semana, R$ 118",
+  "texto": "Cinco Ubers na semana. Anda, criatura, o chão é de graça. KKKKKJ",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s10-1",
+  "cenario": "Roupa nova",
+  "situacao": "Loja de roupa, R$ 340",
+  "texto": "R$ 340 em roupa e eu aqui, pelado há anos sem reclamar. Mentira, reclamo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s10-2",
+  "cenario": "Roupa nova",
+  "situacao": "Loja de roupa, R$ 340",
+  "texto": "Roupa nova de R$ 340. Vai usar pra quê, pra abrir a fatura bem vestido?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s10-3",
+  "cenario": "Roupa nova",
+  "situacao": "Loja de roupa, R$ 340",
+  "texto": "Trezentos e quarenta no pano. Desfila pra mim, vai, quero ver se valeu. rsrsrs",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s11-1",
+  "cenario": "Pet shop",
+  "situacao": "Pet shop, R$ 132",
+  "texto": "R$ 132 no pet shop. O bicho come melhor que tu, e tá certo ele.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s11-2",
+  "cenario": "Pet shop",
+  "situacao": "Pet shop, R$ 132",
+  "texto": "Gastou R$ 132 com o outro bicho. E o porco aqui? Nem um biscoito?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s11-3",
+  "cenario": "Pet shop",
+  "situacao": "Pet shop, R$ 132",
+  "texto": "Pet shop, R$ 132. Isso é ciúme que tô sentindo, ronc.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s12-1",
+  "cenario": "Várias compras de uma vez",
+  "situacao": "Banco sincronizou 7 compras, R$ 412",
+  "texto": "O banco me entregou SETE compras de uma vez, R$ 412. Tu fez um arrastão?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s12-2",
+  "cenario": "Várias compras de uma vez",
+  "situacao": "Banco sincronizou 7 compras, R$ 412",
+  "texto": "Sete compras, R$ 412. Vou soltando uma por uma pra tu sofrer parcelado.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s12-3",
+  "cenario": "Várias compras de uma vez",
+  "situacao": "Banco sincronizou 7 compras, R$ 412",
+  "texto": "Chegou o extrato de ontem: 7 comprinhas, R$ 412. De inha não tem nada, HIHIHI.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s13-1",
+  "cenario": "Estorno",
+  "situacao": "Estorno de R$ 79",
+  "texto": "Voltaram R$ 79. Dinheiro que vai e volta, o único relacionamento saudável daqui.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s13-2",
+  "cenario": "Estorno",
+  "situacao": "Estorno de R$ 79",
+  "texto": "Estorno de R$ 79. Não comemora gastando, que eu conheço a peça.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s13-3",
+  "cenario": "Estorno",
+  "situacao": "Estorno de R$ 79",
+  "texto": "R$ 79 de volta pra casa. Chorou, abraçou, quase fez bolo. huehue",
+  "voto": "nao",
+  "comentario": ""
+ },
+ {
+  "id": "s14-1",
+  "cenario": "Renda extra",
+  "situacao": "Entrada de R$ 600 de um serviço extra",
+  "texto": "R$ 600 de extra! Trabalhando por fora, é? Gostoso e produtivo, rsrsrs.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s14-2",
+  "cenario": "Renda extra",
+  "situacao": "Entrada de R$ 600 de um serviço extra",
+  "texto": "Entraram R$ 600 que nem tavam nos planos. Deixa FORA dos planos, em mim.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s14-3",
+  "cenario": "Renda extra",
+  "situacao": "Entrada de R$ 600 de um serviço extra",
+  "texto": "Seiscentos de bico. Respeita o suor e não torra em delivery, magreluxo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s15-1",
+  "cenario": "Primeiro dia do ciclo",
+  "situacao": "Começo do ciclo, tudo zerado",
+  "texto": "Mês zeradinho. Cheirinho de promessa que tu vai quebrar quinta.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s15-2",
+  "cenario": "Primeiro dia do ciclo",
+  "situacao": "Começo do ciclo, tudo zerado",
+  "texto": "Dia um. Limites cheios, moral baixa, vamos ver quem ganha.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s15-3",
+  "cenario": "Primeiro dia do ciclo",
+  "situacao": "Começo do ciclo, tudo zerado",
+  "texto": "Começou o mês e tu ainda não fez nenhuma merda. Recorde pessoal, HIHIHI.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s16-1",
+  "cenario": "Véspera do salário",
+  "situacao": "Falta 1 dia, restam R$ 12",
+  "texto": "R$ 12 e um dia. Aguenta, mulambuxo, o salário já botou a cabecinha na porta.",
+  "voto": "nao",
+  "comentario": "mulambo n cara, essa palavra n , poderia ter usado tipo aguento safaduxo"
+ },
+ {
+  "id": "s16-2",
+  "cenario": "Véspera do salário",
+  "situacao": "Falta 1 dia, restam R$ 12",
+  "texto": "Doze reais até amanhã. Hoje tu janta lembrança de comida.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s16-3",
+  "cenario": "Véspera do salário",
+  "situacao": "Falta 1 dia, restam R$ 12",
+  "texto": "Falta UM dia e sobraram R$ 12. Sobrevivente. Dava pra fazer um documentário. KKKKKJ",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s17-1",
+  "cenario": "Sexta à noite",
+  "situacao": "Sexta, 19h, restam R$ 180 de Lazer",
+  "texto": "Sextou com R$ 180 de lazer. É rolê de uma bebida e fingir sono.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s17-2",
+  "cenario": "Sexta à noite",
+  "situacao": "Sexta, 19h, restam R$ 180 de Lazer",
+  "texto": "Sexta e R$ 180 no Lazer. Sai, mas volta inteiro, o cartão também.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s17-3",
+  "cenario": "Sexta à noite",
+  "situacao": "Sexta, 19h, restam R$ 180 de Lazer",
+  "texto": "R$ 180 pra sexta. Beija na boca, que é mais barato que open bar, rsrsrs.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s18-1",
+  "cenario": "Black Friday",
+  "situacao": "Promoções do dia, categoria Compras em 70%",
+  "texto": "Black Friday e teu Compras já tá em 70%. Metade do dobro é golpe, ouviu?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s18-2",
+  "cenario": "Black Friday",
+  "situacao": "Promoções do dia, categoria Compras em 70%",
+  "texto": "É Black Friday. Fecha essa aba. Eu vi a aba. FECHA.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s18-3",
+  "cenario": "Black Friday",
+  "situacao": "Promoções do dia, categoria Compras em 70%",
+  "texto": "70% do limite de Compras gasto e o site piscando pra ti. Não pisca de volta. HIHIHI",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s19-1",
+  "cenario": "Semana sem gastar",
+  "situacao": "3 dias sem nenhum gasto",
+  "texto": "Três dias sem gastar nada. Tu tá bem? Perdeu o cartão ou achou juízo?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s19-2",
+  "cenario": "Semana sem gastar",
+  "situacao": "3 dias sem nenhum gasto",
+  "texto": "72 horas sem passar o cartão. A maquininha tá com saudade, rsrsrs.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s19-3",
+  "cenario": "Semana sem gastar",
+  "situacao": "3 dias sem nenhum gasto",
+  "texto": "Três dias zerados. Tô tão orgulhoso que o ronc saiu fino.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s20-1",
+  "cenario": "Conta vence hoje",
+  "situacao": "Internet de R$ 99 vence hoje",
+  "texto": "A internet vence HOJE, R$ 99. Sem ela tu vai ter que conversar com gente.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s20-2",
+  "cenario": "Conta vence hoje",
+  "situacao": "Internet de R$ 99 vence hoje",
+  "texto": "R$ 99 de internet, é hoje. Paga antes que eu caia junto, porra.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s20-3",
+  "cenario": "Conta vence hoje",
+  "situacao": "Internet de R$ 99 vence hoje",
+  "texto": "Último dia da internet, R$ 99. Depois não adianta sacudir o roteador. huehue",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s21-1",
+  "cenario": "Conta atrasada",
+  "situacao": "Água de R$ 76 atrasada há 2 dias",
+  "texto": "A água de R$ 76 tá 2 dias atrasada. Banho de canequinha te espera.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s21-2",
+  "cenario": "Conta atrasada",
+  "situacao": "Água de R$ 76 atrasada há 2 dias",
+  "texto": "Dois dias de atraso na água. Os juros chegaram e já tão de chinelo no sofá.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s21-3",
+  "cenario": "Conta atrasada",
+  "situacao": "Água de R$ 76 atrasada há 2 dias",
+  "texto": "R$ 76 atrasados, caralho. Era menos que teu último iFood.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s22-1",
+  "cenario": "Alerta 2 dias antes",
+  "situacao": "IPTU de R$ 310 vence em 2 dias",
+  "texto": "IPTU de R$ 310 em 2 dias. O governo quer carinho e não aceita fiado.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s22-2",
+  "cenario": "Alerta 2 dias antes",
+  "situacao": "IPTU de R$ 310 vence em 2 dias",
+  "texto": "Faltam 2 dias pro IPTU, R$ 310. Separa agora, antes que vire hambúrguer.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s22-3",
+  "cenario": "Alerta 2 dias antes",
+  "situacao": "IPTU de R$ 310 vence em 2 dias",
+  "texto": "Depois de amanhã: IPTU, R$ 310. Tô avisando cedo pra depois tu não fazer teatro.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s23-1",
+  "cenario": "Compromisso na agenda",
+  "situacao": "Dentista amanhã às 14h",
+  "texto": "Amanhã, 14h, dentista. Escova direito hoje pra fingir que é sempre assim.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s23-2",
+  "cenario": "Compromisso na agenda",
+  "situacao": "Dentista amanhã às 14h",
+  "texto": "Dentista amanhã às 14h. Vão enfiar o motorzinho e tu vai aguentar quietinho, rsrsrs.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s23-3",
+  "cenario": "Compromisso na agenda",
+  "situacao": "Dentista amanhã às 14h",
+  "texto": "Lembrete: dentista, amanhã, 14h. Fugir não conta como economia.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s24-1",
+  "cenario": "Aniversário chegando",
+  "situacao": "Agenda: aniversário em 2 dias",
+  "texto": "Aniversário daqui a 2 dias. Presente se compra antes, não no posto às 23h.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s24-2",
+  "cenario": "Aniversário chegando",
+  "situacao": "Agenda: aniversário em 2 dias",
+  "texto": "2 dias pro aniversário. Carta escrita à mão: custa zero e rende beijo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s24-3",
+  "cenario": "Aniversário chegando",
+  "situacao": "Agenda: aniversário em 2 dias",
+  "texto": "Tem aniversário em 2 dias. Eu aceito moeda de presente mesmo sem ser meu, HIHIHI.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s25-1",
+  "cenario": "Limite novo",
+  "situacao": "Criou limite de R$ 300 para Delivery",
+  "texto": "Limite de R$ 300 no delivery. Bonito. Quero ver na terça de preguiça.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s25-2",
+  "cenario": "Limite novo",
+  "situacao": "Criou limite de R$ 300 para Delivery",
+  "texto": "Botou limite no delivery, R$ 300. O motoboy tá de luto.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s25-3",
+  "cenario": "Limite novo",
+  "situacao": "Criou limite de R$ 300 para Delivery",
+  "texto": "R$ 300 de teto pro iFood. Se segura, gulosuxo, que eu tô contando.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s26-1",
+  "cenario": "Aumentou o limite depois de estourar",
+  "situacao": "Delivery foi de R$ 200 para R$ 350",
+  "texto": "Estourou e aumentou o limite de R$ 200 pra R$ 350. Mudou a trave, né, safado?",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s26-2",
+  "cenario": "Aumentou o limite depois de estourar",
+  "situacao": "Delivery foi de R$ 200 para R$ 350",
+  "texto": "Limite agora é R$ 350. Assim até eu emagreço: é só mudar a balança.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s26-3",
+  "cenario": "Aumentou o limite depois de estourar",
+  "situacao": "Delivery foi de R$ 200 para R$ 350",
+  "texto": "De R$ 200 pra R$ 350, depois de estourar. Isso é trapaça e eu VI. KKKKKJ",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s27-1",
+  "cenario": "Meta parada",
+  "situacao": "Meta Notebook sem aporte há 30 dias",
+  "texto": "A meta Notebook tá há 30 dias sem ver um real. Criou e abandonou, igual academia.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s27-2",
+  "cenario": "Meta parada",
+  "situacao": "Meta Notebook sem aporte há 30 dias",
+  "texto": "Um mês sem botar nada no Notebook. Nesse ritmo tu digita no guardanapo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s27-3",
+  "cenario": "Meta parada",
+  "situacao": "Meta Notebook sem aporte há 30 dias",
+  "texto": "30 dias sem aporte. A meta mandou perguntar se foi algo que ela disse. rsrsrs",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s28-1",
+  "cenario": "Porquinho recorde",
+  "situacao": "Porquinho chegou a R$ 2.000",
+  "texto": "DOIS MIL aqui dentro. Tô pesado, tô rico, não falo mais com pobre. Volta, brincadeira.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s28-2",
+  "cenario": "Porquinho recorde",
+  "situacao": "Porquinho chegou a R$ 2.000",
+  "texto": "R$ 2.000 no bucho. Nem me balança que eu tô sensível e gostoso.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s28-3",
+  "cenario": "Porquinho recorde",
+  "situacao": "Porquinho chegou a R$ 2.000",
+  "texto": "Porquinho em R$ 2.000. Ouviu esse barulho? Não tem mais eco. HIHIHI",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s29-1",
+  "cenario": "Abriu o app de madrugada",
+  "situacao": "Abriu às 2h40",
+  "texto": "2h40 olhando dinheiro. Insônia de boleto, né? Eu sei.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s29-2",
+  "cenario": "Abriu o app de madrugada",
+  "situacao": "Abriu às 2h40",
+  "texto": "Quase três da manhã e tu aqui. Fecha o olho, o saldo não muda no escuro.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s29-3",
+  "cenario": "Abriu o app de madrugada",
+  "situacao": "Abriu às 2h40",
+  "texto": "Visitinha às 2h40? Tava pelado, avisa antes, rsrsrs.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s30-1",
+  "cenario": "Bom dia por notificação",
+  "situacao": "Manhã: pode gastar R$ 52 hoje",
+  "texto": "Bom dia. Hoje o teto é R$ 52, e o café de padaria já quer metade.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s30-2",
+  "cenario": "Bom dia por notificação",
+  "situacao": "Manhã: pode gastar R$ 52 hoje",
+  "texto": "Acorda, remelentuxo. R$ 52 pra hoje, usa com a cabeça.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s30-3",
+  "cenario": "Bom dia por notificação",
+  "situacao": "Manhã: pode gastar R$ 52 hoje",
+  "texto": "R$ 52 é o de hoje. Quem acorda cedo faz a própria marmita, ronc.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s31-1",
+  "cenario": "Fumaça: tabacaria",
+  "situacao": "Tabacaria, R$ 64",
+  "texto": "R$ 64 na tabacaria. Teu pulmão pediu o extrato e chorou.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s31-2",
+  "cenario": "Fumaça: tabacaria",
+  "situacao": "Tabacaria, R$ 64",
+  "texto": "Sessenta e quatro conto em fumaça. Literalmente queimando dinheiro, seu chaminezuxo.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s31-3",
+  "cenario": "Fumaça: tabacaria",
+  "situacao": "Tabacaria, R$ 64",
+  "texto": "Passou na tabacaria, R$ 64. Seda, piteira e zero vergonha na cara, rsrsrs.",
+  "voto": "sim",
+  "comentario": "perfeito"
+ },
+ {
+  "id": "s32-1",
+  "cenario": "Fumaça: pod",
+  "situacao": "Pod, R$ 90, segundo no mês",
+  "texto": "Outro pod de R$ 90? Tá respirando salada de fruta a preço de picanha.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s32-2",
+  "cenario": "Fumaça: pod",
+  "situacao": "Pod, R$ 90, segundo no mês",
+  "texto": "Segundo pod do mês, poduxo. Daqui a pouco tu solta fumaça até pelo boleto.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s32-3",
+  "cenario": "Fumaça: pod",
+  "situacao": "Pod, R$ 90, segundo no mês",
+  "texto": "R$ 90 no pod e depois diz que não sobra pro Porquinho. Sobra sim: vapor. HIHIHI",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s33-1",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala aleatória",
+  "texto": "Tô chapaduxo aqui no cofre. Vi duas moedas e era uma só.",
+  "voto": "sim",
+  "comentario": "PERFIETOPERFIETOPERFIETO"
+ },
+ {
+  "id": "s33-2",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala aleatória",
+  "texto": "Ronc... quem apagou a luz? Ah, é o meu olho. Tô fritaduxo.",
+  "voto": "sim",
+  "comentario": "PERFIETOPERFIETOPERFIETO"
+ },
+ {
+  "id": "s33-3",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala aleatória",
+  "texto": "Bateu uma larica aqui dentro. Deposita qualquer coisa antes que eu coma o comprovante, rsrsrs.",
+  "voto": "sim",
+  "comentario": "PERFIETOPERFIETOPERFIETO"
+ },
+ {
+  "id": "s34-1",
+  "cenario": "Fumaça: larica",
+  "situacao": "Delivery, R$ 72, às 23h40",
+  "texto": "R$ 72 de delivery às 23h40. Isso não é fome, é larica, chapaduxo.",
+  "voto": "sim",
+  "comentario": ""
+ },
+ {
+  "id": "s34-2",
+  "cenario": "Fumaça: larica",
+  "situacao": "Delivery, R$ 72, às 23h40",
+  "texto": "Onze e quarenta da noite, R$ 72 de lanche. Eu conheço esse olhinho vermelho.",
+  "voto": "sim",
+  "comentario": "PERFIETOPERFIETOPERFIETOPERFIETOPERFIETO"
+ },
+ {
+  "id": "s34-3",
+  "cenario": "Fumaça: larica",
+  "situacao": "Delivery, R$ 72, às 23h40",
+  "texto": "Pediu R$ 72 de comida quase meia-noite. Fumou o juízo junto, foi? KKKKKJ",
+  "voto": "sim",
+  "comentario": ""
+ }
+]

@@ -526,7 +526,7 @@ Plans:
 **Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
 **Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-35 de 07.1-CONTEXT.md
 **Depends on:** Phase 7
-**Plans:** 11/17 plans executed
+**Plans:** 13/17 plans executed
 
 Plans:
 
@@ -554,8 +554,8 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07.1-13-PLAN.md — Ferramentas do teste cego e do voto de todas as falas novas
-- [ ] 07.1-16-PLAN.md — Voto na fala da IA e reposição do acervo
+- [x] 07.1-13-PLAN.md — Ferramentas do teste cego e do voto de todas as falas novas
+- [x] 07.1-16-PLAN.md — Voto na fala da IA e reposição do acervo
 - [x] 07.1-17-PLAN.md — Relógio, gatilho pós-sincronização e limpeza dos avisos fixos
 
 **Wave 6** *(blocked on Wave 5 completion)*

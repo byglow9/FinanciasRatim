@@ -1,0 +1,282 @@
+[
+ {
+  "id": "l4b-01-1",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "R$ 58 de delivery. O motoboy já é meu cunhado, de tanto vir aqui no cofre.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-2",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "Pediu lanche de novo, R$ 74. Tô achando que tu tem relacionamento sério com o entregador. Põe aliança, hehehe.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-3",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "R$ 46 de pizza. Chegou quentinha, grande e na hora. Quem me dera, rsrsrs.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-4",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "R$ 92 de delivery. Meu bucho roncou e o teu também, mas o meu ronca de fome de moeda.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-5",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "Delivery R$ 63. Vi um hambúrguer passando na minha cabeça, com perna e tudo. Tô chapaduxo de fome.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-6",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "R$ 38 em açaí. Esse copo tem mais camada que eu depois de apanhar de martelo.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-7",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "Pediu comida de novo, R$ 81. Tua cozinha tá de luto, eu fiz o velório ontem. KKKKKJ",
+  "lote": 4
+ },
+ {
+  "id": "l4b-01-8",
+  "cenario": "Pediu delivery",
+  "situacao": "Delivery, valores variados",
+  "texto": "R$ 67 de delivery. Entregaram na porta, rapidinho. Só eu nunca recebo entrega, sou porco carente.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-1",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Estourou Lazer: 130% do limite. Passou do ponto e agora quer carinho? Sou porco, não sou milagre.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-2",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Limite de Alimentação foi pro espaço. Vi ele voando com uma moeda na mão, tchau tchau, HIHIHI.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-3",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Passou do limite em R$ 210. Meteu fundo demais no cartão e ainda diz que foi sem querer, né.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-4",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Compras em 140%. Meu martelo tá tremendo, a moeda tá chorando e eu só queria um cobertor.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-5",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Estourou, e eu aqui de testemunha. Só deponho no tribunal do Porquinho, sem advogado e sem pudor.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-6",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Transporte a 112%. Rodou, rodou e rodou mais que giro de martelo. Para o carro, porra!",
+  "lote": 4
+ },
+ {
+  "id": "l4b-02-7",
+  "cenario": "Estourou o limite",
+  "situacao": "Categoria acima de 100%",
+  "texto": "Estourou antes da hora. Lazer em 120% e o mês ainda nem acabou. Que pressa é essa, campeão?",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-1",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "Sobram R$ 900 e 10 dias. Tô com vergonha de tanto dinheiro sobrando, vou me esconder na parede.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-2",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "Mês folgado! Tô tão leve que voava se eu tivesse asa. Só tenho banha.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-3",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "R$ 750 de sobra. Nem parece teu mês. Quem é você e o que fez com o dono gastão? HIHIHI",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-4",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "Tá sobrando. Que tal dar uma enfiadinha no Porquinho? Uma moedinha só, ninguém vê.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-5",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "Mês no azul. Tô tão feliz que dancei dentro do cofre e quebrei um dente de ouro. Foi mal.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-03-6",
+  "cenario": "Mês folgado",
+  "situacao": "Sobra boa até o fim do mês",
+  "texto": "Folga de R$ 600. Tô me sentindo rico e perigoso, porco de gravata. Oinc oinc, banqueiro.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-1",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "Sobram R$ 90 e 17 dias. A matemática diz sufoco, eu digo reza forte e come ovo.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-2",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "Mês apertado. Aqui dentro tá tão vazio que ouvi o eco da minha barriga. Oi? Oi? Oi?",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-3",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "R$ 120 pra 15 dias. Tá duro, né? Tudo duro por aqui, só que não é do jeito bom. rsrsrs",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-4",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "Mês curto de grana. Tentei fingir que o cofre tava cheio, mas as moedas me entregaram.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-5",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "Faltam 20 dias e só R$ 150. Agora é sobrevivência: macarrão com macarrão e fé.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-04-6",
+  "cenario": "Mês apertado",
+  "situacao": "Pouca sobra pro resto do mês",
+  "texto": "Apertado demais. Se apertar mais eu estouro e saio voando em forma de moeda. Tchau, KKKKKJ",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-1",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Acabei de achar uma moeda atrás da minha orelha. Era minha. Eu que escondi de mim mesmo.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-2",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Sonhei que o martelo virava gente e me pedia empréstimo. Acordei cobrando juros.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-3",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Teu dinheiro entra e sai de mim rapidinho e sem carinho. Parece relacionamento de verão, rsrsrs.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-4",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Se eu pudesse, mudava o nome do mês pra \"sem fim\". Dava mais respeito.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-5",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Tô fazendo yoga dentro do cofre. Fiquei na posição de moeda e agora não consigo sair.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-6",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Meta é igual namoro: se não cuidar todo dia, acaba e tu chora no Porquinho.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-7",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Passou um boleto voando e eu mordi. Era só susto, mas que gosto de papel velho. HIHIHI",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-8",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Duro eu sou, aliás. Duro de moeda e mole de caráter. Deposita aí e me amacia.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-9",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "O Porquinho me chamou de gordo. Respondi que ele é raso. Tá de mal comigo, eu acho.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-10",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Hoje acordei achando que sou um cavalo. Relincho de saldo curto. Oink... relincho?",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-11",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Quem inventou a fatura nunca teve um porco de estimação. Eu mordo até o fim do mês.",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-12",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Se tu sentir algo roçando na perna, não é fantasma. É o meu desejo de Porquinho cheio. Vai dormir!",
+  "lote": 4
+ },
+ {
+  "id": "l4b-05-13",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo",
+  "texto": "Teve um dia que contei até 3 e me perdi. Agora só conto até 2 e peço ajuda. Tô economizando número.",
+  "lote": 4
+ }
+]

@@ -123,3 +123,50 @@ test('o historico local valida o que le, usa try e catch nas duas pontas e poda 
   // Sem emoji (guarda da fase 3 vale para o arquivo novo).
   assert.ok(!/\p{Extended_Pictographic}/u.test(read(HISTORY)), 'emoji no historico')
 })
+
+// ---------------------------------------------------------------------------------------------
+// Task 2: voto na fala que espia fora da Home
+// ---------------------------------------------------------------------------------------------
+
+const TOAST = 'src/components/ui/toast.tsx'
+const VOTE = 'src/components/vintem/VintemVote.tsx'
+
+test('o rodape do toast fica fora do elemento que dispensa ao toque (D-12)', () => {
+  const src = code(TOAST)
+  assert.match(src, /footer\?: \(dismiss: \(\) => void\) => React\.ReactNode/, 'ToastOptions sem footer')
+  assert.match(src, /footer: options\?\.footer/, 'show nao guarda o footer')
+  const custom = src.slice(src.indexOf('if (isCustom)'), src.indexOf('Fechar aviso'))
+  const button = custom.indexOf('role="button"')
+  const content = custom.indexOf('{item.custom}')
+  const footer = custom.indexOf('{item.footer(onDismiss)}')
+  assert.ok(button >= 0 && content > button && footer > content, 'falta o botao, a fala ou o rodape')
+  // Entre a fala e o rodape o elemento do botao ja fechou: o rodape e irmao, nunca filho.
+  assert.match(custom.slice(content, footer), /\{item\.custom\}\s*<\/div>\s*\{item\.footer \? \(/, 'rodape dentro do botao')
+  // Tocar no rodape nao dispensa: o unico onClick de dispensar do item custom e o da fala.
+  assert.equal((custom.match(/onClick=\{onDismiss\}/g) ?? []).length, 1)
+  assert.match(custom.slice(content), /pointer-events-auto/, 'o rodape precisa receber toque')
+  // Foco e mouse pausam no recipiente comum, entao valem tambem no rodape.
+  assert.ok(custom.indexOf('onMouseEnter') < button && custom.indexOf('onFocus') < button, 'a pausa nao cobre o rodape')
+})
+
+test('o toast do porco leva o voto so na fala do acervo e de quem pode votar', () => {
+  const src = code(CONTEXT)
+  const peek = body(src, 'peekToast')
+  assert.match(peek, /spoken\.votavel === true && canVote \? spoken\.id : undefined/, 'sem o portao do voto')
+  assert.match(peek, /footer: \(closeToast: \(\) => void\) =>/, 'sem footer')
+  assert.match(peek, /<VintemVote\s+key=\{voteId\}/, 'o voto precisa reiniciar a cada fala')
+  assert.match(peek, /rate\(voteId, voto\)\s*if \(voto === 'nao'\) closeToast\(\)/, 'so o nao gostei fecha o aviso')
+  assert.match(src, /const VINTEM_TOAST_MS = 10000/, 'o aviso precisa dar tempo de votar')
+  // A fala da IA nao tem id de acervo e nao vai a voto.
+  assert.match(body(src, 'espiar'), /peekToast\(\{ text \}, 'wake'\)/)
+})
+
+test('os botoes de voto sao de 44 px, com fundo opaco, sombra e sem animacao propria', () => {
+  const src = code(VOTE)
+  assert.equal((src.match(/variant="secondary"/g) ?? []).length, 2, 'fundo opaco nos dois botoes')
+  assert.equal((src.match(/size="circle"/g) ?? []).length, 2, 'botoes de 44 px')
+  assert.equal((src.match(/shadow-float/g) ?? []).length, 2, 'sombra para ler sobre qualquer conteudo')
+  assert.equal((src.match(/motion-reduce:transition-none/g) ?? []).length, 2)
+  assert.ok(!/anim-|animate-/.test(src), 'sem animacao propria')
+  assert.match(src, /align\?: 'start' \| 'center' \| 'end'/, 'sem o lado do porco')
+})

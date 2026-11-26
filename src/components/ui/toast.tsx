@@ -19,6 +19,11 @@ interface ToastOptions {
   side?: "left" | "right"
   /** So para `custom`: espia na altura do meio da tela em vez de rente ao dock. */
   high?: boolean
+  /**
+   * So para `custom`: area extra abaixo da fala (botoes de voto). Fica no mesmo item, mas fora do
+   * elemento que dispensa ao toque, entao tocar nela nao fecha o aviso. Foco e mouse pausam o tempo.
+   */
+  footer?: (dismiss: () => void) => React.ReactNode
 }
 
 interface ToastItem {
@@ -30,6 +35,7 @@ interface ToastItem {
   custom?: React.ReactNode
   side?: "left" | "right"
   high?: boolean
+  footer?: (dismiss: () => void) => React.ReactNode
 }
 
 interface ToastContextValue {
@@ -76,25 +82,35 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
 
   if (isCustom) {
     // Fala do Vintem: ele espia pela lateral direita e o balao sai ao lado dele (sem caixa de toast).
+    // O rodape (voto) e irmao do botao que dispensa, nunca filho dele.
     return (
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        role="button"
-        tabIndex={0}
-        aria-label="Dispensar fala do OINC"
-        onClick={onDismiss}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault()
-            onDismiss()
-          }
-        }}
-        className={`pointer-events-auto relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${leaving ? "anim-peek-out" : ""}`}
+        className={`pointer-events-auto relative ${leaving ? "anim-peek-out" : ""}`}
       >
-        {item.custom}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Dispensar fala do OINC"
+          onClick={onDismiss}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault()
+              onDismiss()
+            }
+          }}
+          className="relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {item.custom}
+        </div>
+        {item.footer ? (
+          <div className={`pointer-events-auto flex px-3 ${item.side === "left" ? "justify-start" : "justify-end"}`}>
+            {item.footer(onDismiss)}
+          </div>
+        ) : null}
       </div>
     )
   }
@@ -145,6 +161,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
         custom: options?.custom,
         side: options?.side,
         high: options?.high,
+        footer: options?.footer,
       },
     ])
   }, [])

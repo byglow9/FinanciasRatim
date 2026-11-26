@@ -81,7 +81,7 @@ test('o provedor decide pelo nucleo, e melhor esforco e nao registra valor nem n
   assert.match(src, /loadBaseline\(/, 'provedor sem a linha de base em cache')
   assert.match(src, /CHEER_MS/, 'provedor sem CHEER_MS')
   assert.match(src, /durationMs: VINTEM_TOAST_MS/, 'toast do Vintem sem duracao propria')
-  assert.match(src, /const VINTEM_TOAST_MS = 6000/, 'toast do Vintem nao dura 6 s')
+  assert.match(src, /const VINTEM_TOAST_MS = 10000/, 'toast do Vintem nao dura 10 s (da tempo de votar)')
   assert.ok(!/console\./.test(src), 'provedor nao deve registrar nada em console (T-04-15-02)')
   assert.ok(!/dangerouslySetInnerHTML/.test(src), 'HTML bruto no provedor')
   const onLaunched = src.slice(src.indexOf('const onLaunched'), src.indexOf('const onGoal'))

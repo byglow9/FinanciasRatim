@@ -80,7 +80,7 @@ test('contexto: a fala da IA e texto React, sem HTML bruto, e o contexto nao reg
   const ctx = code(CONTEXT)
   assert.ok(!/console\./.test(ctx), 'contexto com console')
   // O texto da IA entra no toast do Vintem como propriedade de texto e no balao pelo estado de fala.
-  assert.match(ctx, /<VintemToastBody text=\{text\}/, 'o toast nao recebe a fala como texto')
+  assert.match(ctx, /<VintemToastBody text=\{spoken\.text\}/, 'o toast nao recebe a fala como texto')
   assert.match(ctx, /setSpeech\(\{ id: `ia-\$\{popCounter\.current\}`, text, situation/, 'speakText nao guarda o texto puro')
   assert.match(code(TOAST), /\{text\}/)
 })
@@ -344,8 +344,8 @@ test('espiar: sem texto da IA nada aparece, sem reserva do banco, e confere de n
   assert.ok(peek.indexOf('isBusy()') < peek.indexOf('speakText('), 'confere depois de mostrar')
   // Mesma regra da reacao: balao na Home, toast do Vintem (com a animacao de espiar) fora dela.
   assert.match(peek, /if \(slot\.current !== null\)/)
-  assert.match(peek, /peekToast\(text, 'wake'\)/)
-  assert.match(body(src, 'deliver'), /peekToast\(text, reaction\)/)
+  assert.match(peek, /peekToast\(\{ text \}, 'wake'\)/)
+  assert.match(body(src, 'deliver'), /peekToast\(spoken, reaction\)/)
   assert.match(src, /useVintemPeek\(\{ canAsk, viewPerson, espiar \}\)/, 'o provedor nao monta a espiada')
 })
 

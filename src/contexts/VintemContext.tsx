@@ -26,6 +26,7 @@ import { useVintemPeek } from '@/hooks/useVintemPeek'
 import { fetchAcervo, readRejected, repor, votar, type GeneratedLine, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
 import { markOincUsed, readOincHistory } from '@/lib/oincHistory'
+import { VintemVote } from '@/components/vintem/VintemVote'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
@@ -183,8 +184,8 @@ function nextPeekSpot(): (typeof PEEK_SPOTS)[number] {
   return spot
 }
 
-/** Duracao do toast do Vintem fora da Home: um pouco mais que o aviso comum, para ler a frase. */
-const VINTEM_TOAST_MS = 6000
+/** Duracao do toast do Vintem fora da Home: o bastante para ler a frase e votar (D-12). */
+const VINTEM_TOAST_MS = 10000
 
 /**
  * Acervo que pode ir ao ar: fala marcada com `reescrita` ainda espera voto e fica de fora (D-34).
@@ -470,19 +471,35 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   // Fora da Home o Vintem espia pela borda da tela, no toast dele.
-  // Fora da Home o Vintem espia pela borda da tela, no toast dele.
+  // Recebe a fala inteira: a do acervo (votavel) ganha os botoes de voto, que ficam fora do elemento que
+  // dispensa ao toque. "Nao gostei" registra e fecha; "gostei" registra e deixa o tempo correr (D-12).
   const peekToast = useCallback(
-    (text: string, reaction: VintemReaction): void => {
+    (spoken: { id?: string; text: string; votavel?: boolean }, reaction: VintemReaction): void => {
       speechGen.current += 1
       const spot = nextPeekSpot()
+      const voteId = spoken.votavel === true && canVote ? spoken.id : undefined
       toast.show('', {
-        custom: <VintemToastBody text={text} reaction={reaction} side={spot.side} />,
+        custom: <VintemToastBody text={spoken.text} reaction={reaction} side={spot.side} />,
         durationMs: VINTEM_TOAST_MS,
         side: spot.side,
         high: spot.high,
+        ...(voteId === undefined
+          ? {}
+          : {
+              footer: (closeToast: () => void) => (
+                <VintemVote
+                  key={voteId}
+                  align={spot.side === 'left' ? 'start' : 'end'}
+                  onVote={(voto) => {
+                    rate(voteId, voto)
+                    if (voto === 'nao') closeToast()
+                  }}
+                />
+              ),
+            }),
       })
     },
-    [toast],
+    [toast, canVote, rate],
   )
 
   // Fala sem gatilho (D-12 b): so o texto da IA. Sem texto nada aparece, porque frase de reserva repetida
@@ -498,7 +515,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
           speakText({ text, situation: 'espiar' })
           return
         }
-        peekToast(text, 'wake')
+        peekToast({ text }, 'wake')
       } catch {
         // Melhor esforco: a espiada nunca atrapalha o que a pessoa esta fazendo.
       }
@@ -531,8 +548,9 @@ export function VintemProvider({ children }: { children: ReactNode }) {
           else speak({ situation, raw, announce: true, ...scene })
           return
         }
-        const text = aiText ?? draw({ situation, raw, ...scene })?.text ?? null
-        if (text !== null) peekToast(text, reaction)
+        // A fala inteira: so a do acervo traz id e votavel, e com isso os botoes de voto no toast.
+        const spoken = aiText !== null ? { text: aiText } : draw({ situation, raw, ...scene })
+        if (spoken !== null) peekToast(spoken, reaction)
       } catch {
         // Melhor esforco: a fala nunca atrapalha o lancamento.
       }

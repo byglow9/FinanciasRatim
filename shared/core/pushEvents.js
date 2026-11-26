@@ -123,9 +123,10 @@ export function spontaneousEvent({ hid, person, now }) {
 
 /**
  * Colapsa os eventos retidos de um mesmo envio em um por `tag`: nos de limite
- * fica o de maior limiar, nos demais o mais recente por id. A ordem de entrada
- * dos que ficam e mantida; o servidor marca os `drop` como colapsados.
- * @template {{ kind: string, id: string, tag: string, threshold?: number }} E
+ * fica o de maior limiar, nos de prazo (com `daysLeft`) o mais proximo do
+ * vencimento, nos demais o mais recente por id. A ordem de entrada dos que ficam
+ * e mantida; o servidor marca os `drop` como colapsados.
+ * @template {{ kind: string, id: string, tag: string, threshold?: number, daysLeft?: number }} E
  * @param {E[]} events
  * @returns {{ keep: E[], drop: E[] }}
  */
@@ -137,6 +138,9 @@ export function collapseHeld(events) {
   const beats = (a, b) => {
     if (a.kind === 'limite' && b.kind === 'limite' && a.threshold !== b.threshold) {
       return (a.threshold ?? 0) > (b.threshold ?? 0)
+    }
+    if (typeof a.daysLeft === 'number' && typeof b.daysLeft === 'number' && a.daysLeft !== b.daysLeft) {
+      return a.daysLeft < b.daysLeft
     }
     return a.id > b.id
   }

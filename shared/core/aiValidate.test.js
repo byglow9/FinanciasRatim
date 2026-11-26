@@ -254,3 +254,17 @@ test('palavrao nao e ofensa discriminatoria: nenhuma lista de discriminacao pega
     }
   }
 })
+
+test('numero-extenso: valor escrito em palavras reprova e contagem pequena passa', () => {
+  for (const t of [
+    'Oito por cento da viagem, meu herói.',
+    'Seiscentos e doze no mercado hoje, porra.',
+    'Você empurrou esse aluguel de mil e quinhentos.',
+    'Quarenta e sete reais no cofre, é isso.',
+  ]) {
+    assert.equal(reason(t), 'numero-extenso', t)
+  }
+  for (const t of ['Você foi três vezes no bar essa semana.', 'Faltam dois dias para a fatura, se mexe.']) {
+    assert.equal(reason(t), 'ok', t)
+  }
+})

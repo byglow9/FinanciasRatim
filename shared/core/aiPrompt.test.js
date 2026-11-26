@@ -10,7 +10,6 @@ import {
   isEdgy,
   STYLE_EXAMPLES,
   SPOKEN_EXAMPLES,
-  COMIC_ANGLES,
   SCENARIOS,
   HUMOR_MOODS,
   TONES,
@@ -64,7 +63,7 @@ test('tracer: o tamanho pedido aparece nas duas mensagens e o limite de tokens s
   assert.match(messages({ length: 'longa' })[1].content, /quatro frases curtas, com até 260 caracteres/)
   assert.equal(maxTokens('curta'), 120)
   assert.equal(maxTokens('longa'), 200)
-  assert.equal(TEMPERATURE, 0.9)
+  assert.equal(TEMPERATURE, 0.8)
 })
 
 // ---------------------------------------------------------------------------------------------
@@ -181,7 +180,7 @@ test('os exemplos de estilo nao tem digito nem nome e cada tom tem dois', () => 
   assert.doesNotMatch(ask({ tone: 'direto' })[0].content, /caralho|porra/)
 })
 
-test('a semente muda o angulo comico e o perfil define o genero', () => {
+test('a semente muda o humor e a cena e o perfil define o genero', () => {
   const um = messages({ seed: 1, person: 'ele' })
   const dois = messages({ seed: 2, person: 'ela' })
   assert.notEqual(um[1].content, dois[1].content)
@@ -189,7 +188,7 @@ test('a semente muda o angulo comico e o perfil define o genero', () => {
   assert.match(dois[0].content, /é uma mulher/)
   assert.match(messages()[0].content, /não sabe o gênero/)
   assert.deepEqual(messages({ seed: 7 }), messages({ seed: 7 }))
-  for (const t of [...SPOKEN_EXAMPLES, ...COMIC_ANGLES]) assert.doesNotMatch(t, /\d|[—–]/, t)
+  for (const t of SPOKEN_EXAMPLES) assert.doesNotMatch(t, /\d|[—–]/, t)
 })
 
 test('o tamanho vem da situacao (D-15)', () => {

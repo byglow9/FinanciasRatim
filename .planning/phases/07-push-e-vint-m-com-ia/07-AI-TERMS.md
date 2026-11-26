@@ -66,9 +66,9 @@ As quatro seções abaixo são preenchidas no checkpoint humano do plano 07-17. 
 
 ## Teste lado a lado
 
-- Arquivos gerados: pendente
-- Taxa de recusa e de fala mansa do modelo escolhido: pendente
-- O que o dono concluiu (qual soa como o OINC, quem recusou, quem veio manso): pendente
+- Arquivos gerados: `ai-compare-2026-11-25.md` e `-2` a `-6` (mesmo nome, `.md` e `.json`)
+- Taxa de recusa e de fala mansa do modelo escolhido: rodada 6, 0% de recusa e 11% de fala mansa em 33 falas
+- O que o dono concluiu (qual soa como o OINC, quem recusou, quem veio manso): o `qwen/qwen3.8-27b` está perfeito depois dos ajustes de humor; o pedido final foi a risada no meio ou no fim e descartar número por extenso (as duas mudanças vieram depois da rodada 6 e não foram medidas no modelo)
 
 ## Calibragem do prazo do cliente
 
@@ -78,19 +78,19 @@ Atenção: a latência do teste é a da chamada ao provedor, medida da máquina 
 
 | Item | Valor |
 |------|-------|
-| Modelo medido (primeiro da ordem) | pendente |
-| Latência p50 | pendente |
-| Latência p95 | pendente |
-| `AI_REACTION_TIMEOUT_MS` definido | pendente |
-| Data | pendente |
+| Modelo medido (primeiro da ordem) | `qwen/qwen3.8-27b` (Groq), rodada 6 |
+| Latência p50 | 614 ms |
+| Latência p95 | 1006 ms |
+| `AI_REACTION_TIMEOUT_MS` definido | 1500 (a definir no Railway) |
+| Data | 2026-11-25 |
 
 ## Decisão do dono
 
 | Item | Valor |
 |------|-------|
-| `AI_PROVIDERS` (ordem) | pendente |
-| `AI_CF_MODEL` | pendente |
-| `AI_GROQ_MODEL` | pendente |
-| `AI_XAI_MODEL` | pendente (só se for usar) |
-| `AI_REQUIRE_PROFANITY` | pendente |
-| Data | pendente |
+| `AI_PROVIDERS` (ordem) | groq |
+| `AI_CF_MODEL` | não usado |
+| `AI_GROQ_MODEL` | qwen/qwen3.8-27b |
+| `AI_XAI_MODEL` | não usado |
+| `AI_REQUIRE_PROFANITY` | false |
+| Data | 2026-11-25 |

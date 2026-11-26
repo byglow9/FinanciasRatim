@@ -9,7 +9,7 @@
 // Puro: sem relogio, sem acaso, sem pacote. Devolve `{ ok: true, text }` com o texto normalizado
 // ou `{ ok: false, reason }` com o primeiro motivo, nesta ordem: vazio, marcacao, emoji,
 // travessao, recusa, marca-ia, idioma, tamanho, dado-proibido, parceiro, discriminacao,
-// loja-errada, numero-inventado, manso.
+// loja-errada, numero-inventado, numero-extenso, manso.
 
 import { normalize } from './classify.js'
 import { AI_TELLS, FORBIDDEN_DATA, PROFANITY } from './phraseRules.js'
@@ -190,6 +190,17 @@ function countSentences(text) {
   return text.split(/[.!?\u{2026}]+(?:\s+|$)/u).filter((/** @type {string} */ p) => p.trim() !== '').length
 }
 
+// Numero grande por extenso (o modelo erra o valor e a leitura de digitos nao ve). Contagem pequena
+// ("tres vezes", "dois dias") passa; pequeno so reprova quando vem como valor ou percentual.
+const SPELLED_NUMBER = [
+  word('onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove'),
+  word('vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa'),
+  word('cem|duzent[oa]s|trezent[oa]s|quatrocent[oa]s|quinhent[oa]s|seiscent[oa]s|setecent[oa]s|oitocent[oa]s|novecent[oa]s'),
+  word('(?<!por )cento'),
+  word('mil|milhao|milhoes'),
+  word('(?:dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez) (?:reais|contos?|por cento)'),
+]
+
 const MONEY_RE = /R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?/gu
 const REAIS_RE = /(?<![\p{L}\p{N}.,])(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?\s*(?:reais|real)(?![\p{L}])/giu
 const PCT_RE = /(\d+(?:,\d+)?)\s*%/gu
@@ -324,6 +335,7 @@ export function validateSpeech(texto, ctx = {}) {
   ) {
     return fail('numero-inventado')
   }
+  if (SPELLED_NUMBER.some((re) => re.test(norm))) return fail('numero-extenso')
 
   if (c.requireProfanity === true && c.tone === 'sem-filtro' && c.edgy === true) {
     if (!EDGY_WORDS.some((re) => re.test(norm))) return fail('manso')

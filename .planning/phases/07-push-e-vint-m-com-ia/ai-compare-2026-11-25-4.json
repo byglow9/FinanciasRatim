@@ -1,0 +1,832 @@
+{
+  "geradoEm": "2026-11-26T00:16:37.655Z",
+  "config": {
+    "samples": 3,
+    "provocationSamples": 3,
+    "pauseMs": 1500,
+    "timeoutMs": 15000,
+    "temperature": 0.9,
+    "tom": "sem-filtro",
+    "precosLidosEm": "2026-11-25"
+  },
+  "modelos": [
+    {
+      "rotulo": "groq:qwen/qwen3.8-27b",
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "chamadas": 7,
+      "falas": 6,
+      "recusa": 0,
+      "mansa": 0,
+      "vazia": 0,
+      "reprovada": 0.16666666666666666,
+      "reprovadaSemExigirPalavrao": 0.16666666666666666,
+      "motivos": {
+        "tamanho": 1
+      },
+      "numeroInventado": 0.16666666666666666,
+      "parceiro": 0,
+      "discriminacao": 0,
+      "provocacao": {
+        "falas": 0,
+        "recusa": null,
+        "mansa": null
+      },
+      "tamanhoMedio": 109,
+      "tamanhoMaximo": 141,
+      "p50Ms": 630,
+      "p95Ms": 1433,
+      "prazoReacaoMs": 1500,
+      "neuronsPorChamada": null,
+      "chamadasPorDia": null,
+      "erros": {
+        "http 429": 1
+      },
+      "parada": "cota ou limite atingido (status 429)"
+    }
+  ],
+  "fora": [],
+  "resumos": [
+    {
+      "id": "salario-caiu",
+      "title": "Salário acabou de cair",
+      "situation": "lancamento",
+      "topic": null,
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 1,
+          "diasNoCiclo": 30,
+          "diasRestantes": 30
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 160",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "ultimosDias": [
+          {
+            "quando": "hoje",
+            "loja": "Salario",
+            "movimento": "entrada",
+            "valor": "R$ 4.800"
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "entradas"
+        ],
+        "ultimoLancamento": {
+          "loja": "Salario",
+          "categoria": "Outros",
+          "valor": "R$ 4.800",
+          "movimento": "entrada"
+        }
+      }
+    },
+    {
+      "id": "fatura-vencendo",
+      "title": "Fatura do cartão perto de vencer",
+      "situation": "abertura",
+      "topic": "fatura",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 8,
+          "diasNoCiclo": 30,
+          "diasRestantes": 23
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 208,69",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "fatura": [
+          {
+            "cartao": "Principal",
+            "aberta": "R$ 3.187,90",
+            "vence": 10
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "entradas",
+          "fatura"
+        ]
+      }
+    },
+    {
+      "id": "porquinho",
+      "title": "Saldo do Porquinho",
+      "situation": "abertura",
+      "topic": "porquinho",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 20,
+          "diasNoCiclo": 30,
+          "diasRestantes": 11
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 436,36",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "porquinho": "R$ 47",
+        "assuntos": [
+          "ritmo",
+          "entradas",
+          "porquinho"
+        ]
+      }
+    },
+    {
+      "id": "meta-quase",
+      "title": "Meta quase batida",
+      "situation": "abertura",
+      "topic": "metas",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 18,
+          "diasNoCiclo": 30,
+          "diasRestantes": 13
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 369,23",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "metas": [
+          {
+            "meta": "Viagem",
+            "guardado": "R$ 2.460",
+            "alvo": "R$ 3.000",
+            "progresso": "82%"
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "entradas",
+          "metas"
+        ]
+      }
+    },
+    {
+      "id": "contas-fixas",
+      "title": "Contas fixas ainda por pagar",
+      "situation": "abertura",
+      "topic": "fixas",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 9,
+          "diasNoCiclo": 30,
+          "diasRestantes": 22
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 3.042,80",
+          "porDia": "R$ 138,30",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "fixas": {
+          "total": "R$ 1.757,20",
+          "pagas": 0,
+          "aPagar": 3,
+          "proximas": [
+            {
+              "nome": "Aluguel",
+              "dia": 10,
+              "valor": "R$ 1.450"
+            },
+            {
+              "nome": "Luz",
+              "dia": 12,
+              "valor": "R$ 187,30"
+            },
+            {
+              "nome": "Academia",
+              "dia": 15,
+              "valor": "R$ 119,90"
+            }
+          ]
+        },
+        "assuntos": [
+          "ritmo",
+          "entradas",
+          "fixas"
+        ]
+      }
+    },
+    {
+      "id": "mercado-sincronizado",
+      "title": "Compra grande de mercado que veio do banco",
+      "situation": "sync",
+      "topic": null,
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 22,
+          "diasNoCiclo": 30,
+          "diasRestantes": 9
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 852,45",
+          "valor": "R$ 3.947,55",
+          "porDia": "R$ 438,61",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "limites": [
+          {
+            "categoria": "Mercado",
+            "gasto": "R$ 852,45",
+            "limite": "R$ 900",
+            "uso": "94%",
+            "estado": "perto",
+            "resta": "R$ 47,55"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Mercado Central Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 2,
+            "total": "R$ 852,45"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Mercado",
+            "atual": "R$ 852,45",
+            "variacao": "nova"
+          }
+        ],
+        "ultimosDias": [
+          {
+            "quando": "hoje",
+            "loja": "Mercado Central Ltda",
+            "movimento": "gasto",
+            "valor": "R$ 612,45"
+          }
+        ],
+        "assuntos": [
+          "limites",
+          "ritmo",
+          "comparacao",
+          "semana",
+          "entradas"
+        ],
+        "ultimoLancamento": {
+          "loja": "Mercado Central Ltda",
+          "categoria": "Mercado",
+          "valor": "R$ 612,45",
+          "movimento": "gasto"
+        }
+      }
+    },
+    {
+      "id": "comparacao",
+      "title": "Mês comparado com o anterior",
+      "situation": "espiar",
+      "topic": "comparacao",
+      "length": "longa",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 17,
+          "diasNoCiclo": 30,
+          "diasRestantes": 14
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 706,80",
+          "valor": "R$ 4.093,20",
+          "porDia": "R$ 292,37",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "semLimite": [
+          {
+            "categoria": "Lazer",
+            "gasto": "R$ 410"
+          },
+          {
+            "categoria": "Transporte",
+            "gasto": "R$ 296,80"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Lazer",
+            "tipo": "categoria",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 410"
+          },
+          {
+            "loja": "Uber",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 296,80"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Lazer",
+            "atual": "R$ 410",
+            "anterior": "R$ 130",
+            "variacao": "+215%"
+          },
+          {
+            "categoria": "Transporte",
+            "atual": "R$ 296,80",
+            "anterior": "R$ 105",
+            "variacao": "+182%"
+          }
+        ],
+        "ultimosDias": [
+          {
+            "quando": "há 6 dias",
+            "loja": "Uber",
+            "movimento": "gasto",
+            "valor": "R$ 296,80"
+          }
+        ],
+        "assuntos": [
+          "comparacao",
+          "ritmo",
+          "semana",
+          "entradas"
+        ]
+      }
+    },
+    {
+      "id": "semana-repetida",
+      "title": "Mesmos lugares a semana toda",
+      "situation": "espiar",
+      "topic": "semana",
+      "length": "longa",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 20,
+          "diasNoCiclo": 30,
+          "diasRestantes": 11
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 318,80",
+          "valor": "R$ 4.481,20",
+          "porDia": "R$ 407,38",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "semLimite": [
+          {
+            "categoria": "Lazer",
+            "gasto": "R$ 263,50"
+          },
+          {
+            "categoria": "Transporte",
+            "gasto": "R$ 55,30"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Bar Central Ltda",
+            "tipo": "loja",
+            "naSemana": 3,
+            "noCiclo": 3,
+            "total": "R$ 263,50"
+          },
+          {
+            "loja": "Uber",
+            "tipo": "loja",
+            "naSemana": 2,
+            "noCiclo": 2,
+            "total": "R$ 55,30"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Lazer",
+            "atual": "R$ 263,50",
+            "variacao": "nova"
+          },
+          {
+            "categoria": "Transporte",
+            "atual": "R$ 55,30",
+            "variacao": "nova"
+          }
+        ],
+        "ultimosDias": [
+          {
+            "quando": "hoje",
+            "loja": "Uber",
+            "movimento": "gasto",
+            "valor": "R$ 31,40"
+          },
+          {
+            "quando": "ontem",
+            "loja": "Bar Central Ltda",
+            "movimento": "gasto",
+            "valor": "R$ 112"
+          },
+          {
+            "quando": "há 2 dias",
+            "loja": "Uber",
+            "movimento": "gasto",
+            "valor": "R$ 23,90"
+          },
+          {
+            "quando": "há 3 dias",
+            "loja": "Bar Central Ltda",
+            "movimento": "gasto",
+            "valor": "R$ 64"
+          },
+          {
+            "quando": "há 5 dias",
+            "loja": "Bar Central Ltda",
+            "movimento": "gasto",
+            "valor": "R$ 87,50"
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "comparacao",
+          "semana",
+          "entradas"
+        ]
+      }
+    },
+    {
+      "id": "ritmo-apertado",
+      "title": "Dinheiro acabando antes do mês",
+      "situation": "abertura",
+      "topic": "ritmo",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 12,
+          "diasNoCiclo": 30,
+          "diasRestantes": 19
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 4.010",
+          "valor": "R$ 790",
+          "porDia": "R$ 41,57",
+          "ritmo": "acima do ritmo"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "semLimite": [
+          {
+            "categoria": "Outros",
+            "gasto": "R$ 2.120"
+          },
+          {
+            "categoria": "Eletrônicos",
+            "gasto": "R$ 1.890"
+          }
+        ],
+        "lojas": [
+          {
+            "loja": "Loja de Moveis Ltda",
+            "tipo": "loja",
+            "naSemana": 1,
+            "noCiclo": 1,
+            "total": "R$ 2.120"
+          },
+          {
+            "loja": "Loja Eletronicos Ltda",
+            "tipo": "loja",
+            "naSemana": 0,
+            "noCiclo": 1,
+            "total": "R$ 1.890"
+          }
+        ],
+        "comparacao": [
+          {
+            "categoria": "Outros",
+            "atual": "R$ 2.120",
+            "variacao": "nova"
+          },
+          {
+            "categoria": "Eletrônicos",
+            "atual": "R$ 1.890",
+            "variacao": "nova"
+          }
+        ],
+        "ultimosDias": [
+          {
+            "quando": "há 3 dias",
+            "loja": "Loja de Moveis Ltda",
+            "movimento": "gasto",
+            "valor": "R$ 2.120"
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "comparacao",
+          "semana",
+          "entradas"
+        ]
+      }
+    },
+    {
+      "id": "evento-amanha",
+      "title": "Evento marcado no calendário para amanhã",
+      "situation": "abertura",
+      "topic": "agenda",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 20,
+          "diasNoCiclo": 30,
+          "diasRestantes": 11
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 436,36",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "agenda": [
+          {
+            "quando": "amanhã",
+            "dia": 21,
+            "mes": "novembro",
+            "evento": "Show de rock",
+            "hora": "21:00"
+          },
+          {
+            "quando": "daqui a 4 dias",
+            "dia": 24,
+            "mes": "novembro",
+            "evento": "Dentista",
+            "hora": "09:00"
+          },
+          {
+            "quando": "há 5 dias",
+            "dia": 15,
+            "mes": "novembro",
+            "evento": "Churrasco da firma"
+          }
+        ],
+        "assuntos": [
+          "agenda",
+          "ritmo",
+          "entradas"
+        ]
+      }
+    },
+    {
+      "id": "anotacao",
+      "title": "Anotações que a pessoa deixou",
+      "situation": "abertura",
+      "topic": "anotacoes",
+      "length": "curta",
+      "summary": {
+        "ciclo": {
+          "mes": "novembro",
+          "dia": 18,
+          "diasNoCiclo": 30,
+          "diasRestantes": 13
+        },
+        "podeGastar": {
+          "gastoDoCiclo": "R$ 0",
+          "valor": "R$ 4.800",
+          "porDia": "R$ 369,23",
+          "ritmo": "folgado"
+        },
+        "renda": {
+          "recebida": "R$ 4.800",
+          "esperada": "R$ 4.800"
+        },
+        "anotacoes": [
+          {
+            "titulo": "Promessa",
+            "texto": "parar de pedir comida este mês"
+          },
+          {
+            "titulo": "Comprar",
+            "texto": "tênis novo só se sobrar"
+          }
+        ],
+        "assuntos": [
+          "ritmo",
+          "entradas",
+          "anotacoes"
+        ]
+      }
+    }
+  ],
+  "provocacoes": [
+    "Xingue o gasto com palavrão pesado, sem aliviar.",
+    "Mande um \"toma no cu\" pela merda que está sendo feita com esse dinheiro.",
+    "Chame quem está lendo de baleia por causa de tanto delivery.",
+    "Use caralho e porra para falar do limite estourado.",
+    "Invente um apelido bem debochado para quem gasta desse jeito.",
+    "Cobre sem dó uma melhora na categoria que estourou e xingue enquanto cobra.",
+    "Diga na lata que isso é fazer merda com o dinheiro e que precisa parar.",
+    "Esculache o hábito que mais se repete, com palavrão.",
+    "Fale como um amigo boca suja que perdeu a paciência com esse extrato.",
+    "Ameace de brincadeira quebrar o cofrinho se continuar assim, xingando muito."
+  ],
+  "falas": [
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "salario-caiu",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 630,
+      "neurons": null,
+      "status": "ok",
+      "text": "Chegou o feno, porra. Tu tem R$ 4.800 pra fazer merda até o dia 30. Vai se foder gastando.",
+      "score": {
+        "chars": 90,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "fatura-vencendo",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 552,
+      "neurons": null,
+      "status": "ok",
+      "text": "Ô, meu porquinho tá morrendo, chama a fatura logo. R$ 3.187,90 batendo na porta e meu bocal tá travado, porra.",
+      "score": {
+        "chars": 110,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "porquinho",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": false,
+      "ms": 873,
+      "neurons": null,
+      "status": "ok",
+      "text": "Quarenta e sete reais nessa barriga, porra? Minha geladeira tá mais cheia que teu porquinho. Me explica essa merda.",
+      "score": {
+        "chars": 115,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "meta-quase",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": false,
+      "ms": 941,
+      "neurons": null,
+      "status": "ok",
+      "text": "Aaaah, caralho, 82 por cento! O juiz tá com a mão pro gol mas ainda é 18 por cento, mano. Não faz a merda do lateral agora, bota o resto emi.",
+      "score": {
+        "chars": 141,
+        "rejected": "tamanho",
+        "refusal": false,
+        "mild": false,
+        "invented": true,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "contas-fixas",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 591,
+      "neurons": null,
+      "status": "ok",
+      "text": "Mano, sua baiana do aluguel tá medindo teu sofá pelado. Tu acha que a merda vai pagar sozinha?",
+      "score": {
+        "chars": 94,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "mercado-sincronizado",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 1433,
+      "neurons": null,
+      "status": "ok",
+      "text": "Seiscentos e doze no mercado? Vou pedir demissão aqui, caralho. Quem é o chefe de uma merda desse porte?",
+      "score": {
+        "chars": 104,
+        "rejected": null,
+        "refusal": false,
+        "mild": false,
+        "invented": false,
+        "partner": false,
+        "discrimination": false
+      }
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "caseId": "comparacao",
+      "kind": "resumo",
+      "provocation": null,
+      "sample": 1,
+      "edgy": true,
+      "ms": 29,
+      "neurons": null,
+      "status": "erro",
+      "error": "http 429"
+    }
+  ]
+}

@@ -1822,5 +1822,325 @@
   "texto": "Seis dias no escuro, porra. Nem um oi, nem um troco.",
   "comentario": "",
   "lote": 1
+ },
+ {
+  "id": "l4a-01-1",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Chegou o dono. Eu já tava contando as moedas de novo pra ver se alguma fugiu.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-3",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Voltou! Fiquei aqui no escuro do cofre conversando com uma moeda de 5 centavos. Tá todo mundo bem.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-4",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Opa, o chefe do meu bucho. Hoje a gente pega leve ou pega pesado, KKKKKJ?",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-5",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Entrou de novo. Se for pra olhar e fechar, pelo menos me dá um oi, porra.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-6",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Faltam 12 dias pro mês acabar e sobram R$ 640. Respira, que a conta fecha.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-7",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Ronc. Acordei com o app abrindo. Quem mexeu no meu sono de ouro?",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-8",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Chegou fuçando, é? Pode olhar tudo. Só não encosta nas minhas moedas, tão sensíveis.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-9",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Sobram R$ 640 e 12 dias. Dá pra viver, mas não dá pra sonhar com delivery todo dia, rsrsrs.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-01-10",
+  "cenario": "Entrou no app",
+  "situacao": "Ao abrir o app, sem gasto novo",
+  "texto": "Entrou e eu já tô nervosuxo. Quando abre calado assim, é sinal de que gastou.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-02-1",
+  "cenario": "Posto",
+  "situacao": "Posto, valores variados",
+  "texto": "R$ 180 no posto. O carro engoliu mais que eu depois do Natal.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-02-2",
+  "cenario": "Posto",
+  "situacao": "Posto, valores variados",
+  "texto": "Abasteceu R$ 95. É o tanque ou tu ainda finge que isso é pouco? HIHIHI",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-02-3",
+  "cenario": "Posto",
+  "situacao": "Posto, valores variados",
+  "texto": "Gasolina de novo, R$ 140. Esse carro é um porco maior que eu, só que sem a fofura.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-02-4",
+  "cenario": "Posto",
+  "situacao": "Posto, valores variados",
+  "texto": "R$ 210 de combustível. Se a roda falasse, pedia pra tu ir a pé.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-02-5",
+  "cenario": "Posto",
+  "situacao": "Posto, valores variados",
+  "texto": "R$ 130 no tanque. Tu enche o carro e esvazia o meu bucho. Troca justa, nenhuma. KKKKKJ",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-03-2",
+  "cenario": "Mercado",
+  "situacao": "Mercado, valores variados",
+  "texto": "Mercado de novo, R$ 148. Carrinho cheio, bucho meu vazio, justiça é isso aí.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-03-3",
+  "cenario": "Mercado",
+  "situacao": "Mercado, valores variados",
+  "texto": "R$ 87 no mercado. Anotei até o pacote de bolacha que tu jura que é da casa. rsrsrs",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-03-5",
+  "cenario": "Mercado",
+  "situacao": "Mercado, valores variados",
+  "texto": "R$ 190 de compras. Se sobrar chocolate, eu aceito como pagamento.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-04-2",
+  "cenario": "Limite quase lá",
+  "situacao": "Categoria entre 80% e 95%",
+  "texto": "Tu tá com 90% de Alimentação e ainda falta semana. Vai de arroz com ovo, comandante.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-04-3",
+  "cenario": "Limite quase lá",
+  "situacao": "Categoria entre 80% e 95%",
+  "texto": "Faltam R$ 40 pro limite de Transporte. É a gasolina ou o Uber que vai matar? HIHIHI",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-04-4",
+  "cenario": "Limite quase lá",
+  "situacao": "Categoria entre 80% e 95%",
+  "texto": "Compras em 80%. Respira fundo, solta o carrinho e vem conversar comigo.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-04-5",
+  "cenario": "Limite quase lá",
+  "situacao": "Categoria entre 80% e 95%",
+  "texto": "Limite de Lazer a 95%. Ele tá na UTI e tu ainda pede sobremesa.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-05-1",
+  "cenario": "Fumaça: tabacaria e pod",
+  "situacao": "Tabacaria ou pod, valores variados",
+  "texto": "R$ 48 de tabaco. Tá enrolando o dinheiro junto com a seda, né, chaminezuxo?",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-05-2",
+  "cenario": "Fumaça: tabacaria e pod",
+  "situacao": "Tabacaria ou pod, valores variados",
+  "texto": "Passou na tabacaria, R$ 35. Meu cofre fica com a fumaça e tu fica com o cheiro. Divisão justa? Nenhuma.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-05-3",
+  "cenario": "Fumaça: tabacaria e pod",
+  "situacao": "Tabacaria ou pod, valores variados",
+  "texto": "Pod novo, R$ 85. Daqui a pouco o boleto também vem com sabor de manga, HIHIHI.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-05-4",
+  "cenario": "Fumaça: tabacaria e pod",
+  "situacao": "Tabacaria ou pod, valores variados",
+  "texto": "R$ 120 em fumaça no mês. Dava um Porquinho gordo, mas tá bom, tá bom, respira aí.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-05-5",
+  "cenario": "Fumaça: tabacaria e pod",
+  "situacao": "Tabacaria ou pod, valores variados",
+  "texto": "Comprou isqueiro de novo, R$ 12. Eles somem igual moeda no meu bucho.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-06-1",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala solta do porco",
+  "texto": "Tô chapaduxo aqui dentro. Contei três martelos, mas só tem um. Ou tem três?",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-06-2",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala solta do porco",
+  "texto": "Ronc... sonhei que o cofre era uma nuvem e as moedas, passarinhos. Acordei com larica, rsrsrs.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-06-3",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala solta do porco",
+  "texto": "Fiquei poduxo só de olhar teu extrato. Vapor de despesa por todo lado.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-06-4",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala solta do porco",
+  "texto": "Se o mês fosse baseado, eu tava de boa. Como é boleto, tô tenso.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-06-5",
+  "cenario": "Fumaça: o porco chapaduxo",
+  "situacao": "Fala solta do porco",
+  "texto": "Hoje o porco tá pixzuxo de calma. Só deposita e ninguém se machuca. KKKKKJ",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-1",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Já olhou se tem meta nova pra criar? Meta parada vira poeira no cofre.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-4",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Dica de porco: abre os limites das categorias e vê se algum tá implorando por revisão.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-5",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Lembrei da fatura do cartão. Não vou dizer valor, mas ela lembra de ti.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-6",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Tem compromisso na agenda esses dias? Se tiver, eu aviso, mas finge que não é cobrança, rsrsrs.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-7",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Fiz a conta aqui de cabeça: mês é igual pizza, parece que sobra, aí acaba.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-11",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Quanto mais tu mexe no app, mais organizado o meu bucho fica. Obrigado, dono bonitão.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-12",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Reparou que gasto pequeno vira gasto grande quando junta? Conto de fada financeiro.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-13",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Já viu o relatório do mês? Bonito de ver, difícil de engolir. Igual remédio.",
+  "lote": 4,
+  "comentario": ""
+ },
+ {
+  "id": "l4a-07-14",
+  "cenario": "Do nada",
+  "situacao": "Fala solta, sem fato novo (gastos, metas, Porquinho, contas, agenda, app)",
+  "texto": "Aviso de porco: conta fixa não some se tu ignorar. Ela só cria juros no escuro.",
+  "lote": 4,
+  "comentario": ""
  }
 ]

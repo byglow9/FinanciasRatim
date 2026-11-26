@@ -7,6 +7,7 @@ import {
   FRESH_MIN_MS,
   PREVIOUS_TTL_MS,
   createSnapshotLoader,
+  mapTransaction,
 } from '../src/ai/snapshot.js'
 import { buildAiSummary, summaryToPromptText } from '../../shared/core/aiSummary.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
@@ -439,5 +440,109 @@ describe('snapshot: fontes do resumo', () => {
     for (const forbidden of ['Rappi', 'Carro', 'Rosa', 'Carlos', 'Maria', 'Internet', 'Academia']) {
       assert.ok(!text.includes(forbidden), forbidden)
     }
+  })
+})
+
+// Leitura do que esta para vencer (07.1-10): NOW e 17/11 as 12:00 em Sao Paulo.
+describe('snapshot: o que esta para vencer (loadDue)', () => {
+  const ev = (id, who, iso, over = {}) => ({
+    id,
+    data: { ownerId: HID, person: who, title: `Evento ${id}`, date: ts(iso), time: '14:30', ...over },
+  })
+
+  function dueSeed() {
+    const seed = fullSeed()
+    seed.fixedExpenses.push(
+      { id: 'f5', data: { ownerId: 'casalB', person: 'ele', name: 'De outro casal', amount: 70, dueDay: 19, isActive: true } },
+      // Vence dia 20 e ja foi paga em novembro.
+      { id: 'f6', data: { ownerId: HID, person: 'conjunto', name: 'Condominio da Maria', amount: 450.5, dueDay: 20, isActive: true } },
+    )
+    seed.fixedExpensePayments.push(
+      { id: 'pay3', data: { ownerId: HID, fixedExpenseId: 'f6', month: 11, year: 2026, paidAmount: 450.5 } },
+      // O dia 5 de f1 ja passou: o proximo vencimento e em dezembro.
+      { id: 'pay4', data: { ownerId: HID, fixedExpenseId: 'f1', month: 12, year: 2026, paidAmount: 1200 } },
+      { id: 'pay5', data: { ownerId: 'casalB', fixedExpenseId: 'f1', month: 12, year: 2026, paidAmount: 1 } },
+    )
+    seed.events = [
+      ev('hoje', 'ele', '2026-11-17T03:00:00Z'),
+      ev('d3', 'conjunto', '2026-11-20T15:00:00Z'),
+      ev('ontem', 'ele', '2026-11-16T15:00:00Z'),
+      ev('d4', 'ele', '2026-11-21T15:00:00Z'),
+      ev('dela', 'ela', '2026-11-18T15:00:00Z'),
+      ev('outro', 'ele', '2026-11-18T15:00:00Z', { ownerId: 'casalB' }),
+    ]
+    return seed
+  }
+
+  test('contas ativas da pessoa e do casal, com id, valor em centavos e pessoa', async () => {
+    const { loader, db } = setup(dueSeed())
+    const r = await loader.loadDue({ hid: HID, person: 'ele' })
+    assert.deepEqual(r.bills.map((b) => b.id).sort(), ['f1', 'f2', 'f6'])
+    assert.deepEqual(r.bills.find((b) => b.id === 'f6'), {
+      id: 'f6', name: 'Condominio da Maria', dueDay: 20, amountCents: 45050, person: 'conjunto',
+    })
+    const q = db.queries.find((x) => x.collection === 'fixedExpenses')
+    assert.deepEqual(q.filters, [['ownerId', '==', HID], ['isActive', '==', true]])
+  })
+
+  test('pagamentos dos meses dos proximos vencimentos, so das contas lidas e do proprio casal', async () => {
+    const { loader, db } = setup(dueSeed())
+    const r = await loader.loadDue({ hid: HID, person: 'ele' })
+    assert.deepEqual(
+      r.payments.map((p) => `${p.billId}:${p.month}/${p.year}`).sort(),
+      ['f1:12/2026', 'f6:11/2026'],
+    )
+    const queries = db.queries.filter((x) => x.collection === 'fixedExpensePayments')
+    // f1 (dia 5) e f2 (dia 8) vencem em dezembro; f6 (dia 20) em novembro: dois meses, duas consultas.
+    assert.equal(queries.length, 2)
+    for (const q of queries) assert.deepEqual(q.filters[0], ['ownerId', '==', HID])
+  })
+
+  test('eventos de hoje a 3 dias, da pessoa e do casal, com id e titulo como escrito', async () => {
+    const { loader, db } = setup(dueSeed())
+    const r = await loader.loadDue({ hid: HID, person: 'ele' })
+    assert.deepEqual(r.events.map((e) => e.id).sort(), ['d3', 'hoje'])
+    assert.deepEqual(r.events.find((e) => e.id === 'd3'), {
+      id: 'd3', title: 'Evento d3', date: new Date('2026-11-20T15:00:00Z'), time: '14:30', person: 'conjunto',
+    })
+    const q = db.queries.find((x) => x.collection === 'events')
+    assert.deepEqual(q.filters[0], ['ownerId', '==', HID])
+    assert.deepEqual(q.filters.slice(1).map(([f, op]) => `${f} ${op}`), ['date >=', 'date <='])
+  })
+
+  test('nada do parceiro nem de outro casal, nos dois sentidos', async () => {
+    const { loader } = setup(dueSeed())
+    const ele = JSON.stringify(await loader.loadDue({ hid: HID, person: 'ele' }))
+    assert.doesNotMatch(ele, /Academia|De outro casal|"dela"|"outro"|"ela"/)
+    const ela = await loader.loadDue({ hid: HID, person: 'ela' })
+    assert.deepEqual(ela.bills.map((b) => b.id).sort(), ['f2', 'f3', 'f6'])
+    assert.deepEqual(ela.events.map((e) => e.id).sort(), ['d3', 'dela'])
+    assert.doesNotMatch(JSON.stringify(ela), /Aluguel|De outro casal/)
+  })
+
+  test('sem contas nao consulta pagamentos, e cada chamada le de novo (sem cache)', async () => {
+    const { loader, db } = setup({})
+    assert.deepEqual(await loader.loadDue({ hid: HID, person: 'ele' }), { bills: [], payments: [], events: [] })
+    assert.equal(db.queries.filter((q) => q.collection === 'fixedExpensePayments').length, 0)
+    await loader.loadDue({ hid: HID, person: 'ele' })
+    assert.equal(db.queries.filter((q) => q.collection === 'fixedExpenses').length, 2)
+  })
+
+  test('falha de qualquer leitura sobe: sem os pagamentos uma conta paga pareceria em aberto', async () => {
+    for (const source of ['fixedExpenses', 'fixedExpensePayments', 'events']) {
+      const { loader } = setup(dueSeed(), { failOn: [source] })
+      await assert.rejects(loader.loadDue({ hid: HID, person: 'ele' }), undefined, source)
+    }
+  })
+
+  test('hid ou pessoa invalidos lancam erro', async () => {
+    const { loader } = setup(dueSeed())
+    await assert.rejects(loader.loadDue({ hid: '', person: 'ele' }))
+    await assert.rejects(loader.loadDue({ hid: HID, person: 'conjunto' }))
+  })
+
+  test('o lancamento leva o campo de parcelamento ao seletor de fatos', async () => {
+    const installment = { n: 2, total: 6, source: 'bank' }
+    assert.deepEqual(mapTransaction('x', { date: ts('2026-11-16T15:00:00Z'), installment }).installment, installment)
   })
 })

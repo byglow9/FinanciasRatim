@@ -334,11 +334,11 @@ describe('push', () => {
   const putPrefs = (token, body) => call('/api/push/prefs', { method: 'PUT', token, body })
 
   const DEFAULT_PREFS = {
-    types: { limite80: true, limite100: true, espontanea: true },
+    types: { limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true },
     quiet: { enabled: false, from: '22:00', to: '08:00' },
   }
 
-  test('prefs: sem documento o GET devolve os padroes da D-06 e da D-21', async () => {
+  test('prefs: sem documento o GET devolve os padroes (cinco tipos ligados)', async () => {
     const res = await getPrefs('tok-a-ele')
     assert.equal(res.status, 200)
     assert.deepEqual(await res.json(), { prefs: DEFAULT_PREFS })
@@ -347,7 +347,7 @@ describe('push', () => {
 
   test('prefs: PUT valido grava no documento do casal e da pessoa e o GET seguinte devolve', async () => {
     const body = {
-      types: { limite80: false, limite100: true, espontanea: false },
+      types: { limite80: false, limite100: true, espontanea: false, conta: false, compromisso: true },
       quiet: { enabled: true, from: '23:00', to: '07:30' },
     }
     const put = await putPrefs('tok-a-ele', body)
@@ -372,6 +372,12 @@ describe('push', () => {
     })
   })
 
+  test('prefs: desligar conta ou compromisso e aceito e os outros tipos seguem ligados', async () => {
+    const put = await putPrefs('tok-a-ele', { types: { compromisso: false } })
+    assert.equal(put.status, 200)
+    assert.deepEqual((await put.json()).prefs.types, { ...DEFAULT_PREFS.types, compromisso: false })
+  })
+
   test('prefs: chave extra, hora invalida, inicio igual ao fim e tipo errado dao 400 e nao gravam', async () => {
     const bad = [
       { extra: 1 },
@@ -379,6 +385,7 @@ describe('push', () => {
       { quiet: { enabled: true, from: '25:00', to: '08:00' } },
       { quiet: { enabled: true, from: '22:00', to: '22:00' } },
       { types: { limite80: 'sim' } },
+      { types: { conta: 1 } },
       { quiet: 'sempre' },
     ]
     for (const body of bad) {

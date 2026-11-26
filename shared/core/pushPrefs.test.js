@@ -17,8 +17,8 @@ const QUIET = { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '22:00', to
 // Hora de parede de Sao Paulo (UTC-3) para instante: soma 3 horas.
 const sp = (hhmm) => new Date(`2026-11-25T${hhmm}:00-03:00`)
 
-test('padroes da D-06 e da D-21: sem silencio e tres tipos ligados', () => {
-  assert.deepEqual(DEFAULT_PUSH_PREFS.types, { limite80: true, limite100: true, espontanea: true })
+test('padroes da D-06 e da D-21: sem silencio e cinco tipos ligados', () => {
+  assert.deepEqual(DEFAULT_PUSH_PREFS.types, { limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true })
   assert.equal(DEFAULT_PUSH_PREFS.quiet.enabled, false)
 })
 
@@ -47,7 +47,7 @@ test('normalizePushPrefs: lixo volta ao padrao e chave desconhecida cai fora', (
     outra: 1,
   })
   assert.deepEqual(out, {
-    types: { limite80: true, limite100: false, espontanea: true },
+    types: { limite80: true, limite100: false, espontanea: true, conta: true, compromisso: true },
     quiet: { enabled: false, from: '22:00', to: '08:00' },
   })
 })
@@ -61,7 +61,7 @@ test('normalizePushPrefs: inicio igual ao fim volta ao padrao e desliga o silenc
 
 test('validatePushPrefs: aceita o objeto completo e devolve as preferencias', () => {
   const input = {
-    types: { limite80: false, limite100: true, espontanea: false },
+    types: { limite80: false, limite100: true, espontanea: false, conta: false, compromisso: true },
     quiet: { enabled: true, from: '21:30', to: '07:00' },
   }
   const r = validatePushPrefs(input)
@@ -99,6 +99,8 @@ test('validatePushPrefs: campo ausente assume o padrao', () => {
   assert.equal(r.ok, true)
   assert.equal(r.prefs.types.limite80, false)
   assert.equal(r.prefs.types.limite100, true)
+  assert.equal(r.prefs.types.conta, true)
+  assert.equal(r.prefs.types.compromisso, true)
   assert.deepEqual(r.prefs.quiet, DEFAULT_PUSH_PREFS.quiet)
 })
 
@@ -134,6 +136,25 @@ test('typeEnabled: tipos das preferencias e a fatura do interruptor legado', () 
   assert.equal(typeEnabled(off, 'fatura', { faturaEnabled: false }), false)
   assert.equal(typeEnabled(off, 'fatura', { faturaEnabled: true }), true)
   assert.equal(typeEnabled(off, 'inventado'), false)
+  assert.equal(typeEnabled(DEFAULT_PUSH_PREFS, 'conta'), true)
+  assert.equal(typeEnabled(DEFAULT_PUSH_PREFS, 'compromisso'), true)
+  // preferencias antigas, sem os tipos novos, valem ligadas depois de normalizadas
+  const antigo = normalizePushPrefs({ types: { limite80: false, limite100: true, espontanea: true } })
+  assert.equal(typeEnabled(antigo, 'conta'), true)
+  assert.equal(typeEnabled(antigo, 'compromisso'), true)
+})
+
+test('conta e compromisso podem ser desligados e ficam retidos no silencio como a fatura', () => {
+  const r = validatePushPrefs({ types: { conta: false, compromisso: false } })
+  assert.equal(r.ok, true)
+  assert.equal(typeEnabled(r.prefs, 'conta'), false)
+  assert.equal(typeEnabled(r.prefs, 'compromisso'), false)
+  for (const kind of ['conta', 'compromisso']) {
+    assert.equal(deliveryDecision({ prefs: r.prefs, kind, now: sp('12:00') }), 'desligado')
+    assert.equal(deliveryDecision({ prefs: QUIET, kind, now: sp('23:30') }), 'reter')
+    assert.equal(deliveryDecision({ prefs: QUIET, kind, now: sp('12:00') }), 'enviar')
+  }
+  assert.equal(validatePushPrefs({ types: { conta: 'nao' } }).ok, false)
 })
 
 test('prefKindOf: o limite consulta limite80 ou limite100 conforme o limiar', () => {

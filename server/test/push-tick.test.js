@@ -63,9 +63,10 @@ const REGS = [
 
 describe('readPushConfig', () => {
   const DEFAULTS = {
-    maxPerDay: 8,
+    maxPerDay: 20,
+    dueHour: 9,
     spontPerDay: 1,
-    spontWindow: { from: '11:00', to: '20:00' },
+    spontWindow: { from: '09:00', to: '21:00' },
     tickMinutes: 15,
     billCheckMinutes: 60,
     pruneDays: 30,
@@ -77,6 +78,7 @@ describe('readPushConfig', () => {
     for (const bad of ['', '  ', 'abc', '-1', '2.5', '999999']) {
       const env = {
         PUSH_MAX_PER_DAY: bad,
+        PUSH_DUE_HOUR: bad,
         PUSH_SPONT_PER_DAY: bad,
         PUSH_SPONT_WINDOW: bad,
         PUSH_TICK_MINUTES: bad,
@@ -87,11 +89,15 @@ describe('readPushConfig', () => {
     }
     assert.equal(readPushConfig({ PUSH_SPONT_PER_DAY: '3' }).spontPerDay, 1)
     assert.equal(readPushConfig({ PUSH_PRUNE_DAYS: '0' }).pruneDays, 30)
+    assert.equal(readPushConfig({ PUSH_DUE_HOUR: '24' }).dueHour, 9)
+    assert.equal(readPushConfig({ PUSH_DUE_HOUR: '0' }).dueHour, 0)
+    assert.equal(readPushConfig({ PUSH_DUE_HOUR: '23' }).dueHour, 23)
   })
 
   test('valores validos valem, inclusive zero para o espontaneo e para o relogio', () => {
     const config = readPushConfig({
       PUSH_MAX_PER_DAY: '3',
+      PUSH_DUE_HOUR: '7',
       PUSH_SPONT_PER_DAY: '0',
       PUSH_SPONT_WINDOW: '09:30-18:00',
       PUSH_TICK_MINUTES: '0',
@@ -100,6 +106,7 @@ describe('readPushConfig', () => {
     })
     assert.deepEqual(config, {
       maxPerDay: 3,
+      dueHour: 7,
       spontPerDay: 0,
       spontWindow: { from: '09:30', to: '18:00' },
       tickMinutes: 0,

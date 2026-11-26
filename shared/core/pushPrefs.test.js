@@ -163,7 +163,7 @@ test('prefKindOf: o limite consulta limite80 ou limite100 conforme o limiar', ()
   assert.equal(prefKindOf({ kind: 'fatura' }), 'fatura')
 })
 
-test('parseWindow e inWindow: janela do espontaneo, padrao 11:00 a 20:00', () => {
+test('parseWindow e inWindow: janela do espontaneo, padrao 09:00 a 21:00', () => {
   assert.deepEqual(parseWindow('11:00-20:00'), { from: '11:00', to: '20:00' })
   assert.deepEqual(parseWindow(' 09:30 - 18:00 '), { from: '09:30', to: '18:00' })
   for (const bad of ['', 'abc', '25:00-26:00', '11:00', '10:00-10:00', null, undefined, 7]) {

@@ -1,6 +1,8 @@
-import { test, describe, beforeEach, before, after } from 'node:test'
+import { test, describe, beforeEach, before, after, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { cycleOf } from '../../shared/core/cycle.js'
+import { formatReais } from '../../shared/core/format.js'
+import { composePush } from '../../shared/core/oincPush.js'
 import { DEFAULT_CATEGORY_DEFS } from '../../shared/core/categories.js'
 import { DEFAULT_PUSH_PREFS } from '../../shared/core/pushPrefs.js'
 import { PUSH_PHRASES, buildPushPayload } from '../../shared/core/vintemPhrasesPush.js'
@@ -90,9 +92,10 @@ function makeRepo({ settings = settingsFor(), txs = [], silentIds = [], fids = {
     async deleteEvent(id) {
       events.delete(id)
     },
-    async countSent(hid, person, dayKey) {
+    async countSent(hid, person, dayKey, kind) {
       return [...events.values()].filter(
-        (e) => e.ownerId === hid && e.person === person && e.dayKey === dayKey && e.status === 'enviado'
+        (e) =>
+          e.ownerId === hid && e.person === person && e.dayKey === dayKey && e.status === 'enviado' && (!kind || e.kind === kind)
       ).length
     },
     async listPending() {
@@ -235,19 +238,19 @@ describe('notificador de limites: tracer', () => {
 })
 
 describe('readMaxPerDay', () => {
-  test('padrao 8 quando ausente ou invalido', () => {
-    assert.equal(readMaxPerDay({}), 8)
-    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: 'abc' }), 8)
-    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '0' }), 8)
-    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '-3' }), 8)
-    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '2.5' }), 8)
+  test('padrao 20 quando ausente ou invalido', () => {
+    assert.equal(readMaxPerDay({}), 20)
+    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: 'abc' }), 20)
+    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '0' }), 20)
+    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '-3' }), 20)
+    assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '2.5' }), 20)
     assert.equal(readMaxPerDay({ PUSH_MAX_PER_DAY: '5' }), 5)
   })
 })
 
 // Silencio das 22:00 as 08:00 (hora de Sao Paulo).
 const QUIET_PREFS = {
-  types: { limite80: true, limite100: true, espontanea: true },
+  types: { limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true },
   quiet: { enabled: true, from: '22:00', to: '08:00' },
 }
 const at = (iso) => new Date(iso).getTime()
@@ -371,7 +374,7 @@ describe('notificador de limites: silencio, tipos, teto e falhas', () => {
     const settings = settingsFor()
     settings.personConfig.limits.alimentacao = [{ from: '2026-01', cents: LIMIT_CENTS }]
     const eight = () => [...repo.events.values()].filter((e) => e.status === 'enviado').length
-    setup({ settings, txs: [spend(120), spend(120, { categoryId: 'alimentacao', category: 'Alimentacao' })], fids: FIDS })
+    setup({ settings, txs: [spend(120), spend(120, { categoryId: 'alimentacao', category: 'Alimentacao' })], fids: FIDS }, { maxPerDay: 8 })
     // Sete avisos ja enviados hoje a Ele.
     for (let i = 0; i < 7; i++) {
       repo.events.set(`antigo-${i}`, { ownerId: HID, person: 'ele', kind: 'limite', status: 'enviado', dayKey: '2026-11-18', cycleKey: 'x' })
@@ -592,8 +595,7 @@ describe('POST /api/limits/check', () => {
   })
 })
 
-// Fatura: NOW e 17/11. Fechamento dia 10 e vencimento dia 20 fazem a fatura 2026-11 estar fechada e
-// vencer em 3 dias (a antecedencia padrao).
+// Fatura: fechamento dia 10 e vencimento dia 20. Os avisos saem em 18 (d2), 19 (d1) e 20/11 (d0).
 const CARD = {
   id: 'cartao-ele',
   ownerId: HID,
@@ -603,7 +605,16 @@ const CARD = {
   payments: [],
 }
 const CARD_CFG = { accountId: 'cartao-ele', ownerId: HID, closingDay: 10, dueDay: 20, nickname: 'Roxinho', paidMonths: [] }
-const BILL_ID = 'casalA__fatura__cartao-ele__2026-11'
+const BILL_ID = 'casalA__ele__fatura__cartao-ele__2026-11-20__d2'
+
+// Hora de parede de Sao Paulo (UTC-3) em um dia de novembro.
+const nov = (day, hhmm) => at(`2026-11-${String(day).padStart(2, '0')}T${hhmm}:00-03:00`)
+
+const expectedBody = (id, scene, slots, { tone = 'sem-filtro', gender = 'm' } = {}) =>
+  composePush({ scene, tone, slots, gender, seed: id }).body
+
+const MARKER_KEYS = ['createdAt', 'dayKey', 'daysLeft', 'dueKey', 'kind', 'ownerId', 'person', 'refId', 'status', 'tag', 'url']
+const keysOf = (marker) => Object.keys(marker).filter((k) => !['enviados', 'sentAt'].includes(k)).sort()
 
 describe('notificador de fatura', () => {
   let clock
@@ -612,44 +623,53 @@ describe('notificador de fatura', () => {
   let notifier
 
   const setup = (opts = {}) => {
-    clock = { t: T_1000_NOV17 }
+    clock = { t: nov(18, '10:00') }
     repo = makeRepo({ cards: [CARD], cardSettings: [CARD_CFG], fids: FIDS, ...opts })
     sender = makeSender()
     notifier = createNotifier({ repo, sender, now: () => new Date(clock.t) })
   }
-  const T_1000_NOV17 = at('2026-11-17T13:00:00Z')
-  const bills = (person = 'ele', hid = HID) => notifier.evaluateBills({ hid, person })
+  const bills = (person = 'ele', hid = HID) => notifier.evaluateDue({ hid, person })
   const billStatuses = () => [...repo.events.values()].map((e) => e.status)
 
   beforeEach(() => setup())
 
-  test('fatura fechada, nao paga e perto de vencer gera um aviso unico, com texto do banco de push', async () => {
+  test('fatura a 2 dias do vencimento gera um aviso unico, com o valor e sem o nome do cartao', async () => {
     const out = await bills()
     assert.deepEqual(out, { events: 1, claimed: 1, sent: 2 })
     assert.equal(sender.calls.length, 1)
     assert.deepEqual(sender.calls[0].fids.sort(), ['fidEle-aparelho1', 'fidEle-aparelho2'])
     const { payload } = sender.calls[0]
-    assert.equal(payload.tag, 'fatura-cartao-ele')
+    assert.deepEqual(Object.keys(payload).sort(), ['body', 'tag', 'title', 'url'])
+    assert.equal(payload.title, 'OINC')
+    assert.equal(payload.tag, 'fatura-cartao-ele-2026-11-20')
     assert.equal(payload.url, '/cartoes')
-    assert.equal(payload.body, buildPushPayload({ situation: 'push-fatura', tone: 'sem-filtro', seed: BILL_ID }).body)
-    // Sem valor, sem data e sem nome do cartao (D-05).
-    assert.doesNotMatch(`${payload.title} ${payload.body}`, /\d|R\$|Roxinho|Cartao Teste/)
+    assert.equal(payload.body, expectedBody(BILL_ID, 'push-fatura-d2', { valor: formatReais(45067) }))
+    assert.ok(payload.body.includes(formatReais(45067)), payload.body)
+    assert.doesNotMatch(`${payload.title} ${payload.body}`, /Roxinho|Cartao Teste/)
 
     const marker = repo.events.get(BILL_ID)
-    assert.deepEqual(
-      Object.keys(marker).filter((k) => !['enviados', 'sentAt'].includes(k)).sort(),
-      ['billMonth', 'cardId', 'createdAt', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'url']
-    )
+    assert.deepEqual(keysOf(marker), MARKER_KEYS)
+    assert.equal(marker.refId, 'cartao-ele')
+    assert.equal(marker.dueKey, '2026-11-20')
+    assert.equal(marker.daysLeft, 2)
     assert.equal(marker.status, 'enviado')
+    assert.doesNotMatch(JSON.stringify(marker), /Roxinho|Cartao Teste|45067|450,67|R\$/)
   })
 
-  test('uma segunda avaliacao, mesmo no dia seguinte, nao repete', async () => {
-    await bills()
-    clock.t += 24 * 60 * 60 * 1000
-    const again = await bills()
-    assert.equal(again.claimed, 0)
-    assert.equal(sender.calls.length, 1)
-    assert.equal(repo.events.size, 1)
+  test('sai um aviso em cada estagio (2, 1 e no dia), antes disso e depois do vencimento nada', async () => {
+    clock.t = nov(17, '10:00')
+    assert.equal((await bills()).events, 0)
+    for (const day of [18, 19, 20, 21]) {
+      clock.t = nov(day, '10:00')
+      await bills()
+      await bills()
+    }
+    assert.deepEqual(
+      [...repo.events.keys()],
+      [2, 1, 0].map((n) => `casalA__ele__fatura__cartao-ele__2026-11-20__d${n}`),
+    )
+    assert.equal(sender.calls.length, 3)
+    assert.equal(sender.calls[2].payload.body, expectedBody([...repo.events.keys()][2], 'push-fatura-d0', { valor: formatReais(45067) }))
   })
 
   test('paga, marcada como paga, aberta, longe do vencimento ou sem as datas do dono nao gera', async () => {
@@ -669,13 +689,6 @@ describe('notificador de fatura', () => {
       assert.equal(sender.calls.length, 0)
       assert.equal(repo.events.size, 0)
     }
-  })
-
-  test('a antecedencia vem das configuracoes', async () => {
-    setup({ settings: { ...settingsFor(), daysBeforeDueDate: 2 } })
-    assert.equal((await bills()).events, 0)
-    clock.t += 24 * 60 * 60 * 1000
-    assert.equal((await bills()).events, 1)
   })
 
   test('com o interruptor de vencimento desligado grava desligado e nao entrega depois', async () => {
@@ -700,17 +713,16 @@ describe('notificador de fatura', () => {
   })
 
   test('no silencio a fatura fica pendente e o deliverHeld entrega uma vez', async () => {
-    repo.state.prefs = QUIET_PREFS
-    clock.t = at('2026-11-18T02:30:00Z')
+    repo.state.prefs = { ...QUIET_PREFS, quiet: { enabled: true, from: '09:30', to: '14:00' } }
     await bills()
     assert.deepEqual(billStatuses(), ['pendente'])
     assert.equal(sender.calls.length, 0)
-    clock.t = T_0805
+    clock.t = nov(18, '14:05')
     await notifier.deliverHeld()
     await notifier.deliverHeld()
     await bills()
     assert.equal(sender.calls.length, 1)
-    assert.equal(sender.calls[0].payload.body, buildPushPayload({ situation: 'push-fatura', tone: 'sem-filtro', seed: BILL_ID }).body)
+    assert.equal(sender.calls[0].payload.body, expectedBody(BILL_ID, 'push-fatura-d2', { valor: formatReais(45067) }))
     assert.deepEqual(billStatuses(), ['enviado'])
   })
 
@@ -723,10 +735,324 @@ describe('notificador de fatura', () => {
     assert.deepEqual(billStatuses(), ['enviado'])
   })
 
+  test('o nome antigo continua valendo ate o relogio trocar os chamadores', async () => {
+    assert.equal(notifier.evaluateBills, notifier.evaluateDue)
+  })
+
   test('entrada invalida nao faz nada', async () => {
     assert.equal((await bills('porquinho')).events, 0)
     assert.equal((await bills('ele', '')).events, 0)
     assert.equal(repo.events.size, 0)
+  })
+})
+
+// Leitura falsa de contas, pagamentos e compromissos: filtra so o casal, para provar que a pessoa
+// e filtrada tambem no estagio.
+function makeDue(data = {}) {
+  const state = { bills: [], payments: [], events: [], fail: null, calls: [], ...data }
+  const load = async ({ hid, person }) => {
+    state.calls.push({ hid, person })
+    if (state.fail) throw state.fail
+    const own = (list) => list.filter((x) => x.ownerId === hid).map((x) => ({ ...x }))
+    return { bills: own(state.bills), payments: own(state.payments), events: own(state.events) }
+  }
+  return { state, load }
+}
+
+const bill = (id, person, over = {}) => ({
+  id,
+  ownerId: HID,
+  person,
+  name: 'Internet da Maria',
+  dueDay: 20,
+  amountCents: 12990,
+  ...over,
+})
+const paid = (billId) => ({ ownerId: HID, billId, month: 11, year: 2026, paidCents: 12990 })
+const appointment = (id, person, over = {}) => ({
+  id,
+  ownerId: HID,
+  person,
+  title: 'Dentista com o Pedro',
+  date: new Date('2026-11-20T15:00:00Z'),
+  time: '14:30',
+  ...over,
+})
+const billMarker = (n, ref = 'luz', person = 'ele') => `casalA__${person}__conta__${ref}__2026-11-20__d${n}`
+
+describe('notificador de contas e compromissos', () => {
+  let clock
+  let repo
+  let sender
+  let due
+  let notifier
+
+  const build = (config = {}) =>
+    createNotifier({ repo, sender, now: () => new Date(clock.t), config, loadDue: due.load })
+  const setup = (data = { bills: [bill('luz', 'ele')] }, opts = {}, config = {}) => {
+    clock = { t: nov(18, '10:00') }
+    repo = makeRepo({ fids: FIDS, ...opts })
+    repo.readCycleTransactions = async () => assert.fail('o aviso de vencimento nunca le lancamentos')
+    sender = makeSender()
+    due = makeDue(data)
+    notifier = build(config)
+  }
+  const run = (person = 'ele') => notifier.evaluateDue({ hid: HID, person })
+  const statusOf = () => [...repo.events.values()].map((e) => e.status)
+
+  beforeEach(() => setup())
+
+  test('a conta gera um aviso em D-2, outro em D-1 e outro no dia, uma vez cada', async () => {
+    for (const day of [17, 18, 19, 20, 21]) {
+      clock.t = nov(day, '10:00')
+      await run()
+      await run()
+    }
+    assert.deepEqual([...repo.events.keys()], [billMarker(2), billMarker(1), billMarker(0)])
+    assert.equal(sender.calls.length, 3)
+    assert.deepEqual(sender.calls.map((c) => c.payload.url), ['/contas-fixas', '/contas-fixas', '/contas-fixas'])
+    assert.equal(new Set(sender.calls.map((c) => c.payload.tag)).size, 1)
+    for (const [i, id] of [billMarker(2), billMarker(1), billMarker(0)].entries()) {
+      const slots = { conta: 'Internet da Maria', valor: formatReais(12990) }
+      assert.equal(sender.calls[i].payload.body, expectedBody(id, `push-conta-d${2 - i}`, slots))
+    }
+  })
+
+  test('paga antes do dia nao gera o aviso do dia', async () => {
+    await run()
+    clock.t = nov(19, '10:00')
+    due.state.payments = [paid('luz')]
+    await run()
+    clock.t = nov(20, '10:00')
+    await run()
+    assert.deepEqual([...repo.events.keys()], [billMarker(2)])
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('antes de PUSH_DUE_HOUR nada sai, nem marcador', async () => {
+    clock.t = nov(18, '08:59')
+    assert.deepEqual(await run(), { events: 0, claimed: 0, sent: 0 })
+    assert.equal(repo.events.size, 0)
+    assert.equal(due.state.calls.length, 0, 'antes da hora nem le')
+    clock.t = nov(18, '09:00')
+    assert.equal((await run()).sent, 2)
+
+    setup(undefined, {}, { dueHour: 14 })
+    clock.t = nov(18, '13:59')
+    assert.equal((await run()).sent, 0)
+    clock.t = nov(18, '14:00')
+    assert.equal((await run()).sent, 2)
+  })
+
+  test('reinicio do servidor nao duplica', async () => {
+    await run()
+    notifier = build()
+    assert.deepEqual(await run(), { events: 1, claimed: 0, sent: 0 })
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('o marcador tem so referencias: nem nome, nem valor, nem titulo, nem texto', async () => {
+    setup({ bills: [bill('luz', 'ele')], events: [appointment('consulta', 'ele')] })
+    await run()
+    assert.equal(repo.events.size, 2)
+    for (const marker of repo.events.values()) {
+      assert.deepEqual(keysOf(marker), MARKER_KEYS)
+      assert.doesNotMatch(JSON.stringify(marker), /Internet|Maria|Dentista|Pedro|12990|129,90|R\$|14:30/)
+      for (const call of sender.calls) assert.ok(!JSON.stringify(marker).includes(call.payload.body))
+    }
+  })
+
+  test('o corpo traz o nome da conta como escrito e o valor, com o CPF do nome mascarado', async () => {
+    setup({ bills: [bill('luz', 'ele', { name: 'Pensao Joao Silva 123.456.789-09' })] })
+    await run()
+    const { body } = sender.calls[0].payload
+    assert.ok(body.includes('Pensao Joao Silva ***'), body)
+    assert.ok(body.includes(formatReais(12990)), body)
+    assert.ok(!body.includes('123.456'), body)
+  })
+
+  test('o texto sai no tom das configuracoes', async () => {
+    repo.state.settings = settingsFor({ tone: 'direto' })
+    await run()
+    const slots = { conta: 'Internet da Maria', valor: formatReais(12990) }
+    assert.equal(sender.calls[0].payload.body, expectedBody(billMarker(2), 'push-conta-d2', slots, { tone: 'direto' }))
+  })
+
+  test('compromisso avisa 2 e 1 dia antes, nunca no dia, com o titulo como escrito', async () => {
+    setup({ events: [appointment('consulta', 'ele')] })
+    for (const day of [18, 19, 20]) {
+      clock.t = nov(day, '10:00')
+      await run()
+    }
+    const ids = [2, 1].map((n) => `casalA__ele__compromisso__consulta__2026-11-20__d${n}`)
+    assert.deepEqual([...repo.events.keys()], ids)
+    assert.equal(sender.calls.length, 2)
+    assert.equal(sender.calls[0].payload.url, '/calendario')
+    const slots = { titulo: 'Dentista com o Pedro', hora: '14:30' }
+    assert.equal(sender.calls[0].payload.body, expectedBody(ids[0], 'push-compromisso-d2', slots))
+    assert.equal(sender.calls[1].payload.body, expectedBody(ids[1], 'push-compromisso-d1', slots))
+  })
+
+  test('renomear o compromisso nao gera aviso novo (o id e o do documento)', async () => {
+    setup({ events: [appointment('consulta', 'ele')] })
+    await run()
+    due.state.events = [appointment('consulta', 'ele', { title: 'Outro nome' })]
+    assert.equal((await run()).claimed, 0)
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('cada pessoa recebe so o proprio e o do casal, nos dois sentidos', async () => {
+    setup({
+      bills: [bill('so-ele', 'ele'), bill('so-ela', 'ela'), bill('casal', 'conjunto')],
+      events: [appointment('ev-ele', 'ele'), appointment('ev-ela', 'ela'), appointment('ev-casal', 'conjunto')],
+    })
+    await run('ele')
+    await run('ela')
+    const refs = (person) => [...repo.events.values()].filter((e) => e.person === person).map((e) => e.refId).sort()
+    assert.deepEqual(refs('ele'), ['casal', 'ev-casal', 'ev-ele', 'so-ele'])
+    assert.deepEqual(refs('ela'), ['casal', 'ev-casal', 'ev-ela', 'so-ela'])
+    const eleCalls = sender.calls.filter((c) => c.fids.includes('fidEle-aparelho1'))
+    const elaCalls = sender.calls.filter((c) => c.fids.includes('fidEla-aparelho1'))
+    assert.equal(eleCalls.length, 4)
+    assert.equal(elaCalls.length, 4)
+    assert.equal(sender.calls.length, 8)
+    for (const c of sender.calls) assert.ok(!(c.fids.includes('fidEle-aparelho1') && c.fids.includes('fidEla-aparelho1')))
+    // Outro casal nao ve nada.
+    assert.equal((await notifier.evaluateDue({ hid: 'casalB', person: 'ele' })).events, 0)
+  })
+
+  test('varias contas no mesmo dia saem uma a uma', async () => {
+    setup({ bills: [bill('luz', 'ele'), bill('agua', 'ele', { name: 'Agua' })] })
+    await run()
+    assert.equal(sender.calls.length, 2)
+    assert.equal(new Set(sender.calls.map((c) => c.payload.tag)).size, 2)
+  })
+
+  test('tipo desligado grava desligado; o interruptor da fatura nao desliga a conta', async () => {
+    repo.state.prefs = { ...DEFAULT_PUSH_PREFS, types: { ...DEFAULT_PUSH_PREFS.types, conta: false } }
+    await run()
+    assert.deepEqual(statusOf(), ['desligado'])
+    assert.equal(sender.calls.length, 0)
+
+    setup({ events: [appointment('consulta', 'ele')] })
+    repo.state.prefs = { ...DEFAULT_PUSH_PREFS, types: { ...DEFAULT_PUSH_PREFS.types, compromisso: false } }
+    await run()
+    assert.deepEqual(statusOf(), ['desligado'])
+
+    setup(undefined, { settings: settingsFor({ faturaEnabled: false }) })
+    await run()
+    assert.deepEqual(statusOf(), ['enviado'])
+  })
+
+  const holding = (from, to) => ({ ...QUIET_PREFS, quiet: { enabled: true, from, to } })
+
+  test('retido no silencio sai no mesmo dia com os dados relidos', async () => {
+    repo.state.prefs = holding('09:30', '14:00')
+    await run()
+    assert.deepEqual(statusOf(), ['pendente'])
+    due.state.bills = [bill('luz', 'ele', { name: 'Luz nova', amountCents: 5000 })]
+    clock.t = nov(18, '14:05')
+    assert.equal((await notifier.deliverHeld()).sent, 2)
+    assert.equal(
+      sender.calls[0].payload.body,
+      expectedBody(billMarker(2), 'push-conta-d2', { conta: 'Luz nova', valor: formatReais(5000) }),
+    )
+    assert.deepEqual(statusOf(), ['enviado'])
+  })
+
+  test('retido e pago vira expirado e nao envia', async () => {
+    repo.state.prefs = holding('09:30', '14:00')
+    await run()
+    due.state.payments = [paid('luz')]
+    clock.t = nov(18, '14:05')
+    const out = await notifier.deliverHeld()
+    assert.equal(out.expired, 1)
+    assert.equal(out.sent, 0)
+    assert.equal(sender.calls.length, 0)
+    assert.deepEqual(statusOf(), ['expirado'])
+  })
+
+  test('retido com o dia passado vira expirado, e o estagio do dia novo sai normalmente', async () => {
+    repo.state.prefs = QUIET_PREFS
+    clock.t = nov(18, '23:30')
+    await run()
+    clock.t = nov(19, '08:05')
+    assert.equal((await notifier.deliverHeld()).expired, 1)
+    assert.equal(sender.calls.length, 0)
+    clock.t = nov(19, '09:00')
+    await run()
+    assert.equal(repo.events.get(billMarker(2)).status, 'expirado')
+    assert.equal(repo.events.get(billMarker(1)).status, 'enviado')
+    assert.equal(sender.calls.length, 1)
+  })
+
+  test('aviso de fatura antigo, retido antes da troca de formato, vira expirado', async () => {
+    repo.events.set('casalA__fatura__cartao-ele__2026-11', {
+      ownerId: HID, person: 'ele', kind: 'fatura', cardId: 'cartao-ele', billMonth: '2026-11', tag: 'fatura-cartao-ele', url: '/cartoes', status: 'pendente',
+    })
+    assert.equal((await notifier.deliverHeld()).expired, 1)
+    assert.equal(sender.calls.length, 0)
+  })
+
+  test('com 3 aleatorias ja enviadas, as fixas continuam saindo ate o teto proprio', async () => {
+    setup(
+      { bills: [bill('a', 'ele'), bill('b', 'ele'), bill('c', 'ele')] },
+      {},
+      { maxPerDay: 2 },
+    )
+    for (let i = 0; i < 3; i++) {
+      repo.events.set(`aleatoria-${i}`, { ownerId: HID, person: 'ele', kind: 'espontanea', status: 'enviado', dayKey: '2026-11-18' })
+    }
+    await run()
+    assert.equal(sender.calls.length, 2)
+    const own = [...repo.events.values()].filter((e) => e.kind === 'conta').map((e) => e.status)
+    assert.deepEqual(own, ['enviado', 'enviado', 'teto'])
+  })
+
+  test('as fixas nao gastam o limite das aleatorias', async () => {
+    setup(undefined, {}, { maxPerDay: 1, spontWindow: { from: '09:00', to: '10:00' } })
+    await run()
+    assert.equal(sender.calls.length, 1)
+    clock.t = nov(18, '09:59')
+    assert.equal((await notifier.evaluateSpontaneous({ hid: HID, person: 'ele' })).sent, 2)
+  })
+
+  test('sem a leitura injetada avisa so as faturas e deixa o retido de conta pendente', async () => {
+    setup(undefined, { cards: [CARD], cardSettings: [CARD_CFG] })
+    notifier = createNotifier({ repo, sender, now: () => new Date(clock.t) })
+    await run()
+    assert.deepEqual([...repo.events.values()].map((e) => e.kind), ['fatura'])
+
+    repo.events.set(billMarker(2), { ownerId: HID, person: 'ele', kind: 'conta', refId: 'luz', daysLeft: 2, tag: 't', url: '/', status: 'pendente' })
+    const out = await notifier.deliverHeld()
+    assert.equal(out.expired, 0)
+    assert.equal(repo.events.get(billMarker(2)).status, 'pendente')
+  })
+
+  test('falha na leitura de contas nao derruba a fatura, nao expira o retido e o log leva so o codigo', async () => {
+    setup(undefined, { cards: [CARD], cardSettings: [CARD_CFG] })
+    repo.state.prefs = holding('09:30', '14:00')
+    await run()
+    assert.equal(repo.events.size, 2)
+
+    const error = mock.method(console, 'error', () => {})
+    try {
+      due.state.fail = Object.assign(new Error('Internet da Maria'), { code: 'unavailable' })
+      clock.t = nov(18, '14:05')
+      const out = await notifier.deliverHeld()
+      assert.equal(out.expired, 0)
+      assert.equal(repo.events.get(billMarker(2)).status, 'pendente')
+      assert.equal(repo.events.get(BILL_ID).status, 'enviado')
+      clock.t = nov(19, '10:00')
+      repo.state.prefs = DEFAULT_PUSH_PREFS
+      await run()
+      assert.equal(repo.events.get('casalA__ele__fatura__cartao-ele__2026-11-20__d1').status, 'enviado')
+      const text = error.mock.calls.map((c) => c.arguments.join(' ')).join('\n')
+      assert.match(text, /unavailable/)
+      assert.doesNotMatch(text, /Internet|Maria/)
+    } finally {
+      error.mock.restore()
+    }
   })
 })
 
@@ -763,7 +1089,7 @@ describe('notificador: push espontaneo', () => {
   test('sai uma vez por dia, dentro da janela, com a frase do banco e sem dado financeiro', async () => {
     const sent = await runDay(17)
     assert.equal(sent.length, 1)
-    assert.ok(sent[0] >= 11 * 60 && sent[0] < 20 * 60, `fora da janela: ${sent[0]}`)
+    assert.ok(sent[0] >= 9 * 60 && sent[0] < 21 * 60, `fora da janela: ${sent[0]}`)
     assert.equal(sender.calls.length, 1)
     const { payload } = sender.calls[0]
     const id = 'casalA__ele__espontanea__2026-11-17'
@@ -783,7 +1109,7 @@ describe('notificador: push espontaneo', () => {
       for (const person of ['ele', 'ela']) {
         const sent = await runDay(day, person)
         assert.equal(sent.length, 1, `dia ${day} ${person}`)
-        assert.ok(sent[0] >= 11 * 60 && sent[0] < 20 * 60)
+        assert.ok(sent[0] >= 9 * 60 && sent[0] < 21 * 60)
         times[person].push(sent[0])
       }
     }
@@ -801,15 +1127,15 @@ describe('notificador: push espontaneo', () => {
   })
 
   test('nunca sai no silencio e no silencio nao cria marcador', async () => {
-    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '10:00', to: '21:00' } } })
+    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '09:00', to: '21:00' } } })
     assert.deepEqual(await runDay(17), [])
     assert.equal(repo.events.size, 0)
 
     // Silencio que acaba antes do fim da janela: sai depois dele, ainda dentro da janela.
-    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '10:00', to: '19:30' } } })
+    setup({ prefs: { ...DEFAULT_PUSH_PREFS, quiet: { enabled: true, from: '09:00', to: '19:30' } } })
     const sent = await runDay(17)
     assert.equal(sent.length, 1)
-    assert.ok(sent[0] >= 19 * 60 + 30 && sent[0] < 20 * 60)
+    assert.ok(sent[0] >= 19 * 60 + 30 && sent[0] < 21 * 60)
   })
 
   test('tipo desligado, parametro zero, sem aparelho ou entrada invalida nao criam marcador', async () => {

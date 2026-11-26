@@ -1,9 +1,10 @@
-// Fatura, espontaneo e relogio contra o emulador do Firestore, com o FCM falso.
+// Avisos fixos, espontaneo e relogio contra o emulador do Firestore, com o FCM falso.
 // Rodar: npm run test:emu
 import { test, describe, beforeEach, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { Timestamp } from 'firebase-admin/firestore'
 import { initAdmin } from '../../scripts/lib/admin.js'
+import { createSnapshotLoader } from '../../src/ai/snapshot.js'
 import { withAfterSync } from '../../src/push/after-sync.js'
 import { createPushFeature } from '../../src/push/index.js'
 import { createNotifier } from '../../src/push/notifier.js'
@@ -13,6 +14,9 @@ import { resetEmulators } from './_helpers.js'
 
 // 17/11 as 12:00 em Sao Paulo.
 const NOW = new Date('2026-11-17T15:00:00Z')
+// 18/11 as 12:00 em Sao Paulo: 2 dias antes do vencimento do dia 20.
+const D2 = new Date('2026-11-18T15:00:00Z')
+const BILL_ID = 'casalA__ele__fatura__cartao-ele__2026-11-20__d2'
 
 const FID_ELE = 'fidEleAparelho0001'
 const FID_ELA = 'fidElaAparelho0001'
@@ -41,11 +45,12 @@ describe('fatura no emulador', () => {
     db = admin.db
   })
 
-  const buildNotifier = () =>
+  const buildNotifier = (extra = {}) =>
     createNotifier({
       repo: createRepo({ db }),
       sender: createSender({ db, messaging }),
       now: () => new Date(clock.t),
+      ...extra,
     })
 
   const registerFid = (fid, ownerId, person, updatedAt = NOW) =>
@@ -67,7 +72,7 @@ describe('fatura no emulador', () => {
   beforeEach(async () => {
     await resetEmulators()
     messaging = fakeMessaging()
-    clock = { t: NOW.getTime() }
+    clock = { t: D2.getTime() }
     await db.collection('settings').doc('main').set({ ownerId: 'casalA' })
     await registerFid(FID_ELE, 'casalA', 'ele')
     await registerFid(FID_ELA, 'casalA', 'ela')
@@ -75,21 +80,22 @@ describe('fatura no emulador', () => {
     await putCard('cartao-ele', 'casalA', 'ele')
   })
 
-  test('a fatura perto de vencer vira um aviso unico, so no aparelho da pessoa do cartao', async () => {
+  test('a fatura a 2 dias vira um aviso unico, so no aparelho da pessoa do cartao', async () => {
     const notifier = buildNotifier()
-    await notifier.evaluateBills({ hid: 'casalA', person: 'ele' })
-    await notifier.evaluateBills({ hid: 'casalA', person: 'ela' })
-    await notifier.evaluateBills({ hid: 'casalB', person: 'ele' })
+    await notifier.evaluateDue({ hid: 'casalA', person: 'ele' })
+    await notifier.evaluateDue({ hid: 'casalA', person: 'ela' })
+    await notifier.evaluateDue({ hid: 'casalB', person: 'ele' })
     // Instancia nova sobre o mesmo banco (reinicio) e varias ao mesmo tempo: nada se repete.
-    await Promise.all(Array.from({ length: 4 }, () => buildNotifier().evaluateBills({ hid: 'casalA', person: 'ele' })))
+    await Promise.all(Array.from({ length: 4 }, () => buildNotifier().evaluateDue({ hid: 'casalA', person: 'ele' })))
 
     assert.deepEqual(messaging.sent.map((m) => m.fid), [FID_ELE])
     assert.equal(messaging.sent[0].data.url, '/cartoes')
-    assert.equal(messaging.sent[0].data.tag, 'fatura-cartao-ele')
-    assert.doesNotMatch(messaging.sent[0].data.body, /\d|R\$/)
+    assert.equal(messaging.sent[0].data.tag, 'fatura-cartao-ele-2026-11-20')
+    // O corpo traz o valor; nunca o nome do cartao nem CPF.
+    assert.doesNotMatch(messaging.sent[0].data.body, /Cartao Teste|\d{3}\.\d{3}\.\d{3}-\d{2}/)
 
     const list = await markers()
-    assert.deepEqual(list.map((m) => m.id), ['casalA__fatura__cartao-ele__2026-11'])
+    assert.deepEqual(list.map((m) => m.id), [BILL_ID])
     assert.equal(list[0].status, 'enviado')
     assert.equal(list[0].kind, 'fatura')
     assert.ok(!JSON.stringify(list[0]).includes(messaging.sent[0].data.body), 'o marcador guardou o texto do aviso')
@@ -97,27 +103,54 @@ describe('fatura no emulador', () => {
 
   test('o cartao de outro casal com a mesma pessoa nunca entra na avaliacao', async () => {
     await putCard('cartao-b', 'casalB', 'ele')
-    await buildNotifier().evaluateBills({ hid: 'casalB', person: 'ele' })
+    await buildNotifier().evaluateDue({ hid: 'casalB', person: 'ele' })
     assert.deepEqual(messaging.sent.map((m) => m.fid), [FID_B_ELE])
-    assert.deepEqual((await markers()).map((m) => m.id), ['casalB__fatura__cartao-b__2026-11'])
+    assert.deepEqual((await markers()).map((m) => m.id), ['casalB__ele__fatura__cartao-b__2026-11-20__d2'])
   })
 
   test('fatura paga, marcada como paga ou com o interruptor desligado nao envia', async () => {
     await db.collection('cardSettings').doc('cartao-ele').set({ paidMonths: ['2026-11'] }, { merge: true })
-    await buildNotifier().evaluateBills({ hid: 'casalA', person: 'ele' })
+    await buildNotifier().evaluateDue({ hid: 'casalA', person: 'ele' })
     assert.equal((await markers()).length, 0)
 
     await db.collection('cardSettings').doc('cartao-ele').set({ paidMonths: [] }, { merge: true })
     await db.collection('settings').doc('main').set({ notificationsEnabled: false }, { merge: true })
-    await buildNotifier().evaluateBills({ hid: 'casalA', person: 'ele' })
+    await buildNotifier().evaluateDue({ hid: 'casalA', person: 'ele' })
     assert.deepEqual((await markers()).map((m) => m.status), ['desligado'])
     assert.equal(messaging.sent.length, 0)
+  })
+
+  test('conta e compromisso lidos de verdade: um aviso cada, sem escrever em contas nem lancamentos', async () => {
+    const date = Timestamp.fromDate(new Date('2026-11-20T15:00:00Z'))
+    const bill = { ownerId: 'casalA', name: 'Internet', amount: 129.9, dueDay: 20, isActive: true }
+    await db.collection('fixedExpenses').doc('net').set({ ...bill, person: 'conjunto' })
+    await db.collection('fixedExpenses').doc('academia').set({ ...bill, person: 'ela', name: 'Academia' })
+    await db.collection('fixedExpenses').doc('paga').set({ ...bill, person: 'ele', name: 'Aluguel' })
+    await db.collection('fixedExpensePayments').doc('p1').set({ ownerId: 'casalA', fixedExpenseId: 'paga', month: 11, year: 2026, paidAmount: 129.9 })
+    await db.collection('events').doc('dentista').set({ ownerId: 'casalA', person: 'ele', title: 'Dentista', date, time: '14:30' })
+    await db.collection('cardSettings').doc('cartao-ele').set({ paidMonths: ['2026-11'] }, { merge: true })
+
+    const { loadDue } = createSnapshotLoader({ db, now: () => new Date(clock.t) })
+    await Promise.all(Array.from({ length: 4 }, () => buildNotifier({ loadDue }).evaluateDue({ hid: 'casalA', person: 'ele' })))
+
+    assert.deepEqual((await markers()).map((m) => m.id).sort(), [
+      'casalA__ele__compromisso__dentista__2026-11-20__d2',
+      'casalA__ele__conta__net__2026-11-20__d2',
+    ])
+    assert.deepEqual(messaging.sent.map((m) => m.fid), [FID_ELE, FID_ELE])
+    assert.equal((await db.collection('fixedExpensePayments').get()).size, 1)
+    assert.equal((await db.collection('transactions').get()).size, 0)
+
+    const repo = createRepo({ db })
+    assert.equal(await repo.countSent('casalA', 'ele', '2026-11-18'), 2)
+    assert.equal(await repo.countSent('casalA', 'ele', '2026-11-18', 'conta'), 1)
+    assert.equal(await repo.countSent('casalA', 'ele', '2026-11-18', 'espontanea'), 0)
   })
 })
 
 describe('ciclo completo no emulador', () => {
   // Silencio das 22:00 as 08:00 em Sao Paulo.
-  const QUIET = { types: { limite80: true, limite100: true, espontanea: true }, quiet: { enabled: true, from: '22:00', to: '08:00' } }
+  const QUIET = { types: { limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true }, quiet: { enabled: true, from: '22:00', to: '08:00' } }
   const T_2330 = Date.parse('2026-11-18T02:30:00Z')
   const T_0805 = Date.parse('2026-11-18T11:05:00Z')
   const SPONT_ID = 'casalA__ele__espontanea__2026-11-18'
@@ -226,8 +259,8 @@ describe('ciclo completo no emulador', () => {
   })
 
   test('o espontaneo sai uma vez no dia, mesmo com relogios novos e simultaneos', async () => {
-    // 19:50 em Sao Paulo: depois de qualquer horario alvo da janela padrao.
-    clock.t = Date.parse('2026-11-18T22:50:00Z')
+    // 20:50 em Sao Paulo: depois de qualquer horario alvo da janela padrao.
+    clock.t = Date.parse('2026-11-18T23:50:00Z')
     await boot().tick.runOnce()
     await Promise.all([boot().tick.runOnce(), boot().tick.runOnce(), boot().tick.runOnce()])
     assert.deepEqual(messaging.sent.map((m) => m.data.tag), ['espontanea'])

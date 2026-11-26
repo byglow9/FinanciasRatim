@@ -2,11 +2,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   CACHE_KEY_VERSION,
+  CACHE_TOPICS,
   BUCKET_TOP,
   bucket5,
   labelHash,
   canonicalKey,
 } from './aiCacheKey.js'
+import { OINC_SCENES } from './oincScenes.js'
 
 const OK = {
   cycleKey: '2026-11',
@@ -19,7 +21,7 @@ const OK = {
 }
 
 test('bucket5: agrupa de 5 em 5 e separa nas bordas', () => {
-  assert.equal(CACHE_KEY_VERSION, 1)
+  assert.equal(CACHE_KEY_VERSION, 2)
   assert.equal(bucket5(0), 0)
   assert.equal(bucket5(4), 0)
   assert.equal(bucket5(4.99), 0)
@@ -52,7 +54,34 @@ test('labelHash: 8 caracteres hexadecimais, deterministico e sem caixa nem acent
 })
 
 test('canonicalKey: versao e partes na ordem fixa', () => {
-  assert.equal(canonicalKey(OK), 'v1|2026-11|sem-filtro|limite|limites|alimentacao|p85|atencao|x')
+  assert.equal(canonicalKey(OK), 'v2|2026-11|sem-filtro|limite|limites|alimentacao|p85|atencao|x|x')
+  assert.equal(
+    canonicalKey({ ...OK, topic: 'limite-estourou', fact: 'limite:estourou:alimentacao' }),
+    `v2|2026-11|sem-filtro|limite|limite-estourou|alimentacao|p85|atencao|x|f${labelHash('limite:estourou:alimentacao')}`,
+  )
+})
+
+test('canonicalKey: o assunto aceita as cenas do catalogo alem dos assuntos antigos', () => {
+  for (const cena of Object.keys(OINC_SCENES)) {
+    assert.ok(CACHE_TOPICS.includes(cena), cena)
+    assert.equal(canonicalKey({ ...OK, topic: cena }).split('|')[4], cena)
+  }
+  for (const topic of ['limites', 'ritmo', 'padroes', 'agenda', 'anotacoes']) assert.ok(CACHE_TOPICS.includes(topic), topic)
+  assert.equal(canonicalKey({ ...OK, topic: 'cena-que-nao-existe' }).split('|')[4], 'x')
+})
+
+test('canonicalKey: termina com a parte do fato, so hash, e duas anotacoes dao chaves diferentes', () => {
+  const nota = { ...OK, situation: 'abertura', topic: 'agenda-notas' }
+  const a = canonicalKey({ ...nota, fact: `notas:${labelHash('Parar de pedir comida|ate sexta')}` })
+  const b = canonicalKey({ ...nota, fact: `notas:${labelHash('Pagar o dentista|dia 10')}` })
+  assert.notEqual(a, b)
+  assert.match(a, /\|f[0-9a-f]{8}$/)
+  assert.equal(a.split('|').at(-1), `f${labelHash(`notas:${labelHash('Parar de pedir comida|ate sexta')}`)}`)
+  assert.ok(!/comida|dentista|sexta/i.test(a), 'a chave nao leva o texto livre')
+  assert.equal(canonicalKey({ ...nota, fact: 'Tx:A' }), canonicalKey({ ...nota, fact: 'tx:a' }))
+  for (const bad of [undefined, null, '', '   ', 7, {}]) assert.equal(canonicalKey({ ...nota, fact: bad }).split('|').at(-1), 'x')
+  // o campo antigo de texto livre nao entra mais na chave
+  assert.equal(canonicalKey({ ...nota, content: 'Pagar o dentista' }), canonicalKey(nota))
 })
 
 test('canonicalKey: duas situacoes na mesma faixa dao a mesma chave, faixas diferentes dao chaves diferentes', () => {
@@ -65,7 +94,7 @@ test('canonicalKey: cada parte muda a chave', () => {
   const k = canonicalKey(OK)
   for (const change of [
     { cycleKey: '2026-12' }, { tone: 'suave' }, { situation: 'abertura' }, { topic: 'ritmo' },
-    { categoryId: 'transporte' }, { rhythm: 'estourou' }, { rhythm: null },
+    { categoryId: 'transporte' }, { rhythm: 'estourou' }, { rhythm: null }, { fact: 'limite:quase:lazer' },
   ]) {
     assert.notEqual(canonicalKey({ ...OK, ...change }), k, JSON.stringify(change))
   }
@@ -76,10 +105,10 @@ test('canonicalKey: parte invalida vira x e nunca lanca nem leva texto livre', (
     cycleKey: 'novembro de 2026', tone: 'gritando', situation: 'Joao Silva', topic: 'cpf 123.456.789-01',
     categoryId: 'Alimentacao do Joao!', pct: 'muito', rhythm: 'zzz', merchant: 'Padaria do Joao',
   })
-  assert.equal(k, 'v1|x|x|x|x|x|x|x|x')
-  assert.equal(canonicalKey(undefined), 'v1|x|x|x|x|x|x|n|x')
-  assert.equal(canonicalKey(null), 'v1|x|x|x|x|x|x|n|x')
-  assert.equal(canonicalKey({}), 'v1|x|x|x|x|x|x|n|x')
+  assert.equal(k, 'v2|x|x|x|x|x|x|x|x|x')
+  assert.equal(canonicalKey(undefined), 'v2|x|x|x|x|x|x|n|x|x')
+  assert.equal(canonicalKey(null), 'v2|x|x|x|x|x|x|n|x|x')
+  assert.equal(canonicalKey({}), 'v2|x|x|x|x|x|x|n|x|x')
   assert.equal(canonicalKey({ ...OK, categoryId: 'a'.repeat(41) }).split('|')[5], 'x')
   assert.equal(canonicalKey({ ...OK, categoryId: 'a'.repeat(40) }).split('|')[5], 'a'.repeat(40))
   assert.equal(canonicalKey({ ...OK, cycleKey: '2026-13' }).split('|')[1], 'x')
@@ -103,5 +132,5 @@ test('canonicalKey: a loja so entra em lancamento e sync, sempre como hash', () 
 test('canonicalKey: nunca carrega valor exato nem texto fora das listas', () => {
   const k = canonicalKey({ ...OK, pct: 87.3, valor: 123456, descricao: 'Pix para Joao', nome: 'Maria' })
   assert.doesNotMatch(k, /87|123456|joao|maria|pix/i)
-  assert.match(k, /^v1\|[0-9x-]+\|[a-z-]+\|[a-z]+\|[a-z]+\|[a-z0-9_-]+\|(?:p\d+|x)\|[a-z-]+\|(?:m[0-9a-f]{8}|x)$/)
+  assert.match(k, /^v2\|[0-9x-]+\|[a-z-]+\|[a-z]+\|[a-z-]+\|[a-z0-9_-]+\|(?:p\d+|x)\|[a-z-]+\|(?:m[0-9a-f]{8}|x)\|(?:f[0-9a-f]{8}|x)$/)
 })

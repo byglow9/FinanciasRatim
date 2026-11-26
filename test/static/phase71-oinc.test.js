@@ -2,7 +2,7 @@
 // Rodar: node --test test/static/phase71-oinc.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { code, exists, read } from './helpers/phase3-1.js'
+import { code, exists, listSrc, read } from './helpers/phase3-1.js'
 
 const CONTEXT = 'src/contexts/VintemContext.tsx'
 const HISTORY = 'src/lib/oincHistory.ts'
@@ -169,4 +169,51 @@ test('os botoes de voto sao de 44 px, com fundo opaco, sombra e sem animacao pro
   assert.equal((src.match(/motion-reduce:transition-none/g) ?? []).length, 2)
   assert.ok(!/anim-|animate-/.test(src), 'sem animacao propria')
   assert.match(src, /align\?: 'start' \| 'center' \| 'end'/, 'sem o lado do porco')
+})
+
+// ---------------------------------------------------------------------------------------------
+// Task 3: fatos locais da propria pessoa e reacao a compra importada
+// ---------------------------------------------------------------------------------------------
+
+const FACTS = 'src/hooks/useOincFacts.ts'
+const HOME_HOOK = 'src/hooks/useHomeVintem.ts'
+
+test('useOincFacts devolve vazio fora do proprio perfil e em somente leitura (D-07)', () => {
+  const src = code(FACTS)
+  assert.match(src, /buildFacts\(/, 'sem buildFacts')
+  assert.match(src, /\{ surface: 'app' \}/, 'os fatos sao da superficie do app')
+  assert.match(src, /const own = user !== null && user\.person === person && !readOnly/, 'sem o portao do proprio perfil')
+  assert.match(src, /if \(!own \|\| !enabled \|\| [^)]*\) return NO_FACTS/, 'fora do proprio perfil a lista nao e vazia')
+  // A agenda so e lida para quem pode ter fatos, uma vez por carga e por conta.
+  assert.match(src, /const uid = own \? user\.uid : null/)
+  assert.match(src, /if \(uid === null\) return/, 'a agenda e lida fora do proprio perfil')
+  assert.match(src, /let agenda: \{ uid: string; load: Promise<AgendaEvent\[\]> \} \| null = null/, 'agenda sem cache por carga')
+  assert.equal((src.match(/getEventsInRange\(/g) ?? []).length, 1)
+  assert.match(src, /\.catch\(\(\) => \[\]\)/, 'falha da agenda aparece na tela')
+  assert.match(src, /catch \{\s*return NO_FACTS/, 'montagem dos fatos sem try')
+  assert.ok(!/console\.|localStorage|sessionStorage|fetch\(|dangerouslySetInnerHTML/.test(src), 'fatos saem da memoria')
+  // Sem o ciclo anterior, nada de afirmar semana sem gastar com o ciclo recem-aberto.
+  assert.match(src, /youngCycle && fact\.cena === 'semana-sem-gastar'/)
+})
+
+test('nenhum servico envia fatos e o provedor so os guarda em ref', () => {
+  for (const f of listSrc('src/services')) {
+    assert.ok(!/useOincFacts|OincFacts|oincFacts|buildFacts|setFacts|factsRef/.test(code(f)), `${f} toca nos fatos`)
+  }
+  const ctx = code(CONTEXT)
+  assert.match(ctx, /const factsRef = useRef<OincFacts>\(\[\]\)/, 'os fatos precisam ficar em ref')
+  assert.match(ctx, /factsRef\.current = facts/)
+  assert.match(ctx, /if \(!canAsk\) factsRef\.current = \[\]/, 'fatos sobrevivem fora do proprio perfil')
+  assert.ok(!/(askVintem|askGuarded|votar|repor|fetch)\([^)]*factsRef/.test(ctx), 'fatos vao ao servidor')
+  const hook = code(HOME_HOOK)
+  assert.match(hook, /useOincFacts\(\{ view, cycle, transactions, person: viewPerson, enabled \}\)/)
+  assert.match(hook, /setFacts\(oincFacts\)/, 'os fatos nao sao registrados no contexto')
+})
+
+test('a reacao a compra importada acha o lancamento por bankArrival.id e usa reactionFact (D-02, D-09)', () => {
+  const hook = code(HOME_HOOK)
+  const effect = hook.slice(hook.indexOf('const reactedKey'), hook.indexOf('const reduced = useReducedMotion'))
+  assert.match(effect, /transactions\?\.find\(\(t\) => t\.id === bankArrival\.id\)/, 'nao acha o lancamento que chegou')
+  assert.match(effect, /reactionFact\(\{ situation: result\.situation, tx: arrived, categoryDefs/, 'sem reactionFact')
+  assert.match(effect, /fallback: \{ situation: result\.situation, raw, announce: true, \.\.\.scene \}/, 'a cena nao vai a fala')
 })

@@ -3,6 +3,7 @@ import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
 import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
+import { useOincFacts } from '@/hooks/useOincFacts'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { useVintemInsights } from '@/hooks/useVintemInsights'
 import type { CategoryDef, Transaction } from '@/types'
@@ -16,6 +17,7 @@ import {
   situationForTap,
   type MoodFacts,
 } from '@shared/core/vintemMood.js'
+import { reactionFact } from '@shared/core/oincSelect.js'
 
 type Budget = ReturnType<typeof useCycleBudget>
 
@@ -131,7 +133,7 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak, speakAi, slot, cheer } = useVintem()
+  const { tone, speak, speakAi, slot, cheer, setFacts } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson } = useCycle()
   const todayKey = dayKeyOf(now)
@@ -146,6 +148,12 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     categoryDefs,
     enabled: enabled && !readOnly,
   })
+
+  // Assunto das falas (07.1, D-19): fatos da propria pessoa, entregues ao provedor e guardados em memoria.
+  const oincFacts = useOincFacts({ view, cycle, transactions, person: viewPerson, enabled })
+  useEffect(() => {
+    setFacts(oincFacts)
+  }, [setFacts, oincFacts])
 
   // Comemoracao (meta batida ou Porquinho) vale por alguns minutos; so o tipo entra nos fatos, para
   // eles nao mudarem a cada minuto do relogio. O nucleo faz um limite estourado vencer a festa.
@@ -246,12 +254,17 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     if (result.situation === 'lancamento-ok' || result.situation === 'gasto-grande') {
       raw.valorCents = bankArrival.cents
     }
+    // A compra importada (07.1, D-02, D-09): cena, loja e quando saem do lancamento que chegou.
+    const arrived = transactions?.find((t) => t.id === bankArrival.id)
+    const scene = arrived
+      ? reactionFact({ situation: result.situation, tx: arrived, categoryDefs, now: new Date() })
+      : null
     // Fim de sincronizacao com gasto novo: tenta a IA (sem ninguem esperando) e cai na frase do banco.
     void speakAi({
       ai: { situation: 'sync', categoryId: bankArrival.categoryId },
-      fallback: { situation: result.situation, raw, announce: true },
+      fallback: { situation: result.situation, raw, announce: true, ...scene },
     })
-  }, [bankArrival, view, enabled, readOnly, entryKey, slot, speakAi, categoryDefs, insights, todayKey])
+  }, [bankArrival, view, enabled, readOnly, entryKey, slot, speakAi, categoryDefs, insights, todayKey, transactions])
 
   // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
   // do giro ficam em ref e sao limpos ao desmontar.

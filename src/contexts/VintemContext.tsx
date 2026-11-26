@@ -22,6 +22,7 @@ import {
   type AskArgs,
 } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
+import type { OincFacts } from '@/hooks/useOincFacts'
 import { useVintemPeek } from '@/hooks/useVintemPeek'
 import { fetchAcervo, readRejected, repor, votar, type GeneratedLine, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
@@ -166,6 +167,8 @@ export interface VintemContextType {
   onGoal: (args: { valorCents: number }) => void
   /** Comemoracao ativa para o humor de fundo da Home; o nucleo garante que um estouro vence a festa. */
   cheer: Cheer | null
+  /** Guarda os fatos locais da propria pessoa para as falas (D-19): so em memoria, sem novo render. */
+  setFacts: (facts: OincFacts) => void
 }
 
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
@@ -251,6 +254,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   // Falas reprovadas: as deste aparelho (localStorage, lidas na hora do sorteio) valem desde a primeira
   // fala; as que o servidor guardou entram nesta lista quando a consulta volta.
   const serverRejected = useRef<string[]>([])
+  // Fatos do mes da propria pessoa, montados pela Home. Ficam em ref (nenhum novo render) e nunca saem
+  // do aparelho; fora do proprio perfil ou em somente leitura a lista e esvaziada (D-07, D-19).
+  const factsRef = useRef<OincFacts>([])
+  const setFacts = useCallback((facts: OincFacts): void => {
+    factsRef.current = facts
+  }, [])
+  useEffect(() => {
+    if (!canAsk) factsRef.current = []
+  }, [canAsk])
   // Falas geradas que o servidor guardou para a pessoa (reposicao); entram no sorteio com o acervo.
   const generated = useRef<GeneratedLine[]>([])
   useEffect(() => {
@@ -656,8 +668,9 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       onLaunched,
       onGoal,
       cheer,
+      setFacts,
     }),
-    [tone, speech, speak, draw, speakText, speakAi, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer],
+    [tone, speech, speak, draw, speakText, speakAi, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer, setFacts],
   )
 
   return (

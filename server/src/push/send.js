@@ -1,5 +1,8 @@
 // Envio de push pelo FCM por FID (PUSH-04). Sem Cloud Functions: o proprio servidor Express envia.
-// O payload passa por lista fechada (title, body, tag, url): nada de valor, loja ou nome de pessoa (D-05).
+// O payload passa por lista fechada (title, body, tag, url). O corpo chega pronto do notificador e pode
+// citar valor, marca de loja conhecida, nome de conta e titulo de compromisso (07.1, D-27, D-31, D-32);
+// o filtro de CPF, numeros de conta e cartao e nomes de pessoas fica em shared/core/oincPush.js (D-28).
+// Aqui o corpo nunca vai ao log.
 
 const TITLE_MAX = 60
 const BODY_MAX = 240

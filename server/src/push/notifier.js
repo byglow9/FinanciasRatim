@@ -1,7 +1,9 @@
+import { PCT_CAP } from '../../../shared/core/aiSummary.js'
 import { buildBudgetView } from '../../../shared/core/budget.js'
 import { categoryDisplayName } from '../../../shared/core/categories.js'
-import { cycleOf } from '../../../shared/core/cycle.js'
+import { cycleOf, shiftCycle } from '../../../shared/core/cycle.js'
 import { formatReais } from '../../../shared/core/format.js'
+import { storeOf } from '../../../shared/core/oincFacts.js'
 import { composePush } from '../../../shared/core/oincPush.js'
 import { dueEvent, dueStages } from '../../../shared/core/pushDue.js'
 import {
@@ -48,10 +50,44 @@ function pastSpontaneousTarget(id, at, window, tickMinutes) {
   return elapsed >= hashSeed(id) % Math.max(1, length - tickMinutes)
 }
 
-/** Situacao do banco de frases de push de um marcador de limite ou espontaneo. */
-function situationOf(marker) {
-  if (marker.kind === 'limite') return marker.threshold === 100 ? 'push-limite-100' : 'push-limite-80'
-  return 'push-espontanea'
+/** Linhas de limite do ciclo, pela mesma conta do cliente. */
+function limitRows({ settings, cycle, transactions, at }) {
+  return buildBudgetView({
+    now: at,
+    cycle,
+    config: settings.personConfig,
+    transactions,
+    bills: [],
+    payments: [],
+    categoryDefs: settings.categoryDefs,
+    suppressVerdict: false,
+  }).spend.rows
+}
+
+/** A linha ainda esta no limiar do aviso? Mesma regra de thresholdsToFire. */
+function stillReached(row, threshold) {
+  return threshold === 100 ? row.spentCents > row.limitCents : row.spentCents * 100 >= row.limitCents * 80
+}
+
+/**
+ * Texto de um aviso de limite (D-22, D-27): categoria, total gasto e, quando a compra mais recente da
+ * categoria foi numa marca conhecida do banco, a marca (D-32). A descricao so decide a marca. Sem a
+ * linha, ou com ela de volta abaixo do limiar (retido), nenhum numero entra. composePush filtra o nome
+ * da categoria (D-28) e usa o banco de hoje em suave e direto (D-35).
+ * @param {{ marker: Record<string, any>, row?: import('../../../shared/core/budget.js').BudgetRow,
+ *   person: string, tone: string, id: string }} args
+ */
+function limitText({ marker, row, person, tone, id }) {
+  /** @type {Record<string, unknown>} */
+  const slots = { categoria: marker.categoryLabel }
+  if (row && stillReached(row, marker.threshold)) {
+    slots.valor = formatReais(row.spentCents)
+    slots.restante = formatReais(row.remainingCents)
+    slots.pct = `${Math.min(row.pct, PCT_CAP)}%`
+    slots.loja = storeOf(row.txs[0])
+  }
+  const scene = marker.threshold === 100 ? 'push-limite-100' : 'push-limite-80'
+  return composePush({ scene, tone, slots, gender: GENDER[person] ?? null, seed: id })
 }
 
 /**
@@ -82,8 +118,8 @@ function logError(where, err) {
  * push espontaneo. Cada funcao e idempotente por pessoa: calcula os eventos pela mesma conta do
  * cliente e reivindica um marcador por evento com create() do Firestore. Quem perde a corrida nao
  * envia (D-07). O marcador guarda so referencias (ids, categoria, limiar, estagio e chaves de ciclo,
- * de vencimento e de dia), nunca o texto, o valor, o nome ou o titulo: o texto e montado na hora do
- * envio, com os dados relidos. O servidor so le contas e pagamentos.
+ * de vencimento e de dia), nunca o texto, o valor, a loja, o nome ou o titulo: o texto e montado na
+ * hora do envio, com os dados relidos. O servidor so le lancamentos, contas e pagamentos.
  *
  * Status do marcador: enviando, enviado, pendente (retido pelo silencio, D-21), expirado (retido que
  * perdeu a validade), desligado, silencioso, teto, colapsado, sem-aparelho e falhou.
@@ -148,13 +184,39 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
+   * Linhas de limite relidas para os retidos, para o texto sair com os valores do momento da entrega.
+   * Cada aviso usa o ciclo em que nasceu (o atual ou o anterior); fora disso sai sem numero. Sem
+   * conseguir ler os lancamentos, os de limite ficam pendentes e o resto segue.
+   * @returns {Promise<{ live: Array<Record<string, any>>, rows: Map<string, any> }>}
+   */
+  async function readHeldRows(hid, person, markers, settings, at) {
+    const rows = new Map()
+    const limits = markers.filter((m) => m.kind === 'limite')
+    if (limits.length === 0) return { live: markers, rows }
+    try {
+      const current = cycleOf(at, settings.personConfig?.salaryDay)
+      for (const cycle of [current, shiftCycle(current, -1)]) {
+        const own = limits.filter((m) => m.cycleKey === cycle.key)
+        if (own.length === 0) continue
+        const transactions = await repo.readCycleTransactions(hid, person, cycle)
+        const list = limitRows({ settings, cycle, transactions, at })
+        for (const marker of own) rows.set(marker.id, list.find((r) => r.categoryId === marker.categoryId))
+      }
+    } catch (err) {
+      logError('limites retidos', err)
+      return { live: markers.filter((m) => m.kind !== 'limite'), rows }
+    }
+    return { live: markers, rows }
+  }
+
+  /**
    * Envia o aviso de um marcador ja reivindicado (status enviando) e fecha o marcador com o
    * resultado. O texto e montado agora, no tom das configuracoes.
    * Falha transitoria (nenhum enviado e nenhum FID morto): no envio imediato o marcador e apagado
    * para o proximo check tentar de novo; no retido ele volta a pendente. FID morto nao apaga o
    * marcador (o sender ja apaga o registro).
    */
-  async function dispatch({ hid, person, id, marker, tone, stage, excludeFid, held = false, at = now() }) {
+  async function dispatch({ hid, person, id, marker, tone, stage, row, excludeFid, held = false, at = now() }) {
     // Teto diario por pessoa: passou do teto, o marcador vira `teto` e nada sai.
     if (await overDailyCap(hid, person, marker.kind, at)) {
       await repo.updateEvent(id, { status: 'teto' })
@@ -169,9 +231,10 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
       return { sent: 0, status: 'sem-aparelho' }
     }
 
-    const payload = stage
-      ? dueText({ stage, person, tone, id })
-      : buildPushPayload({ situation: situationOf(marker), tone, categoryName: marker.categoryLabel, seed: id })
+    let payload
+    if (stage) payload = dueText({ stage, person, tone, id })
+    else if (marker.kind === 'limite') payload = limitText({ marker, row, person, tone, id })
+    else payload = buildPushPayload({ situation: 'push-espontanea', tone, seed: id })
     let result
     try {
       result = await sender.sendToFids(fids, {
@@ -203,7 +266,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
    * Reivindica o marcador ja com o status da decisao e envia quando for o caso. Desligado nao
    * entrega depois; retido espera o silencio acabar (D-21). Sem texto no marcador.
    */
-  async function claimAndDeliver({ hid, person, id, marker, decision, tone, stage, excludeFid, at }) {
+  async function claimAndDeliver({ hid, person, id, marker, decision, tone, stage, row, excludeFid, at }) {
     if (decision === 'desligado' || decision === 'reter') {
       const status = decision === 'desligado' ? 'desligado' : 'pendente'
       return { claimed: await repo.claimEvent(id, { ...marker, status }), sent: 0 }
@@ -211,7 +274,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     if (decision !== 'enviar' || !(await repo.claimEvent(id, { ...marker, status: 'enviando' }))) {
       return { claimed: false, sent: 0 }
     }
-    const out = await dispatch({ hid, person, id, marker, tone, stage, excludeFid, at })
+    const out = await dispatch({ hid, person, id, marker, tone, stage, row, excludeFid, at })
     return { claimed: true, sent: out.sent }
   }
 
@@ -234,21 +297,12 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     ])
 
     // Mesma conta do cliente: so as linhas de limite interessam.
-    const view = buildBudgetView({
-      now: at,
-      cycle,
-      config: settings.personConfig,
-      transactions,
-      bills: [],
-      payments: [],
-      categoryDefs: settings.categoryDefs,
-      suppressVerdict: false,
-    })
+    const rows = limitRows({ settings, cycle, transactions, at })
     const events = limitEvents({
       hid,
       person,
       cycleKey: cycle.key,
-      rows: view.spend.rows,
+      rows,
       knownAlertIds: new Set([...silentIds, ...eventIds]),
     })
     summary.events = events.length
@@ -287,7 +341,8 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
         now: at,
       })
 
-      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, excludeFid, at })
+      const row = rows.find((r) => r.categoryId === event.categoryId)
+      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, row, excludeFid, at })
       if (out.claimed) summary.claimed++
       summary.sent += out.sent
     }
@@ -407,7 +462,8 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
    * pessoa que ainda esta no silencio fica como esta. Fora dele confere se o tipo continua ligado e,
    * nos avisos fixos, se o estagio ainda existe (senao vira expirado),
    * colapsa 80 e 100 da mesma categoria no mais alto e envia com o texto montado agora, no tom
-   * atual. A transicao pendente para enviando e por transacao: so um executor ganha.
+   * atual e, nos de limite, com os lancamentos relidos. A transicao pendente para enviando e por
+   * transacao: so um executor ganha.
    * @param {{ now?: Date }} [args]
    */
   async function deliverHeld({ now: at = now() } = {}) {
@@ -453,11 +509,14 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
         for (const marker of drop) {
           if (await repo.transitionEvent(marker.id, 'pendente', { status: 'colapsado' })) summary.collapsed++
         }
-        for (const marker of keep) {
+        // Leitura antes da transicao: uma falha aqui nao deixa marcador preso em enviando.
+        const ready = await readHeldRows(hid, person, keep, settings, at)
+        for (const marker of ready.live) {
           const won = await repo.transitionEvent(marker.id, 'pendente', { status: 'enviando', dayKey: eventDayKey(at) })
           if (!won) continue
           const stage = stages.get(marker.id)
-          const out = await dispatch({ hid, person, id: marker.id, marker, tone: settings.tone, stage, held: true, at })
+          const row = ready.rows.get(marker.id)
+          const out = await dispatch({ hid, person, id: marker.id, marker, tone: settings.tone, stage, row, held: true, at })
           summary.sent += out.sent
         }
       } catch (err) {

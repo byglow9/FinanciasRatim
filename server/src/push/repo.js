@@ -23,6 +23,8 @@ const PENDING_LIMIT = 500
 
 /**
  * Lancamento do documento para a forma que o nucleo de orcamento espera (a mesma do cliente).
+ * Descricao, origem e id do banco ficam so em memoria, para decidir se a marca da loja pode
+ * aparecer no aviso de limite (D-28, D-32); nunca sao gravados nem logados.
  * Documento sem data valida e ignorado.
  * @param {string} id
  * @param {Record<string, any>} d
@@ -37,6 +39,9 @@ function mapTransaction(id, d) {
     amount: d.amount,
     category: d.category,
     categoryId: d.categoryId,
+    description: d.description,
+    source: d.source,
+    bankImportId: d.bankImportId,
     transfer: d.transfer,
     person: d.person,
     date,

@@ -526,7 +526,7 @@ Plans:
 **Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
 **Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-35 de 07.1-CONTEXT.md
 **Depends on:** Phase 7
-**Plans:** 5/17 plans executed
+**Plans:** 6/17 plans executed
 
 Plans:
 
@@ -544,7 +544,7 @@ Plans:
 - [x] 07.1-04-PLAN.md — Lote 4: falas novas para completar o volume de todas as cenas
 - [ ] 07.1-05-PLAN.md — Prompt novo por fato, chave de cache v2, IA ao vivo só onde o acervo não cobre e testes do servidor migrados
 - [x] 07.1-07-PLAN.md — App: acervo em todas as situações, cena da compra na reação, voto fora da Home e fatos locais
-- [ ] 07.1-09-PLAN.md — Núcleo do push: estágios D-2, D-1 e D-0, texto na voz do OINC, filtro de nomes e máscara de números
+- [x] 07.1-09-PLAN.md — Núcleo do push: estágios D-2, D-1 e D-0, texto na voz do OINC, filtro de nomes e máscara de números
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

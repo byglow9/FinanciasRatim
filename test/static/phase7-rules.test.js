@@ -17,7 +17,7 @@ const rulesCode = () =>
     .map((l) => l.replace(/\/\/.*$/, ''))
     .join('\n')
 
-const SERVER_COLS = ['pushRegistrations', 'pushPrefs', 'pushEvents', 'aiUsage', 'aiCache']
+const SERVER_COLS = ['pushRegistrations', 'pushPrefs', 'pushEvents', 'aiUsage', 'aiCache', 'oincState']
 
 const CLIENT_COLLECTIONS = [
   'transactions',
@@ -35,7 +35,7 @@ const CLIENT_COLLECTIONS = [
   'cardSettings',
 ]
 
-test('firestore.rules nao menciona nenhuma das cinco colecoes do servidor (negadas por padrao)', () => {
+test('firestore.rules nao menciona nenhuma das seis colecoes do servidor (negadas por padrao)', () => {
   const code = rulesCode()
   for (const col of SERVER_COLS) {
     assert.ok(!code.includes(col), `${col} apareceu em firestore.rules`)

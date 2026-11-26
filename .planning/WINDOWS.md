@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 11
 waived_count: 0
 fixed_count: 0
-total_count: 9
-last_updated: 2026-11-25T01:39:22.357Z
+total_count: 11
+last_updated: 2026-11-26T19:03:21.628Z
 ---
 
 # Broken Windows Ledger
@@ -24,6 +24,8 @@ last_updated: 2026-11-25T01:39:22.357Z
 | 7 | 06 | unrun-verify | server/test/emu/card-history.test.js |  | 06-19: npm run test:emu e test:rules nao rodaram (sem JDK 11 e firebase-tools); nao publicar nem rodar card-history.js em producao antes | open |  | 2026-11-25T01:39:17.411Z |  |
 | 8 | 06 | unmet-truth | server/scripts/card-history.js |  | 06-19: nao existe restauracao da copia em producao (importAll so no emulador); decidir antes de aplicar o historico | open |  | 2026-11-25T01:39:19.945Z |  |
 | 9 | 06 | unmet-truth | server/src/card-sync.js |  | 06-19: compras ja importadas ou retidas pelo 06-06 nao sao adotadas nem recriadas pela aplicacao; o ensaio so conta | open |  | 2026-11-25T01:39:22.357Z |  |
+| 10 | 07.1 | unrun-verify | src/components/ui/toast.tsx |  | 07.1-07: voto no toast fora da Home sem conferencia visual (claro, escuro, reduzir movimento); extensao do Chrome desconectada | open |  | 2026-11-26T19:03:21.432Z |  |
+| 11 | 07.1 | unmet-truth | src/contexts/VintemContext.tsx |  | 07.1-07: falas com reescrita ficam fora do app ate o voto; o plano 07.1-14 precisa tirar a marca das aprovadas, senao nunca vao ao ar | open |  | 2026-11-26T19:03:21.628Z |  |
 
 ````json
 [
@@ -141,6 +143,32 @@ last_updated: 2026-11-25T01:39:22.357Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-11-25T01:39:22.357Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 10,
+    "kind": "unrun-verify",
+    "phase": "07.1",
+    "file": "src/components/ui/toast.tsx",
+    "line": null,
+    "description": "07.1-07: voto no toast fora da Home sem conferencia visual (claro, escuro, reduzir movimento); extensao do Chrome desconectada",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-26T19:03:21.432Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 11,
+    "kind": "unmet-truth",
+    "phase": "07.1",
+    "file": "src/contexts/VintemContext.tsx",
+    "line": null,
+    "description": "07.1-07: falas com reescrita ficam fora do app ate o voto; o plano 07.1-14 precisa tirar a marca das aprovadas, senao nunca vao ao ar",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-26T19:03:21.628Z",
     "resolved_at": null,
     "milestone": null
   }

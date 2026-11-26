@@ -94,8 +94,10 @@ export function readAiConfig(env = process.env, log = console) {
     providers.push(spec)
   }
 
-  const peekMin = intOf(e.VINTEM_PEEK_MIN_MS, 360_000)
-  const peekMax = Math.max(intOf(e.VINTEM_PEEK_MAX_MS, 900_000), peekMin)
+  // Ritmo da fala espontanea (07.1, D-17 e D-18): primeira em cerca de 1 min, depois a cada 3.
+  const peekFirst = intOf(e.VINTEM_PEEK_FIRST_MS, 60_000)
+  const peekMin = intOf(e.VINTEM_PEEK_MIN_MS, 150_000)
+  const peekMax = Math.max(intOf(e.VINTEM_PEEK_MAX_MS, 210_000), peekMin)
 
   return {
     providers,
@@ -112,8 +114,9 @@ export function readAiConfig(env = process.env, log = console) {
     },
     // Palavrao so quando couber (07.1, D-04): exigir e escolha de quem configura o servidor.
     requireProfanity: boolOf(e.AI_REQUIRE_PROFANITY, false),
-    openPerDay: intOf(e.AI_OPEN_PER_DAY, 3, { min: 0 }),
-    peekPerDay: intOf(e.AI_PEEK_PER_DAY, 6, { min: 0 }),
+    openPerDay: intOf(e.AI_OPEN_PER_DAY, 200, { min: 0 }),
+    peekPerDay: intOf(e.AI_PEEK_PER_DAY, 200, { min: 0 }),
+    peekFirstMs: peekFirst,
     peekMinMs: peekMin,
     peekMaxMs: peekMax,
     burstPerMin: intOf(e.AI_BURST_PER_MIN, 20),

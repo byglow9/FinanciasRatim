@@ -70,17 +70,22 @@ function pctOf(text) {
  */
 const topicOf = (fact) => `${fact.cena}-${labelHash(fact.key)}`
 
+/** Cena de um assunto gravado por topicOf, ou null. */
+const sceneOfTopic = (/** @type {unknown} */ topic) => /^(.+)-[0-9a-f]{8}$/.exec(String(topic ?? ''))?.[1] ?? null
+
 /**
  * Fato da fala sem gatilho (abertura e espiar): o de maior prioridade cujo assunto ainda nao saiu no
- * dia, ou null. No sem filtro so valem os fatos de IA (anotacao, compromisso com local ou detalhe e
- * padrao guardado, D-10): o resto o acervo ja cobre. Em suave e direto vale qualquer origem (D-35),
- * menos a cena propria da voz nova e o "sempre presente" sem nenhum dado para comentar.
+ * dia; quando todos ja sairam, o de assunto menos recente. `used` vem em ordem de uso, e a cena da
+ * fala anterior (o ultimo da lista) nunca se repete: sem outra cena, devolve null (D-35). No sem
+ * filtro so valem os fatos de IA (anotacao, compromisso com local ou detalhe e padrao guardado,
+ * D-10): o resto o acervo ja cobre. Em suave e direto vale qualquer origem (D-35), menos a cena
+ * propria da voz nova e o "sempre presente" sem nenhum dado para comentar.
  * @param {ReadonlyArray<any>} facts
  * @param {{ tone?: string, used?: ReadonlyArray<string> | null }} [opts]
  * @returns {any | null}
  */
 export function pickSpontaneousFact(facts, { tone, used } = {}) {
-  const done = new Set(Array.isArray(used) ? used : [])
+  const done = Array.isArray(used) ? used : []
   const wild = tone === 'sem-filtro'
   const pool = (Array.isArray(facts) ? facts : []).filter((f) => {
     if (wild) return f.via === 'ia'
@@ -89,7 +94,13 @@ export function pickSpontaneousFact(facts, { tone, used } = {}) {
   })
   // Ordenacao estavel: empate mantem a ordem do seletor.
   const ranked = [...pool].sort((a, b) => (b.prioridade ?? 0) - (a.prioridade ?? 0))
-  return ranked.find((f) => !done.has(topicOf(f))) ?? null
+  const last = done.at(-1)
+  const lastScene = sceneOfTopic(last)
+  const open = ranked.filter((f) => f.cena !== lastScene && topicOf(f) !== last)
+  const fresh = open.find((f) => !done.includes(topicOf(f)))
+  if (fresh) return fresh
+  // Tudo ja saiu hoje: recomeca pela posicao mais antiga na ordem de uso.
+  return open.sort((a, b) => done.indexOf(topicOf(a)) - done.indexOf(topicOf(b)))[0] ?? null
 }
 
 /**
@@ -114,8 +125,8 @@ function limitFact(facts, categoryId) {
  * Ordem: cache (revalidado contra o fato atual) -> teto da pessoa -> cadeia -> guarda no cache.
  * Acerto de cache nao consome teto; sem teto e sem cache valido a resposta e text null.
  * Fala espontanea (abertura e espiar, D-12): antes de tudo confere o teto do tipo no dia, escolhe um
- * fato cujo assunto ainda nao saiu e so conta (teto e assunto) quando ha texto para mostrar. Sem fato,
- * a resposta e text null antes de qualquer provedor.
+ * fato pelo rodizio de pickSpontaneousFact e so conta (teto e assunto) quando ha texto para mostrar.
+ * Sem fato, a resposta e text null antes de qualquer provedor.
  * `bank` (padrao OINC_LINES) e o acervo de onde saem os exemplos do sem filtro.
  * `config.live` falso desliga a fala (D-15): nada e lido nem chamado. `config.tokensFactor` multiplica
  * o limite de tokens. Ausentes, valem verdadeiro e 1.
@@ -252,8 +263,8 @@ export function createSpeech({
     })
 
     /**
-     * A fala espontanea so conta quando ha texto para mostrar. Se a transacao negar (teto ou assunto
-     * tomados por um pedido simultaneo) ou ninguem mais esperar, nada sai e nada e consumido.
+     * A fala espontanea so conta quando ha texto para mostrar. Se a transacao negar (teto tomado por
+     * um pedido simultaneo) ou ninguem mais esperar, nada sai e nada e consumido.
      * @param {{ text: string | null, source?: 'cache' | 'ia' }} out
      * @returns {Promise<{ text: string | null, source?: 'cache' | 'ia' }>}
      */

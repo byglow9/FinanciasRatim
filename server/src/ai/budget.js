@@ -4,7 +4,7 @@ import { SPONTANEOUS, dailyCapOf } from './topics.js'
 // Teto diario da fala por IA (D-03, IA-01) e freio diario por provedor (D-02), persistidos no
 // Firestore e incrementados por transacao: sobrevivem a reinicio e duas chamadas simultaneas no
 // ultimo lugar do teto deixam passar so uma. O documento do dia da pessoa guarda tambem quantas
-// aberturas e espiadas ja sairam e os assuntos usados (D-12). Nenhum documento daqui guarda resumo,
+// aberturas e espiadas ja sairam e os assuntos usados, em ordem de uso (D-12). Nenhum documento daqui guarda resumo,
 // descricao, prompt, texto ou chave: so ids, o dia, contagens e nomes de assunto de lista fechada.
 
 const USAGE = 'aiUsage'
@@ -115,9 +115,9 @@ export function createBudget({ db, config, now = () => new Date(), log = console
   }
 
   /**
-   * Conta uma fala espontanea servida e marca o assunto como usado, por transacao. Nega (sem gravar)
-   * se o teto do tipo ja foi atingido ou se o assunto ja saiu hoje: de dois pedidos simultaneos pelo
-   * mesmo assunto, so um e mostrado.
+   * Conta uma fala espontanea servida e marca o assunto como o mais recente, por transacao. Nega (sem
+   * gravar) so quando o teto do tipo ja foi atingido: assunto repetido conta de novo (07.1, D-18). A
+   * lista guarda cada assunto uma vez, na ordem do ultimo uso, e e dela que o speech.js tira o rodizio.
    * @param {{ hid: string, person: string, kind: string, topic: string }} args
    * @returns {Promise<{ ok: boolean }>}
    */
@@ -133,8 +133,8 @@ export function createBudget({ db, config, now = () => new Date(), log = console
         const data = (snap.exists ? snap.data() : null) ?? {}
         const used = countOf(data[kind])
         const topics = topicsOf(data.assuntos)
-        if (used >= cap || topics.includes(topic)) return { ok: false }
-        const patch = { [kind]: used + 1, assuntos: [...topics, topic], updatedAt: now() }
+        if (used >= cap) return { ok: false }
+        const patch = { [kind]: used + 1, assuntos: [...topics.filter((t) => t !== topic), topic], updatedAt: now() }
         if (snap.exists) tx.update(ref, patch)
         else tx.set(ref, { ownerId: hid, person, dayKey, calls: 0, ...patch })
         return { ok: true }

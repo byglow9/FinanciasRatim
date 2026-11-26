@@ -8,6 +8,7 @@ import {
   reactionLabels,
   TOPICS,
   SUMMARY_LIMITS,
+  PCT_CAP,
 } from './aiSummary.js'
 import { findLeaks } from './aiPrivacy.js'
 import { validateSpeech, extractNumbers } from './aiValidate.js'
@@ -363,9 +364,10 @@ test('completo: numeros nunca passam de 3 algarismos nem viram inteiro cru de 4'
   const text = summaryToPromptText(s)
   assert.equal(s.lojas[0].noCiclo, 999)
   assert.equal(s.lojas[0].naSemana, 999)
-  assert.equal(s.limites[0].uso, '999%')
-  assert.equal(s.comparacao[0].variacao, '+999%')
-  assert.equal(s.metas[0].progresso, '999%')
+  // porcentagem so e limitada em PCT_CAP (99999); contagens seguem em 999
+  assert.equal(s.limites[0].uso, '99999%')
+  assert.equal(s.comparacao[0].variacao, '+99999%')
+  assert.equal(s.metas[0].progresso, '99999%')
   assert.equal(s.padroes[0].vezes, 999)
   assert.deepEqual(findLeaks(text), [], text)
   const semValores = text.replace(/R\$\s*[\d.]+(?:,\d{1,2})?/g, ' ').replace(/\d+%/g, ' ')
@@ -559,4 +561,17 @@ test('D-24: agenda, anotacoes e ultimos dias entram sem nome de pessoa nem segre
   assert.ok(s.anotacoes.length >= 1 && s.anotacoes.length <= 2)
   assert.equal(s.ultimosDias[0].quando, 'ontem')
   assert.equal(s.assuntos[0], 'agenda')
+})
+
+test('porcentagem real: uso de R$ 2.661,84 sobre R$ 200 aparece como 1330% e o teto e PCT_CAP', () => {
+  assert.equal(PCT_CAP, 99999)
+  const s = buildAiSummary({
+    now: NOW,
+    person: 'ele',
+    config: { expectedIncomeCents: 500_000, limits: { alimentacao: [{ from: '2026-11', cents: 20_000 }] } },
+    categoryDefs: DEFS,
+    transactions: [tx(5, 2661.84, 'iFood Restaurante Ltda', { id: 'p1' })],
+  })
+  assert.equal(s.limites[0].uso, '1330%')
+  assert.deepEqual(findLeaks(summaryToPromptText(s)), [])
 })

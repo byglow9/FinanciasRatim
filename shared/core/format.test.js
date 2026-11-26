@@ -14,6 +14,7 @@ import {
   parseBRL,
   shortSigned,
   compactMoney,
+  formatReais,
   MONTH_SHORT,
   MONTH_LONG,
 } from './format.js'
@@ -232,4 +233,13 @@ test('compactMoney: reais inteiros truncados, NBSP depois do R$', () => {
   assert.equal(compactMoney(99), `R$${NBSP}0`)
   assert.equal(compactMoney(-50), `R$${NBSP}0`)
   assert.equal(compactMoney(Number.NaN), `R$${NBSP}0`)
+})
+
+test('formatReais: reais inteiros sem ,00 e centavos so quando existem', () => {
+  assert.equal(formatReais(4800), `R$${NBSP}48`)
+  assert.equal(formatReais(145000), `R$${NBSP}1.450`)
+  assert.equal(formatReais(350), `R$${NBSP}3,50`)
+  assert.equal(formatReais(0), `R$${NBSP}0`)
+  assert.equal(formatReais(266184), `R$${NBSP}2.661,84`)
+  assert.equal(formatReais(Number.NaN), `R$${NBSP}0`)
 })

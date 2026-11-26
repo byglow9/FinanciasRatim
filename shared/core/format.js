@@ -64,6 +64,17 @@ export function formatMoney(cents, opts = {}) {
 }
 
 /**
+ * Reais para o texto das falas do OINC: inteiros sem ',00' e com centavos so
+ * quando existirem ('R$ 48', 'R$ 1.450', 'R$ 3,50'). Mesmo texto de formatMoney
+ * no modo auto, nomeado para o seletor de fatos nao depender do modo.
+ * @param {number} cents
+ * @returns {string}
+ */
+export function formatReais(cents) {
+  return formatMoney(cents, { decimals: 'auto' })
+}
+
+/**
  * Partes do valor para o numero grande do hero: o inteiro fica grande e os
  * centavos pequenos. Os centavos vem sempre, com a virgula.
  * @param {number} cents

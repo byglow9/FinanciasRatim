@@ -6,7 +6,7 @@
 // Regras do que sai (o findLeaks de aiPrivacy e a defesa final sobre o texto serializado):
 //   - todo texto livre (loja, categoria, meta, conta fixa, cartao) passa por aiPrivacy;
 //   - nunca ano, chave AAAA-MM nem data completa: o mes vai pelo nome e o ciclo pelo dia do ciclo;
-//   - dinheiro sai de formatMoney, porcentagem como "73%" e contagem como inteiro pequeno (ate 999),
+//   - dinheiro sai de formatMoney, porcentagem como "73%" (ate 99999%) e contagem como inteiro pequeno (ate 999),
 //     porque findLeaks bloqueia 4 ou mais algarismos seguidos fora de valor em reais e porcentagem;
 //   - porcentagem sempre como texto com %: a leitura de numeros do validador (extractNumbers) poe
 //     cada numero do resumo no mesmo balde (reais, porcentagem, inteiro) em que a fala vai cita-lo.
@@ -41,8 +41,11 @@ export const SUMMARY_LIMITS = Object.freeze({
   ultimosDias: 10,
 })
 
-/** Nenhum inteiro ou porcentagem do resumo passa disto (3 algarismos). */
+/** Nenhuma contagem do resumo passa disto (3 algarismos). */
 const NUM_CAP = 999
+
+/** Teto da porcentagem do resumo: acima de 999 a fala precisa do valor real (07.1, D-19). */
+export const PCT_CAP = 99999
 
 /** Rotulo quando a categoria nao tem nome aproveitavel. */
 const NO_CATEGORY = 'sem categoria'
@@ -75,12 +78,12 @@ function smallInt(n) {
 }
 
 /**
- * Porcentagem como texto, de 0% a 999%.
+ * Porcentagem como texto, de 0% a PCT_CAP (99999%).
  * @param {unknown} n
  * @returns {string}
  */
 function pctText(n) {
-  return `${smallInt(n)}%`
+  return `${Math.min(Math.max(Math.trunc(finite(n)), 0), PCT_CAP)}%`
 }
 
 /**
@@ -477,12 +480,12 @@ function buildComparison({ cycle, now, tz, txs, prevTxs, defs }) {
 }
 
 /**
- * Porcentagem com sinal como texto, de -999% a +999%.
+ * Porcentagem com sinal como texto, de -99999% a +99999%.
  * @param {number} n
  * @returns {string}
  */
 function signedPct(n) {
-  const v = Math.max(-NUM_CAP, Math.min(NUM_CAP, Math.trunc(finite(n))))
+  const v = Math.max(-PCT_CAP, Math.min(PCT_CAP, Math.trunc(finite(n))))
   return `${v > 0 ? '+' : v < 0 ? '-' : ''}${Math.abs(v)}%`
 }
 

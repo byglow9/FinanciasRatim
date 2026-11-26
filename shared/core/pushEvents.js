@@ -6,6 +6,10 @@
 
 import { alertId, thresholdsToFire } from './alerts.js'
 import { dayKeyOf } from './dayKey.js'
+import { inWindow, parseWindow } from './pushPrefs.js'
+import { zonedParts } from './time.js'
+import { hashSeed } from './vintemPhrasesPush.js'
+import { mulberry32 } from './vintemSpring.js'
 
 /**
  * @typedef {{
@@ -71,19 +75,52 @@ export function eventDayKey(now) {
 }
 
 /**
- * Evento do push espontaneo: um id por pessoa e por dia de Sao Paulo, o que
- * impoe no maximo um por dia (D-12).
- * @param {{ hid: string, person: string, now: Date }} input
+ * Evento do aviso aleatorio: um id e uma tag por vaga do dia de Sao Paulo, o que impoe no maximo um
+ * por vaga (D-20). A tag por vaga impede que um aviso apague o outro no aparelho.
+ * @param {{ hid: string, person: string, now: Date, slot: number }} input `slot` comeca em 1
  * @returns {SpontaneousEvent}
  */
-export function spontaneousEvent({ hid, person, now }) {
+export function spontaneousEvent({ hid, person, now, slot }) {
   return {
     kind: 'espontanea',
-    id: docId(`${hid}__${person}__espontanea__${eventDayKey(now)}`),
+    id: docId(`${hid}__${person}__espontanea__${eventDayKey(now)}__${slot}`),
     person,
-    tag: 'espontanea',
+    tag: `espontanea-${slot}`,
     url: '/',
   }
+}
+
+const DAY_MINUTES = 24 * 60
+
+/** @param {string} hhmm */
+const minutesOf = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
+
+/**
+ * Vaga do aviso aleatorio no instante. A janela e dividida em `total` faixas e cada faixa tem um
+ * minuto sorteado pelo id do evento (muda por pessoa, por dia e por vaga), deixando um intervalo do
+ * relogio livre antes do fim da faixa, para sempre haver uma rodada depois dele. So a faixa atual
+ * conta: vaga perdida e perdida, um reinicio nunca solta as anteriores. `due` diz se o minuto
+ * sorteado ja passou. Fora da janela ou com total zero devolve null.
+ * @param {{ now: Date, window: { from: string, to: string }, total: number, tickMinutes: number,
+ *   hid: string, person: string }} input
+ * @returns {{ slot: number, due: boolean } | null}
+ */
+export function spontaneousSlot({ now, window, total, tickMinutes, hid, person }) {
+  if (!Number.isInteger(total) || total < 1 || !inWindow(now, window)) return null
+  const { from, to } = parseWindow(`${window?.from}-${window?.to}`)
+  const length = (minutesOf(to) - minutesOf(from) + DAY_MINUTES) % DAY_MINUTES
+  const { hour, minute } = zonedParts(now)
+  const elapsed = (hour * 60 + minute - minutesOf(from) + DAY_MINUTES) % DAY_MINUTES
+
+  /** @param {number} i */
+  const startOf = (i) => Math.floor((i * length) / total)
+  const index = Math.floor(((elapsed + 1) * total - 1) / length)
+  const start = startOf(index)
+  const span = Math.max(1, startOf(index + 1) - start - tickMinutes)
+  const { id } = spontaneousEvent({ hid, person, now, slot: index + 1 })
+  // mulberry32 sobre o hash: ids que so mudam no ultimo caractere nao ficam com horarios parecidos.
+  const target = start + Math.floor(mulberry32(hashSeed(id))() * span)
+  return { slot: index + 1, due: elapsed >= target }
 }
 
 /**

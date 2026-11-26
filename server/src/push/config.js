@@ -4,7 +4,7 @@ import { parseWindow } from '../../../shared/core/pushPrefs.js'
 
 const DEFAULT_MAX_PER_DAY = 20
 const DEFAULT_DUE_HOUR = 9
-const DEFAULT_SPONT_PER_DAY = 1
+const DEFAULT_SPONT_PER_DAY = 3
 const DEFAULT_TICK_MINUTES = 15
 const DEFAULT_BILL_CHECK_MINUTES = 60
 const DEFAULT_PRUNE_DAYS = 30
@@ -29,15 +29,16 @@ export function readMaxPerDay(env = {}) {
 
 /**
  * Todos os parametros do push, ja com os padroes.
- * PUSH_SPONT_PER_DAY e 0 ou 1; PUSH_TICK_MINUTES igual a 0 desliga o relogio. PUSH_DUE_HOUR e a
- * hora de Sao Paulo (0 a 23) a partir da qual saem os avisos de conta, fatura e compromisso.
+ * PUSH_SPONT_PER_DAY vai de 0 a 6 (padrao 3): quantas vagas de aviso aleatorio a janela tem (D-20);
+ * PUSH_TICK_MINUTES igual a 0 desliga o relogio. PUSH_DUE_HOUR e a hora de Sao Paulo (0 a 23) a
+ * partir da qual saem os avisos de conta, fatura e compromisso.
  * @param {Record<string, string | undefined>} [env]
  */
 export function readPushConfig(env = {}) {
   return {
     maxPerDay: readMaxPerDay(env),
     dueHour: intIn(env.PUSH_DUE_HOUR, 0, 23, DEFAULT_DUE_HOUR),
-    spontPerDay: intIn(env.PUSH_SPONT_PER_DAY, 0, 1, DEFAULT_SPONT_PER_DAY),
+    spontPerDay: intIn(env.PUSH_SPONT_PER_DAY, 0, 6, DEFAULT_SPONT_PER_DAY),
     spontWindow: parseWindow(env.PUSH_SPONT_WINDOW),
     tickMinutes: intIn(env.PUSH_TICK_MINUTES, 0, 1440, DEFAULT_TICK_MINUTES),
     billCheckMinutes: intIn(env.PUSH_BILL_CHECK_MINUTES, 1, 1440, DEFAULT_BILL_CHECK_MINUTES),

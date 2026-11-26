@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 07
 current_phase_name: Push e Vintém com IA
 status: executing
-stopped_at: Completed 07.1-10-PLAN.md
-last_updated: "2026-11-26T19:17:47.777Z"
+stopped_at: Completed 07.1-08-PLAN.md
+last_updated: "2026-11-26T19:18:33.959Z"
 last_activity: 2026-11-25
 last_activity_desc: Phase 06 execution started
-state_head: bf4392b5026bb3796104c9370f9f5ca88c46286c
+state_head: acb3b76c13bc69c8faed76686b1f7fedf181ace1
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 165
-  completed_plans: 154
+  completed_plans: 155
   percent: 20
 ---
 
@@ -159,6 +159,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P05 | nao medida (pausa por limite de uso) | 2 tasks | 13 files |
 | Phase 07.1 P06 | 8min | 2 tasks | 9 files |
 | Phase 07.1 P10 | 8 min | 2 tasks | 11 files |
+| Phase 07.1 P08 | 8 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -253,6 +254,8 @@ Recent decisions affecting current work:
 - [Phase 07.1]: 07.1-06: conferir no Railway AI_PEEK_PER_DAY, AI_OPEN_PER_DAY e VINTEM_PEEK_*, que anulam o ritmo novo
 - [Phase 07.1]: 07.1-10: sem ler contas e pagamentos o aviso retido fica pendente, nunca expira; a fatura segue mesmo se loadDue falhar
 - [Phase 07.1]: 07.1-10: nao publicar o servidor antes do 07.1-14, porque a fatura ja usa evaluateDue com falas ainda sem voto
+- [Phase 07.1]: 07.1-08: no sem filtro a terceira fala sem gatilho e da IA; as outras e as reacoes saem do acervo
+- [Phase 07.1]: 07.1-08: troca de aba curta reinicia o intervalo da fala; rever se o dono ouvir pouco no uso real
 
 ### Pending Todos
 
@@ -286,8 +289,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-26T19:17:47.608Z
-Stopped at: Completed 07.1-10-PLAN.md
+Last session: 2026-11-26T19:18:33.788Z
+Stopped at: Completed 07.1-08-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

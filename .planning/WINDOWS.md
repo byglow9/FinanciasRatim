@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 11
+open_count: 12
 waived_count: 0
 fixed_count: 0
-total_count: 11
-last_updated: 2026-11-26T19:03:21.628Z
+total_count: 12
+last_updated: 2026-11-26T19:17:45.978Z
 ---
 
 # Broken Windows Ledger
@@ -26,6 +26,7 @@ last_updated: 2026-11-26T19:03:21.628Z
 | 9 | 06 | unmet-truth | server/src/card-sync.js |  | 06-19: compras ja importadas ou retidas pelo 06-06 nao sao adotadas nem recriadas pela aplicacao; o ensaio so conta | open |  | 2026-11-25T01:39:22.357Z |  |
 | 10 | 07.1 | unrun-verify | src/components/ui/toast.tsx |  | 07.1-07: voto no toast fora da Home sem conferencia visual (claro, escuro, reduzir movimento); extensao do Chrome desconectada | open |  | 2026-11-26T19:03:21.432Z |  |
 | 11 | 07.1 | unmet-truth | src/contexts/VintemContext.tsx |  | 07.1-07: falas com reescrita ficam fora do app ate o voto; o plano 07.1-14 precisa tirar a marca das aprovadas, senao nunca vao ao ar | open |  | 2026-11-26T19:03:21.628Z |  |
+| 12 | 07.1 | unrun-verify | src/contexts/VintemContext.tsx |  | 07.1-08: ritmo das falas (entrada, 1 min, 3 min, volta de 5 min) nao conferido em navegador; so testes com relogio e React falsos | open |  | 2026-11-26T19:17:45.978Z |  |
 
 ````json
 [
@@ -169,6 +170,19 @@ last_updated: 2026-11-26T19:03:21.628Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-11-26T19:03:21.628Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 12,
+    "kind": "unrun-verify",
+    "phase": "07.1",
+    "file": "src/contexts/VintemContext.tsx",
+    "line": null,
+    "description": "07.1-08: ritmo das falas (entrada, 1 min, 3 min, volta de 5 min) nao conferido em navegador; so testes com relogio e React falsos",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-11-26T19:17:45.978Z",
     "resolved_at": null,
     "milestone": null
   }

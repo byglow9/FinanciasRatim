@@ -225,14 +225,14 @@ export function examplesFor({ cena, person, slots, liked, seed = 0, tone = 'sem-
   for (const text of rotate(approved, seed).slice(0, LIKED_MAX)) push(text)
 
   const lines = Array.isArray(source[cena]) ? source[cena] : []
-  const have2 = new Set(conds ?? [])
+  const holds = new Set(conds ?? [])
   const fits = lines.filter((line) => {
     if (!line || typeof line.t !== 'string' || !EXAMPLE_LOTS.includes(line.lote)) return false
     if (line.g === 'm' || line.g === 'f') {
       if (line.g !== gender) return false
     } else if (line.g !== 'x') return false
     const need = Array.isArray(line.se) ? line.se : typeof line.se === 'string' ? [line.se] : []
-    return need.every((c) => have2.has(c))
+    return need.every((/** @type {string} */ c) => holds.has(c))
   })
   for (const line of rotate(fits, seed)) {
     if (out.length >= EXAMPLES_MAX) break

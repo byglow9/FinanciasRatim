@@ -359,3 +359,57 @@ describe('cadeia de provedores', () => {
     }
   })
 })
+
+describe('reasoning_effort, fator de tokens e chaves de desligar', () => {
+  const quiet = { log() {}, warn() {} }
+
+  const bodyFor = async (envExtra) => {
+    const s = setup(envExtra)
+    s.script.cloudflare = [{ status: 500 }]
+    s.script.groq = [TEXT]
+    await s.run()
+    return Object.fromEntries(s.calls.map((c) => [c.id, c.body]))
+  }
+
+  test('sem variavel o corpo da chamada e igual ao de hoje', async () => {
+    const bodies = await bodyFor({})
+    for (const body of Object.values(bodies)) {
+      assert.deepEqual(Object.keys(body), ['model', 'messages', 'temperature', 'max_tokens'])
+    }
+    assert.ok(readAiConfig(ENV, quiet).providers.every((p) => !('reasoningEffort' in p)))
+  })
+
+  test('cada provedor leva o reasoning_effort da propria variavel', async () => {
+    const onlyGroq = await bodyFor({ AI_GROQ_REASONING_EFFORT: 'low' })
+    assert.equal(onlyGroq.groq.reasoning_effort, 'low')
+    assert.ok(!('reasoning_effort' in onlyGroq.cloudflare))
+    const both = await bodyFor({ AI_GROQ_REASONING_EFFORT: 'high', AI_CF_REASONING_EFFORT: 'none' })
+    assert.deepEqual([both.groq.reasoning_effort, both.cloudflare.reasoning_effort], ['high', 'none'])
+    for (const effort of ['none', 'low', 'medium', 'high', 'xhigh']) {
+      assert.equal((await bodyFor({ AI_GROQ_REASONING_EFFORT: effort })).groq.reasoning_effort, effort, effort)
+    }
+  })
+
+  test('valor fora da lista e ignorado', async () => {
+    for (const bad of ['', 'maximo', 'minimal', 'low,high', '{"a":1}', '1']) {
+      const bodies = await bodyFor({ AI_GROQ_REASONING_EFFORT: bad, AI_CF_REASONING_EFFORT: bad })
+      for (const body of Object.values(bodies)) assert.ok(!('reasoning_effort' in body), bad)
+    }
+  })
+
+  test('fator de tokens entre 1 e 8; fora disso volta a 1', () => {
+    const factorOf = (raw) => readAiConfig({ AI_MAX_TOKENS_FACTOR: raw }, quiet).tokensFactor
+    assert.equal(readAiConfig({}, quiet).tokensFactor, 1)
+    assert.deepEqual(['1', '4', '8'].map(factorOf), [1, 4, 8])
+    assert.deepEqual(['0', '9', '-2', '2.5', 'abc', ''].map(factorOf), [1, 1, 1, 1, 1, 1])
+  })
+
+  test('AI_LIVE e AI_REFILL ligados por padrao e desligaveis', () => {
+    const off = readAiConfig({ AI_LIVE: 'false', AI_REFILL: '0' }, quiet)
+    assert.deepEqual([off.live, off.refill], [false, false])
+    for (const env of [{}, { AI_LIVE: 'talvez', AI_REFILL: '' }, { AI_LIVE: 'true', AI_REFILL: 'sim' }]) {
+      const c = readAiConfig(env, quiet)
+      assert.deepEqual([c.live, c.refill], [true, true], JSON.stringify(env))
+    }
+  })
+})

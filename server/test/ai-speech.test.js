@@ -425,6 +425,48 @@ describe('ai fala', () => {
     await stop()
   })
 
+  test('AI_MAX_TOKENS_FACTOR multiplica o limite de tokens do pedido', async () => {
+    await start()
+    await post('tok-a-ele', { situation: 'lancamento' })
+    const plain = fetchFn.requests[0].body.max_tokens
+    await stop()
+    await start({ ...AI_ENV, AI_MAX_TOKENS_FACTOR: '4' })
+    await post('tok-a-ele', { situation: 'lancamento' })
+    assert.equal(fetchFn.requests[0].body.max_tokens, plain * 4)
+    await stop()
+  })
+
+  test('AI_LIVE=false: text null sem ler dados, sem teto e sem provedor (D-15)', async () => {
+    await start({ ...AI_ENV, AI_LIVE: 'false' }, { spontaneous: true })
+    snapshot.extra = AI_SOURCES
+    for (const situation of ['lancamento', 'limite', 'sync', 'abertura', 'espiar']) {
+      const res = await post('tok-a-ele', { situation })
+      assert.equal(res.status, 200, situation)
+      assert.deepEqual(await res.json(), { text: null }, situation)
+    }
+    assert.equal(snapshot.calls.length, 0)
+    assert.equal(fetchFn.requests.length, 0)
+    assert.deepEqual(Object.keys(usage.all('aiUsage') ?? {}), [])
+    await stop()
+  })
+
+  test('config montada a mao, sem live nem tokensFactor, gera como antes', async () => {
+    const sent = []
+    const speech = createSpeech({
+      snapshot: fakeSnapshot(),
+      providers: {
+        complete: async (args) => {
+          sent.push(args)
+          return { ok: true, text: GOOD }
+        },
+      },
+      config: { requireProfanity: false, totalBudgetMs: 6000 },
+      bank: {},
+    })
+    assert.deepEqual(await speech.generate({ hid: 'casalA', person: 'ele', situation: 'lancamento' }), { text: GOOD, source: 'ia' })
+    assert.equal(sent[0].maxTokens, 120)
+  })
+
   test('limite fala da categoria pedida e categoria sem aviso nao vira fala de outra', async () => {
     queue = [NEUTRAL]
     await start()

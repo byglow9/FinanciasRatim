@@ -13,23 +13,57 @@ const TRANSACTION_ID_RE = /^[A-Za-z0-9_-]{1,64}$/
  * servidor revalida contra o casal e a pessoa do token (IDOR, T-07-32). Qualquer outro campo do
  * corpo e ignorado. Dono e pessoa vem so de req.owner (D-14). Falha de geracao nunca vira 5xx:
  * responde { text: null } e o app usa o banco de frases (IA-04).
+ * GET /acervo devolve as falas reprovadas e as geradas da pessoa; POST /voto grava gostei ou nao gostei
+ * (07.1, D-12). O voto le do corpo so `id` e `voto`: o texto vem do acervo ou do estado no servidor.
+ * Sem `state` o acervo vem vazio e o voto responde { ok: false }.
  * GET /hints devolve so numeros da configuracao do servidor: frequencias da fala espontanea e o prazo
  * que o app espera nas reacoes (D-12).
  * @param {{
  *   speech: { generate: (args: any) => Promise<{ text: string | null }> },
  *   config?: Parameters<typeof hintsOf>[0],
  *   db?: any,
+ *   state?: { read: (who: { hid: string, person: string }) => Promise<any>, vote: (args: any) => Promise<{ ok: boolean, reason?: string }> } | null,
  *   limiter?: { take: (key: string) => { ok: boolean, retryAfterMs: number } } | null,
  *   log?: { warn?: (line: string) => void },
  * }} deps
  */
-export function createAiRouter({ speech, config = {}, db = null, limiter = null, log = console }) {
+export function createAiRouter({ speech, config = {}, db = null, state = null, limiter = null, log = console }) {
   const router = Router()
   const hints = hintsOf(config)
 
   router.get('/hints', (req, res) => {
     if (!PEOPLE.includes(req.owner.person)) return res.status(403).json({ error: 'Sem acesso' })
     res.json(hints)
+  })
+
+  router.get('/acervo', async (req, res) => {
+    const { hid, person } = req.owner
+    if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+    if (!state) return res.json({ rejected: [], generated: [] })
+    const current = await state.read({ hid, person })
+    res.json({ rejected: current.rejected, generated: current.generated })
+  })
+
+  router.post('/voto', async (req, res) => {
+    const { uid, hid, person } = req.owner
+    if (!PEOPLE.includes(person)) return res.status(403).json({ error: 'Sem acesso' })
+    if (limiter) {
+      const gate = limiter.take(uid)
+      if (!gate.ok) {
+        res.set('Retry-After', String(Math.max(1, Math.ceil(gate.retryAfterMs / 1000))))
+        return res.status(429).json({ error: 'Muitos pedidos' })
+      }
+    }
+    // So id e voto sao lidos; qualquer outro campo (inclusive texto) e ignorado.
+    const body = req.body && typeof req.body === 'object' ? req.body : {}
+    const { id, voto } = body
+    if (voto !== 'sim' && voto !== 'nao') return res.status(400).json({ error: 'Voto invalido' })
+    if (!state) return res.json({ ok: false })
+    const out = await state.vote({ hid, person, id, voto })
+    if (out.ok) return res.json({ ok: true })
+    // Inexistente, mal formado e de outra pessoa respondem igual, sem revelar existencia.
+    if (out.reason === 'desconhecida') return res.status(404).json({ error: 'Fala nao encontrada' })
+    res.json({ ok: false })
   })
 
   router.post('/fala', async (req, res) => {

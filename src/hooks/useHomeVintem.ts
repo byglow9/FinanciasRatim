@@ -39,6 +39,8 @@ export interface HomeVintem {
 
 // Abertura (D-12 a): no maximo um pedido de fala a IA por carga do app, mesmo se a Home montar de novo.
 let openingAsked = false
+// Entrada no sem filtro (07.1, D-10): a primeira fala da carga sai do acervo aprovado, sem pedir a IA.
+let entradaFalada = false
 
 /** Tempo em perfil antes de voltar (o giro todo dura cerca de 1,6 s). */
 const TURN_HOLD_MS = 600
@@ -189,13 +191,27 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
       raw: slotsFor(situation, subject, view, categoryDefs, insights, todayKey),
       announce: false,
     }
+    // Sem filtro: a abertura e momento previsivel, vai do acervo aprovado na hora (D-10, D-17). Suave e
+    // direto seguem como antes, inclusive o pedido de abertura a IA (D-35).
+    if (tone === 'sem-filtro') {
+      if (!entradaFalada && bankArrival === null) {
+        entradaFalada = true
+        const raw: SlotsRaw = { dias: view.daysLeft }
+        if (view.safeCents > 0) raw.restanteCents = view.safeCents
+        // Sem frase preenchivel no acervo, a mesma fala de sempre: o banco da situacao.
+        if (!speak({ situation, raw, announce: false, entrada: true })) speak(entry)
+        return
+      }
+      speak(entry)
+      return
+    }
     if (openingAsked || bankArrival !== null) {
       speak(entry)
       return
     }
     openingAsked = true
     void speakAi({ ai: { situation: 'abertura' }, fallback: entry })
-  }, [view, situation, subject, entryKey, speak, speakAi, bankArrival, categoryDefs, insights, insightsReady, todayKey])
+  }, [view, situation, subject, entryKey, speak, speakAi, bankArrival, categoryDefs, insights, insightsReady, todayKey, tone])
 
   // Lancamento importado do banco: uma reacao por carga (chave pessoa:ciclo), so com o slot registrado
   // e fora do modo somente leitura (perfil do parceiro nao reage). O gasto ja esta somado na view.

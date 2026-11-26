@@ -124,18 +124,45 @@ test('a situacao sync so vem do gasto importado do banco; o toque nao chama a IA
 
 test('abertura: uma pergunta por carga do app, por variavel de modulo, com a fala do banco como reserva', () => {
   const hook = code(HOME_HOOK)
+  // As duas marcas sao variaveis de modulo: a da IA (suave e direto) e a da entrada do sem filtro (07.1, D-10).
   assert.match(hook, /^let openingAsked = false/m, 'a marca da abertura precisa ser variavel de modulo')
+  assert.match(hook, /^let entradaFalada = false/m, 'a marca da entrada precisa ser variavel de modulo')
   assert.equal((hook.match(/situation: 'abertura'/g) ?? []).length, 1, 'abertura pedida em mais de um lugar')
   assert.equal((hook.match(/openingAsked = true/g) ?? []).length, 1)
-  assert.ok(!/openingAsked = false/.test(hook.slice(hook.indexOf('export function useHomeVintem'))), 'a marca e zerada no hook')
+  assert.equal((hook.match(/entradaFalada = true/g) ?? []).length, 1)
+  const inHook = hook.slice(hook.indexOf('export function useHomeVintem'))
+  assert.ok(!/openingAsked = false/.test(inHook), 'a marca da abertura e zerada no hook')
+  assert.ok(!/entradaFalada = false/.test(inHook), 'a marca da entrada e zerada no hook')
   const entry = hook.slice(hook.indexOf('const spokenKey'), hook.indexOf('const reactedKey'))
-  // Segunda fala de entrada da mesma carga, ou gasto novo do banco para reagir: so o banco de frases.
+  // Sem filtro: a primeira entrada da carga sai do acervo (entrada: true) e nunca pede a IA (D-10, D-35).
+  const semFiltro = entry.indexOf("tone === 'sem-filtro'")
+  assert.ok(semFiltro >= 0, 'sem o ramo do sem filtro')
+  const rest = entry.indexOf('if (openingAsked || bankArrival !== null)')
+  assert.ok(rest > semFiltro, 'o ramo de suave e direto precisa vir depois do sem filtro')
+  const branch = entry.slice(semFiltro, rest)
+  assert.ok(!/speakAi\(|openingAsked/.test(branch), 'o sem filtro pede a IA na entrada')
+  assert.equal((entry.match(/entrada: true/g) ?? []).length, 1, 'entrada: true fora do ramo do sem filtro')
+  assert.ok(branch.includes('entrada: true'), 'o sem filtro nao pede o acervo')
+  assert.ok(branch.includes('entradaFalada = true'), 'o sem filtro nao marca a entrada')
+  // Suave e direto: segunda fala de entrada da mesma carga, ou gasto novo do banco para reagir, so o banco de frases.
   assert.match(entry, /if \(openingAsked \|\| bankArrival !== null\) \{\s*speak\(entry\)\s*return\s*\}/)
   assert.ok(entry.indexOf('openingAsked = true') < entry.indexOf('speakAi('), 'marca depois do pedido')
   assert.match(entry, /void speakAi\(\{ ai: \{ situation: 'abertura' \}, fallback: entry \}\)/, 'sem a reserva da entrada')
   assert.match(entry, /announce: false/, 'a fala de entrada nunca e anunciada')
   // O portao neutro (somente leitura, ciclo passado, sem renda) vem antes de qualquer pedido.
   assert.ok(entry.indexOf('situation === null') < entry.indexOf('speakAi('), 'abertura sem o portao neutro')
+  assert.ok(entry.indexOf('situation === null') < semFiltro, 'entrada sem o portao neutro')
+})
+
+test('voto: o contexto sorteia a entrada do acervo sem as reprovadas e so o sem filtro tem o botao (D-12, D-35)', () => {
+  const src = code(CONTEXT)
+  assert.match(src, /const canVote = canAsk\b/, 'canVote precisa ser igual a canAsk')
+  assert.match(src, /withoutRejected\(OINC_LINES\.entrou/, 'a entrada nao sai do acervo sem as reprovadas')
+  assert.match(src, /entrada === true && tone === 'sem-filtro'/, 'o acervo vale so para o sem filtro')
+  assert.match(body(src, 'rate'), /votar\(id, voto\)/)
+  const balloon = code(BALLOON)
+  assert.match(balloon, /speech\.votavel === true && canVote/)
+  assert.match(balloon, /key=\{speech\.id\}/)
 })
 
 test('resposta atrasada ou de outra tela e descartada: geracao e escopo conferidos antes de mostrar', () => {

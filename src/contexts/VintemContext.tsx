@@ -23,11 +23,13 @@ import {
 } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { useVintemPeek } from '@/hooks/useVintemPeek'
+import { fetchAcervo, readRejected, votar, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { isSpendSpike } from '@shared/core/insights.js'
+import { OINC_LINES, withoutRejected } from '@shared/core/oincLines.js'
 import { buildSlots, pick, pushRecent, recentKey, recentLimit } from '@shared/core/phrasePicker.js'
 import { CHEER_MS, launchRaw, reactionForLaunch } from '@shared/core/vintemMood.js'
 import { PHRASES, SITUATION_META } from '@shared/core/vintemPhrases.js'
@@ -50,12 +52,16 @@ export interface Speech {
   situation: string
   /** Muda a cada fala nova: reinicia o pop do balao. */
   popKey: number
+  /** Fala do acervo aprovado: aparecem os botoes de gostei e nao gostei. */
+  votavel?: boolean
 }
 
 export interface PhraseArgs {
   situation: string
   raw?: SlotsRaw
   maxLen?: number
+  /** Primeira fala ao abrir o app: no tom sem filtro sai do acervo aprovado (07.1, D-10). */
+  entrada?: boolean
 }
 
 export interface SpeakArgs extends PhraseArgs {
@@ -111,6 +117,10 @@ export interface VintemContextType {
   /** Tenta a IA e, sem texto a tempo, fala com o banco de frases. Nunca lanca. */
   speakAi: (args: SpeakAiArgs) => Promise<void>
   dismiss: () => void
+  /** Verdadeiro quando a pessoa pode votar nas falas do acervo (mesma regra de pedir a IA). */
+  canVote: boolean
+  /** Registra gostei ou nao gostei numa fala; o nao gostei fecha o balao e a fala nao volta. */
+  rate: (id: string, voto: Voto) => void
   /** Ref do handle do Vintem do arco (nulo fora da Home). */
   slot: RefObject<VintemHandle | null>
   registerSlot: (handle: VintemHandle | null) => void
@@ -185,10 +195,25 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   // So a pessoa logada, no proprio perfil e fora do somente leitura pede fala a IA (D-14).
   const canAsk = user !== null && user.person === viewPerson && !readOnly
+  const canVote = canAsk
   // Os hints trazem o prazo das reacoes: pedidos cedo, para ja estarem aqui no primeiro lancamento.
   useEffect(() => {
     if (canAsk) void getVintemHints()
   }, [canAsk])
+
+  // Falas reprovadas: as deste aparelho (localStorage, lidas na hora do sorteio) valem desde a primeira
+  // fala; as que o servidor guardou entram nesta lista quando a consulta volta.
+  const serverRejected = useRef<string[]>([])
+  useEffect(() => {
+    if (!canVote) return
+    let alive = true
+    void fetchAcervo().then((acervo) => {
+      if (alive) serverRejected.current = [...new Set([...serverRejected.current, ...acervo.rejected])]
+    })
+    return () => {
+      alive = false
+    }
+  }, [canVote])
 
   const [speech, setSpeech] = useState<Speech | null>(null)
   const [announced, setAnnounced] = useState('')
@@ -224,8 +249,26 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const draw = useCallback(
-    ({ situation, raw, maxLen }: PhraseArgs): { id: string; text: string } | null => {
+    ({ situation, raw, maxLen, entrada }: PhraseArgs): { id: string; text: string; votavel?: boolean } | null => {
       rand.current ??= mulberry32(Date.now() ^ Math.floor(performance.now() * 1000))
+      // Primeira fala da entrada no sem filtro: acervo aprovado sem as reprovadas (07.1, D-10, D-35).
+      // Sem frase preenchivel devolve nulo: quem pediu a entrada cai no banco da situacao com os encaixes dela.
+      if (entrada === true && tone === 'sem-filtro') {
+        const lines = withoutRejected(OINC_LINES.entrou, [...readRejected(), ...serverRejected.current])
+        const entrouRecent = readRecent()
+        const entrou = pick({
+          situation: 'entrou',
+          tone,
+          slots: buildSlots(raw),
+          recent: entrouRecent,
+          rand: rand.current,
+          bank: { entrou: { [tone]: lines.map((l) => ({ id: l.id, t: l.t })) } },
+          maxLen: 120,
+        })
+        if (entrou === null) return null
+        writeRecent(pushRecent(entrouRecent, recentKey('entrou', tone), entrou.id, recentLimit(lines.length)))
+        return { ...entrou, votavel: true }
+      }
       const bank = PHRASES as Record<string, Record<string, { id: string; t: string }[]>>
       const variants = bank[situation]?.[tone]?.length ?? 0
       const meta = (SITUATION_META as Record<string, { maxLen: number } | undefined>)[situation]
@@ -252,7 +295,13 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       if (chosen === null) return false
       popCounter.current += 1
       speechGen.current += 1
-      setSpeech({ id: chosen.id, text: chosen.text, situation: args.situation, popKey: popCounter.current })
+      setSpeech({
+        id: chosen.id,
+        text: chosen.text,
+        situation: args.situation,
+        popKey: popCounter.current,
+        ...(chosen.votavel === true ? { votavel: true } : {}),
+      })
       setAnnounced(announce ? chosen.text : '')
       return true
     },
@@ -264,6 +313,17 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     setSpeech(null)
     setAnnounced('')
   }, [])
+
+  const rate = useCallback(
+    (id: string, voto: Voto): void => {
+      void votar(id, voto)
+      if (voto === 'nao') {
+        serverRejected.current = [...new Set([...serverRejected.current, id])]
+        dismiss()
+      }
+    },
+    [dismiss],
+  )
 
   const speakText = useCallback(({ text, situation, announce = false }: SpeakTextArgs): void => {
     popCounter.current += 1
@@ -442,13 +502,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       speakText,
       speakAi,
       dismiss,
+      canVote,
+      rate,
       slot,
       registerSlot,
       onLaunched,
       onGoal,
       cheer,
     }),
-    [tone, speech, speak, draw, speakText, speakAi, dismiss, registerSlot, onLaunched, onGoal, cheer],
+    [tone, speech, speak, draw, speakText, speakAi, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer],
   )
 
   return (

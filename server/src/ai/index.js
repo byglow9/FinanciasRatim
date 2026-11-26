@@ -5,6 +5,7 @@ import { readAiConfig } from './config.js'
 import { createChain, createProviders } from './providers.js'
 import { createAiRouter } from './routes.js'
 import { createSnapshotLoader } from './snapshot.js'
+import { createOincState } from './state.js'
 import { createSpeech } from './speech.js'
 
 /**
@@ -38,6 +39,7 @@ export function createAiFeature({
   const speech = createSpeech({ snapshot, providers: chain, config, budget, cache, log })
   // Freio de rajada por usuario com o limitador proprio.
   const limiter = createLimiter({ max: config.burstPerMin, windowMs: 60_000, now: () => now().getTime() })
-  const router = createAiRouter({ speech, config, db, limiter, log })
+  const state = createOincState({ db, now, log })
+  const router = createAiRouter({ speech, config, db, state, limiter, log })
   return { mounts: [{ path: '/api/vintem', router }], speech, chain, config }
 }

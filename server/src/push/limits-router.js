@@ -30,11 +30,11 @@ export function createLimitsRouter({ notifier, limiter = null }) {
 
     try {
       await notifier.evaluateLimits({ hid, person, excludeFid: fid })
-      // Fatura em melhor esforco (barata e idempotente): falha dela nao muda a resposta do check.
+      // Vencimentos em melhor esforco (idempotente): falha deles nao muda a resposta do check.
       try {
-        await notifier.evaluateBills({ hid, person })
+        await notifier.evaluateDue({ hid, person })
       } catch (err) {
-        console.error('[push] limits/check fatura:', String(err?.code ?? 'erro'))
+        console.error('[push] limits/check vencimentos:', String(err?.code ?? 'erro'))
       }
       res.json({ ok: true })
     } catch (err) {

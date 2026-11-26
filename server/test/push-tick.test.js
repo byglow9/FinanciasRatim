@@ -41,8 +41,8 @@ function makeNotifier() {
       if (notifier.failFor === `${hid}:${person}`) throw Object.assign(new Error('Fulano 123'), { code: 'unavailable' })
       return { sent: 0 }
     },
-    async evaluateBills({ hid, person }) {
-      calls.push(`fatura:${hid}:${person}`)
+    async evaluateDue({ hid, person }) {
+      calls.push(`vencimentos:${hid}:${person}`)
       if (notifier.failFor === `${hid}:${person}`) throw new Error('falha')
       return { sent: 0 }
     },
@@ -136,26 +136,26 @@ describe('relogio do notificador', () => {
     assert.equal(out.pairs, 3)
     assert.deepEqual(notifier.calls, [
       'espontaneo:casalA:ele',
-      'fatura:casalA:ele',
+      'vencimentos:casalA:ele',
       'espontaneo:casalA:ela',
-      'fatura:casalA:ela',
+      'vencimentos:casalA:ela',
       'espontaneo:casalB:ele',
-      'fatura:casalB:ele',
+      'vencimentos:casalB:ele',
       'retidos',
     ])
   })
 
-  test('a fatura e reavaliada no maximo de hora em hora e o espontaneo a cada rodada', async () => {
+  test('os vencimentos sao reavaliados no maximo de hora em hora e o espontaneo a cada rodada', async () => {
     const count = (prefix) => notifier.calls.filter((c) => c.startsWith(prefix)).length
     for (let i = 0; i < 4; i++) {
       await tick.runOnce()
       clock.t += 15 * MINUTE
     }
-    assert.equal(count('fatura:casalA:ele'), 1)
+    assert.equal(count('vencimentos:casalA:ele'), 1)
     assert.equal(count('espontaneo:casalA:ele'), 4)
     assert.equal(count('retidos'), 4)
     await tick.runOnce()
-    assert.equal(count('fatura:casalA:ele'), 2)
+    assert.equal(count('vencimentos:casalA:ele'), 2)
   })
 
   test('inscricao sem dono ou com pessoa invalida e ignorada, e sem aparelho ainda entrega retidos', async () => {
@@ -191,7 +191,7 @@ describe('relogio do notificador', () => {
       notifier.failFor = 'casalA:ele'
       const out = await tick.runOnce()
       assert.equal(out.errors, 2)
-      assert.ok(notifier.calls.includes('fatura:casalB:ele'))
+      assert.ok(notifier.calls.includes('vencimentos:casalB:ele'))
       assert.ok(notifier.calls.includes('retidos'))
       const text = [...error.mock.calls, ...log.mock.calls].map((c) => c.arguments.join(' ')).join('\n')
       assert.match(text, /unavailable/)
@@ -312,6 +312,110 @@ describe('relogio com o notificador real', () => {
     }
     assert.equal(sent.length, 1)
     assert.equal(sent[0].payload.tag, 'limite-lazer-2026-11')
+  })
+})
+
+// Firestore falso com o que o leitor de vencimentos e o repo usam alem de igualdade: intervalo de
+// data, orderBy, limit, count e leitura da colecao inteira. Anota as colecoes consultadas.
+function createQueryFirestore() {
+  const base = createFakeFirestore()
+  const queried = []
+  const OPS = { '==': (a, b) => a === b, '>=': (a, b) => a >= b, '<=': (a, b) => a <= b }
+  const plain = (v) => (typeof v?.toDate === 'function' ? v.toDate() : v)
+  const query = (name, filters) => ({
+    where: (field, op, expected) => query(name, [...filters, [field, op, plain(expected)]]),
+    orderBy: () => query(name, filters),
+    limit: () => query(name, filters),
+    count: () => ({
+      async get() {
+        const { size } = await query(name, filters).get()
+        return { data: () => ({ count: size }) }
+      },
+    }),
+    async get() {
+      queried.push(name)
+      const docs = [...base.store]
+        .filter(([key]) => key.startsWith(`${name}/`))
+        .filter(([, data]) => filters.every(([field, op, expected]) => OPS[op](plain(data[field]), expected)))
+        .map(([key, data]) => ({ id: key.slice(name.length + 1), exists: true, data: () => ({ ...data }) }))
+      return { docs, empty: docs.length === 0, size: docs.length }
+    },
+  })
+  return {
+    store: base.store,
+    queried,
+    collection: (name) => ({ ...query(name, []), doc: base.collection(name).doc }),
+  }
+}
+
+// Composicao inteira (index.js): o leitor de verdade injetado no notificador e o relogio chamando-o.
+describe('vencimentos pelo relogio com a composicao do servidor', () => {
+  const setup = () => {
+    const db = createQueryFirestore()
+    const sent = []
+    const messaging = {
+      async sendEach(messages) {
+        sent.push(...messages)
+        return { responses: messages.map(() => ({ success: true })) }
+      },
+    }
+    const put = (path, data) => db.store.set(path, data)
+    for (const [fid, ownerId, person] of [
+      ['fidEle-aparelho1', 'casalA', 'ele'],
+      ['fidEla-aparelho1', 'casalA', 'ela'],
+      ['fidB-ele-aparelho', 'casalB', 'ele'],
+    ]) {
+      put(`pushRegistrations/${fid}`, { ownerId, person, updatedAt: new Date(NOW) })
+    }
+    // Vence em 19/11: 2 dias depois de NOW.
+    put('fixedExpenses/net', { ownerId: 'casalA', person: 'ele', name: 'Internet', amount: 129.9, dueDay: 19, isActive: true })
+    put('events/dentista', {
+      ownerId: 'casalA',
+      person: 'ele',
+      title: 'Dentista',
+      date: new Date('2026-11-19T15:00:00Z'),
+      time: '14:30',
+    })
+    const clock = { t: NOW }
+    const push = createPushFeature({ db, messaging, now: () => new Date(clock.t), env: { PUSH_SPONT_PER_DAY: '0' } })
+    return { db, sent, clock, push }
+  }
+
+  const quietly = async (fn) => {
+    const log = mock.method(console, 'log', () => {})
+    try {
+      return await fn()
+    } finally {
+      log.mock.restore()
+    }
+  }
+
+  test('conta e compromisso a 2 dias saem uma vez, so para a pessoa dona, sem escrever em contas', async () => {
+    const { db, sent, clock, push } = setup()
+    await quietly(async () => {
+      const first = await push.tick.runOnce()
+      assert.equal(first.errors, 0)
+      assert.equal(first.sent, 2)
+      clock.t += 60 * MINUTE
+      assert.equal((await push.tick.runOnce()).sent, 0)
+    })
+
+    assert.deepEqual(sent.map((m) => m.fid), ['fidEle-aparelho1', 'fidEle-aparelho1'])
+    const markers = [...db.store.keys()].filter((k) => k.startsWith('pushEvents/')).sort()
+    assert.deepEqual(markers, [
+      'pushEvents/casalA__ele__compromisso__dentista__2026-11-19__d2',
+      'pushEvents/casalA__ele__conta__net__2026-11-19__d2',
+    ])
+    assert.ok(![...db.store.keys()].some((k) => /^(fixedExpensePayments|transactions)\//.test(k)))
+    assert.ok(!db.queried.includes('transactions'), 'o relogio nao pode ler lancamentos sem limite a avaliar')
+  })
+
+  test('antes das 9h de Sao Paulo o relogio nao le contas nem compromissos', async () => {
+    const { db, sent, clock, push } = setup()
+    clock.t = Date.parse('2026-11-17T11:00:00Z')
+    await quietly(() => push.tick.runOnce())
+    assert.equal(sent.length, 0)
+    assert.ok(!db.queried.includes('fixedExpenses') && !db.queried.includes('events'))
   })
 })
 
@@ -491,15 +595,15 @@ describe('composicao do push no servidor', () => {
     assert.deepEqual(startWith({ PUSH_TICK_MINUTES: '0' }), [])
   })
 
-  test('afterSync avalia limites e fatura, e a falha de um nao impede o outro', async () => {
+  test('afterSync avalia limites e depois os vencimentos, e a falha de um nao impede o outro', async () => {
     const push = feature({})
     const calls = []
     push.notifier.evaluateLimits = async (pair) => {
       calls.push(['limites', pair])
       throw new Error('falha')
     }
-    push.notifier.evaluateBills = async (pair) => {
-      calls.push(['fatura', pair])
+    push.notifier.evaluateDue = async (pair) => {
+      calls.push(['vencimentos', pair])
       return { sent: 0 }
     }
     const error = mock.method(console, 'error', () => {})
@@ -510,7 +614,7 @@ describe('composicao do push no servidor', () => {
     }
     assert.deepEqual(calls, [
       ['limites', { hid: 'casalA', person: 'ele' }],
-      ['fatura', { hid: 'casalA', person: 'ele' }],
+      ['vencimentos', { hid: 'casalA', person: 'ele' }],
     ])
   })
 

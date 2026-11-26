@@ -1,3 +1,4 @@
+import { createSnapshotLoader } from '../ai/snapshot.js'
 import { createLimiter } from '../limiter.js'
 import { readPushConfig } from './config.js'
 import { createLimitsRouter } from './limits-router.js'
@@ -22,18 +23,20 @@ export function createPushFeature({ db, messaging, now = () => new Date(), env =
   const prefsStore = createPrefsStore(db)
   const repo = createRepo({ db, prefsStore })
   const config = readPushConfig(env)
-  const notifier = createNotifier({ repo, sender: send, now, config })
+  // Leitura do que esta para vencer, para os avisos fixos. So le: nunca marca como paga.
+  const { loadDue } = createSnapshotLoader({ db, now })
+  const notifier = createNotifier({ repo, sender: send, now, config, loadDue })
   const tick = createTick({ repo, notifier, config, now })
   const router = createPushRouter({ db, send, now, limiter, prefsStore })
   const limitsRouter = createLimitsRouter({ notifier, limiter: checkLimiter })
 
-  // Depois de uma sincronizacao que importou lancamentos: limites e fatura da pessoa, em melhor
-  // esforco. So codigo e contagem em log.
+  // Depois de uma sincronizacao que importou lancamentos: limites e depois vencimentos da pessoa, em
+  // melhor esforco. So codigo e contagem em log.
   async function afterSync({ hid, person }) {
     let sent = 0
     for (const [where, evaluate] of [
       ['limites', notifier.evaluateLimits],
-      ['fatura', notifier.evaluateBills],
+      ['vencimentos', notifier.evaluateDue],
     ]) {
       try {
         sent += (await evaluate({ hid, person })).sent

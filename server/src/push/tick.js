@@ -1,7 +1,8 @@
-// Relogio do notificador: o que ninguem pede (espontaneo, fatura, retidos pelo silencio e poda de
-// aparelhos). Le so inscricoes, cartoes, configuracoes, preferencias e marcadores, nunca
-// lancamentos (cota de leitura do Firestore gratuito). Limites ficam com o check do app e com o
-// gancho pos-sincronizacao.
+// Relogio do notificador: o que ninguem pede (espontaneo, vencimentos de conta, fatura e
+// compromisso, retidos pelo silencio e poda de aparelhos). O relogio em si so le inscricoes,
+// cartoes, contas, compromissos, configuracoes, preferencias e marcadores; quem le lancamentos e o
+// notificador (limites e, a partir do plano 07.1-12, as aleatorias), o que pesa na cota de leitura
+// do Firestore gratuito. Limites ficam com o check do app e com o gancho pos-sincronizacao.
 import { eventDayKey } from '../../../shared/core/pushEvents.js'
 import { readPushConfig } from './config.js'
 
@@ -27,7 +28,7 @@ function pairsOf(registrations) {
  *   },
  *   notifier: {
  *     evaluateSpontaneous(args: { hid: string, person: string }): Promise<{ sent: number }>,
- *     evaluateBills(args: { hid: string, person: string }): Promise<{ sent: number }>,
+ *     evaluateDue(args: { hid: string, person: string }): Promise<{ sent: number }>,
  *     deliverHeld(): Promise<{ sent: number }>,
  *   },
  *   config?: { billCheckMinutes?: number, pruneDays?: number },
@@ -36,10 +37,11 @@ function pairsOf(registrations) {
  */
 export function createTick({ repo, notifier, config = {}, now = () => new Date() }) {
   const defaults = readPushConfig()
-  const billEveryMs = (config.billCheckMinutes ?? defaults.billCheckMinutes) * MINUTE_MS
+  // PUSH_BILL_CHECK_MINUTES vale para os vencimentos: conta, fatura e compromisso.
+  const dueEveryMs = (config.billCheckMinutes ?? defaults.billCheckMinutes) * MINUTE_MS
   const maxAgeMs = (config.pruneDays ?? defaults.pruneDays) * DAY_MS
   // Marcas so em memoria: depois de um reinicio a rodada reavalia e o marcador impede repeticao.
-  const billCheckedAt = new Map()
+  const dueCheckedAt = new Map()
   let prunedDay = null
   let running = false
 
@@ -75,10 +77,10 @@ export function createTick({ repo, notifier, config = {}, now = () => new Date()
       summary.pairs = pairs.size
       for (const [key, pair] of pairs) {
         await step('espontaneo', () => notifier.evaluateSpontaneous({ ...pair }))
-        const last = billCheckedAt.get(key)
-        if (last === undefined || at.getTime() - last >= billEveryMs) {
-          billCheckedAt.set(key, at.getTime())
-          await step('fatura', () => notifier.evaluateBills({ ...pair }))
+        const last = dueCheckedAt.get(key)
+        if (last === undefined || at.getTime() - last >= dueEveryMs) {
+          dueCheckedAt.set(key, at.getTime())
+          await step('vencimentos', () => notifier.evaluateDue({ ...pair }))
         }
       }
 

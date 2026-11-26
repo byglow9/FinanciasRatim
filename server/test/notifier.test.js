@@ -518,6 +518,8 @@ describe('POST /api/limits/check', () => {
       sentMessages.push({ check: args })
       return { events: 0, claimed: 0, sent: 0 }
     }
+    // A leitura de vencimentos usa consultas que o Firestore falso nao tem: o relogio a prova.
+    feature.notifier.evaluateDue = async () => ({ events: 0, claimed: 0, sent: 0 })
     const app = createApp({ verifyToken, db, pluggy: {}, sync: {}, origins: [ORIGIN], features: [feature] })
     await new Promise((resolve) => {
       server = app.listen(0, resolve)
@@ -531,22 +533,22 @@ describe('POST /api/limits/check', () => {
 
   const checks = () => sentMessages.filter((m) => m.check).map((m) => m.check)
 
-  test('o check avalia a fatura depois dos limites, sem mudar a resposta mesmo se ela falhar', async () => {
-    const original = feature.notifier.evaluateBills
-    const bills = []
-    feature.notifier.evaluateBills = async (args) => {
-      bills.push({ args, limitsBefore: checks().length })
-      throw new Error('falha da fatura')
+  test('o check avalia os vencimentos depois dos limites, sem mudar a resposta mesmo se falharem', async () => {
+    const original = feature.notifier.evaluateDue
+    const due = []
+    feature.notifier.evaluateDue = async (args) => {
+      due.push({ args, limitsBefore: checks().length })
+      throw new Error('falha dos vencimentos')
     }
     try {
       const before = checks().length
       const res = await post('tok-a-ele', { fid: 'fidAparelho00001' })
       assert.equal(res.status, 200)
       assert.deepEqual(await res.json(), { ok: true })
-      // Sem excludeFid: a fatura nao aparece como aviso dentro da tela.
-      assert.deepEqual(bills, [{ args: { hid: 'casalA', person: 'ele' }, limitsBefore: before + 1 }])
+      // Sem excludeFid: o vencimento nao aparece como aviso dentro da tela.
+      assert.deepEqual(due, [{ args: { hid: 'casalA', person: 'ele' }, limitsBefore: before + 1 }])
     } finally {
-      feature.notifier.evaluateBills = original
+      feature.notifier.evaluateDue = original
     }
   })
 

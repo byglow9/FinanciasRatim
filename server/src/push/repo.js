@@ -246,6 +246,16 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
       }
     },
 
+    /**
+     * O marcador ja existe? Uma leitura, para o aviso aleatorio nao carregar os dados completos de
+     * uma vaga ja usada. Quem decide a corrida continua sendo o claimEvent.
+     * @param {string} id
+     * @returns {Promise<boolean>}
+     */
+    async eventExists(id) {
+      return (await db.collection(EVENTS).doc(id).get()).exists
+    },
+
     /** @param {string} id @param {Record<string, any>} patch */
     async updateEvent(id, patch) {
       await db.collection(EVENTS).doc(id).update(patch)

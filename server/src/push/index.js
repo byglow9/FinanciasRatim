@@ -1,4 +1,5 @@
 import { createSnapshotLoader } from '../ai/snapshot.js'
+import { createOincState } from '../ai/state.js'
 import { createLimiter } from '../limiter.js'
 import { readPushConfig } from './config.js'
 import { createLimitsRouter } from './limits-router.js'
@@ -23,9 +24,11 @@ export function createPushFeature({ db, messaging, now = () => new Date(), env =
   const prefsStore = createPrefsStore(db)
   const repo = createRepo({ db, prefsStore })
   const config = readPushConfig(env)
-  // Leitura do que esta para vencer, para os avisos fixos. So le: nunca marca como paga.
-  const { loadDue } = createSnapshotLoader({ db, now })
-  const notifier = createNotifier({ repo, sender: send, now, config, loadDue })
+  // Leitura do que esta para vencer (avisos fixos) e dos dados do mes (avisos aleatorios). So le:
+  // nunca marca como paga. O estado do OINC guarda o que ja saiu, para nao repetir.
+  const { load: loadSnapshot, loadDue } = createSnapshotLoader({ db, now })
+  const oincState = createOincState({ db, now })
+  const notifier = createNotifier({ repo, sender: send, now, config, loadDue, loadSnapshot, oincState })
   const tick = createTick({ repo, notifier, config, now })
   const router = createPushRouter({ db, send, now, limiter, prefsStore })
   const limitsRouter = createLimitsRouter({ notifier, limiter: checkLimiter })

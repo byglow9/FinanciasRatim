@@ -3,7 +3,7 @@ import { buildBudgetView } from '../../../shared/core/budget.js'
 import { categoryDisplayName } from '../../../shared/core/categories.js'
 import { cycleOf, shiftCycle } from '../../../shared/core/cycle.js'
 import { formatReais } from '../../../shared/core/format.js'
-import { storeOf } from '../../../shared/core/oincFacts.js'
+import { buildFacts, storeOf } from '../../../shared/core/oincFacts.js'
 import { composePush } from '../../../shared/core/oincPush.js'
 import { dueEvent, dueStages } from '../../../shared/core/pushDue.js'
 import {
@@ -11,10 +11,10 @@ import {
   eventDayKey,
   limitEvents,
   spontaneousEvent,
+  spontaneousSlot,
 } from '../../../shared/core/pushEvents.js'
-import { deliveryDecision, inWindow, isQuiet } from '../../../shared/core/pushPrefs.js'
+import { deliveryDecision, isQuiet } from '../../../shared/core/pushPrefs.js'
 import { zonedParts } from '../../../shared/core/time.js'
-import { buildPushPayload, hashSeed } from '../../../shared/core/vintemPhrasesPush.js'
 import { readPushConfig } from './config.js'
 import { joinBillCards } from './repo.js'
 
@@ -29,26 +29,8 @@ const GENDER = Object.freeze({ ele: 'm', ela: 'f' })
 
 const isPair = (hid, person) => typeof hid === 'string' && hid !== '' && PEOPLE.includes(person)
 
-const DAY_MINUTES = 24 * 60
-
-const minutesOf = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
-
-/**
- * Ja passou do horario do dia deste espontaneo? O minuto alvo dentro da janela vem do id do evento
- * (muda por pessoa e por dia). O alvo deixa um intervalo do relogio livre no fim da janela, para
- * sempre haver uma rodada depois dele.
- * @param {string} id
- * @param {Date} at
- * @param {{ from: string, to: string }} window
- * @param {number} tickMinutes
- */
-function pastSpontaneousTarget(id, at, window, tickMinutes) {
-  const from = minutesOf(window.from)
-  const length = (minutesOf(window.to) - from + DAY_MINUTES) % DAY_MINUTES
-  const { hour, minute } = zonedParts(at)
-  const elapsed = (hour * 60 + minute - from + DAY_MINUTES) % DAY_MINUTES
-  return elapsed >= hashSeed(id) % Math.max(1, length - tickMinutes)
-}
+/** Chave de compra ja narrada nos recentes do push (o resto sao ids de fala). */
+const TX_KEY = 'tx:'
 
 /** Linhas de limite do ciclo, pela mesma conta do cliente. */
 function limitRows({ settings, cycle, transactions, at }) {
@@ -108,33 +90,92 @@ function dueText({ stage, person, tone, id }) {
   return composePush({ scene: `push-${kind}-d${daysLeft}`, tone, slots, gender: GENDER[person] ?? null, seed: id })
 }
 
+/**
+ * Assunto parado ha mais tempo primeiro: o nunca usado, na ordem dada, e depois o usado ha mais
+ * tempo. A cena de cada fala usada sai do id dela.
+ * @template {{ scene: string }} T
+ * @param {T[]} topics
+ * @param {string[]} used ids de fala, do mais antigo ao mais novo
+ * @returns {T}
+ */
+function restedTopic(topics, used) {
+  const lastUse = (/** @type {T} */ t) => used.findLastIndex((id) => id.startsWith(`${t.scene}-`))
+  return [...topics].sort((a, b) => lastUse(a) - lastUse(b))[0]
+}
+
+/**
+ * Texto do aviso aleatorio com assunto (D-20, D-26), so no sem filtro: uma compra de hoje ou de ontem
+ * ainda nao narrada; sem ela, ritmo, meta ou do nada. Os fatos saem com a superficie do push, a
+ * descricao do lancamento nunca vai ao texto, a loja e so marca conhecida (D-32) e composePush filtra
+ * categoria e meta (D-28). Compra que a fala nao conseguiria datar como de ontem fica de fora.
+ * @param {{ input: Record<string, any>, args: Record<string, any>, narrated: string[] }} data
+ * @returns {{ payload: { title: string, body: string, phraseId: string }, txId: string | null }}
+ */
+function topicText({ input, args, narrated }) {
+  const facts = buildFacts(/** @type {any} */ (input), { surface: 'push', narrated })
+  const txs = new Map([...(input.transactions ?? []), ...(input.prevTransactions ?? [])].map((t) => [t.id, t]))
+
+  // Os fatos ja vem com os de hoje antes dos de ontem.
+  for (const fact of facts) {
+    if (!fact.key.startsWith('tx:') || (fact.quando !== 'hoje' && fact.quando !== 'ontem')) continue
+    const tx = fact.txId === null ? null : txs.get(fact.txId)
+    if (tx?.type !== 'saida') continue
+    const slots = {
+      quando: fact.quando,
+      valor: fact.slots.valor,
+      loja: storeOf(tx),
+      categoria: categoryDisplayName(tx, input.categoryDefs),
+    }
+    const payload = composePush({ ...args, scene: 'push-compra', slots })
+    if (fact.quando === 'ontem' && !/ontem/i.test(payload.body)) continue
+    return { payload, txId: fact.txId }
+  }
+
+  const month = facts.find((f) => f.cena === 'do-nada')?.slots
+  const goal = facts.find((f) => f.cena === 'meta-status')?.slots
+  const topics = [
+    ...(month?.restante ? [{ scene: 'push-ritmo', slots: { restante: month.restante, dias: month.dias } }] : []),
+    ...(goal ? [{ scene: 'push-meta', slots: { meta: goal.meta, restante: goal.restante } }] : []),
+    { scene: 'push-nada', slots: {} },
+  ]
+  const topic = restedTopic(topics, args.recent)
+  return { payload: composePush({ ...args, ...topic }), txId: null }
+}
+
 /** Log so com o codigo do erro: nunca valor, texto, loja nem nome (Pitfall 12). */
 function logError(where, err) {
   console.error(`[push] ${where}:`, String(err?.code ?? 'erro'))
 }
 
 /**
- * Notificador (PUSH-02, PUSH-03, PUSH-04): limites, avisos fixos (conta, fatura e compromisso) e o
- * push espontaneo. Cada funcao e idempotente por pessoa: calcula os eventos pela mesma conta do
+ * Notificador (PUSH-02, PUSH-03, PUSH-04): limites, avisos fixos (conta, fatura e compromisso) e os
+ * avisos aleatorios. Cada funcao e idempotente por pessoa: calcula os eventos pela mesma conta do
  * cliente e reivindica um marcador por evento com create() do Firestore. Quem perde a corrida nao
- * envia (D-07). O marcador guarda so referencias (ids, categoria, limiar, estagio e chaves de ciclo,
- * de vencimento e de dia), nunca o texto, o valor, a loja, o nome ou o titulo: o texto e montado na
- * hora do envio, com os dados relidos. O servidor so le lancamentos, contas e pagamentos.
+ * envia (D-07). O marcador guarda so referencias (ids, categoria, limiar, estagio, vaga e chaves de
+ * ciclo, de vencimento e de dia), nunca o texto, o valor, a loja, o nome ou o titulo: o texto e
+ * montado na hora do envio, com os dados relidos. O servidor so le os dados do casal; a unica escrita
+ * fora dos marcadores sao os recentes do aviso aleatorio. O push nao chama a IA.
  *
  * Status do marcador: enviando, enviado, pendente (retido pelo silencio, D-21), expirado (retido que
  * perdeu a validade), desligado, silencioso, teto, colapsado, sem-aparelho e falhou.
  *
  * `loadDue` le contas, pagamentos e compromissos (server/src/ai/snapshot.js). Sem ele, so as faturas
- * sao avisadas.
+ * sao avisadas. `loadSnapshot` e o `load` do mesmo leitor, para o assunto dos avisos aleatorios; sem
+ * ele sai a fala do nada. `oincState` guarda o que ja saiu (server/src/ai/state.js).
  * @param {{
  *   repo: ReturnType<typeof import('./repo.js').createRepo>,
  *   sender: { sendToFids(fids: string[], payload: object): Promise<{ sent: number, dead: number, failed: number }> },
  *   now?: () => Date,
  *   config?: { maxPerDay?: number, dueHour?: number, spontPerDay?: number, spontWindow?: { from: string, to: string }, tickMinutes?: number },
  *   loadDue?: (args: { hid: string, person: string }) => Promise<{ bills: unknown[], payments: unknown[], events: unknown[] }>,
+ *   loadSnapshot?: (args: { hid: string, person: string }) => Promise<{ input: Record<string, any> }>,
+ *   oincState?: {
+ *     read(args: { hid: string, person: string }): Promise<{ pushRecent: string[], rejected: string[] }>,
+ *     addPushRecent(args: { hid: string, person: string, keys: string[] }): Promise<{ ok: boolean }>,
+ *   },
  * }} deps
  */
-export function createNotifier({ repo, sender, now = () => new Date(), config = {}, loadDue }) {
+export function createNotifier({ repo, sender, now = () => new Date(), config = {}, loadDue, loadSnapshot, oincState }) {
   const defaults = readPushConfig()
   const maxPerDay = Number.isInteger(config.maxPerDay) && config.maxPerDay >= 1 ? config.maxPerDay : defaults.maxPerDay
   const dueHour =
@@ -211,12 +252,13 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
 
   /**
    * Envia o aviso de um marcador ja reivindicado (status enviando) e fecha o marcador com o
-   * resultado. O texto e montado agora, no tom das configuracoes.
+   * resultado. O texto e montado agora, no tom das configuracoes; o do aviso aleatorio ja vem pronto
+   * em `ready`, porque o marcador leva o id da fala (e ele nunca fica retido).
    * Falha transitoria (nenhum enviado e nenhum FID morto): no envio imediato o marcador e apagado
    * para o proximo check tentar de novo; no retido ele volta a pendente. FID morto nao apaga o
    * marcador (o sender ja apaga o registro).
    */
-  async function dispatch({ hid, person, id, marker, tone, stage, row, excludeFid, held = false, at = now() }) {
+  async function dispatch({ hid, person, id, marker, tone, stage, row, ready, excludeFid, held = false, at = now() }) {
     // Teto diario por pessoa: passou do teto, o marcador vira `teto` e nada sai.
     if (await overDailyCap(hid, person, marker.kind, at)) {
       await repo.updateEvent(id, { status: 'teto' })
@@ -231,10 +273,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
       return { sent: 0, status: 'sem-aparelho' }
     }
 
-    let payload
-    if (stage) payload = dueText({ stage, person, tone, id })
-    else if (marker.kind === 'limite') payload = limitText({ marker, row, person, tone, id })
-    else payload = buildPushPayload({ situation: 'push-espontanea', tone, seed: id })
+    const payload = ready ?? (stage ? dueText({ stage, person, tone, id }) : limitText({ marker, row, person, tone, id }))
     let result
     try {
       result = await sender.sendToFids(fids, {
@@ -266,7 +305,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
    * Reivindica o marcador ja com o status da decisao e envia quando for o caso. Desligado nao
    * entrega depois; retido espera o silencio acabar (D-21). Sem texto no marcador.
    */
-  async function claimAndDeliver({ hid, person, id, marker, decision, tone, stage, row, excludeFid, at }) {
+  async function claimAndDeliver({ hid, person, id, marker, decision, tone, stage, row, ready, excludeFid, at }) {
     if (decision === 'desligado' || decision === 'reter') {
       const status = decision === 'desligado' ? 'desligado' : 'pendente'
       return { claimed: await repo.claimEvent(id, { ...marker, status }), sent: 0 }
@@ -274,7 +313,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     if (decision !== 'enviar' || !(await repo.claimEvent(id, { ...marker, status: 'enviando' }))) {
       return { claimed: false, sent: 0 }
     }
-    const out = await dispatch({ hid, person, id, marker, tone, stage, row, excludeFid, at })
+    const out = await dispatch({ hid, person, id, marker, tone, stage, row, ready, excludeFid, at })
     return { claimed: true, sent: out.sent }
   }
 
@@ -392,39 +431,73 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
-   * Cutucada espontanea (D-12 c, D-21): no maximo uma por pessoa por dia de Sao Paulo, dentro da
-   * janela do servidor, fora do silencio e so para quem tem aparelho. No silencio ou com o tipo
-   * desligado apenas pula, sem marcador. Frase do banco de push: sem IA e sem dado financeiro.
-   * As checagens sem leitura vem primeiro, porque o relogio chama isto a cada rodada.
+   * Texto do aviso aleatorio. Em suave e direto e o banco de aviso de hoje, sem ler dado nenhum
+   * (D-35); no sem filtro os dados do mes sao carregados para achar o assunto. Os recentes da pessoa
+   * evitam repetir fala e compra.
+   */
+  async function spontaneousText({ hid, person, tone, id }) {
+    const state = oincState ? await oincState.read({ hid, person }) : null
+    const recent = state?.pushRecent ?? []
+    const args = {
+      tone,
+      gender: GENDER[person] ?? null,
+      seed: id,
+      recent: recent.filter((k) => !k.startsWith(TX_KEY)),
+      rejected: state?.rejected ?? [],
+    }
+    if (tone === 'suave' || tone === 'direto' || !loadSnapshot) {
+      return { payload: composePush({ ...args, scene: 'push-nada' }), txId: null }
+    }
+    const { input } = await loadSnapshot({ hid, person })
+    const narrated = recent.filter((k) => k.startsWith(TX_KEY)).map((k) => k.slice(TX_KEY.length))
+    return topicText({ input, args, narrated })
+  }
+
+  /**
+   * Avisos aleatorios (D-20, D-23): um por faixa da janela do servidor, em horario sorteado, fora do
+   * silencio e so para quem tem aparelho. No silencio ou com o tipo desligado apenas pula, sem
+   * marcador, e a vaga que passou nao volta. Como o relogio chama isto a cada rodada, as checagens vao
+   * da mais barata a mais cara: vaga (sem leitura), preferencias, aparelhos e marcador da vaga; os
+   * dados completos so sao lidos com a vaga livre.
    * @param {{ hid: string, person: string }} args
    */
   async function evaluateSpontaneous({ hid, person }) {
     const summary = { events: 0, claimed: 0, sent: 0 }
-    if (!isPair(hid, person) || spontPerDay !== 1) return summary
+    if (!isPair(hid, person)) return summary
 
     const at = now()
-    if (!inWindow(at, spontWindow)) return summary
-    const event = spontaneousEvent({ hid, person, now: at })
-    if (!pastSpontaneousTarget(event.id, at, spontWindow, tickMinutes)) return summary
+    const vacancy = spontaneousSlot({ now: at, window: spontWindow, total: spontPerDay, tickMinutes, hid, person })
+    if (!vacancy?.due) return summary
 
     const prefs = await repo.readPrefs(hid, person)
     if (deliveryDecision({ prefs, kind: 'espontanea', now: at }) !== 'enviar') return summary
     if ((await repo.listFids(hid, person)).length === 0) return summary
+    const event = spontaneousEvent({ hid, person, now: at, slot: vacancy.slot })
+    if (await repo.eventExists(event.id)) return summary
 
     summary.events = 1
-    const settings = await repo.readSettings(hid, person)
+    const { tone } = await repo.readSettings(hid, person)
+    const { payload, txId } = await spontaneousText({ hid, person, tone, id: event.id })
+    // So ids: a vaga, a fala e a compra narrada.
     const marker = {
       ownerId: hid,
       person,
       kind: 'espontanea',
+      slot: vacancy.slot,
+      phraseId: payload.phraseId,
+      ...(txId ? { txId } : {}),
       tag: event.tag,
       url: event.url,
       dayKey: eventDayKey(at),
       createdAt: at,
     }
-    const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision: 'enviar', tone: settings.tone, at })
+    const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision: 'enviar', tone, ready: payload, at })
     if (out.claimed) summary.claimed++
     summary.sent += out.sent
+    // So o que chegou a um aparelho conta como dito: a falha transitoria tenta de novo na mesma faixa.
+    if (out.sent > 0 && oincState) {
+      await oincState.addPushRecent({ hid, person, keys: [payload.phraseId, ...(txId ? [`${TX_KEY}${txId}`] : [])] })
+    }
     return summary
   }
 

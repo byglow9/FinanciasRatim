@@ -2,7 +2,8 @@ import { findLine } from '../../../shared/core/oincLines.js'
 
 // Estado do OINC por pessoa (07.1, D-12): falas reprovadas, aprovadas, geradas e servidas.
 // Documento oincState/{hid}__{person} = { ownerId, person, rejected, liked, generated, served,
-// pushRecent, updatedAt }. So o servidor le e escreve (a colecao fica negada ao cliente pelas regras).
+// pushRecent, updatedAt }. pushRecent sao os ids das falas de aviso ja enviadas e as compras ja
+// narradas no push ('tx:' mais o id do lancamento), da mais antiga para a mais nova. So o servidor le e escreve (a colecao fica negada ao cliente pelas regras).
 // O app manda so o id e o voto: o texto de uma fala aprovada vem do acervo ou do proprio documento,
 // nunca do corpo do pedido. Erro de banco nunca lanca: vira { ok: false } e o log leva so o codigo.
 
@@ -16,6 +17,8 @@ const MAX_REJECTED = 500
 const MAX_LIKED = 100
 const MAX_GENERATED = 200
 const MAX_SERVED = 30
+const MAX_PUSH_RECENT = 60
+const TX_KEY_RE = /^tx:[A-Za-z0-9_-]{1,128}$/
 const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
@@ -39,6 +42,17 @@ const isMine = (snap, hid, person) => Boolean(snap?.exists) && snap.data()?.owne
  */
 function idsOf(value) {
   return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && LINE_ID_RE.test(v)) : []
+}
+
+/**
+ * Recentes do push: ids de fala e chaves 'tx:ID'.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+function pushKeysOf(value) {
+  return Array.isArray(value)
+    ? value.filter((v) => typeof v === 'string' && (LINE_ID_RE.test(v) || TX_KEY_RE.test(v)))
+    : []
 }
 
 /**
@@ -86,7 +100,7 @@ function stateOf(snap, hid, person) {
     liked: entriesOf(data.liked),
     generated: entriesOf(data.generated),
     served: entriesOf(data.served),
-    pushRecent: idsOf(data.pushRecent),
+    pushRecent: pushKeysOf(data.pushRecent),
     refillDays: daysOf(data.refillDays),
   }
 }
@@ -207,6 +221,32 @@ export function createOincState({ db, now = () => new Date(), log = console }) {
       } catch (err) {
         log.warn?.(`[ai] voto do OINC nao gravado codigo=${codeOf(err)}`)
         return { ok: false, reason: 'erro' }
+      }
+    },
+
+    /**
+     * Anota o que saiu num aviso aleatorio: a fala usada e, se narrou uma compra, 'tx:' mais o id
+     * dela. A chave repetida vai para o fim; ficam as ultimas 60. Nunca lanca.
+     * @param {{ hid: string, person: string, keys: string[] }} args
+     * @returns {Promise<{ ok: boolean }>}
+     */
+    async addPushRecent({ hid, person, keys }) {
+      if (!isPair(hid, person)) return { ok: false }
+      const incoming = [...new Set(pushKeysOf(keys))]
+      if (incoming.length === 0) return { ok: false }
+      try {
+        const ref = refOf(hid, person)
+        return await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref)
+          const state = stateOf(snap, hid, person)
+          const pushRecent = [...state.pushRecent.filter((k) => !incoming.includes(k)), ...incoming].slice(-MAX_PUSH_RECENT)
+          if (isMine(snap, hid, person)) tx.update(ref, { pushRecent, updatedAt: now() })
+          else tx.set(ref, { ownerId: hid, person, ...state, pushRecent, updatedAt: now() })
+          return { ok: true }
+        }, TX_OPTIONS)
+      } catch (err) {
+        log.warn?.(`[ai] recentes do push nao guardados codigo=${codeOf(err)}`)
+        return { ok: false }
       }
     },
 

@@ -261,20 +261,116 @@ export function freeText(text, opts = {}) {
 // nome.sobrenome: duas partes de 2 ou mais letras unidas por ponto (login de pessoa).
 const DOTTED_NAME = /^\p{L}{2,}\.\p{L}{2,}$/u
 
+// Vocabulario comum de nome de categoria ou meta (sem acento, minusculas). So entra palavra que nao
+// serve de nome nem de sobrenome: por isso rosa, flor, sol, luz, reis, campos, dias e afins ficam fora.
+const COMMON_LABEL_WORDS = new Set(
+  (
+    'academia agua alimentacao almoco aluguel aniversario animais apartamento apto assinatura assinaturas ' +
+    'banco bar bares bebe bebida bebidas beleza bicicleta cabelo cachorro cafe calcados carnaval carro ' +
+    'cartao casa casamento celular cerveja cigarro cinema combustivel comida compras computador condominio ' +
+    'conta contas credito criancas cuidados curso cursos debito decoracao delivery dentista despesas ' +
+    'diversos dividas doces educacao eletronicos emergencia emprestimo energia enxoval escola esporte ' +
+    'esportes estacionamento extra extras faculdade farmacia faxina feira ferias festa festas filhos fixas ' +
+    'fixos formatura games gas gasolina gastos gato geral higiene hobbies hobby hotel impostos imposto ' +
+    'intercambio internet investimento investimentos jantar jogo jogos lanche lanches lar lazer limpeza ' +
+    'livro livros manutencao medico mensais mensal mercado mesada moradia moto moveis mudanca musica natal ' +
+    'notebook nova novo onibus outras outros padaria parcelas passeio passeios pessoais pessoal pet pets ' +
+    'poupanca praia presente presentes reforma renda reserva restaurante restaurantes role roupa roupas ' +
+    'salario saude seguro seguros servico servicos sonho streaming supermercado tabaco taxas telefone ' +
+    'trabalho transporte tv uber vestuario viagem viagens vicios video'
+  ).split(' '),
+)
+
+/** Palavras de ligacao aceitas entre as palavras comuns. */
+const LABEL_CONNECTORS = new Set(['a', 'as', 'o', 'os', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'com', 'para', 'pra'])
+
+/**
+ * Nome feito SO de palavras comuns de categoria ou meta ("Casa e Lazer"): nao ha pessoa nele, mesmo com
+ * as iniciais maiusculas. Uma unica palavra fora da lista devolve falso e vale o filtro de sempre.
+ * @param {string} raw texto com espacos ja normalizados
+ * @returns {boolean}
+ */
+function isCommonLabel(raw) {
+  if (!/^[\p{L} &/,+-]+$/u.test(raw)) return false
+  const words = raw.split(/[ &/,+-]+/).filter(Boolean).map((w) => normalize(w))
+  return (
+    words.some((w) => COMMON_LABEL_WORDS.has(w)) &&
+    words.every((w) => COMMON_LABEL_WORDS.has(w) || LABEL_CONNECTORS.has(w))
+  )
+}
+
 /**
  * Texto que o usuario digitou e que vira encaixe de fala (nome de categoria, meta, conta ou titulo).
- * Passa por freeText; devolve nulo quando freeText devolve nulo, o rotulo generico quando o texto
- * bruto tem a forma nome.sobrenome e, senao, o resultado de freeText. Risco residual aceito (07, D-20):
- * nome de uma palavra so no comeco do texto, ou todo em minusculas, passa pelo removedor.
+ * Nome so de palavras comuns de categoria ou meta fica como escrito; o resto passa por freeText:
+ * devolve nulo quando freeText devolve nulo, o rotulo generico quando o texto bruto tem a forma
+ * nome.sobrenome e, senao, o resultado de freeText. Risco residual aceito (07, D-20): nome de uma
+ * palavra so no comeco do texto, ou todo em minusculas, passa pelo removedor.
  * @param {unknown} text
  * @param {{ max?: number }} [opts]
  * @returns {string | null}
  */
 export function userSlot(text, opts = {}) {
   const raw = String(text ?? '').replace(SPACE_LIKE, ' ').replace(/\s+/g, ' ').trim()
+  if (isCommonLabel(raw)) {
+    const clean = raw.replace(/[^\p{L} &.'-]/gu, ' ').replace(/\s+/g, ' ').trim()
+    return cutAtWord(clean, opts.max ?? 60)
+  }
   const label = freeText(raw, { max: opts.max })
   if (label === null) return null
   return DOTTED_NAME.test(raw) ? PERSON_LABEL : label
+}
+
+// ---------------------------------------------------------------------------------------------
+// maskSensitiveNumbers: nome de conta e titulo de compromisso na tela bloqueada (07.1, D-28, D-31)
+// ---------------------------------------------------------------------------------------------
+
+// Caracteres invisiveis que partiriam uma sequencia de digitos (ou inverteriam o texto).
+const INVISIBLE = /[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g
+// Faixa de uso privado: guarda o lugar das datas e dos valores enquanto os digitos sao mascarados.
+const PRIVATE_USE = /[\ue000-\uf8ff]/g
+const HOLD_BASE = 0xe000
+
+// Valor em reais bem formado (ate 6 digitos sem ponto de milhar): CPF escrito apos "R$" nao passa.
+const KEEP_MONEY =
+  /R\$\s?(?:\d{1,3}(?:\.\d{3})+|\d{1,6})(?:,\d{1,2})?(?![\p{Nd}/-]|\.\p{Nd})/gu
+// Datas: dia/mes, dia/mes/ano, mes/ano e ano-mes-dia.
+const KEEP_DATE =
+  /(?<![\p{Nd}/.-])(?:(?:0?[1-9]|[12]\d|3[01])\/(?:0?[1-9]|1[0-2])(?:\/(?:(?:19|20)\d{2}|\d{2}))?|(?:0?[1-9]|1[0-2])\/(?:19|20)\d{2}|(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01]))(?![\p{Nd}/]|[.-]\p{Nd})/gu
+// 5 ou mais digitos, mesmo com separadores simples entre eles.
+const FIVE_DIGITS = /\p{Nd}(?:(?:\s?[./_\u2013\u2014-]\s?|\s)?\p{Nd}){4,}/gu
+// 4 digitos logo depois de final, cartao, conta ou agencia.
+const AFTER_KEYWORD =
+  /(?<![\p{L}\p{N}])((?:final|cart[a\u00e3]o|conta|ag[e\u00ea]ncia|ag\.?)(?:\s*(?:n[\u00ba\u00b0o]\.|n[\u00ba\u00b0]|n[u\u00fa]mero|final|[:#.-]))*\s*)\p{Nd}{4}(?!\p{Nd})/giu
+// 4 digitos depois da mascara de cartao (**** 4321).
+const AFTER_STARS = /((?:[*\u2022]{2,}|(?<!\p{L})[xX]{4,})[\s.-]*)\p{Nd}{4}(?!\p{Nd})/gu
+
+/**
+ * Mascara numeros de documento, conta e cartao num texto que vai aparecer COMO ESCRITO (conta e titulo
+ * no corpo do aviso). Troca por *** CPF, CNPJ, sequencias de 5 ou mais digitos e 4 digitos depois de
+ * final, cartao, conta ou agencia; datas e valores em reais ficam. Nao toca em nomes, por isso NAO
+ * serve para nada que va a IA (use userSlot ou freeText).
+ * @param {unknown} text
+ * @returns {string}
+ */
+export function maskSensitiveNumbers(text) {
+  /** @type {string[]} */
+  const kept = []
+  /** @param {string} match */
+  const hold = (match) => String.fromCharCode(HOLD_BASE + kept.push(match) - 1)
+  return String(text ?? '')
+    .replace(INVISIBLE, '')
+    .replace(PRIVATE_USE, '')
+    .replace(SPACE_LIKE, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(KEEP_MONEY, hold)
+    .replace(KEEP_DATE, hold)
+    .replace(CNPJ, '***')
+    .replace(CPF, '***')
+    .replace(FIVE_DIGITS, '***')
+    .replace(AFTER_KEYWORD, '$1***')
+    .replace(AFTER_STARS, '$1***')
+    .replace(PRIVATE_USE, (c) => kept[c.charCodeAt(0) - HOLD_BASE] ?? '')
 }
 
 // ---------------------------------------------------------------------------------------------

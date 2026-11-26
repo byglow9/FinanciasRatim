@@ -1,24 +1,29 @@
 // @ts-check
 // Chave canonica do cache da fala da IA (D-02). Pura e deterministica: sem relogio, sem acaso, sem
 // pacote e sem hash do node (o servidor aplica o sha256 sobre esta string). So entram partes de
-// listas fechadas, faixas de percentual de 5 pontos e o hash do rotulo seguro da loja: nunca
-// texto livre, nome de pessoa nem valor exato. Os valores exatos ficam de fora de proposito: o
-// servidor revalida cada variante guardada contra o resumo atual antes de servi-la (07-12).
+// listas fechadas, faixas de percentual de 5 pontos e o hash do rotulo seguro da loja e da chave do
+// fato: nunca texto livre, nome de pessoa nem valor exato. Os valores exatos ficam de fora de
+// proposito: o servidor revalida cada variante guardada contra o fato atual antes de servi-la (07-12).
 // Parte invalida vira "x" (a funcao nunca lanca).
+// Versao 2 (07.1): o assunto e a cena do fato e a ultima parte e o hash da chave do fato; o texto
+// livre (anotacao, agenda) entra so pelo fato, nunca pela chave.
 
 import { normalize } from './classify.js'
+import { OINC_SCENES } from './oincScenes.js'
 
 /** Versao do formato da chave; muda quando as partes ou a ordem mudam. */
-export const CACHE_KEY_VERSION = 1
+export const CACHE_KEY_VERSION = 2
 
 export const CACHE_TONES = Object.freeze(['suave', 'direto', 'sem-filtro'])
 export const CACHE_SITUATIONS = Object.freeze(['lancamento', 'limite', 'sync', 'abertura', 'espiar'])
+/** Assuntos antigos (a fala espontanea da Fase 7) e as cenas do catalogo (07.1). */
 export const CACHE_TOPICS = Object.freeze([
-  'limites', 'ritmo', 'padroes', 'entradas', 'metas', 'porquinho', 'fixas', 'fatura', 'comparacao',
-  'semana', 'agenda', 'anotacoes',
+  ...new Set([
+    'limites', 'ritmo', 'padroes', 'entradas', 'metas', 'porquinho', 'fixas', 'fatura', 'comparacao',
+    'semana', 'agenda', 'anotacoes',
+    ...Object.keys(OINC_SCENES),
+  ]),
 ])
-/** Assuntos de texto livre: o conteudo entra na chave por hash, senao a fala velha voltaria. */
-const TEXT_TOPICS = Object.freeze(['agenda', 'anotacoes'])
 export const CACHE_RHYTHMS = Object.freeze(['folgado', 'no-ritmo', 'atencao', 'estourou'])
 /** Situacoes que reagem a um lancamento: so nelas a loja entra na chave. */
 export const MERCHANT_SITUATIONS = Object.freeze(['lancamento', 'sync'])
@@ -63,9 +68,10 @@ export function labelHash(label) {
 const fromList = (value, list) => (typeof value === 'string' && list.includes(value) ? value : 'x')
 
 /**
- * Chave canonica da situacao: versao e partes em ordem fixa, separadas por barra vertical.
+ * Chave canonica da situacao: versao e partes em ordem fixa, separadas por barra vertical. A ultima
+ * parte e o hash da chave do fato (`fact.key` do seletor de fatos), ou `x` sem fato.
  * @param {{ cycleKey?: unknown, tone?: unknown, situation?: unknown, topic?: unknown,
- *   categoryId?: unknown, pct?: unknown, rhythm?: unknown, merchant?: unknown, content?: unknown }} [input]
+ *   categoryId?: unknown, pct?: unknown, rhythm?: unknown, merchant?: unknown, fact?: unknown }} [input]
  * @returns {string}
  */
 export function canonicalKey(input) {
@@ -78,6 +84,8 @@ export function canonicalKey(input) {
   const hasMerchant =
     MERCHANT_SITUATIONS.includes(situation) && typeof i.merchant === 'string' && normalize(i.merchant) !== ''
   const merchant = hasMerchant ? `m${labelHash(i.merchant)}` : 'x'
+  const hasFact = typeof i.fact === 'string' && normalize(i.fact) !== ''
+  const fact = hasFact ? `f${labelHash(i.fact)}` : 'x'
   return [
     `v${CACHE_KEY_VERSION}`,
     cycle,
@@ -88,8 +96,6 @@ export function canonicalKey(input) {
     band === null ? 'x' : `p${band}`,
     rhythm,
     merchant,
-    ...(typeof i.topic === 'string' && TEXT_TOPICS.includes(i.topic) && typeof i.content === 'string'
-      ? [`c${labelHash(i.content)}`]
-      : []),
+    fact,
   ].join('|')
 }

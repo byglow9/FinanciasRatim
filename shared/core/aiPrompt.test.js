@@ -321,7 +321,7 @@ test('sem-filtro: os exemplos entram no sistema depois da instrucao de nunca cop
 
 test('speechContext: numeros permitidos vem so do fato, e tamanho, tom e marcas acompanham', () => {
   const ctx = speechContext(
-    { ...FACT, slots: { valor: 'R$ 48', loja: 'iFood', quando: 'há 3 dias', dias: '2 dias', pct: '85%' } },
+    { ...FACT, quando: 'há 3 dias', slots: { valor: 'R$ 48', loja: 'iFood', dias: '2 dias', pct: '85%' } },
     { tone: 'sem-filtro', partnerLabels: ['Ela'], requireProfanity: false },
   )
   assert.deepEqual([...ctx.allowed.moneyCents], [4800])

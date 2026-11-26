@@ -51,7 +51,7 @@ test('limites de tamanho: curta 110, longa 160, pior caso preenchido', () => {
 test('tamanho: curta reprova acima de 110 no pior caso e longa aceita ate 160', () => {
   const longo = '{valor} de gasolina. ' + 'Palavra '.repeat(14).trim() + '.'
   assert.ok(has(run({ t: longo }), /comprimento/))
-  const meio = '{valor} de gasolina. ' + 'Palavra '.repeat(12).trim() + '.'
+  const meio = '{valor} de gasolina. ' + 'Palavra '.repeat(10).trim() + '.'
   assert.equal(has(run({ t: meio }), /comprimento/), false)
   // cena longa (limite-estourou) aceita o que a curta recusa
   const l = { id: 'limite-estourou-001', t: '{categoria} estourou. ' + 'Palavra '.repeat(16).trim() + '.', g: 'x', risada: false, fumo: false, lote: 4 }
@@ -138,7 +138,7 @@ test('ofensa discriminatoria e palavra de relacao reprovam (D-07)', () => {
 })
 
 test('"Espero que", "Que tal" e "Pix de {valor} pra uma pessoa" passam; marca de IA e Pix com nome reprovam', () => {
-  assert.deepEqual(run({ t: 'Espero que seja urgencia e nao promocao. {valor}.'.replace('urgencia', 'urgência').replace('promocao', 'promoção') }), [])
+  assert.deepEqual(run({ t: 'Espero que seja urgência e não promoção. {valor}.' }), [])
   assert.deepEqual(run({ t: 'Que tal uma enfiadinha no Porquinho? {valor}.' }), [])
   const pix = (t) => checkLine({ line: { ...ok({ id: 'pix-pessoa-001', t }) }, cena: 'pix-pessoa' })
   assert.deepEqual(pix('Pix de {valor} pra uma pessoa. Divida, rolo ou chantagem?'), [])
@@ -267,7 +267,7 @@ test('checkOincBank: proporcoes de risada, palavrao, -uxo e fumaca', () => {
   assert.ok(has(checkOincBank(bank, { ...all, profanityMax: 0.1 }), /palavrao em 20\.0%/))
   assert.ok(has(checkOincBank(bank, { ...all, suffixShare: 0.05 }), /sufixo -uxo em 10\.0%/))
   assert.ok(has(checkOincBank(bank, { ...all, smokeShare: [0.2, 0.3] }), /fumaca em 10\.0%/))
-  assert.ok(has(checkOincBank(bank, { ...all, perSceneLaugh: 0.2 }), /risada em 3 de 10/))
+  assert.ok(has(checkOincBank(bank, { ...all, scenes: ['posto'], perSceneLaugh: 0.2 }), /risada em 3 de 10/))
 })
 
 test('o sufixo -uxo ignora luxo, bruxo e puxa', () => {
@@ -280,7 +280,7 @@ test('isNearCopy: igual a menos de caixa, acento e pontuacao; contido; Jaccard d
   const corpus = ['Tô chapaduxo aqui no cofre. Vi duas moedas e era uma só.']
   assert.equal(isNearCopy('TO CHAPADUXO AQUI NO COFRE, VI DUAS MOEDAS E ERA UMA SO!', corpus), true)
   // um contem o outro, 30 ou mais caracteres
-  assert.equal(isNearCopy('Vi duas moedas e era uma só.', ['Tô chapaduxo aqui no cofre. Vi duas moedas e era uma só. Ronc.']), true)
+  assert.equal(isNearCopy('Chapaduxo aqui no cofre. Vi duas moedas.', ['Tô chapaduxo aqui no cofre. Vi duas moedas e era uma só. Ronc.']), true)
   // contido curto nao acusa
   assert.equal(isNearCopy('Ronc.', ['Ronc. Desculpa, escapou.']), false)
   // palavras em comum

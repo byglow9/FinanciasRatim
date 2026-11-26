@@ -192,7 +192,7 @@ function countSentences(text) {
 
 // Numero grande por extenso (o modelo erra o valor e a leitura de digitos nao ve). Contagem pequena
 // ("tres vezes", "dois dias") passa; pequeno so reprova quando vem como valor ou percentual.
-const SPELLED_NUMBER = [
+export const SPELLED_NUMBER = [
   word('onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove'),
   word('vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa'),
   word('cem|duzent[oa]s|trezent[oa]s|quatrocent[oa]s|quinhent[oa]s|seiscent[oa]s|setecent[oa]s|oitocent[oa]s|novecent[oa]s'),

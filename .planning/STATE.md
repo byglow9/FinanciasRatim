@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 07
 current_phase_name: Push e Vintém com IA
 status: executing
-stopped_at: Completed 07.1-11-PLAN.md
-last_updated: "2026-11-26T19:37:51.283Z"
+stopped_at: Completed 07.1-12-PLAN.md
+last_updated: "2026-11-26T19:48:29.685Z"
 last_activity: 2026-11-25
 last_activity_desc: Phase 06 execution started
-state_head: 8a7c71987895c0bb33130f6f12462f39244b02d6
+state_head: ade9af0ad058d3ce289d2e969f3aba479aa1f498
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 165
-  completed_plans: 159
+  completed_plans: 160
   percent: 20
 ---
 
@@ -164,6 +164,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P16 | 10 min | 2 tasks | 9 files |
 | Phase 07.1 P13 | 10 min | 2 tasks | 5 files |
 | Phase 07.1 P11 | 5 min | 2 tasks | 11 files |
+| Phase 07.1 P12 | 8 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -267,6 +268,7 @@ Recent decisions affecting current work:
 - [Phase 07.1]: 07.1-13: 12 dos 32 casos do prompt novo vao sem exemplo (so lotes 2 e 3); avaliar antes do teste cego do 07.1-14
 - [Phase 07.1]: 07.1-11: retido de limite usa o ciclo do aviso e, de volta abaixo do limiar, sai sem numeros; falha de leitura deixa pendente
 - [Phase 07.1]: 07.1-11: dica do espontaneo ja fala em algumas por dia; nao publicar o site antes do 07.1-12, e o servidor vai antes do site
+- [Phase 07.1]: avisos aleatorios: um por faixa; compra de ontem sem loja nem categoria nao e narrada; suave e direto nao carregam os dados do mes
 
 ### Pending Todos
 
@@ -300,8 +302,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-26T19:37:51.129Z
-Stopped at: Completed 07.1-11-PLAN.md
+Last session: 2026-11-26T19:48:29.526Z
+Stopped at: Completed 07.1-12-PLAN.md
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

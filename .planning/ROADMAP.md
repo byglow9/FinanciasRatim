@@ -526,7 +526,7 @@ Plans:
 **Goal:** As falas do OINC fazem sentido, soam em português natural e têm graça de verdade, aprovadas pelo dono em teste cego (ver 07.1-PRE-RESEARCH.md)
 **Requirements**: sem IDs em REQUIREMENTS.md; a rastreabilidade usa as decisões D-01 a D-35 de 07.1-CONTEXT.md
 **Depends on:** Phase 7
-**Plans:** 14/17 plans executed
+**Plans:** 15/17 plans executed
 
 Plans:
 
@@ -565,7 +565,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 07.1-12-PLAN.md — Três avisos aleatórios por dia, um por faixa, com assunto real
+- [x] 07.1-12-PLAN.md — Três avisos aleatórios por dia, um por faixa, com assunto real
 
 **Wave 8** *(blocked on Wave 7 completion)*
 

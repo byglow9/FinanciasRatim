@@ -1,8 +1,10 @@
 import { buildBudgetView } from '../../../shared/core/budget.js'
 import { categoryDisplayName } from '../../../shared/core/categories.js'
 import { cycleOf } from '../../../shared/core/cycle.js'
+import { formatReais } from '../../../shared/core/format.js'
+import { composePush } from '../../../shared/core/oincPush.js'
+import { dueEvent, dueStages } from '../../../shared/core/pushDue.js'
 import {
-  billEvents,
   collapseHeld,
   eventDayKey,
   limitEvents,
@@ -17,6 +19,11 @@ import { joinBillCards } from './repo.js'
 export { readMaxPerDay } from './config.js'
 
 const PEOPLE = ['ele', 'ela']
+
+/** Avisos fixos: saem por estagio (2 e 1 dia antes e no dia) e perdem a validade (D-21, D-24, D-25). */
+const DUE_KINDS = ['conta', 'fatura', 'compromisso']
+
+const GENDER = Object.freeze({ ele: 'm', ela: 'f' })
 
 const isPair = (hid, person) => typeof hid === 'string' && hid !== '' && PEOPLE.includes(person)
 
@@ -41,11 +48,28 @@ function pastSpontaneousTarget(id, at, window, tickMinutes) {
   return elapsed >= hashSeed(id) % Math.max(1, length - tickMinutes)
 }
 
-/** Situacao do banco de frases de push de um marcador. */
+/** Situacao do banco de frases de push de um marcador de limite ou espontaneo. */
 function situationOf(marker) {
   if (marker.kind === 'limite') return marker.threshold === 100 ? 'push-limite-100' : 'push-limite-80'
-  if (marker.kind === 'fatura') return 'push-fatura'
   return 'push-espontanea'
+}
+
+/**
+ * Texto de um aviso fixo, montado com o estagio relido: valor, nome da conta e titulo do compromisso
+ * so existem aqui e no corpo enviado (D-27, D-31). O nome do cartao nao entra.
+ * @param {{ stage: import('../../../shared/core/pushDue.js').DueStage, person: string, tone: string, id: string }} args
+ */
+function dueText({ stage, person, tone, id }) {
+  const { kind, daysLeft, nome, amountCents, hora } = stage
+  /** @type {Record<string, unknown>} */
+  const slots = {}
+  if (amountCents !== null && amountCents > 0) slots.valor = formatReais(amountCents)
+  if (kind === 'conta') slots.conta = nome
+  if (kind === 'compromisso') {
+    slots.titulo = nome
+    slots.hora = hora
+  }
+  return composePush({ scene: `push-${kind}-d${daysLeft}`, tone, slots, gender: GENDER[person] ?? null, seed: id })
 }
 
 /** Log so com o codigo do erro: nunca valor, texto, loja nem nome (Pitfall 12). */
@@ -54,26 +78,74 @@ function logError(where, err) {
 }
 
 /**
- * Notificador (PUSH-02, PUSH-03, PUSH-04): limites, fatura de cartao e o push espontaneo. Cada funcao e idempotente por
- * pessoa: calcula os eventos pela mesma conta do cliente e reivindica um marcador por evento com create() do
- * Firestore. Quem perde a corrida nao envia (D-07). O marcador guarda so ids, categoria, limiar e
- * chaves de ciclo e de dia, nunca o texto do aviso: o texto e montado na hora do envio (D-05).
+ * Notificador (PUSH-02, PUSH-03, PUSH-04): limites, avisos fixos (conta, fatura e compromisso) e o
+ * push espontaneo. Cada funcao e idempotente por pessoa: calcula os eventos pela mesma conta do
+ * cliente e reivindica um marcador por evento com create() do Firestore. Quem perde a corrida nao
+ * envia (D-07). O marcador guarda so referencias (ids, categoria, limiar, estagio e chaves de ciclo,
+ * de vencimento e de dia), nunca o texto, o valor, o nome ou o titulo: o texto e montado na hora do
+ * envio, com os dados relidos. O servidor so le contas e pagamentos.
  *
- * Status do marcador: enviando, enviado, pendente (retido pelo silencio, D-21), desligado,
- * silencioso, teto, colapsado, sem-aparelho e falhou.
+ * Status do marcador: enviando, enviado, pendente (retido pelo silencio, D-21), expirado (retido que
+ * perdeu a validade), desligado, silencioso, teto, colapsado, sem-aparelho e falhou.
+ *
+ * `loadDue` le contas, pagamentos e compromissos (server/src/ai/snapshot.js). Sem ele, so as faturas
+ * sao avisadas.
  * @param {{
  *   repo: ReturnType<typeof import('./repo.js').createRepo>,
  *   sender: { sendToFids(fids: string[], payload: object): Promise<{ sent: number, dead: number, failed: number }> },
  *   now?: () => Date,
- *   config?: { maxPerDay?: number, spontPerDay?: number, spontWindow?: { from: string, to: string }, tickMinutes?: number },
+ *   config?: { maxPerDay?: number, dueHour?: number, spontPerDay?: number, spontWindow?: { from: string, to: string }, tickMinutes?: number },
+ *   loadDue?: (args: { hid: string, person: string }) => Promise<{ bills: unknown[], payments: unknown[], events: unknown[] }>,
  * }} deps
  */
-export function createNotifier({ repo, sender, now = () => new Date(), config = {} }) {
+export function createNotifier({ repo, sender, now = () => new Date(), config = {}, loadDue }) {
   const defaults = readPushConfig()
   const maxPerDay = Number.isInteger(config.maxPerDay) && config.maxPerDay >= 1 ? config.maxPerDay : defaults.maxPerDay
+  const dueHour =
+    Number.isInteger(config.dueHour) && config.dueHour >= 0 && config.dueHour <= 23 ? config.dueHour : defaults.dueHour
   const spontPerDay = config.spontPerDay ?? defaults.spontPerDay
   const spontWindow = config.spontWindow ?? defaults.spontWindow
   const tickMinutes = config.tickMinutes ?? defaults.tickMinutes
+
+  /**
+   * Teto diario (T-07-41). Aleatorias e fixas nao disputam o mesmo espaco (D-23): a aleatoria conta
+   * so as aleatorias; limites e avisos fixos contam o total do dia menos elas.
+   */
+  async function overDailyCap(hid, person, kind, at) {
+    const day = eventDayKey(at)
+    if (kind === 'espontanea') return (await repo.countSent(hid, person, day, 'espontanea')) >= maxPerDay
+    const [all, random] = await Promise.all([
+      repo.countSent(hid, person, day),
+      repo.countSent(hid, person, day, 'espontanea'),
+    ])
+    return all - random >= maxPerDay
+  }
+
+  /**
+   * Estagios que valem agora para a pessoa, com os dados relidos. `complete` falso significa que
+   * contas e compromissos nao puderam ser lidos: so a fatura (cartoes) foi conferida.
+   */
+  async function readStages(hid, person, at) {
+    let due = null
+    if (loadDue) {
+      try {
+        due = await loadDue({ hid, person })
+      } catch (err) {
+        logError('contas e compromissos', err)
+      }
+    }
+    const cards = await repo.readCards(hid, person)
+    const cardSettings = cards.length > 0 ? await repo.readCardSettings(hid) : []
+    const stages = dueStages({
+      now: at,
+      person,
+      bills: due?.bills,
+      payments: due?.payments,
+      events: due?.events,
+      cards: joinBillCards(cards, cardSettings),
+    })
+    return { stages, complete: due !== null }
+  }
 
   /**
    * Envia o aviso de um marcador ja reivindicado (status enviando) e fecha o marcador com o
@@ -82,10 +154,9 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
    * para o proximo check tentar de novo; no retido ele volta a pendente. FID morto nao apaga o
    * marcador (o sender ja apaga o registro).
    */
-  async function dispatch({ hid, person, id, marker, tone, excludeFid, held = false, at = now() }) {
-
-    // Teto diario por pessoa (T-07-41): passou do teto, o marcador vira `teto` e nada sai.
-    if ((await repo.countSent(hid, person, eventDayKey(at))) >= maxPerDay) {
+  async function dispatch({ hid, person, id, marker, tone, stage, excludeFid, held = false, at = now() }) {
+    // Teto diario por pessoa: passou do teto, o marcador vira `teto` e nada sai.
+    if (await overDailyCap(hid, person, marker.kind, at)) {
       await repo.updateEvent(id, { status: 'teto' })
       return { sent: 0, status: 'teto' }
     }
@@ -98,12 +169,9 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
       return { sent: 0, status: 'sem-aparelho' }
     }
 
-    const payload = buildPushPayload({
-      situation: situationOf(marker),
-      tone,
-      categoryName: marker.categoryLabel,
-      seed: id,
-    })
+    const payload = stage
+      ? dueText({ stage, person, tone, id })
+      : buildPushPayload({ situation: situationOf(marker), tone, categoryName: marker.categoryLabel, seed: id })
     let result
     try {
       result = await sender.sendToFids(fids, {
@@ -135,7 +203,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
    * Reivindica o marcador ja com o status da decisao e envia quando for o caso. Desligado nao
    * entrega depois; retido espera o silencio acabar (D-21). Sem texto no marcador.
    */
-  async function claimAndDeliver({ hid, person, id, marker, decision, tone, excludeFid, at }) {
+  async function claimAndDeliver({ hid, person, id, marker, decision, tone, stage, excludeFid, at }) {
     if (decision === 'desligado' || decision === 'reter') {
       const status = decision === 'desligado' ? 'desligado' : 'pendente'
       return { claimed: await repo.claimEvent(id, { ...marker, status }), sent: 0 }
@@ -143,7 +211,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     if (decision !== 'enviar' || !(await repo.claimEvent(id, { ...marker, status: 'enviando' }))) {
       return { claimed: false, sent: 0 }
     }
-    const out = await dispatch({ hid, person, id, marker, tone, excludeFid, at })
+    const out = await dispatch({ hid, person, id, marker, tone, stage, excludeFid, at })
     return { claimed: true, sent: out.sent }
   }
 
@@ -227,50 +295,41 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
-   * Avisa as faturas da pessoa fechadas (ou atrasadas), nao pagas e perto de vencer, pela mesma
-   * conta do sino do app (cardBillAlerts). Um marcador por cartao e mes da fatura. Sem excluir o
-   * aparelho em uso: a fatura nao aparece como aviso dentro da tela, so no sino.
-   * Le so cartoes, configuracoes e preferencias, nunca lancamentos.
+   * Avisos fixos da pessoa e do casal (D-21, D-24, D-25): conta, fatura e compromisso 2 e 1 dia antes,
+   * conta e fatura tambem no dia se nao pagas. Um marcador por coisa, vencimento e estagio, e um aviso
+   * por marcador (sem agrupar). Nada sai antes de `dueHour` de Sao Paulo, e antes disso nada e lido.
+   * Sem excluir o aparelho em uso: estes avisos nao aparecem dentro da tela. Nunca le lancamentos.
    * @param {{ hid: string, person: string }} args
    */
-  async function evaluateBills({ hid, person }) {
+  async function evaluateDue({ hid, person }) {
     const summary = { events: 0, claimed: 0, sent: 0 }
     if (!isPair(hid, person)) return summary
 
-    const cards = await repo.readCards(hid, person)
-    if (cards.length === 0) return summary
-
     const at = now()
-    const [cardSettings, settings] = await Promise.all([repo.readCardSettings(hid), repo.readSettings(hid, person)])
-    // enabled sempre ligado aqui: com o interruptor desligado o evento vira marcador desligado.
-    const events = billEvents({
-      hid,
-      person,
-      cards: joinBillCards(cards, cardSettings),
-      now: at,
-      daysBefore: settings.daysBeforeDueDate,
-      enabled: true,
-    })
-    summary.events = events.length
-    if (events.length === 0) return summary
+    if (zonedParts(at).hour < dueHour) return summary
+    const { stages } = await readStages(hid, person, at)
+    summary.events = stages.length
+    if (stages.length === 0) return summary
 
-    const prefs = await repo.readPrefs(hid, person)
-    const decision = deliveryDecision({ prefs, kind: 'fatura', faturaEnabled: settings.faturaEnabled, now: at })
+    const [settings, prefs] = await Promise.all([repo.readSettings(hid, person), repo.readPrefs(hid, person)])
     const dayKey = eventDayKey(at)
-    for (const event of events) {
-      // Sem valor, data nem nome do cartao: o texto sai do banco de push na hora do envio (D-05).
+    for (const stage of stages) {
+      const event = dueEvent({ hid, person, stage })
+      // So referencias: o texto e montado na hora do envio.
       const marker = {
         ownerId: hid,
         person,
-        kind: 'fatura',
-        cardId: event.cardId,
-        billMonth: event.billMonth,
+        kind: event.kind,
+        refId: event.refId,
+        dueKey: event.dueKey,
+        daysLeft: event.daysLeft,
         tag: event.tag,
         url: event.url,
         dayKey,
         createdAt: at,
       }
-      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, at })
+      const decision = deliveryDecision({ prefs, kind: event.kind, faturaEnabled: settings.faturaEnabled, now: at })
+      const out = await claimAndDeliver({ hid, person, id: event.id, marker, decision, tone: settings.tone, stage, at })
       if (out.claimed) summary.claimed++
       summary.sent += out.sent
     }
@@ -315,14 +374,44 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
   }
 
   /**
+   * Dos retidos que podem sair, tira os avisos fixos que perderam a validade (pago, dia passado ou
+   * item apagado): viram expirado. Sem conseguir ler os dados, o aviso continua pendente.
+   * @returns {Promise<{ live: Array<Record<string, any>>, stages: Map<string, any> }>}
+   */
+  async function stillValid(hid, person, markers, at, summary) {
+    const stages = new Map()
+    if (!markers.some((m) => DUE_KINDS.includes(m.kind))) return { live: markers, stages }
+
+    let read = null
+    try {
+      read = await readStages(hid, person, at)
+    } catch (err) {
+      // Os de limite seguem mesmo assim.
+      logError('vencimentos retidos', err)
+    }
+    for (const stage of read?.stages ?? []) stages.set(dueEvent({ hid, person, stage }).id, stage)
+
+    const live = []
+    for (const marker of markers) {
+      if (!DUE_KINDS.includes(marker.kind) || stages.has(marker.id)) {
+        live.push(marker)
+      } else if (read && (read.complete || marker.kind === 'fatura')) {
+        if (await repo.transitionEvent(marker.id, 'pendente', { status: 'expirado' })) summary.expired++
+      }
+    }
+    return { live, stages }
+  }
+
+  /**
    * Entrega os avisos retidos pelo silencio que ja podem sair (D-21). Agrupa por casal e pessoa; a
-   * pessoa que ainda esta no silencio fica como esta. Fora dele confere se o tipo continua ligado,
+   * pessoa que ainda esta no silencio fica como esta. Fora dele confere se o tipo continua ligado e,
+   * nos avisos fixos, se o estagio ainda existe (senao vira expirado),
    * colapsa 80 e 100 da mesma categoria no mais alto e envia com o texto montado agora, no tom
    * atual. A transicao pendente para enviando e por transacao: so um executor ganha.
    * @param {{ now?: Date }} [args]
    */
   async function deliverHeld({ now: at = now() } = {}) {
-    const summary = { groups: 0, sent: 0, collapsed: 0, off: 0 }
+    const summary = { groups: 0, sent: 0, collapsed: 0, off: 0, expired: 0 }
     const pending = await repo.listPending()
 
     /** @type {Map<string, { hid: string, person: string, items: Array<Record<string, any>> }>} */
@@ -359,14 +448,16 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
           }
         }
 
-        const { keep, drop } = collapseHeld(enabled)
+        const { live, stages } = await stillValid(hid, person, enabled, at, summary)
+        const { keep, drop } = collapseHeld(live)
         for (const marker of drop) {
           if (await repo.transitionEvent(marker.id, 'pendente', { status: 'colapsado' })) summary.collapsed++
         }
         for (const marker of keep) {
           const won = await repo.transitionEvent(marker.id, 'pendente', { status: 'enviando', dayKey: eventDayKey(at) })
           if (!won) continue
-          const out = await dispatch({ hid, person, id: marker.id, marker, tone: settings.tone, held: true, at })
+          const stage = stages.get(marker.id)
+          const out = await dispatch({ hid, person, id: marker.id, marker, tone: settings.tone, stage, held: true, at })
           summary.sent += out.sent
         }
       } catch (err) {
@@ -377,5 +468,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
     return summary
   }
 
-  return { evaluateLimits, evaluateBills, evaluateSpontaneous, deliverHeld }
+  // evaluateBills e o nome antigo: o relogio, a pos-sincronizacao e a rota de verificacao ainda o
+  // chamam; o plano 07.1-17 troca os chamadores e remove o apelido.
+  return { evaluateLimits, evaluateDue, evaluateBills: evaluateDue, evaluateSpontaneous, deliverHeld }
 }

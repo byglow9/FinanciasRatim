@@ -23,8 +23,8 @@ const TYPE_KEYS = /** @type {const} */ (['limite80', 'limite100', 'espontanea', 
 const QUIET_KEYS = /** @type {const} */ (['enabled', 'from', 'to'])
 const TOP_KEYS = /** @type {const} */ (['types', 'quiet'])
 
-/** Janela padrao do push espontaneo do servidor (hora de Sao Paulo). */
-export const DEFAULT_SPONTANEOUS_WINDOW = Object.freeze({ from: '11:00', to: '20:00' })
+/** Janela padrao do push espontaneo do servidor (hora de Sao Paulo), sem madrugada (D-20). */
+export const DEFAULT_SPONTANEOUS_WINDOW = Object.freeze({ from: '09:00', to: '21:00' })
 
 /** Mensagens fixas da validacao (nunca ecoam a entrada). */
 export const PUSH_PREFS_ERRORS = Object.freeze({
@@ -188,7 +188,7 @@ export function typeEnabled(prefs, kind, { faturaEnabled } = {}) {
 }
 
 /**
- * Janela do push espontaneo a partir de texto como '11:00-20:00'. Texto
+ * Janela do push espontaneo a partir de texto como '09:00-21:00'. Texto
  * invalido (ou inicio igual ao fim) devolve a janela padrao.
  * @param {unknown} text
  * @returns {{ from: string, to: string }}

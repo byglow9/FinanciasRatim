@@ -2,7 +2,8 @@
 // lanca, para um erro de digitacao numa variavel nunca derrubar o deploy.
 import { parseWindow } from '../../../shared/core/pushPrefs.js'
 
-const DEFAULT_MAX_PER_DAY = 8
+const DEFAULT_MAX_PER_DAY = 20
+const DEFAULT_DUE_HOUR = 9
 const DEFAULT_SPONT_PER_DAY = 1
 const DEFAULT_TICK_MINUTES = 15
 const DEFAULT_BILL_CHECK_MINUTES = 60
@@ -17,7 +18,8 @@ function intIn(raw, min, max, fallback) {
 }
 
 /**
- * Teto diario de avisos por pessoa (PUSH_MAX_PER_DAY, padrao 8).
+ * Teto diario de avisos por pessoa (PUSH_MAX_PER_DAY, padrao 20). Limites e avisos fixos contam o
+ * total do dia sem as aleatorias (D-23).
  * @param {Record<string, string | undefined>} [env]
  * @returns {number}
  */
@@ -27,12 +29,14 @@ export function readMaxPerDay(env = {}) {
 
 /**
  * Todos os parametros do push, ja com os padroes.
- * PUSH_SPONT_PER_DAY e 0 ou 1; PUSH_TICK_MINUTES igual a 0 desliga o relogio.
+ * PUSH_SPONT_PER_DAY e 0 ou 1; PUSH_TICK_MINUTES igual a 0 desliga o relogio. PUSH_DUE_HOUR e a
+ * hora de Sao Paulo (0 a 23) a partir da qual saem os avisos de conta, fatura e compromisso.
  * @param {Record<string, string | undefined>} [env]
  */
 export function readPushConfig(env = {}) {
   return {
     maxPerDay: readMaxPerDay(env),
+    dueHour: intIn(env.PUSH_DUE_HOUR, 0, 23, DEFAULT_DUE_HOUR),
     spontPerDay: intIn(env.PUSH_SPONT_PER_DAY, 0, 1, DEFAULT_SPONT_PER_DAY),
     spontWindow: parseWindow(env.PUSH_SPONT_WINDOW),
     tickMinutes: intIn(env.PUSH_TICK_MINUTES, 0, 1440, DEFAULT_TICK_MINUTES),

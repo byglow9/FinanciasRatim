@@ -253,21 +253,22 @@ export function createRepo({ db, prefsStore = createPrefsStore(db) }) {
 
     /**
      * Avisos ja enviados a pessoa no dia de Sao Paulo (base do teto diario). Contagem agregada:
-     * nao le os documentos.
+     * nao le os documentos. So igualdades, entao nenhum indice novo e preciso.
      * @param {string} hid
      * @param {string} person
      * @param {string} dayKey
+     * @param {string} [kind] conta so este tipo; sem ele conta todos os enviados do dia
      * @returns {Promise<number>}
      */
-    async countSent(hid, person, dayKey) {
-      const snap = await db
+    async countSent(hid, person, dayKey, kind) {
+      let query = db
         .collection(EVENTS)
         .where('ownerId', '==', hid)
         .where('person', '==', person)
         .where('dayKey', '==', dayKey)
         .where('status', '==', 'enviado')
-        .count()
-        .get()
+      if (kind) query = query.where('kind', '==', kind)
+      const snap = await query.count().get()
       return snap.data().count
     },
 

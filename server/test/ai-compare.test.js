@@ -18,7 +18,7 @@ import {
 } from '../scripts/ai-compare.js'
 import { PROVOCATIONS, buildFixtures, buildGeneralFixtures, fixtureCases } from '../scripts/lib/ai-compare-fixtures.js'
 import { createSpeech } from '../src/ai/speech.js'
-import { TEMPERATURE, maxTokens } from '../../shared/core/aiPrompt.js'
+import { TEMPERATURE, maxTokens } from '../scripts/lib/ai-prompt-v1.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
 import { validateSpeech } from '../../shared/core/aiValidate.js'
 

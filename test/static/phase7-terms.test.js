@@ -98,7 +98,7 @@ test('o script usa o adaptador, o prompt e a regua do servidor e nao grava em se
   for (const part of [
     "from '../src/ai/providers.js'",
     "from '../src/ai/config.js'",
-    "from '../../shared/core/aiPrompt.js'",
+    "from './lib/ai-prompt-v1.js'",
     "from '../../shared/core/aiValidate.js'",
     'buildMessages',
     'validateSpeech',

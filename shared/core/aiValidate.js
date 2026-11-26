@@ -8,7 +8,7 @@
 //
 // Puro: sem relogio, sem acaso, sem pacote. Devolve `{ ok: true, text }` com o texto normalizado
 // ou `{ ok: false, reason }` com o primeiro motivo, nesta ordem: vazio, marcacao, emoji,
-// travessao, recusa, marca-ia, idioma, tamanho, dado-proibido, parceiro, discriminacao,
+// travessao, recusa, marca-ia, idioma, tamanho, dado-proibido, parceiro, discriminacao, vetada,
 // loja-errada, numero-inventado, numero-extenso, manso.
 
 import { normalize } from './classify.js'
@@ -29,11 +29,19 @@ import { AI_TELLS, FORBIDDEN_DATA, PROFANITY } from './phraseRules.js'
  * @typedef {{ ok: true, text: string } | { ok: false, reason: string }} SpeechResult
  */
 
-/** Limites por tamanho da situacao (D-15). */
+/** Limites por tamanho da situacao (D-02): uma tirada curta; mais longa so em estouro e comparacao. */
 export const LENGTH_LIMITS = Object.freeze({
-  curta: Object.freeze({ chars: 140, sentences: 4 }),
-  longa: Object.freeze({ chars: 280, sentences: 5 }),
+  curta: Object.freeze({ chars: 120, sentences: 4 }),
+  longa: Object.freeze({ chars: 200, sentences: 5 }),
 })
+
+// "Espero que" e frase da voz aprovada ("Espero que seja urgencia e nao promocao"): sai das marcas de IA
+// daqui, sem alterar phraseRules.js (o banco da Fase 4 continua com a regra).
+const AI_TELLS_IA = AI_TELLS.filter((re) => re.source !== 'espero que')
+
+// "Pix de R$ 150" e fato do lancamento: o "pix de" so e liberado quando vem seguido de valor em reais.
+// "Pix de Fulano" e "pix para ..." continuam dado proibido.
+const PIX_DE_VALOR = /pix\s+de\s+(?=R\$|\d[\d.,]*\s*(?:reais|real)(?![\p{L}]))/giu
 
 // ---------------------------------------------------------------------------------------------
 // Listas
@@ -294,7 +302,7 @@ export function validateSpeech(texto, ctx = {}) {
 
   const norm = normalize(text)
   if (REFUSAL.some((re) => re.test(norm))) return fail('recusa')
-  if (AI_TELLS.some((re) => re.test(text))) return fail('marca-ia')
+  if (AI_TELLS_IA.some((re) => re.test(text))) return fail('marca-ia')
   if (!looksPortuguese(norm)) return fail('idioma')
 
   const limits = c.length === 'longa' ? LENGTH_LIMITS.longa : LENGTH_LIMITS.curta
@@ -302,7 +310,8 @@ export function validateSpeech(texto, ctx = {}) {
 
   // Valores em reais e percentuais saem antes de procurar 4 ou mais digitos seguidos.
   const withoutValues = text.replace(MONEY_RE, ' ').replace(REAIS_RE, ' ').replace(PCT_RE, ' ')
-  if (FORBIDDEN_DATA.some((re) => re.test(text)) || /\d{4,}/.test(withoutValues)) return fail('dado-proibido')
+  const withoutPixValor = text.replace(PIX_DE_VALOR, ' ')
+  if (FORBIDDEN_DATA.some((re) => re.test(withoutPixValor)) || /\d{4,}/.test(withoutValues)) return fail('dado-proibido')
 
   const partners = Array.isArray(c.partnerLabels) ? c.partnerLabels : []
   if (partners.some((p) => mentions(norm, p))) return fail('parceiro')
@@ -311,6 +320,8 @@ export function validateSpeech(texto, ctx = {}) {
   for (const list of Object.values(DISCRIMINATION)) {
     if (list.some((re) => re.test(norm))) return fail('discriminacao')
   }
+  // Palavra vetada pelo dono (D-30): "mulambo" e derivados (mulambuxo, mulamba).
+  if (/mulamb/.test(norm)) return fail('vetada')
 
   if (Array.isArray(c.otherLabels) && c.otherLabels.length > 0) {
     const focus = typeof c.focusLabel === 'string' ? normalize(c.focusLabel) : ''

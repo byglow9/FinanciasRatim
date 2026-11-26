@@ -4,7 +4,7 @@
 // assunto e tamanho de server/src/ai/speech.js (o teste ai-compare.test.js prova a igualdade).
 // Este arquivo nao le arquivos, nao le variaveis de ambiente e nao fala com a rede.
 import { buildAiSummary, collectAllowed, reactionLabels, summaryToPromptText } from '../../../shared/core/aiSummary.js'
-import { isEdgy, lengthFor } from '../../../shared/core/aiPrompt.js'
+import { isEdgy, lengthFor } from './ai-prompt-v1.js'
 import { normalize } from '../../../shared/core/classify.js'
 import { zonedTimeToInstant } from '../../../shared/core/time.js'
 

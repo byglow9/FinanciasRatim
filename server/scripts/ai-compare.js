@@ -26,7 +26,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { readAiConfig } from '../src/ai/config.js'
 import { createProvider } from '../src/ai/providers.js'
-import { TEMPERATURE, buildMessages, maxTokens } from '../../shared/core/aiPrompt.js'
+import { TEMPERATURE, buildMessages, maxTokens } from './lib/ai-prompt-v1.js'
 import {
   DISCRIMINATION,
   EDGY_WORDS,

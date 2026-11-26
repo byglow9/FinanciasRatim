@@ -2,7 +2,21 @@
 // Rodar: node --test test/static/phase71-oinc.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import ts from 'typescript'
 import { code, exists, listSrc, read } from './helpers/phase3-1.js'
+import * as budget from '../../shared/core/budget.js'
+import * as categories from '../../shared/core/categories.js'
+import * as cycleCore from '../../shared/core/cycle.js'
+import * as dayKey from '../../shared/core/dayKey.js'
+import * as insightsCore from '../../shared/core/insights.js'
+import * as oincFacts from '../../shared/core/oincFacts.js'
+import * as oincLines from '../../shared/core/oincLines.js'
+import * as oincScenes from '../../shared/core/oincScenes.js'
+import * as oincSelect from '../../shared/core/oincSelect.js'
+import * as phrasePicker from '../../shared/core/phrasePicker.js'
+import * as vintemMood from '../../shared/core/vintemMood.js'
+import * as vintemPhrases from '../../shared/core/vintemPhrases.js'
+import * as vintemSpring from '../../shared/core/vintemSpring.js'
 
 const CONTEXT = 'src/contexts/VintemContext.tsx'
 const HISTORY = 'src/lib/oincHistory.ts'
@@ -157,8 +171,8 @@ test('o toast do porco leva o voto so na fala do acervo e de quem pode votar', (
   assert.match(peek, /<VintemVote\s+key=\{voteId\}/, 'o voto precisa reiniciar a cada fala')
   assert.match(peek, /rate\(voteId, voto\)\s*if \(voto === 'nao'\) closeToast\(\)/, 'so o nao gostei fecha o aviso')
   assert.match(src, /const VINTEM_TOAST_MS = 10000/, 'o aviso precisa dar tempo de votar')
-  // A fala da IA nao tem id de acervo e nao vai a voto.
-  assert.match(body(src, 'espiar'), /peekToast\(\{ text \}, 'wake'\)/)
+  // A fala da IA so vai a voto no sem filtro e com o id do servidor (D-35).
+  assert.match(body(src, 'espiar'), /tone === 'sem-filtro' && id !== null \? \{ text, id, votavel: true \} : \{ text \}/)
 })
 
 test('os botoes de voto sao de 44 px, com fundo opaco, sombra e sem animacao propria', () => {
@@ -216,4 +230,364 @@ test('a reacao a compra importada acha o lancamento por bankArrival.id e usa rea
   assert.match(effect, /transactions\?\.find\(\(t\) => t\.id === bankArrival\.id\)/, 'nao acha o lancamento que chegou')
   assert.match(effect, /reactionFact\(\{ situation: result\.situation, tx: arrived, categoryDefs/, 'sem reactionFact')
   assert.match(effect, /fallback: \{ situation: result\.situation, raw, announce: true, \.\.\.scene \}/, 'a cena nao vai a fala')
+})
+
+// ---------------------------------------------------------------------------------------------
+// 07.1-08: o provedor executado de verdade (transpilado), com React, servicos e tela falsos e o
+// nucleo e o acervo reais. Cobre o que nao da para ver sem navegador: quem fala em cada vez.
+// ---------------------------------------------------------------------------------------------
+
+const CORE = {
+  '@shared/core/categories.js': categories,
+  '@shared/core/cycle.js': cycleCore,
+  '@shared/core/dayKey.js': dayKey,
+  '@shared/core/insights.js': insightsCore,
+  '@shared/core/oincFacts.js': oincFacts,
+  '@shared/core/oincLines.js': oincLines,
+  '@shared/core/oincScenes.js': oincScenes,
+  '@shared/core/oincSelect.js': oincSelect,
+  '@shared/core/phrasePicker.js': phrasePicker,
+  '@shared/core/vintemMood.js': vintemMood,
+  '@shared/core/vintemPhrases.js': vintemPhrases,
+  '@shared/core/vintemSpring.js': vintemSpring,
+}
+
+/** React minimo: guarda refs e estados entre renderizacoes e roda os efeitos depois de cada uma. */
+function fakeReact() {
+  const slots = []
+  const effects = []
+  let at = 0
+  const keep = (make) => {
+    const i = at
+    at += 1
+    if (!(i in slots)) slots[i] = make()
+    return slots[i]
+  }
+  const react = {
+    createContext: () => ({ Provider: 'Provider' }),
+    useContext: () => undefined,
+    useCallback: (fn) => fn,
+    useMemo: (fn) => fn(),
+    useRef: (value) => keep(() => ({ current: value })),
+    useState: (initial) => {
+      const box = keep(() => ({ value: initial }))
+      return [
+        box.value,
+        (next) => {
+          box.value = next
+          box.written?.(next)
+        },
+      ]
+    },
+    useEffect: (fn) => effects.push(fn),
+  }
+  const render = (component) => {
+    at = 0
+    const out = component()
+    effects.splice(0).forEach((fn) => fn())
+    return out
+  }
+  return { react, render, slots }
+}
+
+function load(file, modules, globals = {}) {
+  const { outputText } = ts.transpileModule(read(file), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+    fileName: file,
+  })
+  const exports = {}
+  const require = (name) => modules[name] ?? assert.fail(`import nao esperado em ${file}: ${name}`)
+  new Function('exports', 'require', ...Object.keys(globals), outputText)(exports, require, ...Object.values(globals))
+  return exports
+}
+
+function runProvider({ tone = 'sem-filtro', answer = null } = {}) {
+  const world = { answer, busy: false, asked: [], toasts: [], used: [], spoken: [], reactions: [], votes: [], dataVersion: 0 }
+  const { react, render, slots } = fakeReact()
+  const jsx = (type, props) => ({ type, props })
+  const modules = {
+    ...CORE,
+    react,
+    'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
+    'react-router-dom': { useLocation: () => ({ pathname: '/metas' }) },
+    '@/types': { vintemToneOf: (settings) => settings.vintemTone },
+    '@/components/vintem/VintemToast': { VintemToastBody: 'VintemToastBody' },
+    '@/components/ui/toast': { useToast: () => ({ show: (_message, options) => world.toasts.push(options) }) },
+    '@/services/vintemSpeech.service': {
+      askVintem: async (ai) => {
+        world.asked.push(ai)
+        return world.answer
+      },
+      ASK_TIMEOUT_OPEN_MS: 4000,
+      getReactionTimeoutMs: () => 2500,
+      getVintemHints: async () => ({}),
+    },
+    '@/hooks/useVintemPeek': {
+      useVintemPeek: (args) => {
+        world.peek = args
+      },
+    },
+    '@/services/oinc.service': {
+      fetchAcervo: async () => ({ rejected: [], generated: [] }),
+      readRejected: () => [],
+      repor: async () => false,
+      votar: async (id, voto) => void world.votes.push([id, voto]),
+    },
+    '@/lib/pwa/isBusy': { isBusy: () => world.busy },
+    '@/lib/oincHistory': {
+      readOincHistory: () => ({ seen: {}, lastRisada: false }),
+      markOincUsed: (_person, id) => world.used.push(id),
+    },
+    '@/components/vintem/VintemVote': { VintemVote: 'VintemVote' },
+    '@/lib/vintemBaseline': { loadBaseline: async () => null },
+    './AreaContext': {
+      useArea: () => ({
+        settings: { vintemTone: tone },
+        settingsStatus: 'ready',
+        categoryDefs: [],
+        personConfigFor: () => ({ salaryDay: 5 }),
+        readOnly: false,
+      }),
+    },
+    './AuthContext': { useAuth: () => ({ user: { person: 'ele' } }) },
+    './CycleContext': {
+      useCycle: () => ({ viewPerson: 'ele', now: new Date(), dataVersion: world.dataVersion }),
+    },
+  }
+  const provider = load(CONTEXT, modules, {
+    document: { visibilityState: 'visible' },
+    sessionStorage: { getItem: () => null, setItem: () => {} },
+  })
+  world.render = () => {
+    world.value = render(() => provider.VintemProvider({ children: null })).props.value
+  }
+  world.render()
+  // O primeiro estado do provedor e a fala do balao.
+  slots.find((s) => 'value' in s).written = (speech) => speech && world.spoken.push(speech)
+  /** Registra o slot do arco: a partir daqui e a Home. */
+  world.home = () => world.value.registerSlot({ react: (r) => world.reactions.push(r) })
+  world.espiar = () => world.peek.espiar({ situation: 'espiar', timeoutMs: 4000 })
+  world.toastText = (i) => world.toasts[i].custom.props.text
+  return world
+}
+
+/** Cena do acervo (ou 'fase4') de um id de fala. */
+function sceneOf(id) {
+  for (const [cena, lines] of Object.entries(oincLines.OINC_LINES)) {
+    if (lines.some((line) => line.id === id)) return cena
+  }
+  return 'fase4'
+}
+
+const fact = (cena, prioridade, slots = {}) => ({ cena, prioridade, slots, conds: [], key: `t:${cena}`, txId: null, via: 'acervo' })
+const IA = { text: 'Fala da IA.', id: 'ia-0123456789abcdef' }
+const settle = () => new Promise((resolve) => setImmediate(resolve))
+
+test('sem filtro: duas vezes o acervo e a terceira a IA, que leva o id e os botoes de voto', async () => {
+  const w = runProvider({ answer: IA })
+  for (let i = 0; i < 6; i += 1) await w.espiar()
+  assert.equal(w.asked.length, 2, 'a IA e so uma a cada tres')
+  assert.equal(w.toasts.length, 6)
+  assert.deepEqual([w.toastText(2), w.toastText(5)], ['Fala da IA.', 'Fala da IA.'])
+  for (const i of [0, 1, 3, 4]) assert.notEqual(w.toastText(i), 'Fala da IA.')
+  const vote = w.toasts[2].footer(() => {})
+  vote.props.onVote('sim')
+  assert.deepEqual(w.votes, [['ia-0123456789abcdef', 'sim']])
+  assert.deepEqual(w.reactions, [])
+})
+
+test('sem filtro: IA sem resposta cai no acervo, e sem servidor o porco fala em todas as vezes', async () => {
+  const w = runProvider({ answer: null })
+  for (let i = 0; i < 6; i += 1) await w.espiar()
+  assert.equal(w.asked.length, 2)
+  assert.equal(w.toasts.length, 6)
+  assert.deepEqual([...new Set(w.used.map(sceneOf))], ['do-nada'], 'sem fatos o porco fala do nada')
+})
+
+test('o assunto da espiada sai dos fatos, sem repetir a cena logo em seguida e sem a cena de entrada', async () => {
+  const w = runProvider()
+  w.value.setFacts([fact('mes-folgado', 40), fact('sumico', 45), fact('porco-chapaduxo', 8), fact('entrou', 5)])
+  for (let i = 0; i < 3; i += 1) await w.espiar()
+  assert.deepEqual([...w.used.map(sceneOf)].sort(), ['mes-folgado', 'porco-chapaduxo', 'sumico'])
+})
+
+test('cena sem linha no ar cai no do nada, e a vez seguinte tenta outro assunto', async () => {
+  const w = runProvider()
+  w.value.setFacts([fact('bom-dia', 90)])
+  await w.espiar()
+  assert.deepEqual(w.used.map(sceneOf), ['do-nada'])
+})
+
+test('fatos de antes de uma mudanca nos dados nao viram fala: conta ja paga nao e cobrada (D-01)', async () => {
+  const w = runProvider()
+  w.value.setFacts([fact('sumico', 45)])
+  w.dataVersion = 1
+  w.render()
+  await w.espiar()
+  assert.deepEqual(w.used.map(sceneOf), ['do-nada'])
+  w.value.setFacts([fact('sumico', 45)])
+  await w.espiar()
+  assert.equal(sceneOf(w.used[1]), 'sumico')
+})
+
+test('com formulario aberto nem a espiada nem a entrada aparecem', async () => {
+  const w = runProvider()
+  w.busy = true
+  await w.espiar()
+  w.peek.entrar()
+  assert.equal(w.toasts.length, 0)
+})
+
+test('suave e direto: a espiada e so da IA, sem reserva e sem voto (D-35)', async () => {
+  for (const tone of ['suave', 'direto']) {
+    const silent = runProvider({ tone })
+    for (let i = 0; i < 3; i += 1) await silent.espiar()
+    assert.equal(silent.asked.length, 3)
+    assert.equal(silent.toasts.length, 0, 'sem texto nada aparece')
+
+    const spoken = runProvider({ tone, answer: IA })
+    await spoken.espiar()
+    assert.equal(spoken.toastText(0), 'Fala da IA.')
+    assert.equal(spoken.toasts[0].footer, undefined)
+    spoken.home()
+    await spoken.espiar()
+    assert.equal(spoken.spoken[0].text, 'Fala da IA.')
+    assert.ok(!('votavel' in spoken.spoken[0]), 'voto fora do sem filtro')
+  }
+})
+
+test('sem filtro, na Home: a fala da IA vai ao balao com o id do servidor e votavel', async () => {
+  const w = runProvider({ answer: IA })
+  w.home()
+  for (let i = 0; i < 3; i += 1) await w.espiar()
+  const last = w.spoken.at(-1)
+  assert.deepEqual([last.id, last.text, last.votavel], [IA.id, IA.text, true])
+  assert.equal(w.reactions.length, 3)
+  assert.equal(w.toasts.length, 0)
+})
+
+test('entrada no sem filtro: o fato urgente vence; sem ele, a cena entrou; nunca pede a IA (D-17)', () => {
+  const urgent = runProvider()
+  urgent.value.setFacts([fact('primeiro-dia', 85), fact('entrou', 5)])
+  urgent.peek.entrar()
+  assert.deepEqual(urgent.used.map(sceneOf), ['primeiro-dia'])
+
+  const calm = runProvider()
+  calm.value.setFacts([fact('sumico', 45), fact('entrou', 5)])
+  calm.peek.entrar()
+  assert.deepEqual(calm.used.map(sceneOf), ['entrou'])
+
+  const empty = runProvider()
+  empty.peek.entrar()
+  assert.deepEqual(empty.used.map(sceneOf), ['entrou'])
+  assert.equal(urgent.asked.length + calm.asked.length + empty.asked.length, 0)
+})
+
+test('entrada em suave e direto: situacao inicio pelo banco de sempre, sem voto e sem IA', () => {
+  for (const tone of ['suave', 'direto']) {
+    const w = runProvider({ tone, answer: IA })
+    w.value.setFacts([fact('primeiro-dia', 85)])
+    w.peek.entrar()
+    assert.equal(w.asked.length, 0)
+    assert.equal(w.used.length, 0, 'acervo fora do sem filtro')
+    assert.ok(vintemPhrases.PHRASES.inicio[tone].some((p) => p.t === w.toastText(0)), w.toastText(0))
+    assert.equal(w.toasts[0].footer, undefined)
+  }
+})
+
+/** Visao de um ciclo com renda e folga, para a reacao ao lancamento. */
+function budgetView() {
+  const now = new Date()
+  return budget.buildBudgetView({
+    now,
+    cycle: cycleCore.cycleOf(now, 5),
+    config: { salaryDay: 5, expectedIncomeCents: 500000, limits: {} },
+    transactions: [],
+    bills: [],
+    payments: [],
+    categoryDefs: [],
+  })
+}
+
+const LAUNCH = { kind: 'gasto', cents: 8000, description: 'posto shell', person: 'ele' }
+
+test('reacao a um gasto no sem filtro fala daquela compra pelo acervo, sem IA (D-09, D-10)', async () => {
+  const w = runProvider({ answer: IA })
+  await w.value.onLaunched({ ...LAUNCH, view: budgetView() })
+  assert.equal(w.asked.length, 0)
+  assert.deepEqual(w.used.map(sceneOf), ['posto'])
+  w.value.onGoal({ valorCents: 5000 })
+  await settle()
+  assert.equal(w.asked.length, 0)
+  assert.equal(w.toasts.length, 2)
+  // Sincronizacao do banco: a Home chama speakAi, que no sem filtro vai direto a fala de reserva.
+  await w.value.speakAi({
+    ai: { situation: 'sync' },
+    fallback: { situation: 'lancamento-ok', cena: 'posto', slots: { valor: 'R$ 80,00', quando: 'hoje' }, conds: ['hoje'] },
+  })
+  assert.equal(w.asked.length, 0)
+  assert.equal(sceneOf(w.used.at(-1)), 'posto')
+})
+
+test('reacao e sincronizacao em suave e direto continuam pedindo a IA, como antes (D-35)', async () => {
+  const w = runProvider({ tone: 'direto', answer: IA })
+  await w.value.onLaunched({ ...LAUNCH, view: budgetView() })
+  assert.deepEqual(w.asked, [{ situation: 'lancamento', categoryId: null, timeoutMs: 2500 }])
+  assert.equal(w.toastText(0), 'Fala da IA.')
+  await w.value.speakAi({ ai: { situation: 'sync' }, fallback: { situation: 'lancamento-ok' } })
+  assert.deepEqual(w.asked[1], { situation: 'sync', timeoutMs: 4000 })
+})
+
+// A primeira Home da carga: o hook executado de verdade.
+function runHome({ tone = 'sem-filtro' } = {}) {
+  const world = { facts: [], entries: [], opened: [], registered: [] }
+  const { react, render } = fakeReact()
+  const view = budgetView()
+  const cycle = cycleCore.cycleOf(new Date(), 5)
+  const hook = load(HOME_HOOK, {
+    ...CORE,
+    react,
+    '@/contexts/AreaContext': { useArea: () => ({ categoryDefs: [] }) },
+    '@/contexts/CycleContext': { useCycle: () => ({ now: new Date(), viewPerson: 'ele', isCurrent: true }) },
+    '@/contexts/VintemContext': {
+      useVintem: () => ({
+        tone,
+        speak: () => true,
+        speakAi: async (args) => void world.opened.push(args),
+        entrar: (args) => world.entries.push(args),
+        canVote: true,
+        slot: { current: null },
+        cheer: null,
+        setFacts: (facts) => world.registered.push(facts),
+      }),
+    },
+    '@/hooks/useOincFacts': { useOincFacts: () => world.facts },
+    '@/hooks/useReducedMotion': { useReducedMotion: () => false },
+    '@/hooks/useVintemInsights': { useVintemInsights: () => ({ insights: [], ready: true, bankArrival: null }) },
+  })
+  world.render = () =>
+    render(() => hook.useHomeVintem({ view, cycle, transactions: [], enabled: true, readOnly: false }))
+  return world
+}
+
+test('a primeira Home da carga espera os fatos e entra uma vez so pelo provedor (D-17)', () => {
+  const w = runHome()
+  w.render()
+  assert.equal(w.entries.length, 0, 'entrou antes de os fatos chegarem')
+  w.facts = [fact('entrou', 5)]
+  w.render()
+  w.render()
+  assert.equal(w.entries.length, 1)
+  assert.equal(w.entries[0].naHome, true)
+  assert.ok(w.entries[0].reserva.situation, 'sem a fala de reserva')
+  assert.equal(w.entries[0].raw.dias.constructor, Number)
+  assert.equal(w.opened.length, 0, 'o sem filtro pediu a IA na entrada')
+})
+
+test('em suave e direto a primeira Home segue pedindo a abertura a IA, sem esperar fatos', () => {
+  const w = runHome({ tone: 'suave' })
+  w.render()
+  assert.equal(w.entries.length, 0)
+  assert.equal(w.opened.length, 1)
+  assert.deepEqual({ ...w.opened[0].ai }, { situation: 'abertura' })
 })

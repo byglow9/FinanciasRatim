@@ -39,9 +39,9 @@ export interface HomeVintem {
   onTap: (handle: VintemHandle | null) => void
 }
 
-// Abertura (D-12 a): no maximo um pedido de fala a IA por carga do app, mesmo se a Home montar de novo.
+// Abertura (D-12 a, suave e direto): no maximo um pedido de fala a IA por carga do app, mesmo se a Home montar de novo.
 let openingAsked = false
-// Entrada no sem filtro (07.1, D-10): a primeira fala da carga sai do acervo aprovado, sem pedir a IA.
+// Entrada no sem filtro (07.1, D-10, D-17): a primeira Home da carga fala pela entrada do provedor, sem pedir a IA.
 let entradaFalada = false
 
 /** Tempo em perfil antes de voltar (o giro todo dura cerca de 1,6 s). */
@@ -133,9 +133,9 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak, speakAi, slot, cheer, setFacts } = useVintem()
+  const { tone, speak, speakAi, entrar, canVote, slot, cheer, setFacts } = useVintem()
   const { categoryDefs } = useArea()
-  const { now, viewPerson } = useCycle()
+  const { now, viewPerson, isCurrent } = useCycle()
   const todayKey = dayKeyOf(now)
 
   // Insights do detector local: sem leitura nova do ciclo (usa as transacoes da Home) e com a linha
@@ -193,6 +193,10 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     // Espera a linha de base: a fala de entrada sai uma vez so e precisa ja ter os insights completos.
     if (view === null || situation === null || !insightsReady) return
     if (spokenKey.current === entryKey) return
+    // A primeira entrada no sem filtro espera os fatos da propria pessoa (contas carregando): um estouro ou
+    // uma conta de hoje abre a conversa.
+    const primeira = tone === 'sem-filtro' && !entradaFalada && bankArrival === null
+    if (primeira && canVote && isCurrent && oincFacts.length === 0) return
     spokenKey.current = entryKey
     const entry = {
       situation,
@@ -202,12 +206,12 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     // Sem filtro: a abertura e momento previsivel, vai do acervo aprovado na hora (D-10, D-17). Suave e
     // direto seguem como antes, inclusive o pedido de abertura a IA (D-35).
     if (tone === 'sem-filtro') {
-      if (!entradaFalada && bankArrival === null) {
+      if (primeira) {
         entradaFalada = true
         const raw: SlotsRaw = { dias: view.daysLeft }
         if (view.safeCents > 0) raw.restanteCents = view.safeCents
-        // Sem frase preenchivel no acervo, a mesma fala de sempre: o banco da situacao.
-        if (!speak({ situation, raw, announce: false, entrada: true })) speak(entry)
+        // Sem linha para a entrada, a mesma fala de sempre: o banco da situacao.
+        entrar({ naHome: true, raw, reserva: entry })
         return
       }
       speak(entry)
@@ -219,7 +223,24 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     }
     openingAsked = true
     void speakAi({ ai: { situation: 'abertura' }, fallback: entry })
-  }, [view, situation, subject, entryKey, speak, speakAi, bankArrival, categoryDefs, insights, insightsReady, todayKey, tone])
+  }, [
+    view,
+    situation,
+    subject,
+    entryKey,
+    speak,
+    speakAi,
+    entrar,
+    canVote,
+    isCurrent,
+    oincFacts,
+    bankArrival,
+    categoryDefs,
+    insights,
+    insightsReady,
+    todayKey,
+    tone,
+  ])
 
   // Lancamento importado do banco: uma reacao por carga (chave pessoa:ciclo), so com o slot registrado
   // e fora do modo somente leitura (perfil do parceiro nao reage). O gasto ja esta somado na view.
@@ -259,7 +280,8 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     const scene = arrived
       ? reactionFact({ situation: result.situation, tx: arrived, categoryDefs, now: new Date() })
       : null
-    // Fim de sincronizacao com gasto novo: tenta a IA (sem ninguem esperando) e cai na frase do banco.
+    // Fim de sincronizacao com gasto novo: no sem filtro, o acervo; nos outros tons tenta a IA (sem ninguem
+    // esperando) e cai na frase do banco.
     void speakAi({
       ai: { situation: 'sync', categoryId: bankArrival.categoryId },
       fallback: { situation: result.situation, raw, announce: true, ...scene },

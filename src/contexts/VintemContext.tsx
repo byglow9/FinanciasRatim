@@ -19,6 +19,7 @@ import {
   ASK_TIMEOUT_OPEN_MS,
   getReactionTimeoutMs,
   getVintemHints,
+  type AskAnswer,
   type AskArgs,
 } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
@@ -31,7 +32,9 @@ import { VintemVote } from '@/components/vintem/VintemVote'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
+import { dayKeyOf } from '@shared/core/dayKey.js'
 import { isSpendSpike } from '@shared/core/insights.js'
+import { pickFact } from '@shared/core/oincFacts.js'
 import { OINC_LINES } from '@shared/core/oincLines.js'
 import { OINC_SCENES } from '@shared/core/oincScenes.js'
 import {
@@ -115,6 +118,17 @@ export interface SpeakTextArgs {
   text: string
   situation: string
   announce?: boolean
+  /** Id da fala no servidor: no sem filtro ele leva os botoes de voto (07.1, D-35). */
+  id?: string | null
+}
+
+export interface EntrarArgs {
+  /** Verdadeiro quando quem chama e a Home abrindo: a fala vai sempre para o balao. */
+  naHome?: boolean
+  /** Encaixes da tela, para quando os fatos nao os trazem. */
+  raw?: SlotsRaw
+  /** Fala de sempre, quando o acervo nao tem linha para a entrada. */
+  reserva?: SpeakArgs
 }
 
 /** Tipos de lancamento que o Vintem entende (a decisao e de reactionForLaunch, no nucleo). */
@@ -148,8 +162,10 @@ export interface VintemContextType {
   pickPhrase: (args: PhraseArgs) => { id: string; text: string } | null
   /** Mostra no balao um texto pronto (fala da IA), como texto React simples. */
   speakText: (args: SpeakTextArgs) => void
-  /** Tenta a IA e, sem texto a tempo, fala com o banco de frases. Nunca lanca. */
+  /** Tenta a IA e, sem texto a tempo, fala com o banco de frases. No sem filtro vai direto ao banco. Nunca lanca. */
   speakAi: (args: SpeakAiArgs) => Promise<void>
+  /** Fala de entrada no app (07.1, D-17): sem filtro pelo acervo, nos outros tons pelo banco. Nunca lanca. */
+  entrar: (args?: EntrarArgs) => void
   dismiss: () => void
   /** Verdadeiro quando a pessoa pode votar nas falas do acervo (mesma regra de pedir a IA). */
   canVote: boolean
@@ -189,6 +205,13 @@ function nextPeekSpot(): (typeof PEEK_SPOTS)[number] {
 
 /** Duracao do toast do Vintem fora da Home: o bastante para ler a frase e votar (D-12). */
 const VINTEM_TOAST_MS = 10000
+
+/** No sem filtro uma em cada tantas falas sem gatilho e da IA; as outras saem do acervo (07.1, D-10). */
+const IA_A_CADA = 3
+/** Cenas ditas ha pouco, que o sorteio do assunto evita. */
+const RECENT_SCENES = 5
+/** Fato a partir desta prioridade (estouro, limite quase, conta de hoje ou atrasada) abre a entrada. */
+const URGENT_PRIORITY = 80
 
 /**
  * Acervo que pode ir ao ar: fala marcada com `reescrita` ainda espera voto e fica de fora (D-34).
@@ -237,7 +260,7 @@ function writeRecent(recent: Recent): void {
 
 export function VintemProvider({ children }: { children: ReactNode }) {
   const { settings, settingsStatus, categoryDefs, personConfigFor, readOnly } = useArea()
-  const { viewPerson, now } = useCycle()
+  const { viewPerson, now, dataVersion } = useCycle()
   const { pathname } = useLocation()
   const tone = vintemToneOf(settings)
   const slot = useRef<VintemHandle | null>(null)
@@ -257,9 +280,25 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   // Fatos do mes da propria pessoa, montados pela Home. Ficam em ref (nenhum novo render) e nunca saem
   // do aparelho; fora do proprio perfil ou em somente leitura a lista e esvaziada (D-07, D-19).
   const factsRef = useRef<OincFacts>([])
-  const setFacts = useCallback((facts: OincFacts): void => {
-    factsRef.current = facts
-  }, [])
+  // Os fatos valem para o dia e os dados em que foram montados: fora da Home ninguem os refaz, e uma conta
+  // ja paga ou o dia de ontem nao podem virar fala (D-01).
+  const versionRef = useRef(dataVersion)
+  useEffect(() => {
+    versionRef.current = dataVersion
+  }, [dataVersion])
+  const factsStamp = useRef('')
+  const stampNow = useCallback((): string => `${dayKeyOf(new Date())}|${versionRef.current}`, [])
+  const setFacts = useCallback(
+    (facts: OincFacts): void => {
+      factsRef.current = facts
+      factsStamp.current = stampNow()
+    },
+    [stampNow],
+  )
+  const currentFacts = useCallback(
+    (): OincFacts => (factsStamp.current === stampNow() ? factsRef.current : []),
+    [stampNow],
+  )
   useEffect(() => {
     if (!canAsk) factsRef.current = []
   }, [canAsk])
@@ -437,19 +476,30 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     [dismiss],
   )
 
-  const speakText = useCallback(({ text, situation, announce = false }: SpeakTextArgs): void => {
-    popCounter.current += 1
-    speechGen.current += 1
-    setSpeech({ id: `ia-${popCounter.current}`, text, situation, popKey: popCounter.current })
-    // Anuncia so na primeira exibicao do texto.
-    const say = announce && lastAnnounced.current !== text
-    if (say) lastAnnounced.current = text
-    setAnnounced(say ? text : '')
-  }, [])
+  const speakText = useCallback(
+    ({ text, situation, announce = false, id = null }: SpeakTextArgs): void => {
+      popCounter.current += 1
+      speechGen.current += 1
+      // So a fala da IA com id do servidor, no sem filtro, vai a voto (D-35).
+      const voteId = tone === 'sem-filtro' ? id : null
+      setSpeech({
+        id: voteId ?? `ia-${popCounter.current}`,
+        text,
+        situation,
+        popKey: popCounter.current,
+        ...(voteId === null ? {} : { votavel: true }),
+      })
+      // Anuncia so na primeira exibicao do texto.
+      const say = announce && lastAnnounced.current !== text
+      if (say) lastAnnounced.current = text
+      setAnnounced(say ? text : '')
+    },
+    [tone],
+  )
 
-  // Pergunta a IA; devolve o texto, ou null para usar o banco, ou 'stale' se a tela mudou durante a espera.
+  // Pergunta a IA; devolve a fala, ou null para usar o banco, ou 'stale' se a tela mudou durante a espera.
   const askGuarded = useCallback(
-    async (ai: AskArgs): Promise<string | null | 'stale'> => {
+    async (ai: AskArgs): Promise<AskAnswer | null | 'stale'> => {
       if (!canAsk || askInFlight.current) return null
       const startedIn = scopeRef.current
       const startedGen = speechGen.current
@@ -457,7 +507,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       try {
         const answer = await askVintem(ai)
         if (scopeRef.current !== startedIn || speechGen.current !== startedGen) return 'stale'
-        return answer?.text ?? null
+        return answer
       } finally {
         askInFlight.current = false
       }
@@ -468,10 +518,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   const speakAi = useCallback(
     async ({ ai, fallback }: SpeakAiArgs): Promise<void> => {
       try {
-        const text = await askGuarded({ ...ai, timeoutMs: ai.timeoutMs ?? ASK_TIMEOUT_OPEN_MS })
-        if (text === 'stale') return
-        if (text !== null) {
-          speakText({ text, situation: fallback.situation, announce: fallback.announce })
+        // Sem filtro: a sincronizacao e momento previsivel, sai do acervo na hora e sem pedir a IA (D-10).
+        if (tone === 'sem-filtro') {
+          speak(fallback)
+          return
+        }
+        const answer = await askGuarded({ ...ai, timeoutMs: ai.timeoutMs ?? ASK_TIMEOUT_OPEN_MS })
+        if (answer === 'stale') return
+        if (answer !== null) {
+          speakText({ text: answer.text, situation: fallback.situation, announce: fallback.announce })
           return
         }
         speak(fallback)
@@ -479,7 +534,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         speak(fallback)
       }
     },
-    [askGuarded, speakText, speak],
+    [tone, askGuarded, speakText, speak],
   )
 
   // Fora da Home o Vintem espia pela borda da tela, no toast dele.
@@ -514,48 +569,131 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     [toast, canVote, rate],
   )
 
-  // Fala sem gatilho (D-12 b): so o texto da IA. Sem texto nada aparece, porque frase de reserva repetida
-  // e pior que silencio; se um lancamento ou uma edicao abriu durante a espera, tambem nao.
+  // Uma fala do banco ou do acervo onde a pessoa estiver: balao na Home, toast fora dela. Falso sem frase.
+  const mostrar = useCallback(
+    (args: SpeakArgs): boolean => {
+      if (slot.current !== null) {
+        if (!speak(args)) return false
+        slot.current.react('wake')
+        return true
+      }
+      const spoken = draw(args)
+      if (spoken === null) return false
+      peekToast(spoken, 'wake')
+      return true
+    },
+    [speak, draw, peekToast],
+  )
+
+  const recentScenes = useRef<string[]>([])
+  const lembrar = useCallback((cena: string): void => {
+    recentScenes.current = [...recentScenes.current.filter((c) => c !== cena), cena].slice(-RECENT_SCENES)
+  }, [])
+
+  // Fala sem gatilho da IA (D-12 b): so o texto dela, que cobre anotacoes, agenda e padroes. Sem texto nada
+  // aparece por aqui, e o verdadeiro devolvido diz que a IA nao respondeu. Se um lancamento ou uma edicao
+  // abriu durante a espera, a vez passa.
   const espiar = useCallback(
-    async (ai: AskArgs): Promise<void> => {
+    async (ai: AskArgs): Promise<boolean> => {
       try {
-        const text = await askGuarded(ai)
-        if (text === null || text === 'stale') return
-        if (document.visibilityState !== 'visible' || isBusy()) return
+        const answer = await askGuarded(ai)
+        if (answer === null || answer === 'stale') return answer === null
+        if (document.visibilityState !== 'visible' || isBusy()) return false
+        const { text, id } = answer
         if (slot.current !== null) {
           slot.current.react('wake')
-          speakText({ text, situation: 'espiar' })
-          return
+          speakText({ text, id, situation: 'espiar' })
+          return false
         }
-        peekToast({ text }, 'wake')
+        // So o sem filtro poe os botoes de voto na fala da IA (D-35).
+        peekToast(tone === 'sem-filtro' && id !== null ? { text, id, votavel: true } : { text }, 'wake')
       } catch {
         // Melhor esforco: a espiada nunca atrapalha o que a pessoa esta fazendo.
       }
+      return false
     },
-    [askGuarded, speakText, peekToast],
+    [askGuarded, speakText, peekToast, tone],
   )
-  // Fala de entrada (D-17): na carga fora da Home e ao voltar ao app. Nunca por cima de um formulario.
-  const entrar = useCallback((): void => {
-    if (document.visibilityState !== 'visible' || isBusy()) return
-    if (slot.current !== null) {
-      if (speak({ situation: 'inicio' })) slot.current.react('wake')
-      return
+
+  // Fala sem gatilho do acervo (D-19): o assunto sai dos fatos do mes, evitando as ultimas cenas ditas. Nao
+  // depende do servidor. Sem fato ou sem linha para ele, o porco fala do nada.
+  const espiarAcervo = useCallback((): void => {
+    try {
+      if (document.visibilityState !== 'visible' || isBusy()) return
+      rand.current ??= mulberry32(Date.now())
+      const facts = currentFacts()
+      // A cena de entrada nao serve no meio do uso.
+      const fact = pickFact(
+        facts.filter((f) => f.cena !== 'entrou'),
+        { recentScenes: recentScenes.current, rand: rand.current },
+      )
+      if (fact !== null) {
+        lembrar(fact.cena)
+        if (mostrar({ situation: 'espiar', cena: fact.cena, slots: fact.slots, conds: fact.conds })) return
+      }
+      const idle = facts.find((f) => f.cena === 'do-nada')
+      lembrar('do-nada')
+      mostrar({ situation: 'espiar', cena: 'do-nada', slots: idle?.slots, conds: idle?.conds })
+    } catch {
+      // Melhor esforco: a espiada nunca atrapalha o que a pessoa esta fazendo.
     }
-    const spoken = draw({ situation: 'inicio' })
-    if (spoken !== null) peekToast(spoken, 'wake')
-  }, [speak, draw, peekToast])
+  }, [currentFacts, lembrar, mostrar])
+
+  // Quem fala na vez sem gatilho. Suave e direto: so a IA, como antes (D-35). Sem filtro: o acervo, e uma em
+  // cada tres vezes a IA; sem resposta dela, o acervo tambem (D-10).
+  const peekTurn = useRef(0)
+  const espiarRodizio = useCallback(
+    async (ai: AskArgs): Promise<void> => {
+      if (tone !== 'sem-filtro') {
+        await espiar(ai)
+        return
+      }
+      peekTurn.current += 1
+      if (canAsk && peekTurn.current % IA_A_CADA === 0 && !(await espiar(ai))) return
+      espiarAcervo()
+    },
+    [tone, canAsk, espiar, espiarAcervo],
+  )
+
+  // Fala de entrada (D-17): na carga, na volta depois de um tempo fora e na primeira Home da carga. No sem
+  // filtro um fato urgente abre a conversa; sem ele, a cena `entrou`. Suave e direto: o banco de sempre.
+  const entrar = useCallback(
+    ({ naHome = false, raw, reserva }: EntrarArgs = {}): void => {
+      try {
+        // Na Home e a propria tela abrindo; fora dela e na volta, nunca por cima de um formulario.
+        if (!naHome && (document.visibilityState !== 'visible' || isBusy())) return
+        const dizer = naHome ? speak : mostrar
+        if (tone === 'sem-filtro') {
+          const facts = currentFacts()
+          const urgent = facts.find((f) => f.prioridade >= URGENT_PRIORITY)
+          if (urgent && dizer({ situation: 'espiar', cena: urgent.cena, slots: urgent.slots, conds: urgent.conds })) {
+            lembrar(urgent.cena)
+            return
+          }
+          const hello = facts.find((f) => f.cena === 'entrou')
+          const entrada = { situation: 'inicio', cena: 'entrou', entrada: true, raw }
+          if (dizer({ ...entrada, slots: hello?.slots, conds: hello?.conds })) return
+        }
+        dizer(reserva ?? { situation: 'inicio', raw })
+      } catch {
+        // Melhor esforco: a entrada nunca atrapalha a abertura do app.
+      }
+    },
+    [tone, speak, mostrar, currentFacts, lembrar],
+  )
+
   // So depois das configuracoes lidas: antes disso o tom ainda e o padrao.
   useVintemPeek({
     canAsk: canAsk && settingsStatus === 'ready',
     viewPerson,
-    espiar,
+    espiar: espiarRodizio,
     entrar,
     naHome: pathname === '/',
   })
 
-  // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (ate o prazo dos hints) ou do banco. Na Home
-  // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de
-  // sucesso. Sem frase no banco nao ha toast. Nunca lanca.
+  // Entrega a reacao: o Vintem anima na hora; depois a fala vem da IA (suave e direto, ate o prazo dos hints)
+  // ou do banco e do acervo. Na Home sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra
+  // na fila depois do toast de sucesso. Sem frase no banco nao ha toast. Nunca lanca.
   const deliver = useCallback(
     async (
       reaction: VintemReaction,
@@ -567,10 +705,11 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       try {
         slot.current?.react(reaction)
         let aiText: string | null = null
-        if (ai !== undefined) {
+        // Sem filtro a reacao sai so do acervo, com a cena daquela compra (D-09, D-10).
+        if (ai !== undefined && tone !== 'sem-filtro') {
           const answer = await askGuarded({ ...ai, timeoutMs: getReactionTimeoutMs() })
           if (answer === 'stale') return
-          aiText = answer
+          aiText = answer?.text ?? null
         }
         if (slot.current !== null) {
           if (aiText !== null) speakText({ text: aiText, situation, announce: true })
@@ -584,7 +723,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         // Melhor esforco: a fala nunca atrapalha o lancamento.
       }
     },
-    [askGuarded, speakText, speak, draw, peekToast],
+    [tone, askGuarded, speakText, speak, draw, peekToast],
   )
 
   const onLaunched = useCallback(
@@ -677,6 +816,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       pickPhrase: draw,
       speakText,
       speakAi,
+      entrar,
       dismiss,
       canVote,
       rate,
@@ -687,7 +827,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       cheer,
       setFacts,
     }),
-    [tone, speech, speak, draw, speakText, speakAi, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer, setFacts],
+    [tone, speech, speak, draw, speakText, speakAi, entrar, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer, setFacts],
   )
 
   return (

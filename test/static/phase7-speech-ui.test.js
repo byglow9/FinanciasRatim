@@ -82,7 +82,11 @@ test('contexto: a fala da IA e texto React, sem HTML bruto, e o contexto nao reg
   assert.ok(!/console\./.test(ctx), 'contexto com console')
   // O texto da IA entra no toast do Vintem como propriedade de texto e no balao pelo estado de fala.
   assert.match(ctx, /<VintemToastBody text=\{spoken\.text\}/, 'o toast nao recebe a fala como texto')
-  assert.match(ctx, /setSpeech\(\{ id: `ia-\$\{popCounter\.current\}`, text, situation/, 'speakText nao guarda o texto puro')
+  assert.match(
+    ctx,
+    /setSpeech\(\{\s*id: voteId \?\? `ia-\$\{popCounter\.current\}`,\s*text,\s*situation,/,
+    'speakText nao guarda o texto puro',
+  )
   assert.match(code(TOAST), /\{text\}/)
 })
 
@@ -139,15 +143,15 @@ test('abertura: uma pergunta por carga do app, por variavel de modulo, com a fal
   assert.ok(!/openingAsked = false/.test(inHook), 'a marca da abertura e zerada no hook')
   assert.ok(!/entradaFalada = false/.test(inHook), 'a marca da entrada e zerada no hook')
   const entry = hook.slice(hook.indexOf('const spokenKey'), hook.indexOf('const reactedKey'))
-  // Sem filtro: a primeira entrada da carga sai do acervo (entrada: true) e nunca pede a IA (D-10, D-35).
+  // Sem filtro: a primeira entrada da carga sai pela entrada do provedor (acervo) e nunca pede a IA (D-10, D-35).
   const semFiltro = entry.indexOf("tone === 'sem-filtro'")
   assert.ok(semFiltro >= 0, 'sem o ramo do sem filtro')
   const rest = entry.indexOf('if (openingAsked || bankArrival !== null)')
   assert.ok(rest > semFiltro, 'o ramo de suave e direto precisa vir depois do sem filtro')
   const branch = entry.slice(semFiltro, rest)
   assert.ok(!/speakAi\(|openingAsked/.test(branch), 'o sem filtro pede a IA na entrada')
-  assert.equal((entry.match(/entrada: true/g) ?? []).length, 1, 'entrada: true fora do ramo do sem filtro')
-  assert.ok(branch.includes('entrada: true'), 'o sem filtro nao pede o acervo')
+  assert.equal((hook.match(/\bentrar\(\{/g) ?? []).length, 1, 'entrar chamado fora do ramo do sem filtro')
+  assert.ok(branch.includes('entrar({ naHome: true, raw, reserva: entry })'), 'o sem filtro nao pede o acervo')
   assert.ok(branch.includes('entradaFalada = true'), 'o sem filtro nao marca a entrada')
   // Suave e direto: segunda fala de entrada da mesma carga, ou gasto novo do banco para reagir, so o banco de frases.
   assert.match(entry, /if \(openingAsked \|\| bankArrival !== null\) \{\s*speak\(entry\)\s*return\s*\}/)
@@ -191,7 +195,7 @@ test('resposta atrasada ou de outra tela e descartada: geracao e escopo conferid
   }
   assert.match(src, /useEffect\(\(\) => \{\s*scopeRef\.current = scopeKey\s*speechGen\.current \+= 1/, 'troca de escopo nao sobe a geracao')
   // As chamadas de speakAi e deliver descartam 'stale' sem mostrar nada.
-  assert.match(body(src, 'speakAi'), /if \(text === 'stale'\) return/)
+  assert.match(body(src, 'speakAi'), /if \(answer === 'stale'\) return/)
   assert.match(body(src, 'deliver'), /if \(answer === 'stale'\) return/)
 })
 
@@ -395,15 +399,55 @@ test('deliver usa getReactionTimeoutMs, sem prazo fixo nas reacoes, e os hints s
 test('espiar: sem texto da IA nada aparece, sem reserva do banco, e confere de novo antes de mostrar', () => {
   const src = code(CONTEXT)
   const peek = body(src, 'espiar')
-  assert.match(peek, /if \(text === null \|\| text === 'stale'\) return/, 'espiar mostra sem texto da IA')
+  assert.match(peek, /if \(answer === null \|\| answer === 'stale'\) return/, 'espiar mostra sem texto da IA')
   assert.ok(!/\bspeak\(|\bdraw\(|speakAi\(|PHRASES|fallback/.test(peek), 'espiar usa o banco de frases')
   assert.match(peek, /document\.visibilityState !== 'visible' \|\| isBusy\(\)\) return/, 'sem conferir de novo')
   assert.ok(peek.indexOf('isBusy()') < peek.indexOf('speakText('), 'confere depois de mostrar')
   // Mesma regra da reacao: balao na Home, toast do Vintem (com a animacao de espiar) fora dela.
   assert.match(peek, /if \(slot\.current !== null\)/)
-  assert.match(peek, /peekToast\(\{ text \}, 'wake'\)/)
+  // Voto na fala da IA so no sem filtro e com id do servidor (07.1, D-35).
+  assert.match(
+    peek,
+    /peekToast\(tone === 'sem-filtro' && id !== null \? \{ text, id, votavel: true \} : \{ text \}, 'wake'\)/,
+  )
   assert.match(body(src, 'deliver'), /peekToast\(spoken, reaction\)/)
-  assert.match(src, /useVintemPeek\(\{[^}]*viewPerson,[^}]*entrar,[^}]*naHome[^}]*\}\)/, 'o provedor nao monta a espiada')
+  assert.match(
+    src,
+    /useVintemPeek\(\{[^}]*viewPerson,\s*espiar: espiarRodizio,\s*entrar,\s*naHome: pathname === '\/',\s*\}\)/,
+    'o provedor nao monta a espiada',
+  )
+  assert.match(src, /canAsk: canAsk && settingsStatus === 'ready'/, 'a espiada nao espera as configuracoes')
+})
+
+// ---------------------------------------------------------------------------------------------
+// 07.1-08: quem fala em cada ramo (sem filtro pelo acervo; suave e direto como antes).
+// ---------------------------------------------------------------------------------------------
+
+test('sem filtro as reacoes e a sincronizacao nao pedem a IA; em suave e direto o pedido continua (D-10, D-35)', () => {
+  const src = code(CONTEXT)
+  const ai = body(src, 'speakAi')
+  assert.match(ai, /if \(tone === 'sem-filtro'\) \{\s*speak\(fallback\)\s*return\s*\}/, 'speakAi pede a IA no sem filtro')
+  assert.ok(ai.indexOf("tone === 'sem-filtro'") < ai.indexOf('askGuarded('), 'o portao vem depois do pedido')
+  const deliver = body(src, 'deliver')
+  assert.match(deliver, /if \(ai !== undefined && tone !== 'sem-filtro'\) \{/, 'deliver pede a IA no sem filtro')
+  assert.ok(deliver.indexOf("tone !== 'sem-filtro'") < deliver.indexOf('askGuarded('))
+  assert.equal((src.match(/\baskGuarded\(/g) ?? []).length, 3, 'um caminho novo pede a IA')
+})
+
+test('a espiada reveza: uma da IA a cada tres so no sem filtro e com canAsk; o resto e acervo (D-10, D-19)', () => {
+  const src = code(CONTEXT)
+  const turn = body(src, 'espiarRodizio')
+  assert.match(turn, /if \(tone !== 'sem-filtro'\) \{\s*await espiar\(ai\)\s*return\s*\}/, 'suave e direto sairam da IA')
+  assert.match(turn, /canAsk && peekTurn\.current % IA_A_CADA === 0 && !\(await espiar\(ai\)\)\) return\s*espiarAcervo\(\)/)
+  assert.match(src, /const IA_A_CADA = 3/)
+  const bank = body(src, 'espiarAcervo')
+  assert.match(bank, /pickFact\(/, 'o assunto nao sai de pickFact')
+  assert.match(bank, /recentScenes: recentScenes\.current/, 'o sorteio nao evita as ultimas cenas')
+  assert.match(src, /const RECENT_SCENES = 5/)
+  assert.match(bank, /cena: 'do-nada'/, 'sem a fala do nada')
+  assert.ok(!/askGuarded|askVintem|speakAi\(|speakText\(|fetch\(/.test(bank), 'o acervo depende do servidor')
+  assert.match(bank, /document\.visibilityState !== 'visible' \|\| isBusy\(\)\) return/)
+  assert.ok(bank.indexOf('isBusy()') < bank.indexOf('mostrar('), 'confere depois de mostrar')
 })
 
 test('useVintemPeek: sem banco de frases, sem acaso na renderizacao e sem intervalo fixo de espiada', () => {

@@ -5,7 +5,7 @@ import { createBudget } from '../src/ai/budget.js'
 import { createCache } from '../src/ai/cache.js'
 import { createChain, createProviders } from '../src/ai/providers.js'
 import { createSpeech } from '../src/ai/speech.js'
-import { dailyCapOf, pickTopic } from '../src/ai/topics.js'
+import { dailyCapOf } from '../src/ai/topics.js'
 import { createMemoryDb } from './_ai-memory-db.js'
 
 // Teto diario por pessoa e cache da fala (07-12) com Firestore em memoria, sem rede.
@@ -313,12 +313,12 @@ describe('fala espontanea: abertura do app', () => {
     assert.deepEqual(s.loads, [{ hid: HID, person: 'ele', fresh: false }])
   })
 
-  test('a segunda abertura do dia usa outro assunto e a quarta (teto 3) devolve null sem ler nada', async () => {
-    const s = spontaneousSetup({ AI_CACHE_VARIANTS: '1' }, { extra: RICH })
+  test('as aberturas rodam pelos assuntos e a quarta (teto 3) devolve null sem ler nada', async () => {
+    const s = spontaneousSetup({ AI_OPEN_PER_DAY: '3', AI_CACHE_VARIANTS: '1' }, { extra: RICH })
     for (let i = 0; i < 3; i += 1) assert.equal((await s.open()).text, NEUTRAL, `abertura ${i + 1}`)
     const day = s.day()
     assert.equal(day.abertura, 3)
-    assert.equal(new Set(day.assuntos).size, 3, 'assunto repetido no mesmo dia')
+    assert.equal(new Set(day.assuntos).size, 3, 'com assunto novo sobrando, nada se repete')
     assert.deepEqual(s.keys.map((k) => k.split('|')[4]), day.assuntos.map(sceneOf))
 
     const requests = s.fetchFn.requests.length
@@ -357,20 +357,27 @@ describe('fala espontanea: abertura do app', () => {
     assert.equal(s.keys[1], s.keys[0], 'o assunto da tentativa falha volta a ser o escolhido')
   })
 
-  test('sem assunto novo devolve null, mesmo com teto de sobra', async () => {
-    const s = spontaneousSetup({ AI_OPEN_PER_DAY: '30', AI_CACHE_VARIANTS: '1' }, { extra: RICH })
-    let spoken = 0
-    while ((await s.open()).text !== null) {
-      spoken += 1
-      assert.ok(spoken < 20, 'os assuntos nao acabam')
+  test('sem assunto novo recomeca pelo menos recente, sem repetir a fala anterior (D-18, D-35)', async () => {
+    const s = spontaneousSetup({ AI_CACHE_VARIANTS: '1' }, { extra: RICH })
+    const spoken = []
+    for (let i = 0; i < 7; i += 1) {
+      assert.equal((await s.open()).text, NEUTRAL, `abertura ${i + 1}`)
+      spoken.push(s.day().assuntos.at(-1))
     }
-    const day = s.day()
-    assert.equal(day.abertura, spoken)
-    assert.equal(new Set(day.assuntos).size, spoken)
-    assert.deepEqual(day.assuntos.map(sceneOf).sort(), ['agenda-notas', 'compromisso', 'delivery'])
+    assert.deepEqual(spoken.slice(0, 3).map(sceneOf).sort(), ['agenda-notas', 'compromisso', 'delivery'])
+    assert.deepEqual(spoken.slice(3), [...spoken.slice(0, 3), spoken[0]], 'o rodizio segue a ordem de uso')
+    assert.equal(s.day().abertura, 7)
+    assert.equal(s.day().assuntos.length, 3)
+    assert.equal(s.fetchFn.requests.length, 3, 'a repeticao vem do cache')
+  })
+
+  test('com um assunto so a segunda abertura devolve null, mesmo com teto de sobra', async () => {
+    const s = spontaneousSetup({}, { extra: { notes: [NOTE] } })
+    assert.equal((await s.open()).text, NEUTRAL)
     const requests = s.fetchFn.requests.length
     assert.deepEqual(await s.open(), { text: null })
     assert.equal(s.fetchFn.requests.length, requests)
+    assert.equal(s.day().abertura, 1)
   })
 
   test('acerto de cache conta como abertura, mas nao no teto diario de chamadas (D-03)', async () => {
@@ -394,12 +401,17 @@ describe('fala espontanea: abertura do app', () => {
     assert.equal(s.day().assuntos.length, 1)
   })
 
-  test('dois pedidos simultaneos nao mostram o mesmo assunto duas vezes', async () => {
+  test('pedidos simultaneos contam cada fala, o assunto uma vez, e nunca passam do teto', async () => {
     const s = spontaneousSetup({}, { extra: RICH })
     const out = await Promise.all([s.open(), s.open()])
-    assert.equal(out.filter((o) => o.text !== null).length, 1)
-    assert.equal(s.day().abertura, 1)
+    assert.equal(out.filter((o) => o.text !== null).length, 2)
+    assert.equal(s.day().abertura, 2)
     assert.equal(s.day().assuntos.length, 1)
+
+    const capped = spontaneousSetup({ AI_OPEN_PER_DAY: '1' }, { extra: RICH })
+    const one = await Promise.all([capped.open(), capped.open()])
+    assert.equal(one.filter((o) => o.text !== null).length, 1)
+    assert.equal(capped.day().abertura, 1)
   })
 
   test('rota ja sem quem esperar (prazo vencido ou pedido abandonado) nao consome', async () => {
@@ -440,7 +452,7 @@ describe('fala espontanea: abertura do app', () => {
 describe('fala espontanea: budget e assunto', () => {
   const config = { openPerDay: 2, peekPerDay: 1 }
 
-  test('commitSpontaneous nunca passa do teto do tipo nem repete assunto, mesmo em paralelo', async () => {
+  test('commitSpontaneous so e limitado pelo teto do tipo, mesmo em paralelo', async () => {
     const db = createMemoryDb()
     const b = createBudget({ db, config, now: () => NOW, log: quiet })
     const topics = ['ritmo', 'limites', 'metas', 'entradas', 'porquinho']
@@ -448,10 +460,30 @@ describe('fala espontanea: budget e assunto', () => {
     assert.equal(out.filter((o) => o.ok).length, 2)
     const day = await b.readDay({ hid: HID, person: 'ele' })
     assert.deepEqual([day.ok, day.abertura, day.espiar, day.assuntos.length], [true, 2, 0, 2])
-    // Assunto ja usado na abertura nao serve para a espiada.
-    assert.deepEqual(await b.commitSpontaneous({ hid: HID, person: 'ele', kind: 'espiar', topic: day.assuntos[0] }), { ok: false })
-    assert.deepEqual(await b.commitSpontaneous({ hid: HID, person: 'ele', kind: 'espiar', topic: 'fatura' }), { ok: true })
-    assert.deepEqual(await b.commitSpontaneous({ hid: HID, person: 'ele', kind: 'espiar', topic: 'fixas' }), { ok: false })
+  })
+
+  test('assunto repetido conta de novo e vai para o fim: a lista e a ordem de uso', async () => {
+    const db = createMemoryDb()
+    const b = createBudget({ db, config: { openPerDay: 5, peekPerDay: 2 }, now: () => NOW, log: quiet })
+    const commit = (kind, topic) => b.commitSpontaneous({ hid: HID, person: 'ele', kind, topic })
+    for (const topic of ['ritmo', 'metas', 'fatura']) assert.deepEqual(await commit('abertura', topic), { ok: true })
+    assert.deepEqual(await commit('abertura', 'ritmo'), { ok: true })
+    assert.deepEqual((await b.readDay({ hid: HID, person: 'ele' })).assuntos, ['metas', 'fatura', 'ritmo'])
+    // duas espiadas com o mesmo assunto contam as duas, ate o teto
+    assert.deepEqual(await commit('espiar', 'metas'), { ok: true })
+    assert.deepEqual(await commit('espiar', 'metas'), { ok: true })
+    assert.deepEqual(await commit('espiar', 'metas'), { ok: false })
+    const day = await b.readDay({ hid: HID, person: 'ele' })
+    assert.deepEqual([day.abertura, day.espiar, day.assuntos], [4, 2, ['fatura', 'ritmo', 'metas']])
+  })
+
+  test('teto zero nega a fala espontanea sem escrever', async () => {
+    const db = createMemoryDb()
+    const b = createBudget({ db, config: { openPerDay: 0, peekPerDay: 0 }, now: () => NOW, log: quiet })
+    for (const kind of ['abertura', 'espiar']) {
+      assert.deepEqual(await b.commitSpontaneous({ hid: HID, person: 'ele', kind, topic: 'ritmo' }), { ok: false }, kind)
+    }
+    assert.equal(db.stats.writes, 0)
   })
 
   test('o dia da fala espontanea e o de Sao Paulo e entradas sujas sao recusadas', async () => {
@@ -473,20 +505,7 @@ describe('fala espontanea: budget e assunto', () => {
     assert.equal((await b.readDay({ hid: 'a/b', person: 'ele' })).ok, false)
   })
 
-  test('pickTopic cobre os quatro tipos da D-11 sem repetir e acaba em null', () => {
-    const summary = {
-      podeGastar: { ritmo: 'folgado' },
-      limites: [{ categoria: 'Alimentação', uso: '73%', estado: 'ok' }],
-      comparacao: [{ categoria: 'Alimentação', variacao: '+10%' }],
-      padroes: [{ tipo: 'loja repetida', forca: 'forte' }],
-      renda: { recebida: 'R$ 1,00' },
-      metas: [{ meta: 'Viagem' }],
-      porquinho: 'R$ 1,00',
-    }
-    const used = []
-    for (let topic = pickTopic({ summary, used }); topic !== null; topic = pickTopic({ summary, used })) used.push(topic)
-    assert.deepEqual(used, ['padroes', 'ritmo', 'limites', 'comparacao', 'entradas', 'metas', 'porquinho'])
-    assert.equal(pickTopic({ summary: {} }), null)
+  test('dailyCapOf: tipo desconhecido vale zero', () => {
     assert.equal(dailyCapOf(config, 'abertura'), 2)
     assert.equal(dailyCapOf(config, 'espiar'), 1)
     assert.equal(dailyCapOf(config, 'lancamento'), 0)

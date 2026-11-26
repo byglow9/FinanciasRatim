@@ -603,10 +603,11 @@ describe('ai fala', () => {
     assert.equal(c.cacheTtlHours, 24)
     assert.equal(c.cacheVariants, 3)
     assert.equal(c.requireProfanity, false)
-    assert.equal(c.openPerDay, 3)
-    assert.equal(c.peekPerDay, 6)
-    assert.equal(c.peekMinMs, 360000)
-    assert.equal(c.peekMaxMs, 900000)
+    assert.equal(c.openPerDay, 200)
+    assert.equal(c.peekPerDay, 200)
+    assert.equal(c.peekFirstMs, 60000)
+    assert.equal(c.peekMinMs, 150000)
+    assert.equal(c.peekMaxMs, 210000)
     assert.equal(c.burstPerMin, 20)
     assert.equal(c.reactionTimeoutMs, 2500)
     assert.deepEqual(c.providers, [])
@@ -620,6 +621,7 @@ describe('ai fala', () => {
   test('GET /hints devolve as frequencias e o prazo da configuracao do servidor', async () => {
     await start({
       ...AI_ENV,
+      VINTEM_PEEK_FIRST_MS: '90000',
       VINTEM_PEEK_MIN_MS: '120000',
       VINTEM_PEEK_MAX_MS: '240000',
       AI_PEEK_PER_DAY: '4',
@@ -629,6 +631,7 @@ describe('ai fala', () => {
     const res = await getHints('tok-a-ele')
     assert.equal(res.status, 200)
     assert.deepEqual(await res.json(), {
+      peekFirstMs: 90000,
       peekMinMs: 120000,
       peekMaxMs: 240000,
       peekPerDay: 4,
@@ -643,10 +646,11 @@ describe('ai fala', () => {
   test('GET /hints sem configuracao devolve os padroes (prazo de 2500 ms)', async () => {
     await start()
     assert.deepEqual(await (await getHints('tok-a-ela')).json(), {
-      peekMinMs: 360000,
-      peekMaxMs: 900000,
-      peekPerDay: 6,
-      openPerDay: 3,
+      peekFirstMs: 60000,
+      peekMinMs: 150000,
+      peekMaxMs: 210000,
+      peekPerDay: 200,
+      openPerDay: 200,
       reactionTimeoutMs: 2500,
     })
     await stop()
@@ -673,6 +677,17 @@ describe('ai fala', () => {
     for (const [value, expected] of [[100, 2500], [60000, 2500], [undefined, 2500], [3999, 3999]]) {
       assert.equal(hintsOf({ reactionTimeoutMs: value }).reactionTimeoutMs, expected, String(value))
     }
+  })
+
+  test('a primeira espera nunca fica abaixo do piso de 60 s', async () => {
+    for (const [raw, expected] of [['1', 60000], ['59999', 60000], ['abc', 60000], ['75000', 75000], ['9000000000', 86400000]]) {
+      assert.equal(hintsOf(readAiConfig({ VINTEM_PEEK_FIRST_MS: raw }, { warn() {} })).peekFirstMs, expected, raw)
+    }
+    // Configuracao que nao passou pelo readAiConfig tambem e saneada.
+    for (const [value, expected] of [[undefined, 60000], [5, 60000], [61000, 61000]]) {
+      assert.equal(hintsOf({ peekFirstMs: value }).peekFirstMs, expected, String(value))
+    }
+    assert.deepEqual([hintsOf({}).peekMinMs, hintsOf({}).peekMaxMs], [150000, 210000])
   })
 
   test('intervalo absurdo e saneado: piso de 60 s e maximo nunca abaixo do minimo', async () => {
@@ -808,26 +823,81 @@ describe('ai fala', () => {
     }
   })
 
-  test('pickSpontaneousFact: via ia no sem filtro, qualquer origem nos outros, sempre sem repetir', () => {
-    const f = (cena, prioridade, via, slots = { dias: '2 dias' }) => ({ cena, prioridade, via, slots, key: `k:${cena}` })
+  const sceneFact = (cena, prioridade, via, slots = { dias: '2 dias' }, key = `k:${cena}`) => ({ cena, prioridade, via, slots, key })
+  const topicFor = (fact) => `${fact.cena}-${labelHash(fact.key)}`
+
+  test('pickSpontaneousFact: via ia no sem filtro, qualquer origem nos outros, o novo antes do repetido', () => {
     const facts = [
-      f('compra', 70, 'acervo'),
-      f('delivery', 60, 'ia'),
-      f('agenda-notas', 35, 'ia'),
-      f('porco-chapaduxo', 8, 'acervo'),
-      { ...f('do-nada', 10, 'acervo', {}), key: 'sempre:do-nada' },
+      sceneFact('compra', 70, 'acervo'),
+      sceneFact('delivery', 60, 'ia'),
+      sceneFact('agenda-notas', 35, 'ia'),
+      sceneFact('porco-chapaduxo', 8, 'acervo'),
+      sceneFact('do-nada', 10, 'acervo', {}, 'sempre:do-nada'),
     ]
-    const topic = (fact) => `${fact.cena}-${labelHash(fact.key)}`
+    const [compra, delivery, notas] = facts.map(topicFor)
     const pick = (tone, used) => pickSpontaneousFact(facts, { tone, used })?.cena ?? null
     assert.equal(pick('sem-filtro', []), 'delivery')
-    assert.equal(pick('sem-filtro', [topic(facts[1])]), 'agenda-notas')
-    assert.equal(pick('sem-filtro', [topic(facts[1]), topic(facts[2])]), null)
+    assert.equal(pick('sem-filtro', [delivery]), 'agenda-notas')
     assert.equal(pick('direto', []), 'compra')
-    assert.equal(pick('suave', [topic(facts[0])]), 'delivery')
-    // fora do sem filtro: nada da voz nova nem pedido vazio
-    assert.equal(pick('direto', [facts[0], facts[1], facts[2]].map(topic)), null)
+    assert.equal(pick('suave', [compra]), 'delivery')
+    // tudo ja saiu: recomeca pelo menos recente, nunca pelo ultimo da lista
+    assert.equal(pick('sem-filtro', [delivery, notas]), 'delivery')
+    assert.equal(pick('sem-filtro', [notas, delivery]), 'agenda-notas')
+    // fora do sem filtro: nada da voz nova nem pedido vazio, nem no rodizio
+    assert.equal(pick('direto', [compra, delivery, notas]), 'compra')
+    assert.equal(pick('direto', [delivery, notas, compra]), 'delivery')
     assert.equal(pickSpontaneousFact([], { tone: 'direto' }), null)
     assert.equal(pickSpontaneousFact([...facts].reverse(), { tone: 'direto' }).cena, 'compra')
+  })
+
+  test('pickSpontaneousFact: nunca a cena da fala anterior, e com uma cena so fica calado (D-35)', () => {
+    const first = sceneFact('conta-fixa', 60, 'ia', {}, 'conta:luz')
+    const second = sceneFact('conta-fixa', 55, 'ia', {}, 'conta:agua')
+    const other = sceneFact('delivery', 20, 'ia', {}, 'tx:t1')
+    for (const tone of ['suave', 'direto', 'sem-filtro']) {
+      // fato novo da mesma cena da fala anterior perde para um repetido de outra cena
+      assert.equal(pickSpontaneousFact([first, second, other], { tone, used: [topicFor(other), topicFor(first)] }), other, tone)
+      assert.equal(pickSpontaneousFact([first, second, other], { tone, used: [topicFor(first), topicFor(other)] }), second, tone)
+      assert.equal(pickSpontaneousFact([first, second], { tone, used: [topicFor(first)] }), null, tone)
+      assert.equal(pickSpontaneousFact([first], { tone, used: [topicFor(first)] }), null, tone)
+    }
+  })
+
+  test('um fato so: a segunda espiada nao tem o que dizer; com dois, quatro espiadas alternam', async () => {
+    const budget = createBudget({ db: createMemoryDb(), config: { peekPerDay: 10 }, now: () => NOW, log: { warn() {} } })
+    const who = { hid: 'casalA', person: 'ele' }
+    const spoken = async (facts) => {
+      const day = await budget.readDay(who)
+      const fact = pickSpontaneousFact(facts, { tone: 'direto', used: day.assuntos })
+      if (fact) await budget.commitSpontaneous({ ...who, kind: 'espiar', topic: topicFor(fact) })
+      return fact?.cena ?? null
+    }
+    const only = [sceneFact('compra', 70, 'acervo')]
+    assert.deepEqual([await spoken(only), await spoken(only)], ['compra', null])
+    const two = [...only, sceneFact('delivery', 60, 'acervo')]
+    const four = []
+    for (let i = 0; i < 4; i += 1) four.push(await spoken(two))
+    assert.deepEqual(four, ['delivery', 'compra', 'delivery', 'compra'])
+  })
+
+  test('suave e direto: quatro espiadas com dois fatos alternam as duas cenas', async () => {
+    for (const tone of ['suave', 'direto']) {
+      queue = [NEUTRAL]
+      await start(AI_ENV, { spontaneous: true })
+      // sem lancamento nem renda esperada sobram so dois fatos para comentar
+      snapshot.extra = { transactions: [], config: { salaryDay: 1 } }
+      const load = snapshot.load.bind(snapshot)
+      snapshot.load = async (args) => ({ ...(await load(args)), tone })
+      const scenes = []
+      for (let i = 0; i < 4; i += 1) {
+        assert.equal((await say('espiar')).text, NEUTRAL, `${tone} espiada ${i}`)
+        scenes.push(sceneOf(usageDoc().assuntos.at(-1)))
+      }
+      assert.deepEqual(scenes, ['do-nada', 'entrou', 'do-nada', 'entrou'], tone)
+      assert.equal(usageDoc().espiar, 4)
+      assert.equal(usageDoc().assuntos.length, 2, 'cada assunto uma vez')
+      await stop()
+    }
   })
 
   test('o teto diario da pessoa vale para a espiada e o acerto de cache nao conta', async () => {

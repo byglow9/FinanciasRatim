@@ -283,17 +283,18 @@ describe('teto diario e cache no emulador', () => {
     }
   })
 
-  test('fala espontanea em paralelo respeita o teto do tipo e nunca repete assunto no banco real', async () => {
-    const config = readAiConfig({ AI_OPEN_PER_DAY: '3', AI_PEEK_PER_DAY: '6' }, quiet)
+  test('fala espontanea em paralelo respeita o teto do tipo e guarda cada assunto uma vez no banco real', async () => {
+    const config = readAiConfig({ AI_OPEN_PER_DAY: '3', AI_PEEK_PER_DAY: '4' }, quiet)
     const budget = createBudget({ db, config, now: () => new Date(clock.t), log: quiet })
     const commit = (kind, topic) => budget.commitSpontaneous({ hid: HID, person: 'ele', kind, topic })
 
     const opened = await Promise.all(TOPICS.map((topic) => commit('abertura', topic)))
     assert.equal(opened.filter((r) => r.ok).length, 3)
     const same = await Promise.all(Array.from({ length: 5 }, () => commit('espiar', 'assunto-novo')))
-    assert.equal(same.filter((r) => r.ok).length, 1)
+    assert.equal(same.filter((r) => r.ok).length, 4)
 
     const day = await budget.readDay({ hid: HID, person: 'ele' })
-    assert.deepEqual([day.abertura, day.espiar, day.assuntos.length, new Set(day.assuntos).size], [3, 1, 4, 4])
+    assert.deepEqual([day.abertura, day.espiar, day.assuntos.length, new Set(day.assuntos).size], [3, 4, 4, 4])
+    assert.equal(day.assuntos.at(-1), 'assunto-novo', 'o ultimo e o mais recente')
   })
 })

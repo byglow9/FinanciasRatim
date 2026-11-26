@@ -101,7 +101,7 @@ test('a situacao limite so vale para as tres situacoes de limite do nucleo', () 
   assert.match(src, /situation: limitSituation \? 'limite' : 'lancamento'/, 'a situacao da IA nao sai do conjunto')
   assert.equal((src.match(/'limite'/g) ?? []).length, 1, "'limite' usado fora da escolha da situacao da IA")
   // A reserva e sempre a frase do banco da situacao decidida pelo nucleo.
-  assert.match(src, /deliver\(result\.reaction, result\.situation, raw, ai\)/)
+  assert.match(src, /deliver\(result\.reaction, result\.situation, raw, ai(, fact)?\)/)
 })
 
 test('a situacao sync so vem do gasto importado do banco; o toque nao chama a IA', () => {
@@ -114,7 +114,11 @@ test('a situacao sync so vem do gasto importado do banco; o toque nao chama a IA
   assert.equal((hook.match(/\bspeakAi\(/g) ?? []).length, 2, 'speakAi fora da abertura e do gasto importado')
   const effect = hook.slice(hook.indexOf('const reactedKey'), hook.indexOf('// Toque:'))
   assert.match(effect, /void speakAi\(/, 'speakAi sem void')
-  assert.match(effect, /fallback: \{ situation: result\.situation, raw, announce: true \}/, 'reserva diferente da fala antiga')
+  assert.match(
+    effect,
+    /fallback: \{ situation: result\.situation, raw, announce: true(, \.\.\.scene)? \}/,
+    'reserva diferente da fala antiga',
+  )
   assert.match(effect, /!enabled \|\| readOnly \|\| view\.isPast/, 'portao do gasto importado alterado')
   // O toque segue so com o banco de frases.
   const tap = hook.slice(hook.indexOf('const onTap'))
@@ -157,8 +161,11 @@ test('abertura: uma pergunta por carga do app, por variavel de modulo, com a fal
 test('voto: o contexto sorteia a entrada do acervo sem as reprovadas e so o sem filtro tem o botao (D-12, D-35)', () => {
   const src = code(CONTEXT)
   assert.match(src, /const canVote = canAsk\b/, 'canVote precisa ser igual a canAsk')
-  assert.match(src, /withoutRejected\(OINC_LINES\.entrou/, 'a entrada nao sai do acervo sem as reprovadas')
-  assert.match(src, /entrada === true && tone === 'sem-filtro'/, 'o acervo vale so para o sem filtro')
+  // O sorteio do acervo (selectLine) recebe as reprovadas e vale so no sem filtro; a entrada pede a cena entrou.
+  assert.match(src, /rejected,/, 'o sorteio nao recebe as reprovadas')
+  assert.match(src, /const rejected = \[\.\.\.readRejected\(\), \.\.\.serverRejected\.current\]/, 'reprovadas do aparelho e do servidor')
+  assert.match(src, /if \(tone === 'sem-filtro'\) \{/, 'o acervo vale so para o sem filtro')
+  assert.match(src, /entrada === true \? \[cena \?\? 'entrou'\]/, 'a entrada nao pede a cena entrou')
   assert.match(body(src, 'rate'), /votar\(id, voto\)/)
   const balloon = code(BALLOON)
   assert.match(balloon, /speech\.votavel === true && canVote/)

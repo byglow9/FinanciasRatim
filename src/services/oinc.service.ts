@@ -14,6 +14,7 @@ const REJECTED_MAX = 500
 /** Prazo dos pedidos ao servidor. */
 const TIMEOUT_MS = 4000
 const ID_RE = /^[a-z0-9-]{3,64}$/
+const CENA_RE = /^[a-z0-9-]{2,40}$/
 
 const API_URL = (import.meta.env.VITE_BANK_API_URL as string | undefined)?.replace(/\/$/, '')
 
@@ -108,6 +109,20 @@ export async function votar(id: string, voto: Voto): Promise<boolean> {
     if (MOCK || !API_URL) return false
     const data = await call('/api/vintem/voto', { method: 'POST', body: JSON.stringify({ id, voto }) })
     return data !== null && typeof data === 'object' && (data as { ok?: unknown }).ok === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Pede ao servidor mais falas para uma cena que esta acabando (D-11). So o nome da cena vai, nunca texto.
+ * Rota ausente, falha ou sem servidor e silencio: devolve falso e nunca lanca.
+ */
+export async function repor(cena: string): Promise<boolean> {
+  try {
+    if (MOCK || !API_URL || !CENA_RE.test(cena)) return false
+    const data = await call('/api/vintem/repor', { method: 'POST', body: JSON.stringify({ cena }) })
+    return data !== null && typeof data === 'object'
   } catch {
     return false
   }

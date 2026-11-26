@@ -23,13 +23,24 @@ import {
 } from '@/services/vintemSpeech.service'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
 import { useVintemPeek } from '@/hooks/useVintemPeek'
-import { fetchAcervo, readRejected, votar, type Voto } from '@/services/oinc.service'
+import { fetchAcervo, readRejected, repor, votar, type GeneratedLine, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
+import { markOincUsed, readOincHistory } from '@/lib/oincHistory'
 import { loadBaseline } from '@/lib/vintemBaseline'
 import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { isSpendSpike } from '@shared/core/insights.js'
-import { OINC_LINES, withoutRejected } from '@shared/core/oincLines.js'
+import { OINC_LINES } from '@shared/core/oincLines.js'
+import { OINC_SCENES } from '@shared/core/oincScenes.js'
+import {
+  freshCount,
+  genderOf,
+  mergeBank,
+  reactionFact,
+  selectLine,
+  slotsFromRaw,
+  SITUATION_SCENE,
+} from '@shared/core/oincSelect.js'
 import { buildSlots, pick, pushRecent, recentKey, recentLimit } from '@shared/core/phrasePicker.js'
 import { CHEER_MS, launchRaw, reactionForLaunch } from '@shared/core/vintemMood.js'
 import { PHRASES, SITUATION_META } from '@shared/core/vintemPhrases.js'
@@ -43,8 +54,21 @@ import { useCycle } from './CycleContext'
 // Historico das ultimas frases fica no sessionStorage (so ids de frase, sempre em try e catch).
 // O acaso nasce dentro de speak, nunca durante a renderizacao.
 
-/** Encaixes crus aceitos pelo seletor de frases. */
-export type SlotsRaw = NonNullable<Parameters<typeof buildSlots>[0]>
+/** Encaixes crus aceitos pelo seletor de frases e pelo sorteio do acervo (texto ja curto e sem chaves). */
+export type SlotsRaw = NonNullable<Parameters<typeof buildSlots>[0]> & {
+  meta?: string
+  conta?: string
+  titulo?: string
+  hora?: string
+  quando?: string
+}
+
+/** Cena do acervo, encaixes prontos e condicoes de uma fala (vem de reactionFact ou de quem decide o assunto). */
+export interface SceneArgs {
+  cena: string
+  slots: Record<string, string>
+  conds: string[]
+}
 
 export interface Speech {
   id: string
@@ -62,6 +86,12 @@ export interface PhraseArgs {
   maxLen?: number
   /** Primeira fala ao abrir o app: no tom sem filtro sai do acervo aprovado (07.1, D-10). */
   entrada?: boolean
+  /** Cena do acervo a comentar; sem ela vale `entrou` (entrada) ou a cena da situacao (07.1, D-02). */
+  cena?: string
+  /** Encaixes prontos que valem mais que os de `raw` (a compra, o quando). */
+  slots?: Record<string, string>
+  /** Condicoes presentes (hoje, ontem, sexta, tema da conta...) para as falas que as exigem. */
+  conds?: ReadonlyArray<string>
 }
 
 export interface SpeakArgs extends PhraseArgs {
@@ -92,6 +122,8 @@ export interface LaunchedArgs {
   kind: LaunchedKind
   categoryId?: string | null
   cents: number
+  /** Descricao digitada. So classifica a cena no aparelho: nao vai a estado, armazenamento, rede nem console. */
+  description?: string
   /** Visao do ciclo ANTERIOR ao lancamento (por isso o gasto ainda nao esta somado). */
   view: NonNullable<ReturnType<typeof useCycleBudget>['view']> | null
   person: PersonType
@@ -137,7 +169,6 @@ export interface VintemContextType {
 
 const VintemContext = createContext<VintemContextType | undefined>(undefined)
 
-/** Duracao do toast do Vintem fora da Home: um pouco mais que o aviso comum, para ler a frase. */
 /** Lugares de onde o Vintem espia, para variar: roda em ordem fixa, sem repetir o aviso anterior. */
 const PEEK_SPOTS = [
   { side: 'right', high: false },
@@ -152,7 +183,22 @@ function nextPeekSpot(): (typeof PEEK_SPOTS)[number] {
   return spot
 }
 
+/** Duracao do toast do Vintem fora da Home: um pouco mais que o aviso comum, para ler a frase. */
 const VINTEM_TOAST_MS = 6000
+
+/**
+ * Acervo que pode ir ao ar: fala marcada com `reescrita` ainda espera voto e fica de fora (D-34).
+ * Depois do voto "sim" (plano 07.1-14) a marca precisa sair da linha, senao ela nunca vai ao ar.
+ */
+const AIR_BANK = Object.fromEntries(
+  Object.entries(OINC_LINES).map(([cena, lines]) => [cena, lines.filter((line) => line.reescrita !== true)]),
+)
+
+/** Situacoes em que o valor cru e a soma de varias compras: nas falas ele so pode entrar como {total}. */
+const VALOR_E_TOTAL: ReadonlySet<string> = new Set(['delivery-semana', 'loja-repete'])
+
+/** Cenas que ja pediram reposicao nesta carga do app (uma vez por cena, D-11). */
+const repostas = new Set<string>()
 
 /** Situacoes decididas pelo nucleo que contam como limite para a fala da IA. */
 const LIMIT_SITUATIONS: ReadonlySet<string> = new Set(['limite-atento', 'limite-perto', 'limite-estourou'])
@@ -204,11 +250,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   // Falas reprovadas: as deste aparelho (localStorage, lidas na hora do sorteio) valem desde a primeira
   // fala; as que o servidor guardou entram nesta lista quando a consulta volta.
   const serverRejected = useRef<string[]>([])
+  // Falas geradas que o servidor guardou para a pessoa (reposicao); entram no sorteio com o acervo.
+  const generated = useRef<GeneratedLine[]>([])
   useEffect(() => {
     if (!canVote) return
     let alive = true
     void fetchAcervo().then((acervo) => {
-      if (alive) serverRejected.current = [...new Set([...serverRejected.current, ...acervo.rejected])]
+      if (!alive) return
+      serverRejected.current = [...new Set([...serverRejected.current, ...acervo.rejected])]
+      generated.current = acervo.generated
     })
     return () => {
       alive = false
@@ -249,25 +299,74 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const draw = useCallback(
-    ({ situation, raw, maxLen, entrada }: PhraseArgs): { id: string; text: string; votavel?: boolean } | null => {
+    ({
+      situation,
+      raw,
+      maxLen,
+      entrada,
+      cena,
+      slots,
+      conds,
+    }: PhraseArgs): { id: string; text: string; votavel?: boolean } | null => {
       rand.current ??= mulberry32(Date.now() ^ Math.floor(performance.now() * 1000))
-      // Primeira fala da entrada no sem filtro: acervo aprovado sem as reprovadas (07.1, D-10, D-35).
-      // Sem frase preenchivel devolve nulo: quem pediu a entrada cai no banco da situacao com os encaixes dela.
-      if (entrada === true && tone === 'sem-filtro') {
-        const lines = withoutRejected(OINC_LINES.entrou, [...readRejected(), ...serverRejected.current])
-        const entrouRecent = readRecent()
-        const entrou = pick({
-          situation: 'entrou',
-          tone,
-          slots: buildSlots(raw),
-          recent: entrouRecent,
-          rand: rand.current,
-          bank: { entrou: { [tone]: lines.map((l) => ({ id: l.id, t: l.t })) } },
-          maxLen: 120,
-        })
-        if (entrou === null) return null
-        writeRecent(pushRecent(entrouRecent, recentKey('entrou', tone), entrou.id, recentLimit(lines.length)))
-        return { ...entrou, votavel: true }
+      // Sem filtro: o previsivel sai do acervo aprovado, no genero de quem le e sem repetir cedo (07.1, D-05, D-10,
+      // D-35). Suave e direto seguem so no banco da Fase 4. Sem linha elegivel na cena pedida tenta a cena da
+      // situacao e, por fim, o banco da Fase 4: o porco nunca fica mudo por falta de encaixe.
+      if (tone === 'sem-filtro') {
+        const mapped = (SITUATION_SCENE as Record<string, string | undefined>)[situation]
+        // A entrada so tenta a propria cena: sem linha, quem pediu repete a fala com os encaixes completos.
+        const wanted = entrada === true ? [cena ?? 'entrou'] : [cena ?? mapped, mapped]
+        const scenes = wanted.filter((c, i, all): c is string => c !== undefined && all.indexOf(c) === i)
+        if (scenes.length > 0) {
+          const bank = mergeBank(
+            AIR_BANK,
+            generated.current.map((g) => ({ id: g.id, cena: g.cena, t: g.text })),
+          )
+          const history = readOincHistory(viewPerson)
+          const gender = genderOf(viewPerson)
+          const rejected = [...readRejected(), ...serverRejected.current]
+          const encaixes: Record<string, string> = { ...slotsFromRaw(raw), ...slots }
+          // O mesmo numero muda de sentido entre as situacoes; a fala nunca pode afirmar o errado (D-01).
+          if (VALOR_E_TOTAL.has(situation) && encaixes.valor !== undefined) {
+            encaixes.total = encaixes.valor
+            delete encaixes.valor
+          }
+          // Na meta batida o valor que chega e o do aporte, nao o da meta.
+          if (situation === 'meta-batida') delete encaixes.valor
+          for (const c of scenes) {
+            const line = selectLine({
+              bank,
+              cena: c,
+              slots: encaixes,
+              gender,
+              seen: history.seen,
+              rejected,
+              lastRisada: history.lastRisada,
+              conds: conds ?? [],
+              rand: rand.current,
+              maxLen: maxLen ?? (OINC_SCENES[c as keyof typeof OINC_SCENES]?.longa === true ? 160 : 120),
+            })
+            if (line === null) continue
+            const nowMs = Date.now()
+            markOincUsed(viewPerson, line.id, line.risada, nowMs)
+            // Cena acabando: pede reposicao uma vez por carga, so de quem pode pedir (D-11).
+            if (canAsk && !repostas.has(c)) {
+              const fresh = freshCount(bank, c, {
+                gender,
+                slots: encaixes,
+                seen: { ...history.seen, [line.id]: nowMs },
+                rejected,
+                nowMs,
+              })
+              if (fresh < 2) {
+                repostas.add(c)
+                void repor(c)
+              }
+            }
+            return { id: line.id, text: line.text, votavel: true }
+          }
+        }
+        if (entrada === true) return null
       }
       const bank = PHRASES as Record<string, Record<string, { id: string; t: string }[]>>
       const variants = bank[situation]?.[tone]?.length ?? 0
@@ -286,7 +385,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       writeRecent(pushRecent(recent, recentKey(situation, tone), chosen.id, recentLimit(variants)))
       return chosen
     },
-    [tone],
+    [tone, viewPerson, canAsk],
   )
 
   const speak = useCallback(
@@ -371,6 +470,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   // Fora da Home o Vintem espia pela borda da tela, no toast dele.
+  // Fora da Home o Vintem espia pela borda da tela, no toast dele.
   const peekToast = useCallback(
     (text: string, reaction: VintemReaction): void => {
       speechGen.current += 1
@@ -411,7 +511,13 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   // sai no balao (anunciada); fora dela, no toast claro do Vintem, que entra na fila depois do toast de
   // sucesso. Sem frase no banco nao ha toast. Nunca lanca.
   const deliver = useCallback(
-    async (reaction: VintemReaction, situation: string, raw: SlotsRaw, ai?: Omit<AskArgs, 'timeoutMs'>): Promise<void> => {
+    async (
+      reaction: VintemReaction,
+      situation: string,
+      raw: SlotsRaw,
+      ai?: Omit<AskArgs, 'timeoutMs'>,
+      scene?: SceneArgs | null,
+    ): Promise<void> => {
       try {
         slot.current?.react(reaction)
         let aiText: string | null = null
@@ -422,10 +528,10 @@ export function VintemProvider({ children }: { children: ReactNode }) {
         }
         if (slot.current !== null) {
           if (aiText !== null) speakText({ text: aiText, situation, announce: true })
-          else speak({ situation, raw, announce: true })
+          else speak({ situation, raw, announce: true, ...scene })
           return
         }
-        const text = aiText ?? draw({ situation, raw })?.text ?? null
+        const text = aiText ?? draw({ situation, raw, ...scene })?.text ?? null
         if (text !== null) peekToast(text, reaction)
       } catch {
         // Melhor esforco: a fala nunca atrapalha o lancamento.
@@ -435,7 +541,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   const onLaunched = useCallback(
-    async ({ kind, categoryId = null, cents, view, person }: LaunchedArgs): Promise<void> => {
+    async ({ kind, categoryId = null, cents, description = '', view, person }: LaunchedArgs): Promise<void> => {
       try {
         // Guardar no Porquinho alegra o humor de fundo por alguns minutos, com ou sem a view pronta.
         if (kind === 'porquinho-guardou') setCheer({ kind, untilMs: Date.now() + CHEER_MS })
@@ -473,7 +579,30 @@ export function VintemProvider({ children }: { children: ReactNode }) {
                 categoryId: kind === 'gasto' ? categoryId : null,
               }
             : undefined
-        await deliver(result.reaction, result.situation, raw, ai)
+        // A compra da reacao (D-02, D-09): a cena e os encaixes saem do lancamento montado aqui, em memoria. A
+        // descricao so classifica a cena e morre nesta funcao. Sem fato, vale a situacao como sempre.
+        let fact: SceneArgs | null = null
+        if (kind === 'gasto' || kind === 'receita') {
+          try {
+            const at = new Date()
+            fact = reactionFact({
+              situation: result.situation,
+              tx: {
+                type: kind === 'gasto' ? 'saida' : 'entrada',
+                amount: cents / 100,
+                description,
+                category: categoryId === null ? '' : categoryDisplayName({ categoryId }, categoryDefs),
+                categoryId: categoryId ?? undefined,
+                date: at,
+              },
+              categoryDefs,
+              now: at,
+            })
+          } catch {
+            fact = null
+          }
+        }
+        await deliver(result.reaction, result.situation, raw, ai, fact)
       } catch {
         // Melhor esforco: a reacao nunca atrapalha o lancamento e nada de valor ou nome vai a log.
       }

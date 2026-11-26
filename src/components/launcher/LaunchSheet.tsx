@@ -252,6 +252,8 @@ function LaunchForm({ initialTab, person, view, onClose }: LaunchFormProps) {
                 : "porquinho-retirou",
         categoryId: tab === "porquinho" ? null : category?.id,
         cents,
+        // So classifica a cena da fala no aparelho; nao vai a estado, armazenamento, rede nem console.
+        description: typed,
         view,
         person,
       })

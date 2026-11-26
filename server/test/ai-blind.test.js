@@ -100,7 +100,7 @@ describe('casos sinteticos do teste cego', () => {
     const c = cases.find((x) => x.cena === 'posto' && x.pessoa === 'ele')
     const novo = armRequest(c, 'novo', 0)
     assert.match(novo.messages[0].content, /Exemplos aprovados desta cena/)
-    const example = /\n"([^"\n]+)"\n/.exec(novo.messages[0].content)[1]
+    const example = /\n"([^"\n]+)"(?=\n|$)/.exec(novo.messages[0].content)[1]
     assert.deepEqual(novo.judge(example), { valido: false, motivo: 'copia' })
     assert.deepEqual(novo.judge(MARKED), { valido: false, motivo: 'marcacao' })
     assert.deepEqual(novo.judge(GOOD), { valido: true, motivo: null })

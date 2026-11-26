@@ -1,9 +1,10 @@
 import { Timestamp } from 'firebase-admin/firestore'
 import { DEFAULT_CATEGORY_DEFS, buildCategoryDefs } from '../../../shared/core/categories.js'
-import { cycleMonths, cycleOf, shiftCycle } from '../../../shared/core/cycle.js'
+import { addDaysToParts, cycleMonths, cycleOf, nextOccurrence, shiftCycle } from '../../../shared/core/cycle.js'
 import { normalizePersonConfig } from '../../../shared/core/limits.js'
 import { openBillMonth } from '../../../shared/core/cardBills.js'
 import { toCents } from '../../../shared/core/ledger.js'
+import { zonedParts, zonedTimeToInstant } from '../../../shared/core/time.js'
 import { TONES } from '../../../shared/core/aiPrompt.js'
 
 const SETTINGS = 'settings'
@@ -20,6 +21,8 @@ const NOTES = 'notes'
 /** Quantos dias depois do fim do ciclo ainda entram na agenda, e quantas anotacoes sao lidas. */
 const AGENDA_AHEAD_DAYS = 31
 const NOTES_MAX = 20
+/** Dias a frente, alem de hoje, lidos para o aviso de compromisso. */
+const DUE_AHEAD_DAYS = 3
 
 /** Tom padrao e nomes padrao das abas (o mesmo do app) quando o documento falta ou e de outro casal. */
 export const DEFAULT_TONE = 'sem-filtro'
@@ -55,6 +58,16 @@ function tabName(v, fallback) {
 function toDate(v) {
   const d = typeof (/** @type {any} */ (v)?.toDate) === 'function' ? /** @type {any} */ (v).toDate() : v
   return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
+}
+
+/**
+ * @param {unknown} hid
+ * @param {unknown} person
+ */
+function assertPair(hid, person) {
+  if (typeof hid !== 'string' || !hid || (person !== 'ele' && person !== 'ela')) {
+    throw new Error('snapshot exige hid e pessoa validos')
+  }
 }
 
 /**
@@ -114,7 +127,7 @@ function transactionsQuery(db, hid, person, cycle) {
  * Leitor do que a IA pode enxergar, sempre escopado pelo casal (hid) e pela pessoa do token.
  * `load` devolve { input, reads, tone, tabNames }: `input` e a entrada de buildAiSummary; `reads`
  * conta os documentos lidos NESTA carga (cache = 0); `tone` e `tabNames` sao para a fala e nunca
- * entram no resumo.
+ * entram no resumo. `loadDue` e a leitura dos avisos fixos (contas, pagamentos e compromissos).
  *
  * Fontes (D-16): lancamentos do ciclo atual e do anterior, contas fixas e pagamentos, metas, so o
  * SALDO do Porquinho, fatura aberta do cartao, insights fortes, o ultimo lancamento, os eventos do
@@ -231,14 +244,14 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
   }
 
   /**
-   * Pagamentos dos meses do ciclo, so os das contas da pessoa (o resto nem chega ao resumo).
+   * Pagamentos dos meses pedidos, so os das contas informadas (o resto nem segue adiante).
    * @param {string} hid
-   * @param {any} cycle
+   * @param {Array<{ month: number, year: number }>} months
    * @param {Set<string>} billIds
    */
-  async function fetchPayments(hid, cycle, billIds) {
+  async function fetchPayments(hid, months, billIds) {
     const snaps = await Promise.all(
-      cycleMonths(cycle).map((m) =>
+      months.map((m) =>
         db
           .collection(FIXED_PAYMENTS)
           .where('ownerId', '==', hid)
@@ -432,7 +445,7 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
       safe('anotacoes', /** @type {any[]} */ ([]), () => fetchNotes(hid, person)),
     ])
     const billIds = new Set(bills.value.map((b) => b.id))
-    const payments = await safe('pagamentos', /** @type {any[]} */ ([]), () => fetchPayments(hid, cycle, billIds))
+    const payments = await safe('pagamentos', /** @type {any[]} */ ([]), () => fetchPayments(hid, cycleMonths(cycle), billIds))
 
     /** @type {any[]} */
     const transactions = []
@@ -509,12 +522,75 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
   }
 
   /**
+   * O que esta para vencer, para os avisos fixos (07.1, D-21, D-24, D-25): contas ativas da pessoa e
+   * do casal, pagamentos dos meses dos proximos vencimentos e compromissos de hoje a 3 dias. SO LE:
+   * nunca marca como paga nem cria lancamento. Sem cache (o aviso precisa do dado de agora) e sem
+   * fonte tolerante: sem os pagamentos uma conta paga pareceria em aberto, entao o erro sobe.
+   * Nomes e titulos saem como estao, so para o corpo do push (D-31): nada disto vai ao resumo da IA.
+   * @param {{ hid: string, person: 'ele' | 'ela' }} args
+   */
+  async function loadDue({ hid, person }) {
+    assertPair(hid, person)
+    const nowDate = now()
+    const mine = (/** @type {unknown} */ p) => p === person || p === 'conjunto'
+
+    const t = zonedParts(nowDate)
+    const today = { year: t.year, month: t.month, day: t.day }
+    const after = addDaysToParts(today, DUE_AHEAD_DAYS + 1)
+    const from = zonedTimeToInstant(today.year, today.month, today.day)
+    const until = new Date(zonedTimeToInstant(after.year, after.month, after.day).getTime() - 1)
+
+    const [billSnap, eventSnap] = await Promise.all([
+      db.collection(FIXED_EXPENSES).where('ownerId', '==', hid).where('isActive', '==', true).get(),
+      db
+        .collection(EVENTS)
+        .where('ownerId', '==', hid)
+        .where('date', '>=', Timestamp.fromDate(from))
+        .where('date', '<=', Timestamp.fromDate(until))
+        .orderBy('date', 'asc')
+        .get(),
+    ])
+
+    /** @type {Array<{ id: string, name: string, dueDay: number, amountCents: number | null, person: string }>} */
+    const bills = []
+    for (const doc of billSnap.docs) {
+      const d = doc.data() ?? {}
+      const dueDay = dayOrNull(d.dueDay)
+      if (!mine(d.person) || d.isActive !== true || typeof d.name !== 'string' || dueDay === null) continue
+      const amount = Number(d.amount)
+      bills.push({
+        id: doc.id,
+        name: d.name,
+        dueDay,
+        amountCents: Number.isFinite(amount) ? toCents(amount) : null,
+        person: d.person,
+      })
+    }
+
+    const months = new Map()
+    for (const bill of bills) {
+      const due = nextOccurrence(bill.dueDay, nowDate)
+      months.set(`${due.year}-${due.month}`, { month: due.month, year: due.year })
+    }
+    const payments = await fetchPayments(hid, [...months.values()], new Set(bills.map((b) => b.id)))
+
+    /** @type {Array<{ id: string, title: unknown, date: Date, time: unknown, person: string }>} */
+    const events = []
+    for (const doc of eventSnap.docs) {
+      const d = doc.data() ?? {}
+      const date = toDate(d.date)
+      if (!date || !mine(d.person)) continue
+      events.push({ id: doc.id, title: d.title, date, time: d.time, person: d.person })
+    }
+
+    return { bills, payments: payments.value, events }
+  }
+
+  /**
    * @param {{ hid: string, person: 'ele' | 'ela', fresh?: boolean }} args
    */
   async function load({ hid, person, fresh = false }) {
-    if (typeof hid !== 'string' || !hid || (person !== 'ele' && person !== 'ela')) {
-      throw new Error('snapshot exige hid e pessoa validos')
-    }
+    assertPair(hid, person)
     const nowDate = now()
     const force = fresh === true
 
@@ -578,5 +654,5 @@ export function createSnapshotLoader({ db, now = () => new Date(), log = console
     }
   }
 
-  return { load }
+  return { load, loadDue }
 }

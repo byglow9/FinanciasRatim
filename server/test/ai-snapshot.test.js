@@ -488,9 +488,10 @@ describe('snapshot: o que esta para vencer (loadDue)', () => {
   test('pagamentos dos meses dos proximos vencimentos, so das contas lidas e do proprio casal', async () => {
     const { loader, db } = setup(dueSeed())
     const r = await loader.loadDue({ hid: HID, person: 'ele' })
+    // Novembro e lido por causa de f6; o pagamento antigo de f1 vem junto e nao vale para dezembro.
     assert.deepEqual(
       r.payments.map((p) => `${p.billId}:${p.month}/${p.year}`).sort(),
-      ['f1:12/2026', 'f6:11/2026'],
+      ['f1:11/2026', 'f1:12/2026', 'f6:11/2026'],
     )
     const queries = db.queries.filter((x) => x.collection === 'fixedExpensePayments')
     // f1 (dia 5) e f2 (dia 8) vencem em dezembro; f6 (dia 20) em novembro: dois meses, duas consultas.

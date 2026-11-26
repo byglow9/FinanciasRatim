@@ -7,19 +7,19 @@ import { DEFAULT_TZ, zonedParts } from './time.js'
 
 /**
  * @typedef {{
- *   types: { limite80: boolean, limite100: boolean, espontanea: boolean },
+ *   types: { limite80: boolean, limite100: boolean, espontanea: boolean, conta: boolean, compromisso: boolean },
  *   quiet: { enabled: boolean, from: string, to: string },
  * }} PushPrefs
  */
 
 /** Padroes de partida (D-06, D-21): sem silencio e os tipos ligados. */
 export const DEFAULT_PUSH_PREFS = Object.freeze({
-  types: Object.freeze({ limite80: true, limite100: true, espontanea: true }),
+  types: Object.freeze({ limite80: true, limite100: true, espontanea: true, conta: true, compromisso: true }),
   quiet: Object.freeze({ enabled: false, from: '22:00', to: '08:00' }),
 })
 
 /** Tipos que moram no objeto de preferencias (a fatura vem do interruptor legado). */
-const TYPE_KEYS = /** @type {const} */ (['limite80', 'limite100', 'espontanea'])
+const TYPE_KEYS = /** @type {const} */ (['limite80', 'limite100', 'espontanea', 'conta', 'compromisso'])
 const QUIET_KEYS = /** @type {const} */ (['enabled', 'from', 'to'])
 const TOP_KEYS = /** @type {const} */ (['types', 'quiet'])
 
@@ -104,6 +104,8 @@ export function normalizePushPrefs(raw) {
       limite80: bool(types.limite80, d.types.limite80),
       limite100: bool(types.limite100, d.types.limite100),
       espontanea: bool(types.espontanea, d.types.espontanea),
+      conta: bool(types.conta, d.types.conta),
+      compromisso: bool(types.compromisso, d.types.compromisso),
     },
     quiet: { enabled, from, to },
   }
@@ -172,8 +174,8 @@ export function prefKindOf(event) {
 }
 
 /**
- * O tipo esta ligado? limite80, limite100 e espontanea vem das preferencias; a
- * fatura vem do interruptor legado (padrao ligado quando nao informado).
+ * O tipo esta ligado? limite80, limite100, espontanea, conta e compromisso vem das
+ * preferencias; a fatura vem do interruptor legado (padrao ligado quando nao informado).
  * @param {PushPrefs} prefs
  * @param {string} kind
  * @param {{ faturaEnabled?: boolean }} [opts]
@@ -213,8 +215,8 @@ export function inWindow(instant, window, tz = DEFAULT_TZ) {
 }
 
 /**
- * Decisao de entrega: tipo desligado, espontaneo (pula no silencio) ou limite e
- * fatura (retem no silencio e chegam quando ele acaba, D-21). Para limite pode
+ * Decisao de entrega: tipo desligado, espontaneo (pula no silencio) ou limite,
+ * fatura, conta e compromisso (retidos no silencio, chegam quando ele acaba, D-21). Para limite pode
  * vir `kind: 'limite'` com `threshold`, ou direto limite80 e limite100.
  * @param {{ prefs: PushPrefs, kind: string, threshold?: number, faturaEnabled?: boolean, now: Date, tz?: string }} input
  * @returns {'enviar' | 'reter' | 'pular' | 'desligado'}

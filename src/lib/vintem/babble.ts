@@ -42,9 +42,24 @@ function context(): AudioContext | null {
   return ctx
 }
 
-// O primeiro toque na pagina destrava o som das falas seguintes.
+/** Fala que comecou antes de o navegador liberar o som: sai no primeiro toque, se ainda estiver na tela. */
+let waiting: { play: () => void } | null = null
+
+// Todo toque retoma o som (o navegador tambem o suspende quando o app vai para o fundo).
 if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', () => void context()?.resume(), { once: true, passive: true })
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      const audio = context()
+      if (audio === null || audio.state === 'running') return
+      void audio.resume().then(() => {
+        const next = waiting
+        waiting = null
+        next?.play()
+      })
+    },
+    { capture: true, passive: true },
+  )
 }
 
 const syllableCount = (text: string) => Math.round(Math.max(5, Math.min(18, text.length * 0.23)) * 0.7)
@@ -63,11 +78,26 @@ function distortion(amount: number): Float32Array<ArrayBuffer> {
   return curve
 }
 
-/** Toca os resmungos e devolve como parar. Nunca lanca. */
+/** Toca os resmungos e devolve como parar. Sem som liberado, espera o primeiro toque. Nunca lanca. */
 export function babble(text: string, state = 'neutro'): () => void {
+  const audio = context()
+  if (audio === null || text === '') return () => {}
+  if (audio.state === 'running') return voice(audio, text, state)
+  let stop = () => {}
+  const entry = {
+    play: () => {
+      stop = voice(audio, text, state)
+    },
+  }
+  waiting = entry
+  return () => {
+    if (waiting === entry) waiting = null
+    stop()
+  }
+}
+
+function voice(audio: AudioContext, text: string, state: string): () => void {
   try {
-    const audio = context()
-    if (audio === null || audio.state !== 'running' || text === '') return () => {}
     const mood = voiceMood(state)
     const out = audio.createGain()
     out.gain.value = 0.22 * mood.volume

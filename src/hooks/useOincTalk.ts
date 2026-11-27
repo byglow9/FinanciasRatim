@@ -3,7 +3,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { babble, babbleSeconds, voiceMood } from '@/lib/vintem/babble'
 
 /** Duracao de um balanco do corpo na voz neutra, em milissegundos. */
-const BOB_MS = 190
+const BOB_MS = 340
 
 interface Motion {
   /** Quadros do corpo (apoiado na base). */
@@ -16,20 +16,21 @@ interface Motion {
 
 const pose = (...transforms: string[]): Keyframe[] => ['none', ...transforms, 'none'].map((transform) => ({ transform }))
 
-/** O jeito de se mexer de cada expressao, no mesmo clima da cara dele. */
+/** O jeito de se mexer de cada expressao, no mesmo clima da cara dele. Movimentos curtos: o dono achou
+ * que balancava demais. */
 const MOTIONS: Readonly<Record<string, Motion>> = {
-  neutro: { body: pose('scale(1.05, 0.93)', 'scale(0.97, 1.04)'), snout: 3, mouth: [1.1, 5] },
-  atento: { body: pose('translateY(-3px) rotate(-3deg)', 'rotate(2deg)'), snout: 3, mouth: [1.1, 5] },
+  neutro: { body: pose('scale(1.02, 0.97)', 'scale(0.99, 1.015)'), snout: 1.6, mouth: [1.1, 4] },
+  atento: { body: pose('translateY(-1px) rotate(-1.5deg)', 'rotate(1deg)'), snout: 1.6, mouth: [1.1, 4] },
   // pulinhos
-  feliz: { body: pose('scale(1.08, 0.9)', 'translateY(-10px) scale(0.95, 1.07)', 'scale(1.05, 0.94)'), snout: 3, mouth: [1.5, 6] },
+  feliz: { body: pose('scale(1.03, 0.96)', 'translateY(-4px) scale(0.98, 1.025)', 'scale(1.02, 0.98)'), snout: 1.6, mouth: [1.4, 5] },
   // tremendo de raiva
-  bravo: { body: pose('translateX(-4px) rotate(-4deg) scale(1.04, 0.96)', 'translateX(4px) rotate(4deg)', 'translateX(-3px) rotate(-3deg)'), snout: 4.5, mouth: [1.7, 7] },
+  bravo: { body: pose('translateX(-1.5px) rotate(-1.8deg) scale(1.02, 0.98)', 'translateX(1.5px) rotate(1.8deg)', 'translateX(-1px) rotate(-1deg)'), snout: 2.2, mouth: [1.5, 5.5] },
   // murcho, balancando devagar
-  triste: { body: pose('scale(1.03, 0.93) rotate(-2deg)', 'scale(1.04, 0.91)', 'scale(1.02, 0.94) rotate(2deg)'), snout: 1.5, mouth: [0.7, 3] },
+  triste: { body: pose('scale(1.015, 0.97) rotate(-1deg)', 'scale(1.02, 0.955)', 'scale(1.01, 0.97) rotate(1deg)'), snout: 1, mouth: [0.7, 3] },
   // respiracao pesada e boca de bocejo
-  sonolento: { body: pose('scale(1.03, 0.96) rotate(-3deg)', 'scale(0.99, 1.02) rotate(-3deg)'), snout: 1.5, mouth: [1, 8] },
+  sonolento: { body: pose('scale(1.015, 0.98) rotate(-1.5deg)', 'scale(0.995, 1.01) rotate(-1.5deg)'), snout: 1, mouth: [1, 7] },
   // susto: estica e recua
-  surpreso: { body: pose('translateY(-8px) scale(0.9, 1.14)', 'scale(1.1, 0.9)', 'translateY(-3px) scale(0.96, 1.05)'), snout: 3.5, mouth: [1.2, 9] },
+  surpreso: { body: pose('translateY(-4px) scale(0.95, 1.07)', 'scale(1.05, 0.95)', 'translateY(-1px) scale(0.98, 1.025)'), snout: 2, mouth: [1.2, 7] },
 }
 
 /**
@@ -61,14 +62,14 @@ export function useOincTalk(ref: RefObject<HTMLElement | null>, text: string | n
       play(el, motion.body, beat * (motion.body.length - 2))
       const k = motion.snout
       for (const snout of el.querySelectorAll('[data-talk="snout"]')) {
-        play(snout, pose(`translate(0, -${k}px)`, `translate(${k / 2}px, 1px)`, `translate(-${k / 2}px, 0)`), beat * 0.8)
+        play(snout, pose(`translate(0, -${k}px)`, `translate(${k / 2}px, 1px)`, `translate(-${k / 2}px, 0)`), beat)
       }
       const [wide, tall] = motion.mouth
       for (const lips of el.querySelectorAll('[data-talk="mouth"]')) {
         play(
           lips,
           ['scale(1, 1)', `scale(${wide}, ${tall})`, `scale(0.8, ${tall / 2.5})`, 'scale(1, 1)'].map((transform) => ({ opacity: 1, transform })),
-          beat * 0.9,
+          beat,
         )
       }
     }

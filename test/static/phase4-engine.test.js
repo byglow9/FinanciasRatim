@@ -123,7 +123,7 @@ test('o bloco .vt de index.css deriva o corpo do token de acao e fica fora de @t
   assert.deepEqual(offenders, [], 'verde antigo de acao em src')
 })
 
-test('as partes de D-04 existem em grupos de id, sem boca e sem patas na frente', () => {
+test('as partes de D-04 existem em grupos de id, boca so na fala e sem patas na frente', () => {
   const src = code(VINTEM)
   for (const part of ['earL', 'earR', 'slit', 'snoutG', 'eL', 'eR', 'lid', 'bL', 'bR', 'accG', 'tail', 'face', 'bodyF', 'shadow']) {
     assert.ok(src.includes(part), `Vintem.tsx sem o id ${part}`)
@@ -131,7 +131,9 @@ test('as partes de D-04 existem em grupos de id, sem boca e sem patas na frente'
   for (const part of ['cvL', 'cvR', 'wet', 'coinR', 'pawNearA', 'pawNearB', 'pawFarA', 'pawFarB']) {
     assert.ok(src.includes(part), `Vintem.tsx sem ${part}`)
   }
-  assert.doesNotMatch(src, /mouth|boca/i, 'o Vintem nao tem boca (D-03)')
+  // o dono aprovou a boquinha no sketch 032: ela so aparece falando (invisivel parado)
+  assert.equal(src.split('data-talk="mouth"').length - 1, 1, 'a boca de fala e uma so')
+  assert.match(src.slice(src.indexOf('data-talk="mouth"')).split('/>')[0], /opacity=\{0\}/, 'a boca aparece parada')
   // as patas e o rabo so existem no grupo do perfil
   const side = src.slice(src.indexOf('-side`'))
   const front = src.slice(src.indexOf('-front`'), src.indexOf('-side`'))

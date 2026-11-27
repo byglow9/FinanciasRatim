@@ -42,7 +42,7 @@ export function DashboardPage() {
   const { view, cycle, transactions, loading, error, refetch } = useCycleBudget(viewPerson, { enabled: !isPiggy })
   const { open } = useLaunch()
   const { readOnly } = useReadOnly()
-  const { speech } = useVintem()
+  const { speech, slot } = useVintem()
   const pigRef = useRef<HTMLDivElement>(null)
   const vintem = useHomeVintem({ view, cycle, transactions, enabled: !isPiggy, readOnly })
   const reveal = useSectionReveal()
@@ -54,7 +54,7 @@ export function DashboardPage() {
   const noIncome = view !== null && !view.income.hasIncome
   // Mesma condicao de antes para o balao: so com numeros na tela.
   const talking = speech !== null && view !== null && !noIncome
-  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey)
+  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey, () => slot.current?.mood() ?? vintem.state)
   if (isPiggy) {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">

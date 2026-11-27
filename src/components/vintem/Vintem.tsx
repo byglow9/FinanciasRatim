@@ -1,4 +1,5 @@
 import { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react'
+import { REACTION_MS, reactionState } from '@shared/core/vintemMood.js'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { createVintemView, type VintemFreeze, type VintemLook, type VintemViewHandle } from '@/lib/vintem/view'
 import { ACCESSORY_SHAPES, COIN, EYE, FRONT, GROUND, PROFILE, VIEWBOX } from '@/lib/vintem/geometry'
@@ -50,6 +51,8 @@ export type VintemReaction = 'spend' | 'susto' | 'bronca' | 'festa' | 'wake'
 /** Controle imperativo do Vintem (React 19: `ref` como prop). */
 export interface VintemHandle {
   react: (kind: VintemReaction) => void
+  /** Expressao que ele esta mostrando agora: a da reacao em curso ou a do humor de fundo. */
+  mood: () => string
   /** Olhar guiado (plano 05-23): x e y de -1 a 1 (cenas do onboarding). */
   gazeTo: (x: number, y: number) => void
   /** Toque: desperta o sonolento (devolve true); senao so pisca. */
@@ -180,10 +183,23 @@ export function Vintem({
     viewRef.current?.setReduced(effectiveReduced)
   }, [effectiveReduced])
 
+  const reaction = useRef<{ state: string; until: number } | null>(null)
+  const stateRef = useRef(state)
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
+
   useImperativeHandle(
     ref,
     () => ({
-      react: (kind) => viewRef.current?.react(kind),
+      react: (kind) => {
+        reaction.current = { state: reactionState(kind), until: performance.now() + REACTION_MS[kind] }
+        viewRef.current?.react(kind)
+      },
+      mood: () =>
+        reaction.current !== null && performance.now() < reaction.current.until
+          ? reaction.current.state
+          : (stateRef.current ?? 'neutro'),
       gazeTo: (x, y) => viewRef.current?.gazeTo(x, y),
       touch: () => viewRef.current?.touch() ?? false,
       setTurn: (on) => viewRef.current?.setTurn(on),
@@ -264,9 +280,22 @@ export function Vintem({
           <g clipPath={`url(#${uid}-bodyC)`}>
             <g id={`${uid}-face`}>
               <g id={`${uid}-snoutG`}>
-                <ellipse rx={FRONT.snout.rx} ry={FRONT.snout.ry} fill="var(--vintem-snout)" />
-                <ellipse cx={-FRONT.nostril.dx} rx={FRONT.nostril.rx} ry={FRONT.nostril.ry} fill={ink} />
-                <ellipse cx={FRONT.nostril.dx} rx={FRONT.nostril.rx} ry={FRONT.nostril.ry} fill={ink} />
+                {/* Camadas so da fala (useOincTalk): o motor mexe no grupo de fora, nunca nestas. */}
+                <g data-talk="snout">
+                  <ellipse rx={FRONT.snout.rx} ry={FRONT.snout.ry} fill="var(--vintem-snout)" />
+                  <ellipse cx={-FRONT.nostril.dx} rx={FRONT.nostril.rx} ry={FRONT.nostril.ry} fill={ink} />
+                  <ellipse cx={FRONT.nostril.dx} rx={FRONT.nostril.rx} ry={FRONT.nostril.ry} fill={ink} />
+                </g>
+                {/* Boquinha: invisivel calado, abre e fecha enquanto fala. */}
+                <ellipse
+                  data-talk="mouth"
+                  cy={FRONT.snout.ry + 7}
+                  rx={8}
+                  ry={1}
+                  fill={ink}
+                  opacity={0}
+                  style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+                />
               </g>
               <Eye uid={uid} side="L" />
               <Eye uid={uid} side="R" />

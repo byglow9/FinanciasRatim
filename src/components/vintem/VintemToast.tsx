@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Vintem, type VintemHandle, type VintemReaction } from '@/components/vintem/Vintem'
 import { useOincTalk } from '@/hooks/useOincTalk'
+import { reactionState } from '@shared/core/vintemMood.js'
 
 export interface VintemToastBodyProps {
   /** Fala ja sorteada e preenchida; entra como texto React, nunca como HTML. */
@@ -20,7 +21,7 @@ export interface VintemToastBodyProps {
 export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastBodyProps) {
   const handle = useRef<VintemHandle>(null)
   const body = useRef<HTMLDivElement>(null)
-  useOincTalk(body, text)
+  useOincTalk(body, text, undefined, () => reactionState(reaction))
 
   useEffect(() => {
     handle.current?.react(reaction)

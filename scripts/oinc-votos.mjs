@@ -5,8 +5,8 @@
 //   node scripts/oinc-votos.mjs aplicar PASTA        reprovadas e taxa de aprovacao (nao edita codigo)
 //   node scripts/oinc-votos.mjs conferir PASTA       falha enquanto houver fala nova sem voto "sim"
 //
-// Precisa de voto: fala marcada `reescrita: true` e fala `lote: 4`, do app e dos avisos, nos tres
-// tons. Fica de fora so a que o dono ja aprovou nos lotes 4A a 4C com o MESMO texto (so os valores
+// Precisa de voto: fala marcada `reescrita: true` e fala `lote: 4`, do app e dos avisos, so no tom
+// sem filtro (suave e direto sao neutros). Fica de fora so a que o dono ja aprovou nos lotes 4A a 4C com o MESMO texto (so os valores
 // trocados por encaixes). Voto vale para o par id e texto de modelo: texto mudado pede voto de novo.
 // Nao usa rede nem variaveis de ambiente; grava so na pasta indicada.
 import { createHash } from 'node:crypto'
@@ -93,8 +93,9 @@ function allLines(bank, pushBank) {
   return [...app, ...push]
 }
 
-const needsVote = ({ line }, earlier) =>
-  line.reescrita === true || (line.lote === 4 && !approvedEarlier(line, earlier))
+// Suave e direto sao avisos neutros: o dono julga so o sem filtro (27/11/2026).
+const needsVote = ({ line, tom }, earlier) =>
+  tom === 'sem-filtro' && (line.reescrita === true || (line.lote === 4 && !approvedEarlier(line, earlier)))
 
 // ---------------------------------------------------------------------------------------------
 // Votos respondidos
@@ -533,7 +534,9 @@ function buildPages({ files, cwd, say, fail }) {
 function report({ lines, dir, say, fail }) {
   const answers = readAnswers(dir)
   if (answers.error) return fail(answers.error)
-  const votes = [...answers.votes.values()]
+  // Voto antigo em suave ou direto nao conta: o dono nao julgou essas falas.
+  const neutras = new Set(lines.filter((e) => e.tom !== 'sem-filtro').map((e) => e.line.id))
+  const votes = [...answers.votes.values()].filter((v) => !neutras.has(v.id))
   if (votes.length === 0) return fail('nenhum voto nos arquivos lote4-respondido-*.json desta pasta')
   const inRepo = new Map(lines.map((e) => [keyOf(e.line.id, e.line.t), e.line]))
   const approved = votes.filter((v) => v.voto === 'sim')

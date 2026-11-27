@@ -410,7 +410,7 @@ function fakeBank() {
 }
 const FAKE_PENDING = [
   'posto-001', 'posto-003', 'posto-004', 'posto-006', 'entrou-001',
-  'push-conta-d0-001', 'push-conta-d0-101', 'push-conta-d0-201',
+  'push-conta-d0-001',
 ]
 
 function voting(deps = {}) {
@@ -432,7 +432,7 @@ function voting(deps = {}) {
 }
 
 describe('oinc-votos: exportacao', () => {
-  test('traz todas as falas novas do app e dos avisos, nos tres tons, em ate 40 por arquivo', () => {
+  test('traz todas as falas novas do app e dos avisos, so no sem filtro, em ate 40 por arquivo', () => {
     const t = voting()
     assert.equal(t.run('lote4', '--out', t.dir), 0)
     const files = t.exported()
@@ -444,6 +444,10 @@ describe('oinc-votos: exportacao', () => {
 
     // Toda fala marcada para voto e toda fala do lote 4 escrita depois dos votos 4A a 4C.
     for (const l of realLines) {
+      if (/-[12]\d\d$/.test(l.id)) {
+        assert.ok(!ids.has(l.id), `neutra no voto: ${l.id}`)
+        continue
+      }
       const nova = l.reescrita === true || (l.lote === 4 && !l.origem.startsWith('4:l4'))
       if (nova) assert.ok(ids.has(l.id), `faltou ${l.id}`)
       if (!ids.has(l.id)) assert.ok(l.reescrita !== true && (l.lote !== 4 || l.origem.startsWith('4:l4')), l.id)
@@ -455,9 +459,9 @@ describe('oinc-votos: exportacao', () => {
       assert.deepEqual(Object.keys(i), ['id', 'cenario', 'situacao', 'texto', 'voto', 'comentario', 'lote', 'modelo', 'tom'])
       assert.doesNotMatch(i.texto, /[{}]/, i.id)
       assert.ok(i.cenario && i.situacao && i.cenario !== i.id, i.id)
-      assert.ok(['sem-filtro', 'suave', 'direto'].includes(i.tom), i.id)
+      assert.equal(i.tom, 'sem-filtro', i.id)
     }
-    for (const tom of ['sem-filtro', 'suave', 'direto']) assert.ok(items.some((i) => i.tom === tom && i.id.startsWith('push-')), tom)
+    assert.ok(items.some((i) => i.id.startsWith('push-')))
   })
 
   test('toda cena do acervo e dos avisos tem nome para o voto', () => {
@@ -582,16 +586,16 @@ describe('oinc-votos: aplicar e conferir', () => {
     fs.writeFileSync(path.join(t.dir, 'lote4-respondido-01.json'), JSON.stringify(items))
     const before = t.files()
     assert.equal(t.run('aplicar', t.dir), 0)
-    assert.match(t.text(), /7 aprovadas de 8 votadas \(87%\)/)
+    assert.match(t.text(), /5 aprovadas de 6 votadas \(83%\)/)
     assert.match(t.text(), /Reprovadas \(1\)[\s\S]*posto-001.*sem graça/)
-    assert.match(t.text(), /marca reescrita \(5\)[\s\S]*entrou-001/)
+    assert.match(t.text(), /marca reescrita \(3\)[\s\S]*entrou-001/)
     assert.deepEqual(t.files(), before)
   })
 
   test('taxa abaixo de 8 em cada 10 e avisada', () => {
     const t = voting(fakeBank())
     t.run('lote4', '--out', t.dir)
-    t.answer('lote4-votos-01.json', (i) => (i.id.startsWith('push') ? 'nao' : 'sim'))
+    t.answer('lote4-votos-01.json', (i) => (i.id.startsWith('push') || i.id === 'posto-001' ? 'nao' : 'sim'))
     assert.equal(t.run('aplicar', t.dir), 0)
     assert.match(t.text(), /abaixo de 8 em cada 10/)
   })
@@ -684,14 +688,14 @@ describe('oinc-votos: pagina', () => {
     assert.equal(page.cards.length, items.length)
     assert.ok(page.texts(page.cards[0]).includes(items[0].texto))
     assert.ok(items[0].texto.includes('<img src=x'))
-    assert.match(page.byId.progresso.textContent, /0 de 8/)
+    assert.match(page.byId.progresso.textContent, /0 de 6/)
 
     page.vote(0, 'Sim')
     page.vote(1, 'Sim')
     page.vote(1, 'Não')
     page.comment(1, 'fraca')
     assert.deepEqual(page.pressed(1), ['Não'])
-    assert.match(page.byId.progresso.textContent, /2 de 8/)
+    assert.match(page.byId.progresso.textContent, /2 de 6/)
 
     // Fechou e abriu de novo: o voto parcial volta.
     const again = runPage(html, page.storage)
@@ -703,7 +707,7 @@ describe('oinc-votos: pagina', () => {
     assert.deepEqual(out[0], { ...items[0], voto: 'sim' })
     assert.deepEqual(out[1], { ...items[1], voto: 'nao', comentario: 'fraca' })
     assert.deepEqual(out.slice(2), items.slice(2))
-    assert.match(again.byId.aviso.textContent, /faltam 6/i)
+    assert.match(again.byId.aviso.textContent, /faltam 4/i)
   })
 
   test('voto guardado de um texto antigo nao vale para o texto novo', () => {

@@ -36,7 +36,7 @@ test('o hook cala com dado velho e no perfil do parceiro, sorteia a fala central
   assert.doesNotMatch(src, /innerHTML|dangerouslySetInnerHTML/, 'texto da fala so como texto React (T-04-16-01)')
   // Sem acaso nem leitura de relogio durante a renderizacao: o sorteio mora no provedor, chamado em efeito.
   assert.doesNotMatch(src, /Math\.random|Date\.now|performance\.now/, 'acaso ou relogio no hook')
-  assert.match(src, /visible: !hidden && !dismissed && text !== null/, 'visible sem as tres condicoes')
+  assert.match(src, /visible: !hidden && !dismissed && !homePig && !peek && text !== null/, 'visible sem as condicoes')
   assert.match(src, /const hidden = readOnly \|\| neutralOk \|\| mood === null/, 'hidden sem readOnly, neutralOk e linhas vazias')
 })
 

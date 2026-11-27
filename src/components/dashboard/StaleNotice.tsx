@@ -26,12 +26,13 @@ export function StaleNotice({ placement = 'top' }: StaleNoticeProps) {
   const hasNotice = suppress || items.some((f) => f.level === 'warn' || f.level === 'error')
 
   if (!hasNotice) {
-    if (placement !== 'below') return null
+    // logo abaixo do mes escolhido, bem discreto
+    if (placement !== 'top') return null
     // Conexão mais antiga que tem data: o texto vale para todas.
     const dated = items.filter((f) => f.updatedAt)
     if (dated.length === 0) return null
     const oldest = dated.reduce((a, b) => (a.updatedAt!.getTime() <= b.updatedAt!.getTime() ? a : b))
-    return <p className="text-xs font-normal text-muted-foreground">Banco atualizado {ago(oldest.updatedAt!)}</p>
+    return <p className="-mt-3 pl-2 text-[11px] font-normal leading-none text-muted-foreground">Banco atualizado {ago(oldest.updatedAt!)}</p>
   }
 
   if (placement !== 'top') return null

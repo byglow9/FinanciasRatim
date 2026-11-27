@@ -27,6 +27,7 @@ import type { OincFacts } from '@/hooks/useOincFacts'
 import { useVintemPeek } from '@/hooks/useVintemPeek'
 import { fetchAcervo, readRejected, repor, votar, type GeneratedLine, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
+import { isHomePigVisible } from '@/lib/vintem/stage'
 import { markOincUsed, readOincHistory } from '@/lib/oincHistory'
 import { VintemVote } from '@/components/vintem/VintemVote'
 import { loadBaseline } from '@/lib/vintemBaseline'
@@ -546,6 +547,8 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   // dispensa ao toque. "Nao gostei" registra e fecha; "gostei" registra e deixa o tempo correr (D-12).
   const peekToast = useCallback(
     (spoken: { id?: string; text: string; votavel?: boolean }, reaction: VintemReaction): void => {
+      // O da Home esta na tela: ele e quem fala.
+      if (isHomePigVisible()) return
       speechGen.current += 1
       const spot = nextPeekSpot()
       const voteId = spoken.votavel === true && canVote ? spoken.id : undefined

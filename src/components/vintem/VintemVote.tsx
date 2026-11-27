@@ -17,15 +17,17 @@ export interface VintemVoteProps {
 export function VintemVote({ onVote, align = 'center' }: VintemVoteProps) {
   const [liked, setLiked] = useState(false)
   const justify = align === 'start' ? 'justify-start' : align === 'end' ? 'justify-end' : 'justify-center'
+  // No porco de lado os botoes ficam menores a vista.
+  const small = align === 'center' ? '' : 'scale-75'
   return (
-    <div className={`mt-2 flex gap-3 ${justify}`}>
+    <div className={`mt-2 flex ${align === 'center' ? 'gap-3' : 'gap-0'} ${justify}`}>
       <Button
         type="button"
         variant="secondary"
         size="circle"
         aria-label="Gostei dessa fala"
         aria-pressed={liked}
-        className="shadow-float motion-reduce:transition-none"
+        className={`shadow-float motion-reduce:transition-none ${small}`}
         onClick={() => {
           if (liked) return
           setLiked(true)
@@ -39,7 +41,7 @@ export function VintemVote({ onVote, align = 'center' }: VintemVoteProps) {
         variant="secondary"
         size="circle"
         aria-label="Não gostei dessa fala"
-        className="shadow-float motion-reduce:transition-none"
+        className={`shadow-float motion-reduce:transition-none ${small}`}
         onClick={() => onVote('nao')}
       >
         <ThumbsDown aria-hidden="true" className="h-5 w-5" />

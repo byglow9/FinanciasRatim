@@ -172,9 +172,9 @@ test('voto: o contexto sorteia a entrada do acervo sem as reprovadas e so o sem 
   assert.match(src, /if \(tone === 'sem-filtro'\) \{/, 'o acervo vale so para o sem filtro')
   assert.match(src, /entrada === true \? \[cena \?\? 'entrou'\]/, 'a entrada nao pede a cena entrou')
   assert.match(body(src, 'rate'), /votar\(id, voto\)/)
-  const balloon = code(BALLOON)
-  assert.match(balloon, /speech\.votavel === true && canVote/)
-  assert.match(balloon, /key=\{speech\.id\}/)
+  // o dono tirou o voto da Home; ele continua so no porco de lado
+  assert.doesNotMatch(code(BALLOON), /VintemVote/, 'o voto voltou para o balao da Home')
+  assert.match(src, /canVote && voteId|spoken\.votavel === true && canVote/, 'o porco de lado perdeu o voto')
 })
 
 test('resposta atrasada ou de outra tela e descartada: geracao e escopo conferidos antes de mostrar', () => {
@@ -492,6 +492,7 @@ function runPeek({ canAsk = true, naHome = true, hints = HINTS, random = 0.5, vi
       useEffect: (fn) => world.cleanups.push(fn()),
     },
     '@/lib/pwa/isBusy': { isBusy: () => world.busy },
+    '@/lib/vintem/stage': { isHomePigVisible: () => false },
     '@/services/vintemSpeech.service': { ASK_TIMEOUT_OPEN_MS: 4000, getVintemHints: async () => hints },
     '@shared/core/oincSelect.js': { RESUME_AFTER_MS },
     '@shared/core/vintemSpring.js': { mulberry32: () => () => random },

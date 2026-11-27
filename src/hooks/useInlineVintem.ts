@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useVintem } from '@/contexts/VintemContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
+import { useHomePigVisible, usePeekOpen } from '@/lib/vintem/stage'
 import type { VintemState } from '@/components/vintem/Vintem'
 import type { CategoryDef } from '@/types'
 import type { BudgetRow } from '@shared/core/budget.js'
@@ -50,6 +51,9 @@ export function useInlineVintem({ rows, neutralOk, categoryDefs }: UseInlineVint
   const [text, setText] = useState<string | null>(null)
   const [popKey, setPopKey] = useState(0)
   const [dismissed, setDismissed] = useState(false)
+  // Um porco de cada vez: a linha se cala com o da Home na tela ou com um de lado aberto.
+  const homePig = useHomePigVisible()
+  const peek = usePeekOpen()
 
   const draw = useCallback(() => {
     const chosen = pickPhrase({
@@ -80,7 +84,7 @@ export function useInlineVintem({ rows, neutralOk, categoryDefs }: UseInlineVint
   const onDismiss = useCallback(() => setDismissed(true), [])
 
   return {
-    visible: !hidden && !dismissed && text !== null,
+    visible: !hidden && !dismissed && !homePig && !peek && text !== null,
     state: mood?.state ?? 'neutro',
     text,
     popKey,

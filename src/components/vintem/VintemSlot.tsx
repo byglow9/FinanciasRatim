@@ -2,6 +2,7 @@ import { useEffect, useRef, type MouseEvent } from 'react'
 import { Vintem, type VintemHandle, type VintemState } from '@/components/vintem/Vintem'
 import { useVintem } from '@/contexts/VintemContext'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { setHomePigVisible } from '@/lib/vintem/stage'
 
 const POKE_MS = 460
 
@@ -27,6 +28,18 @@ export function VintemSlot({
   const reduced = useReducedMotion()
   const body = useRef<HTMLSpanElement>(null)
 
+  // Com o porco da Home na tela, nenhum outro porco fala.
+  useEffect(() => {
+    const el = body.current
+    if (!el || typeof IntersectionObserver !== 'function') return
+    const observer = new IntersectionObserver(([entry]) => setHomePigVisible(entry.isIntersecting), { threshold: 0.4 })
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      setHomePigVisible(false)
+    }
+  }, [])
+
   // Cutucao: ele e empurrado para o lado oposto ao dedo, amassa e balanca ate voltar ao lugar.
   const poke = (event: MouseEvent<HTMLButtonElement>) => {
     const el = body.current
@@ -37,9 +50,9 @@ export function VintemSlot({
       el.animate(
         [
           { transform: 'none' },
-          { transform: `translateX(${14 * away}px) rotate(${9 * away}deg) scale(0.86, 1.08)`, offset: 0.18 },
-          { transform: `translateX(${-7 * away}px) rotate(${-6 * away}deg) scale(1.08, 0.93)`, offset: 0.45 },
-          { transform: `translateX(${3 * away}px) rotate(${3 * away}deg) scale(0.97, 1.03)`, offset: 0.7 },
+          { transform: `translateX(${5 * away}px) rotate(${3 * away}deg) scale(0.95, 1.03)`, offset: 0.2 },
+          { transform: `translateX(${-2 * away}px) rotate(${-1.5 * away}deg) scale(1.025, 0.98)`, offset: 0.52 },
+          { transform: `translateX(${1 * away}px) scale(0.995, 1.005)`, offset: 0.76 },
           { transform: 'none' },
         ],
         { duration: POKE_MS, easing: 'ease-out' },

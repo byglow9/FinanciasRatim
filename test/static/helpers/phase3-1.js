@@ -62,6 +62,8 @@ export function scaleProblems(files) {
     if (RAW_HTML.test(src)) problems.push(`${f}: HTML bruto`)
     if (EMOJI.test(read(f))) problems.push(`${f}: emoji`)
     for (const m of src.matchAll(/\btext-\[(\d+(?:\.\d+)?)px\]/g)) {
+      // o dono pediu a legenda do banco menor que as outras
+      if (m[1] === '11' && f.endsWith('dashboard/StaleNotice.tsx')) continue
       if (!['12', '16', '28', '56'].includes(m[1])) problems.push(`${f}: text-[${m[1]}px] fora da escala`)
     }
   }

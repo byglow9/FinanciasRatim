@@ -10,7 +10,7 @@ import { useHomeVintem } from '@/hooks/useHomeVintem'
 import { useHashReveal, useSectionReveal } from '@/hooks/useSectionReveal'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { VintemSlot } from '@/components/vintem/VintemSlot'
-import { VintemHomeBalloon, VintemHomeVote } from '@/components/vintem/VintemHomeBalloon'
+import { VintemHomeBalloon } from '@/components/vintem/VintemHomeBalloon'
 import { useVintem } from '@/contexts/VintemContext'
 import { useOincTalk } from '@/hooks/useOincTalk'
 import { moodOfLine } from '@shared/core/oincMood.js'
@@ -194,7 +194,6 @@ export function DashboardPage() {
                 <RhythmPill level={view.rhythmLevel} suppressed={suppressed} />
               </div>
             )}
-            <VintemHomeVote />
           </>
         )}
 

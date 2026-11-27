@@ -1,5 +1,4 @@
 import { VintemBalloon } from '@/components/vintem/VintemBalloon'
-import { VintemVote } from '@/components/vintem/VintemVote'
 import { useVintem } from '@/contexts/VintemContext'
 
 /**
@@ -12,20 +11,11 @@ export function VintemHomeBalloon() {
   if (speech === null) return null
   return (
     <div
-      className="absolute bottom-[112px] left-[78px] z-30 flex w-[min(200px,calc(50vw-20px))] justify-start text-left"
+      className="absolute bottom-[112px] left-[78px] z-30 flex w-[min(172px,calc(50vw-28px))] justify-start text-left"
       data-situation={speech.situation}
       data-phrase={speech.id}
     >
       <VintemBalloon text={speech.text} placement="side" popKey={speech.popKey} onDismiss={dismiss} />
     </div>
   )
-}
-
-/** Botoes de voto da fala atual: ficam no fluxo da pagina, para o balao nao tampar o valor. */
-export function VintemHomeVote() {
-  const { speech, canVote, rate } = useVintem()
-  if (speech === null) return null
-  return speech.votavel === true && canVote ? (
-    <VintemVote key={speech.id} onVote={(voto) => rate(speech.id, voto)} />
-  ) : null
 }

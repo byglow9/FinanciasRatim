@@ -1,9 +1,12 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 import { X, type LucideIcon } from "lucide-react"
+import { useHomePigVisible } from "@/lib/vintem/stage"
 
 const DEFAULT_DURATION_MS = 3000
 const EXIT_MS = 200
+/** Quanto o porco de lado leva para terminar de falar antes de sair, quando tocam fora dele. */
+const PEEK_TALK_MS = 2500
 
 interface ToastOptions {
   icon?: LucideIcon
@@ -78,6 +81,28 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [isCustom, leaving, onDismiss])
 
+  // Porco de lado: sai na hora se o da Home aparecer; tocando fora, sai depois de terminar de falar.
+  const homePig = useHomePigVisible()
+  React.useEffect(() => {
+    if (isCustom && !leaving && homePig) onDismiss()
+  }, [isCustom, leaving, homePig, onDismiss])
+
+  const box = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (!isCustom || leaving) return
+    const openedAt = Date.now()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onOutside = (e: PointerEvent) => {
+      if (timer !== undefined || box.current?.contains(e.target as Node)) return
+      timer = setTimeout(onDismiss, Math.max(0, PEEK_TALK_MS - (Date.now() - openedAt)))
+    }
+    document.addEventListener("pointerdown", onOutside, true)
+    return () => {
+      document.removeEventListener("pointerdown", onOutside, true)
+      clearTimeout(timer)
+    }
+  }, [isCustom, leaving, onDismiss])
+
   const Icon = item.icon
 
   if (isCustom) {
@@ -85,6 +110,7 @@ function ToastView({ item, leaving, onDismiss }: ToastViewProps) {
     // O rodape (voto) e irmao do botao que dispensa, nunca filho dele.
     return (
       <div
+        ref={box}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)}

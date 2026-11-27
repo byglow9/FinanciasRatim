@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Vintem, type VintemHandle, type VintemReaction } from '@/components/vintem/Vintem'
 import { useOincTalk } from '@/hooks/useOincTalk'
+import { openPeek } from '@/lib/vintem/stage'
 import { reactionState } from '@shared/core/vintemMood.js'
 import { moodOfLine } from '@shared/core/oincMood.js'
 
@@ -24,6 +25,7 @@ export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastB
   const body = useRef<HTMLDivElement>(null)
   // a cara vem da frase; a reacao em miniatura so roda quando combina com ela
   const lineMood = moodOfLine(text)
+  useEffect(() => openPeek(), [])
   useOincTalk(body, text, undefined, () => lineMood)
 
   useEffect(() => {

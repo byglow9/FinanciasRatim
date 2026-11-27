@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Som do OINC</title>
+<style>
+  body { margin: 0; padding: 24px 16px 48px; background: #f5ecdb; color: #1f1f17; font: 16px/1.4 system-ui, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  p { margin: 0 0 16px; color: #5c604c; }
+  .op { display: flex; gap: 12px; align-items: center; background: #faf5e9; border-radius: 16px; padding: 12px; margin-bottom: 12px; }
+  .op strong { display: block; }
+  .op small { color: #5c604c; }
+  .op div { flex: 1; }
+  button { min-width: 88px; min-height: 48px; border: 0; border-radius: 24px; background: #2f6f3e; color: #fbf6ea; font: 700 16px system-ui; cursor: pointer; }
+  label { display: block; margin: 0 0 16px; }
+  select { font: inherit; padding: 8px; border-radius: 8px; width: 100%; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Qual é a voz do porco?</h1>
+  <p>Aumente o volume, toque em cada opção e me diga a letra. Dá para pedir mistura, como "B com o oinc da F".</p>
+  <label>Tamanho da fala
+    <select id="len">
+      <option value="14">Curtinha</option>
+      <option value="40" selected>Normal</option>
+      <option value="90">Comprida</option>
+    </select>
+  </label>
+  <div id="lista"></div>
+</main>
+<script>
+(function () {
+  var ctx = null
+  var live = null
+  function rnd(a, b) { return a + Math.random() * (b - a) }
+
+  function chain(freqs, q) {
+    var out = ctx.createGain(); out.connect(ctx.destination)
+    var input = ctx.createGain()
+    freqs.forEach(function (f) {
+      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q
+      input.connect(bp); bp.connect(out)
+    })
+    if (!freqs.length) input.connect(out)
+    return { input: input, out: out }
+  }
+
+  function tone(dest, type, t, dur, from, to, vol) {
+    var o = ctx.createOscillator(), g = ctx.createGain()
+    o.type = type
+    o.frequency.setValueAtTime(from, t)
+    o.frequency.exponentialRampToValueAtTime(to, t + dur)
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.02)
+  }
+
+  function snort(t, dur, vol) {
+    var n = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0)
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (Math.sin(i / ctx.sampleRate * 2 * Math.PI * 34) > 0 ? 1 : 0.15)
+    var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain()
+    src.buffer = buf; f.type = 'lowpass'; f.frequency.value = 620
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    src.connect(f); f.connect(g); g.connect(live.out); src.start(t)
+  }
+
+  var VOWELS = [[800, 1200], [450, 1900], [320, 2300], [500, 900], [350, 700]]
+
+  var OPTIONS = [
+    ['A', 'Resmungo (o que está agora)', 'Sílabas rápidas e roucas.', function (t, n) {
+      live = chain([850], 1.4)
+      for (var i = 0; i < n; i++) { var p = rnd(190, 410); tone(live.input, i % 7 ? 'sawtooth' : 'square', t + i * 0.095, 0.076, p, p * (i % 2 ? 0.72 : 1.35), 0.12) }
+    }],
+    ['B', 'Falador de joguinho', 'Estilo Overcooked: "blá-bli-bló", com vogais.', function (t, n) {
+      var at = t
+      for (var i = 0; i < n; i++) {
+        var v = VOWELS[Math.floor(Math.random() * VOWELS.length)], c = chain(v, 6), dur = rnd(0.08, 0.15), p = rnd(170, 290)
+        tone(c.input, 'sawtooth', at, dur, p, p * rnd(0.8, 1.3), 0.5)
+        at += dur + (Math.random() < 0.15 ? 0.09 : 0.012)
+      }
+    }],
+    ['C', 'Fofinho agudo', 'Bipes curtos e fininhos, bem rápidos.', function (t, n) {
+      live = chain([], 1)
+      for (var i = 0; i < Math.round(n * 1.4); i++) { var p = rnd(620, 1100); tone(live.input, 'triangle', t + i * 0.062, 0.05, p, p * 1.12, 0.16) }
+    }],
+    ['D', 'Porcão rabugento', 'Grave, arrastado, de mau humor.', function (t, n) {
+      live = chain([420, 900], 3)
+      for (var i = 0; i < Math.round(n * 0.7); i++) { var p = rnd(85, 150); tone(live.input, 'sawtooth', t + i * 0.15, 0.13, p, p * rnd(0.7, 1.1), 0.45) }
+    }],
+    ['E', 'Roncos', 'Só focinho: ronc, ronc, snif.', function (t, n) {
+      live = chain([], 1)
+      var count = Math.max(2, Math.round(n / 4))
+      for (var i = 0; i < count; i++) snort(t + i * 0.24, i % 3 === 2 ? 0.09 : 0.19, 0.5)
+    }],
+    ['F', 'Oinc oinc', 'Gritinho de porco, anasalado.', function (t, n) {
+      live = chain([1100, 2100], 5)
+      var count = Math.max(1, Math.round(n / 6))
+      for (var i = 0; i < count; i++) {
+        var s = t + i * 0.3, p = rnd(260, 340)
+        tone(live.input, 'sawtooth', s, 0.09, p, p * 1.9, 0.5)
+        tone(live.input, 'sawtooth', s + 0.09, 0.15, p * 1.9, p * 0.8, 0.5)
+      }
+    }],
+    ['G', 'Oinc e depois fala', 'Um ronc de abertura e a fala de joguinho.', function (t, n) {
+      live = chain([], 1)
+      snort(t, 0.17, 0.5)
+      OPTIONS[1][3](t + 0.24, Math.max(3, n - 3))
+    }],
+  ]
+
+  var list = document.getElementById('lista')
+  OPTIONS.forEach(function (op) {
+    var row = document.createElement('div'); row.className = 'op'
+    var info = document.createElement('div')
+    var name = document.createElement('strong'); name.textContent = op[0] + '. ' + op[1]
+    var desc = document.createElement('small'); desc.textContent = op[2]
+    info.appendChild(name); info.appendChild(desc)
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Tocar'
+    b.addEventListener('click', function () {
+      if (ctx) ctx.close()
+      ctx = new AudioContext()
+      var n = Math.max(3, Math.min(23, Math.round(Number(document.getElementById('len').value) * 0.23)))
+      live = chain([], 1)
+      op[3](ctx.currentTime + 0.05, n)
+    })
+    row.appendChild(info); row.appendChild(b); list.appendChild(row)
+  })
+})()
+</script>
+</body>
+</html>

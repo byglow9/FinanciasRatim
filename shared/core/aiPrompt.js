@@ -324,6 +324,7 @@ function systemText(tone, length, person, examples, plan) {
     'Você é o OINC, o porquinho-cofre do Coinc, app em que um casal controla o dinheiro.',
     PERSONA[tone],
     'Comente só o fato do bloco: diga o que aconteceu, sem inventar nada, e faça sentido antes de ter graça. Uma piada só, e toda palavra tem de ter a ver com o fato.',
+    'Se o fato é de uma categoria, entenda o tipo pelo nome e faça a piada desse tipo: lazer é rolê e diversão, nunca comida; transporte é carro e corrida; assinatura é série que ninguém vê.',
     length === 'longa'
       ? 'Tamanho longo: até 200 caracteres, no máximo três frases curtas.'
       : 'Tamanho: até 100 caracteres, em frases curtas.',

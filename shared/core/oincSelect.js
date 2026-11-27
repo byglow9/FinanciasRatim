@@ -16,6 +16,7 @@ import { buildSlots, fill, needsOf, textLength } from './phrasePicker.js'
 import { formatReais, plural } from './format.js'
 import { OINC_SCENES } from './oincScenes.js'
 import { factOfTransaction } from './oincFacts.js'
+import { fitsCategory } from './oincThemes.js'
 
 /** Voltar ao app depois deste tempo em segundo plano conta como entrar no app (5 minutos). */
 export const RESUME_AFTER_MS = 300000
@@ -189,6 +190,9 @@ export function selectLine({ bank, cena, slots, gender = null, seen, rejected, l
   const implicit = OINC_SCENES[cena]?.implicito ?? []
   if (!implicit.every((c) => have.includes(c))) return null
   let pool = eligibleLines({ bank, cena, slots, gender, rejected, conds: have, maxLen: maxLen ?? DEFAULT_MAX_LEN })
+  // Falando de uma categoria, so entram piadas que combinam com o tipo dela.
+  const category = slots?.categoria
+  if (category) pool = pool.filter((line) => fitsCategory(line.t, category))
   if (pool.length === 0) return null
   if (lastRisada === true) {
     const calm = pool.filter((line) => line.risada !== true)

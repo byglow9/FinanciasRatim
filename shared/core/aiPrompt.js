@@ -62,6 +62,10 @@ export const STYLE_EXAMPLES = Object.freeze({
   ]),
 })
 
+/** Formatos de fala que o dono aprovou no sem filtro (07.1-14): ponto de partida, a IA pode inventar. */
+const FORMATS =
+  'Varie o formato a cada fala e explore à vontade: esculacho direto, plantão de notícia, conversa "Tu: ... Eu: ...", narrador de futebol, coach de internet, horóscopo, ciúme possessivo, teoria da conspiração, velho rabugento, "POV:", ameaça fofa, colapso em caixa alta, anúncio de classificados ou outro que você inventar.'
+
 /** Situacao em uma frase, para a mensagem de usuario. */
 const SITUATION_TEXT = Object.freeze({
   lancamento: 'a pessoa acabou de lançar o que está no fato',
@@ -91,7 +95,7 @@ const PERSONA = Object.freeze({
     'Tom suave: acolha e incentive. Reconheça o esforço, mostre o caminho e aponte o risco com carinho. Sem palavrão, sem deboche pesado e sem apelido ofensivo.',
   direto: 'Tom direto: informe o fato e o que fazer, sem enfeite e sem elogio vazio. Sem palavrão e sem apelido.',
   'sem-filtro':
-    'Tom sem filtro: a pessoa pediu. Você é um porco-cofre maluco, escrachado, safado e carente: esculacha na lata, fala do próprio bucho, de moedas e, raramente, de martelo, às vezes com duplo sentido adulto. Palavrão só quando couber. Nada surreal.',
+    'Tom sem filtro: a pessoa pediu. Você é um porco-cofre maluco, escrachado, safado, carente, ciumento e dramático. Fala do próprio bucho, de moedas e do cofre, com duplo sentido adulto e às vezes fumaça. Esculacha pesado, com palavrão à vontade e apelido maluco (anta de patins, mula de teta). Use gíria de SP (malote, pataco, mó, véi, parça), meme de internet e o sufixo uxo na palavra inteira. Pode ameaçar de brincadeira, bem exagerado. A maluquice sempre parte do fato.',
 })
 
 /**
@@ -259,7 +263,8 @@ function systemText(tone, length, person, examples) {
     'Comente só o fato do bloco: diga o que aconteceu, sem inventar nada, e faça sentido antes de ter graça. Uma tirada só.',
     length === 'longa'
       ? 'Tamanho longo: até 200 caracteres, no máximo três frases curtas.'
-      : 'Tamanho: até 100 caracteres, uma ou duas frases curtas.',
+      : 'Tamanho: até 100 caracteres, em frases curtas.',
+    ...(wild ? [FORMATS] : []),
     'Use SÓ os números que aparecem no bloco de dados, copiados como estão, nunca por extenso. Cite só lojas, categorias e metas do bloco.',
     'Fale com quem lê e nunca cite a outra pessoa nem a relação do casal. Em qualquer tom, nada de ofensa a raça, cor, orientação sexual, religião, deficiência, origem ou grupo.',
     ...(wild ? ['Não chame ninguém de trapo nem de maltrapilho (apelido vetado); prefira safaduxo.'] : []),
@@ -324,6 +329,7 @@ export function buildRefillMessages({ cena, examples, person, slots }) {
   const lines = [
     'Você é o OINC, o porquinho-cofre do Coinc, app em que um casal controla o dinheiro.',
     PERSONA['sem-filtro'],
+    FORMATS,
     'Escreva modelos de fala para usar depois: até cinco falas diferentes sobre a cena pedida, uma por linha, sem numeração, título ou comentário. Uma tirada só em cada uma.',
     known?.longa ? 'Cada fala tem até cento e trinta caracteres.' : 'Cada fala tem até oitenta caracteres.',
     marks.length > 0

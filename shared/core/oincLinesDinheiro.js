@@ -192,7 +192,7 @@ export const OINC_DINHEIRO = Object.freeze({
     ['conta-hoje-003', 'Último dia da internet, {valor}. Depois não adianta sacudir o roteador. huehue', 'x', true, false, 3, '3:s20-3', { se: ['tema:internet'] }],
     ['conta-hoje-004', 'Aluguel de {valor} vence hoje. Paga e não me enche, que eu já tô pelado de nervoso.', 'x', false, false, 4, '4:l4c-02-3', { se: ['tema:aluguel'] }],
     ['conta-hoje-005', 'Vence hoje, {valor}. Se atrasar vem juros, o único que entra em mim sem pedir licença. rsrsrs', 'x', true, false, 4, '4:l4c-02-6'],
-    ['conta-hoje-006', '{conta}, {valor}, vence hoje. Paga ou eu chacino tuas almofadas, sua desgraça.', 'x', false, false, 4, '4:novo-conta-hoje-1', { reescrita: true }],
+    ['conta-hoje-006', '{conta}, {valor}, vence hoje. Paga ou eu chacino tua mãe, sua mula de teta.', 'x', false, false, 4, '4:novo-conta-hoje-1', { reescrita: true }],
     ['conta-hoje-007', 'Hoje é {conta}, {valor}. Beleza. Tô calmo. EU VOU MASTIGAR TEU CU DE TANTO ÓDIO.', 'x', false, false, 4, '4:novo-conta-hoje-2', { reescrita: true }],
   ]),
   'conta-atrasada': list([
@@ -211,8 +211,8 @@ export const OINC_DINHEIRO = Object.freeze({
     ['aviso-2-dias-005', 'Conta de {valor} vencendo amanhã. Paga logo, caloteiro, senão eu conto pros outros porcos.', 'm', false, false, 4, '4:l4c-02-5', { se: ['amanha'] }],
     ['aviso-2-dias-006', 'Aluguel de {valor} em {dias}, porra. Paga ou a gente vai dormir de cu pro céu na praça.', 'x', false, false, 4, '2:s10-1', { se: ['tema:aluguel'], reescrita: true }],
     ['aviso-2-dias-007', 'Aluguel em {dias}. Paga ou começa a medir a calçada, seu projeto de mendigo.', 'x', false, false, 4, '1:s10-1', { se: ['tema:aluguel'], reescrita: true }],
-    ['aviso-2-dias-008', 'Conta de {valor} vence amanhã. Paga, caloteira, ou eu conto pros porcos e pra tua mãe.', 'f', false, false, 4, '4:l4c-02-5', { se: ['amanha'], reescrita: true }],
-    ['aviso-2-dias-009', 'LÁ VEM {conta}, {valor}, faltam {dias}, o juro tá livre na área! PAGA, PORRA! KKKKK', 'x', true, false, 4, '4:novo-aviso-2-dias-1', { reescrita: true }],
+    ['aviso-2-dias-008', 'Conta de {valor} vence amanhã. Paga, jumenta de teta, ou eu conto pra tua mãe. KKKKK', 'f', true, false, 4, '4:l4c-02-5', { se: ['amanha'], reescrita: true }],
+    ['aviso-2-dias-009', 'LÁ VEM {conta}, {valor}, faltam {dias}, o juro tá livre! PAGA, ANTA DE PATINS!', 'x', false, false, 4, '4:novo-aviso-2-dias-1', { reescrita: true }],
   ]),
   'conta-paga': list([
     ['conta-paga-001', 'LUZ PAGA! Pode acender tudo e me ver peladinho.', 'x', false, false, 2, '2:s11-1', { se: ['tema:luz'] }],
@@ -221,6 +221,6 @@ export const OINC_DINHEIRO = Object.freeze({
     ['conta-paga-004', 'Pagou antes de cortarem. Que evolução, tô até arrepiado.', 'x', false, false, 1, '1:s11-2'],
     ['conta-paga-005', 'Menos uma. Um adulto funcional, quem diria.', 'x', false, false, 1, '1:s11-3'],
     ['conta-paga-006', 'Conta de luz quitada. Hoje você não toma banho no escuro.', 'x', false, false, 1, '1:s11-4', { se: ['tema:luz'] }],
-    ['conta-paga-007', 'É GOOOL! Conta paga! Tô correndo pelado pelo cofre, chupa, juro! rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-1', { reescrita: true }],
+    ['conta-paga-007', 'É GOOOL! Conta paga! Tô rebolando peladuxo, chupa, juro do caralho! rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-1', { reescrita: true }],
   ]),
 })

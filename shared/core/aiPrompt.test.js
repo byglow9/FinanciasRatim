@@ -70,12 +70,12 @@ test('o repertorio sorteado saiu do modulo', () => {
   assert.equal(TEMPERATURE, 0.8)
 })
 
-test('a mensagem de sistema e curta (ate 1200 caracteres sem os exemplos) em todo tom', () => {
+test('a mensagem de sistema e curta (ate 2000 caracteres sem os exemplos) em todo tom', () => {
   for (const tone of TONES) {
     for (const person of ['ele', 'ela', undefined]) {
       for (const length of LENGTHS) {
         const sys = core(ask({ tone, person, length })[0].content)
-        assert.ok(sys.length <= 1200, `${tone}/${person}/${length}: ${sys.length}`)
+        assert.ok(sys.length <= 2000, `${tone}/${person}/${length}: ${sys.length}`)
       }
     }
   }
@@ -84,7 +84,7 @@ test('a mensagem de sistema e curta (ate 1200 caracteres sem os exemplos) em tod
 test('sem-filtro: palavrao nao e obrigatorio, risada nao e pedida e nada e sorteado', () => {
   const m = ask()
   const sys = m[0].content
-  assert.match(sys, /palavrão só quando couber/i)
+  assert.match(sys, /palavrão à vontade/i)
   assert.doesNotMatch(sys, /TODA fala tem palavrão|palavrão pesado|Xingue/)
   assert.doesNotMatch(m.map((x) => x.content).join('\n'), /risada|HIHIHI|AHAHAHA|KKKKKJ|Cena para se inspirar|Humor desta vez/i)
   assert.match(sys, /OINC/)

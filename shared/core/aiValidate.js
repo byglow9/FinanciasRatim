@@ -31,8 +31,8 @@ import { AI_TELLS, FORBIDDEN_DATA, PROFANITY } from './phraseRules.js'
 
 /** Limites por tamanho da situacao (D-02): uma tirada curta; mais longa so em estouro e comparacao. */
 export const LENGTH_LIMITS = Object.freeze({
-  curta: Object.freeze({ chars: 120, sentences: 4 }),
-  longa: Object.freeze({ chars: 200, sentences: 5 }),
+  curta: Object.freeze({ chars: 120, sentences: 6 }),
+  longa: Object.freeze({ chars: 200, sentences: 7 }),
 })
 
 // "Espero que" e frase da voz aprovada ("Espero que seja urgencia e nao promocao"): sai das marcas de IA
@@ -334,7 +334,8 @@ export function validateSpeech(texto, ctx = {}) {
     }
   }
 
-  const found = extractNumbers(text)
+  // "24h" e bordao de coach que o dono pediu, nao e numero do fato
+  const found = extractNumbers(text.replace(/(?<![0-9])24h(?![0-9])/g, ' '))
   const allowed = c.allowed ?? {}
   const okMoney = toSet(allowed.moneyCents)
   const okPcts = toSet(allowed.pcts)

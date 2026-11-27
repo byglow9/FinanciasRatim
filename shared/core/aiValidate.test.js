@@ -100,10 +100,10 @@ test('idioma: ingles e texto sem cara de portugues reprovam', () => {
   assert.equal(reason('Porra, de novo?'), 'ok')
 })
 
-test('tamanho: curta ate 120 caracteres e 4 frases; longa ate 200 e 5 frases (D-02)', () => {
+test('tamanho: curta ate 120 caracteres e 6 frases; longa ate 200 e 7 frases (D-02)', () => {
   // Fala surtada usa frases curtinhas: o que segura o tamanho sao os caracteres.
-  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 120, sentences: 4 })
-  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 200, sentences: 5 })
+  assert.deepEqual(LENGTH_LIMITS.curta, { chars: 120, sentences: 6 })
+  assert.deepEqual(LENGTH_LIMITS.longa, { chars: 200, sentences: 7 })
   const longoCurta = `Você gastou demais ${'e de novo '.repeat(14)}hoje.`
   assert.ok(longoCurta.length > 120)
   assert.equal(reason(longoCurta), 'tamanho')
@@ -115,10 +115,10 @@ test('tamanho: curta ate 120 caracteres e 4 frases; longa ate 200 e 5 frases (D-
   assert.equal(reason(fala(200), { ...base, length: 'longa' }), 'ok')
   assert.equal(reason(fala(201), { ...base, length: 'longa' }), 'tamanho')
   assert.equal(reason('Você gastou demais. De novo. Que absurdo. Para com isso.'), 'ok')
-  const cinco = 'Você gastou demais. De novo. Que absurdo. Para com isso. Sério.'
+  const cinco = 'Você gastou demais. De novo. Que absurdo. Para com isso. Sério. Mesmo. Chega.'
   assert.equal(reason(cinco), 'tamanho')
   assert.equal(reason(cinco, { ...base, length: 'longa' }), 'ok')
-  assert.equal(reason(`${cinco} Chega.`, { ...base, length: 'longa' }), 'tamanho')
+  assert.equal(reason(`${cinco} Agora.`, { ...base, length: 'longa' }), 'tamanho')
   assert.equal(reason(`Você gastou demais ${'e de novo '.repeat(30)}hoje.`, { ...base, length: 'longa' }), 'tamanho')
 })
 

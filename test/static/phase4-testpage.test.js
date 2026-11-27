@@ -103,8 +103,10 @@ test('o balao e botao dispensavel, texto simples dentro de aria-hidden, sem cort
   assert.doesNotMatch(src, /line-clamp|truncate|text-ellipsis/, 'o balao trunca a fala')
   assert.doesNotMatch(src, /\bitalic\b/, 'o balao usa italico')
   assert.doesNotMatch(src, /dangerouslySetInnerHTML|innerHTML/, 'o balao injeta HTML')
-  assert.match(src, /bg-\[var\(--vintem-balloon\)\]/, 'balao sem o token de fundo')
-  assert.match(src, /text-\[var\(--vintem-balloon-fg\)\]/, 'balao sem o token de texto')
+  // os tokens --vintem-balloon so existem dentro do desenho (.vt): fora dele o balao ficava sem fundo
+  assert.match(src, /bg-action/, 'balao sem fundo')
+  assert.match(src, /text-action-text/, 'balao sem cor de texto')
+  assert.doesNotMatch(src, /--vintem-balloon/, 'balao voltou a usar token que so vale dentro de .vt')
 })
 
 test('o pop do balao usa o laco unico (onFrame) e nao cria outro requestAnimationFrame nem estado por quadro', () => {

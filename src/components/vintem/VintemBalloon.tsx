@@ -76,22 +76,19 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
       aria-label="Dispensar fala do OINC"
       onClick={onDismiss}
       className={cn(
-        'relative block rounded-card bg-[var(--vintem-balloon)] px-4 py-3 text-left text-base font-normal leading-normal text-[var(--vintem-balloon-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        inline ? 'min-h-12 w-full' : 'mx-auto min-h-14 w-[min(360px,100%)]',
+        'relative block rounded-2xl bg-action px-4 py-3 text-left text-base font-normal leading-normal text-action-text shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        inline ? 'min-h-12 w-full' : 'mx-auto min-h-12 w-fit max-w-[min(320px,100%)]',
       )}
     >
       <span aria-hidden="true">{text}</span>
-      {inline ? (
-        <span
-          aria-hidden="true"
-          className="absolute -left-2 top-4 h-0 w-0 border-y-8 border-r-8 border-y-transparent border-r-[color:var(--vintem-balloon)]"
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="absolute -top-2 left-1/2 h-0 w-0 -translate-x-1/2 border-x-8 border-b-8 border-x-transparent border-b-[color:var(--vintem-balloon)]"
-        />
-      )}
+      {/* Rabicho do mesmo desenho do balao que aparece quando o porco espia de lado (VintemToast). */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute h-3.5 w-3.5 rotate-45 bg-action',
+          inline ? '-left-[7px] top-4 rounded-bl-[3px]' : '-top-[7px] left-1/2 -translate-x-1/2 rounded-tl-[3px]',
+        )}
+      />
     </button>
   )
 }

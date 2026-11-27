@@ -11,6 +11,7 @@ import { compareGroupKeys, groupKeyOf } from './categoryOrder.js'
 
 /** @typedef {import('./budget.js').Tx} Tx */
 /** @typedef {import('./categories.js').CategoryDef} CategoryDef */
+/** @typedef {import('./budget.js').BudgetView} BudgetView */
 
 /**
  * Limiar de "quase empatado" (P-15, ajustavel no UAT): a diferenca de ate este
@@ -178,5 +179,70 @@ export function coupleSummary({ first, second, defs }) {
     split: splitShare(a.outCents, b.outCents),
     scaleMaxCents,
     leads: leadCategories(first, second, defs),
+  }
+}
+
+/**
+ * Parte de uma pessoa numa categoria do casal: tem limite proprio ou nao, e o
+ * gasto dela na categoria (de quem nao tem limite vem do gasto geral).
+ * @typedef {{ hasLimit: boolean, limitCents: number | null, spentCents: number }} CouplePart
+ */
+
+/**
+ * Linha de limite somado por categoria: o teto e o gasto contam so quem tem
+ * limite; `pct` e inteiro (para baixo) e NAO satura em 100, como na Home.
+ * @typedef {{
+ *   categoryId: string,
+ *   limitCents: number,
+ *   spentCents: number,
+ *   pct: number,
+ *   state: 'ok' | 'warn' | 'over',
+ *   parts: { first: CouplePart, second: CouplePart },
+ * }} CoupleLimitRow
+ */
+
+/**
+ * Pode gastar, gasto e sobra somados dos dois (CASAL-01, D-15, D-16). Cada
+ * lado ja vem recortado no proprio ciclo; nada aqui recalcula a conta da Home.
+ * @typedef {{
+ *   safeTogetherCents: number,
+ *   spentTogetherCents: number,
+ *   sobraTogetherCents: number,
+ *   sobraProjected: boolean,
+ *   noIncome: { first: boolean, second: boolean },
+ *   rows: CoupleLimitRow[],
+ * }} CoupleBudget
+ */
+
+/**
+ * Soma das duas BudgetView (a mesma da Home de cada um). Lado nulo conta zero.
+ * Pode gastar negativo soma como negativo. Sem fonte de renda, `noIncome` avisa
+ * mas o numero continua inteiro.
+ * @param {{ first: BudgetView | null | undefined, second: BudgetView | null | undefined }} args
+ * @returns {CoupleBudget}
+ */
+export function coupleBudget({ first, second }) {
+  const sides = [first ?? null, second ?? null]
+  let safeTogetherCents = 0
+  let spentTogetherCents = 0
+  let sobraTogetherCents = 0
+  let sobraProjected = false
+  for (const view of sides) {
+    if (!view) continue
+    safeTogetherCents += view.safeCents
+    spentTogetherCents += view.spend.totalCents
+    sobraTogetherCents += view.monthInOne.sobra.cents
+    if (view.monthInOne.sobra.projected) sobraProjected = true
+  }
+  return {
+    safeTogetherCents,
+    spentTogetherCents,
+    sobraTogetherCents,
+    sobraProjected,
+    noIncome: {
+      first: sides[0] ? !sides[0].income.hasIncome : false,
+      second: sides[1] ? !sides[1].income.hasIncome : false,
+    },
+    rows: [],
   }
 }

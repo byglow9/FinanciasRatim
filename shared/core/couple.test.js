@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NEAR_TIE_RATIO, coupleSummary, leadCategories, splitShare } from './couple.js'
+import { NEAR_TIE_RATIO, coupleBudget, coupleSummary, leadCategories, splitShare } from './couple.js'
 
 const DEFS = [
   { id: 'mercado', name: 'Mercado' },
@@ -192,4 +192,61 @@ test('coupleSummary conta a compra do cartao e ignora pagamento da fatura e esto
   assert.equal(s.first.inCents, 0)
   assert.equal(s.second.inCents, 100000)
   assert.equal(s.together.outCents, 20141)
+})
+
+// Monta uma BudgetView so com os campos que coupleBudget le.
+const view = ({ safe = 0, spent = 0, sobra = 0, projected = false, hasIncome = true, rows = [], general = [], cycleKey = '2026-11' } = {}) => ({
+  cycleKey,
+  safeCents: safe,
+  income: { expectedCents: 0, receivedCents: 0, effectiveCents: 0, hasIncome },
+  spend: { rows, generalCents: 0, generalByCategory: general, totalCents: spent },
+  monthInOne: { sobra: { cents: sobra, projected } },
+})
+
+test('coupleBudget: soma o Pode gastar, o gasto e a sobra dos dois', () => {
+  const r = coupleBudget({
+    first: view({ safe: 120000, spent: 30000, sobra: 50000 }),
+    second: view({ safe: 80000, spent: 20000, sobra: 10000 }),
+  })
+  assert.equal(r.safeTogetherCents, 200000)
+  assert.equal(r.spentTogetherCents, 50000)
+  assert.equal(r.sobraTogetherCents, 60000)
+  assert.equal(r.sobraProjected, false)
+  assert.deepEqual(r.noIncome, { first: false, second: false })
+})
+
+test('coupleBudget: Pode gastar negativo soma como negativo', () => {
+  const r = coupleBudget({ first: view({ safe: -30000 }), second: view({ safe: 100000 }) })
+  assert.equal(r.safeTogetherCents, 70000)
+  const both = coupleBudget({ first: view({ safe: -30000 }), second: view({ safe: -5000 }) })
+  assert.equal(both.safeTogetherCents, -35000)
+})
+
+test('coupleBudget: sobra projetada de um lado so marca sobraProjected', () => {
+  const r = coupleBudget({
+    first: view({ sobra: 100, projected: true }),
+    second: view({ sobra: 200, projected: false }),
+  })
+  assert.equal(r.sobraProjected, true)
+  assert.equal(r.sobraTogetherCents, 300)
+})
+
+test('coupleBudget: noIncome por lado, sem esconder o numero', () => {
+  const r = coupleBudget({
+    first: view({ safe: -45000, hasIncome: false }),
+    second: view({ safe: 80000, hasIncome: true }),
+  })
+  assert.deepEqual(r.noIncome, { first: true, second: false })
+  assert.equal(r.safeTogetherCents, 35000)
+})
+
+test('coupleBudget: lado nulo conta zero e nao quebra', () => {
+  const r = coupleBudget({ first: view({ safe: 5000, spent: 1000, sobra: 400 }), second: null })
+  assert.equal(r.safeTogetherCents, 5000)
+  assert.equal(r.spentTogetherCents, 1000)
+  assert.equal(r.sobraTogetherCents, 400)
+  assert.deepEqual(r.noIncome, { first: false, second: false })
+  const none = coupleBudget({ first: null, second: undefined })
+  assert.equal(none.safeTogetherCents, 0)
+  assert.deepEqual(none.rows, [])
 })

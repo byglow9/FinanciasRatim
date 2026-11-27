@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
+import { useCoupleBudget } from '@/hooks/useCoupleBudget'
 import { useCoupleData, type CoupleMode } from '@/hooks/useCoupleData'
 import { useSavings } from '@/hooks/useSavings'
 import { CoupleHeadline } from '@/components/couple/CoupleHeadline'
 import { DualBars } from '@/components/couple/DualBars'
 import { PiggyCard } from '@/components/couple/PiggyCard'
 import { SplitBar } from '@/components/couple/SplitBar'
+import { TogetherHeadline } from '@/components/couple/TogetherHeadline'
 import { TopCategoryRows } from '@/components/couple/TopCategoryRows'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
@@ -26,6 +28,8 @@ export function CouplePage() {
   const { viewPerson } = useCycle()
   const { first, second, loading, error, refetch, periodLabel, sameSalaryDay } = useCoupleData(mode)
 
+  const budget = useCoupleBudget()
+
   const savings = useSavings()
   const savingsCents = savings.loading || savings.error ? null : toCents(savings.balance)
 
@@ -39,8 +43,39 @@ export function CouplePage() {
 
   return (
     <div className="space-y-4">
+      <h1 className="font-display text-[28px] font-bold leading-tight">Casal</h1>
+
+      {budget.error ? (
+        <Notice
+          tone="danger"
+          title="Não foi possível carregar o Pode gastar juntos."
+          action={
+            <Button type="button" variant="outline" onClick={() => void budget.refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Confira a conexão e tente de novo.
+        </Notice>
+      ) : budget.loading || !budget.first || !budget.second ? (
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Carregando o Pode gastar juntos</span>
+          {[176, 96].map((h) => (
+            <div key={h} aria-hidden="true" className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
+          ))}
+        </div>
+      ) : (
+        <TogetherHeadline
+          budget={budget.summary}
+          firstName={settings.tabNames.area1}
+          secondName={settings.tabNames.area2}
+          firstCycle={budget.cycleLabels.first}
+          secondCycle={budget.cycleLabels.second}
+        />
+      )}
+
       <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[28px] font-bold leading-tight">Casal</h1>
+        <h2 className="text-base font-bold">Comparação</h2>
         <div className="w-40 shrink-0">
           <SegmentedControl<CoupleMode>
             ariaLabel="Período do casal"

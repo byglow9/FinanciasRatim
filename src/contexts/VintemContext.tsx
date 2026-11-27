@@ -31,7 +31,7 @@ import { isHomePigVisible } from '@/lib/vintem/stage'
 import { markOincUsed, readOincHistory } from '@/lib/oincHistory'
 import { VintemVote } from '@/components/vintem/VintemVote'
 import { loadBaseline } from '@/lib/vintemBaseline'
-import { categoryDisplayName } from '@shared/core/categories.js'
+import { categoryDisplayName, categoryIcon } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import { isSpendSpike } from '@shared/core/insights.js'
@@ -391,7 +391,9 @@ export function VintemProvider({ children }: { children: ReactNode }) {
           // Na meta batida o valor que chega e o do aporte, nao o da meta.
           if (situation === 'meta-batida') delete encaixes.valor
           for (const c of scenes) {
+            const def = categoryDefs.find((d) => categoryDisplayName({ categoryId: d.id }, categoryDefs) === encaixes.categoria)
             const line = selectLine({
+              icon: def ? categoryIcon(def) : undefined,
               bank,
               cena: c,
               slots: encaixes,
@@ -442,7 +444,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       writeRecent(pushRecent(recent, recentKey(situation, tone), chosen.id, recentLimit(variants)))
       return chosen
     },
-    [tone, viewPerson, canAsk],
+    [tone, viewPerson, canAsk, categoryDefs],
   )
 
   const speak = useCallback(

@@ -28,3 +28,13 @@ test('toda cena de limite tem fala sem assunto para qualquer categoria', () => {
     assert.ok(lines.filter((l) => fitsCategory(l.t, 'Outros')).length >= 2, cena)
   }
 })
+
+test('uber, ifood e fumo sao entendidos, e o icone ajuda quando o nome nao diz', () => {
+  assert.equal(categoryTheme('Uber'), 'transporte')
+  assert.equal(categoryTheme('iFood'), 'comida')
+  for (const name of ['Pod', 'Maconha', 'Tabacaria', 'Tabaco', 'Vape']) assert.equal(categoryTheme(name), 'fumo', name)
+  assert.equal(categoryTheme('Rolezinho secreto', 'cannabis'), 'lazer')
+  assert.equal(categoryTheme('Coisas do Zé', 'cannabis'), 'fumo')
+  assert.equal(categoryTheme('Coisas', 'car-taxi-front'), 'transporte')
+  assert.equal(categoryTheme('Coisas', 'tag'), null)
+})

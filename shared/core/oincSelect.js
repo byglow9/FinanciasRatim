@@ -16,7 +16,7 @@ import { buildSlots, fill, needsOf, textLength } from './phrasePicker.js'
 import { formatReais, plural } from './format.js'
 import { OINC_SCENES } from './oincScenes.js'
 import { factOfTransaction } from './oincFacts.js'
-import { fitsCategory } from './oincThemes.js'
+import { categoryTheme, fitsCategory } from './oincThemes.js'
 
 /** Voltar ao app depois deste tempo em segundo plano conta como entrar no app (5 minutos). */
 export const RESUME_AFTER_MS = 300000
@@ -182,17 +182,24 @@ function eligibleLines({ bank, cena, slots, gender, rejected, conds = null, maxL
  * Sorteia uma fala da cena (D-05). Devolve `{ id, text, risada, cena }` ou null.
  * @param {{ bank: Bank, cena: string, slots: Record<string, string>, gender?: 'm' | 'f' | null,
  *   seen?: unknown, rejected?: unknown, lastRisada?: boolean, conds?: ReadonlyArray<string> | null,
- *   rand?: () => number, maxLen?: number }} args
+ *   rand?: () => number, maxLen?: number, icon?: string }} args
  * @returns {{ id: string, text: string, risada: boolean, cena: string } | null}
  */
-export function selectLine({ bank, cena, slots, gender = null, seen, rejected, lastRisada = false, conds, rand, maxLen }) {
+export function selectLine({ bank, cena, slots, gender = null, seen, rejected, lastRisada = false, conds, rand, maxLen, icon }) {
   const have = conds ?? []
   const implicit = OINC_SCENES[cena]?.implicito ?? []
   if (!implicit.every((c) => have.includes(c))) return null
   let pool = eligibleLines({ bank, cena, slots, gender, rejected, conds: have, maxLen: maxLen ?? DEFAULT_MAX_LEN })
   // Falando de uma categoria, so entram piadas que combinam com o tipo dela.
   const category = slots?.categoria
-  if (category) pool = pool.filter((line) => fitsCategory(line.t, category))
+  if (category) {
+    pool = pool.filter((line) => fitsCategory(line.t, category, icon))
+    // categoria de fumo: havendo fala de fumaca, e ela
+    if (categoryTheme(category, icon) === 'fumo') {
+      const smoke = pool.filter((line) => /chapad|pod(?:uxo|\b)|larica|fumac|maconha|tabac|vape|cigarro/i.test(line.t))
+      if (smoke.length > 0) pool = smoke
+    }
+  }
   if (pool.length === 0) return null
   if (lastRisada === true) {
     const calm = pool.filter((line) => line.risada !== true)

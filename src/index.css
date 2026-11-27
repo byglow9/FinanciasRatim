@@ -451,11 +451,11 @@
 }
 
 .anim-sheet-in {
-  animation: sheet-in 280ms ease-out;
+  animation: sheet-in 380ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .anim-sheet-out {
-  animation: sheet-out 200ms ease-in forwards;
+  animation: sheet-out 260ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 
 .anim-overlay-in {

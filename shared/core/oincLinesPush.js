@@ -101,7 +101,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['002', 'É hoje: {valor}. Paga ou eu como teus controles remotos, pé de chinelo.'],
       ['003', 'Fatura de {valor} vence hoje. Enfia o pagamento sem dó, vai, gostoso. rsrsrs', true],
       ['004', 'Hoje, {valor} de fatura. VENDE-SE alma de caloteiro, aceito vale-coxinha.'],
-      ['005', 'Fatura hoje, {valor}. O juro vai te comer sem beijo, corre, desgraça. Ronc.', true],
+      ['005', 'Fatura hoje, {valor}. Os juros vão te comer sem beijo, corre, desgraça. Ronc.', true],
       ['006', 'A fatura vence hoje e tu vendo vídeo de capivara. Paga, caralho, paga.'],
     ],
   }),
@@ -112,7 +112,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['003', 'PLANTÃO: {conta} de {valor} ronda a vizinhança. Faltam dois dias, família.'],
       ['004', 'Quem é {conta}? {valor} em dois dias e tu nem me apresentou, safadeza?'],
       ['005', 'Boletuxo em dois dias: {conta}, {valor}. Foge não, marmota, ele sabe onde tu caga.'],
-      ['006', 'Faltam dois dias pra {conta}. Mosca não, anta, o juro tá de olho no teu rabo.'],
+      ['006', 'Faltam dois dias pra {conta}. Mosca não, anta, os juros tão de olho no teu rabo.'],
       ['007', 'Dois dias pra uma conta vencer. Abre o app antes que eu cague na geladeira.'],
     ],
     suave: [
@@ -130,7 +130,7 @@ export const OINC_PUSH_LINES = Object.freeze({
     'sem-filtro': [
       ['001', '{valor} de {conta} vence amanhã. Paga ou eu durmo de bunda na tua cara.'],
       ['002', 'Amanhã: {conta}, {valor}. POV: tu jurando que vai lembrar. Vai porra nenhuma.'],
-      ['003', 'LÁ VEM {conta}, {valor}, é amanhã, o juro tá aquecendo no banco, caralho!'],
+      ['003', 'LÁ VEM {conta}, {valor}, é amanhã, os juros tão aquecendo no banco, caralho!'],
       ['004', '{valor} amanhã: {conta}. Beleza. Calmo. VOU RASPAR O COFRE COM O CASCO.'],
       ['005', 'Amanhã é {conta}, {valor}. Gastou em skin? Chacino tua mãe, songamonga.'],
       ['006', 'Amanhã vence {conta}. VENDE-SE memória de ameba, troco num miojo vencido.'],
@@ -153,7 +153,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['002', 'Hoje vence {conta}, {valor}. Todo mundo tem as mesmas 24h, é só querer.'],
       ['003', 'PLANTÃO: {conta} de {valor} vence hoje. Suspeito caga e anda.'],
       ['004', '{valor} pra hoje: {conta}. Tu: depois. Eu: depois é o caralho de asa.'],
-      ['005', 'É hoje: {conta}, {valor}. O juro tá atrás da cortina, de pau na mão. Corre.'],
+      ['005', 'É hoje: {conta}, {valor}. Os juros tão atrás da cortina, de pau na mão. Corre.'],
       ['006', 'Hoje vence {conta}. Delivery antes disso e eu viro um porco assassino.'],
       ['007', 'Conta vencendo hoje. Beleza. Tá tudo bem. PAGA ESSA DESGRAÇAAAA.'],
     ],
@@ -235,7 +235,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   }),
   'push-meta': scene('push-meta', {
     'sem-filtro': [
-      ['001', '{restante} pra {meta}. Deposita ou eu chacino tua planta, sua mula. rsrsrs', true],
+      ['001', '{restante} pra {meta}. Deposita ou eu cago na tua planta, sua mula. rsrsrs', true],
       ['002', 'PLANTÃO: {meta} ainda espera {restante}. Responsável é visto no delivery, cuzão.'],
       ['003', 'Horóscopo: {meta}, faltam {restante}. Os astros riram da tua cara de bunda.'],
       ['004', 'E {meta}? Já esqueceu? Quem é a meta nova? FALA O NOME DELA.'],

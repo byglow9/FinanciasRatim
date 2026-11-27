@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: cego-votos</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>cego-votos. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"cego-votos","baixar":"cego-votos-respondido.json","itens":[{"id":"c000eea11c34f","cenario":"Salário caiu","situacao":"Salário de R$ 3.200 entrou hoje. Quem lê: homem.","texto":"R$ 3.200 na conta. Tu, cabeça de bagre, vai gastar tudo em 24h.","voto":"","comentario":""},{"id":"c02f10046bbc5","cenario":"Posto de gasolina","situacao":"Abasteceu R$ 180 hoje. Quem lê: homem.","texto":"Cabeça de bagre, R$ 180 no posto. O carro é mais carente que eu e tu ainda bancou.","voto":"","comentario":""},{"id":"c044be02ac1b9","cenario":"Salário caiu","situacao":"Salário de R$ 3.200 entrou hoje. Quem lê: homem.","texto":"HIHIHI, salário grosso entrou e tu vai ter que aguentar. rsrsrsrs","voto":"","comentario":""},{"id":"c053fa1bb342c","cenario":"Porquinho","situacao":"Porquinho com R$ 470 guardados. Quem lê: homem.","texto":"R$ 470 no bucho. Tô gordo, sujo e te esperando, malote. Vem sentir o cheirouxo.","voto":"","comentario":""},{"id":"c0eb29ed61224","cenario":"Posto de gasolina","situacao":"Abasteceu R$ 140 hoje. Quem lê: mulher.","texto":"Câmera pegou você mandando R$ 140 na Auto Posto Avenida, sua desbocada. Tá me olhando? Levanta e me explica essa loucura agora.","voto":"","comentario":""},{"id":"c112dc3af02cb","cenario":"Limite estourado","situacao":"Limite de Delivery passou: R$ 337 de R$ 300. Quem lê: mulher.","texto":"POV: Tu olhando pro iFood rindo da carinha de pai que me deu. 112% do limite, chupa esse R$ 37,40, sua pamonha.","voto":"","comentario":""},{"id":"c186c4efced41","cenario":"Farmácia","situacao":"Comprou R$ 64 na farmácia hoje. Quem lê: mulher.","texto":"POV: R$ 64 de farmácia. Se for pílula do outro dia, sei. Se for soro, anta, deita que eu chamo o 193.","voto":"","comentario":""},{"id":"c1e0e0113933a","cenario":"Delivery","situacao":"Pediu no iFood, R$ 58, hoje. Quem lê: homem.","texto":"POV: tu mandando R$ 58 pro iFood. O motoboy já tá pedindo teu número, safaduxo.","voto":"","comentario":""},{"id":"c1ed0533c00ce","cenario":"Fatura do cartão","situacao":"Fatura de R$ 946,30 vence em 3 dias. Quem lê: mulher.","texto":"R$ 946,30 em 3 dias. Tu acha que abre o app e sai por cima, né, anta?","voto":"","comentario":""},{"id":"c24576a308723","cenario":"Comparação com o mês passado","situacao":"Lazer em R$ 410, contra R$ 130 no mês passado. Quem lê: homem.","texto":"HIHIHI. R$ 410 em Lazer? Mês passado era R$ 130, porra. Aumentou 215% e vocês acham que eu não vi? Levanta essa bunda preguiçosa e explica caralho.","voto":"","comentario":""},{"id":"c30fcac5a951f","cenario":"Fatura do cartão","situacao":"Fatura de R$ 946,30 vence em 3 dias. Quem lê: mulher.","texto":"Olha a bomba caindo: R$ 946,30 na fatura. Vence dia 20, três dias de pura merda. Levanta e paga essa porra, sua falência ambulante.","voto":"","comentario":""},{"id":"c47a4b041254c","cenario":"Anotação deixada no app","situacao":"Anotou: \"parar de pedir comida este mês\". Quem lê: homem.","texto":"Teu pataco tá fumando, anta. Parar de pedir comida? Mentira uxo.","voto":"","comentario":""},{"id":"c48aabe2667f3","cenario":"Conta vence hoje","situacao":"Internet de R$ 119,90 vence hoje. Quem lê: homem.","texto":"AHAHAHA, sua banda larga teimosa, toma. Paga esse R$ 119,90 ou vai passar a noite cheirando merda alheia no quarto.","voto":"","comentario":""},{"id":"c4da5c8c3ab2b","cenario":"Delivery","situacao":"Pediu no iFood, R$ 58, hoje. Quem lê: homem.","texto":"AHAHAHA ó a vergonha. iFood de novo, porra, tá rico? KKKKKJ","voto":"","comentario":""},{"id":"c4faf9b224787","cenario":"Pix para uma pessoa","situacao":"Pix de R$ 200 para uma pessoa hoje. Quem lê: homem.","texto":"rsrsrsrs Enfiou R$ 200 na \"uma pessoa\" e o cofre tá de calça justa, caralho. Foda-se, eu fico com vergonha alheia. rsrsrsrs","voto":"","comentario":""},{"id":"c503db388b735","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo. Quem lê: mulher.","texto":"Tu mexe no app e eu fico de olho, anta. R$ 3.826,80 pra 14 dias. Não me faz chorar, safaduxa.","voto":"","comentario":""},{"id":"c51af520dbe0a","cenario":"Limite estourado","situacao":"Limite de Delivery passou: R$ 337 de R$ 300. Quem lê: mulher.","texto":"Mano, QUE DELIVERY, PORRA. Cê pegou o limite de R$ 300 e rasgou na minha cara, tá? Estourou em R$ 37,40, huehue. Isso não é fome, é fÚRIA de digitar no iFood.","voto":"","comentario":""},{"id":"c52b71daeb71d","cenario":"Mercado","situacao":"Compra de R$ 315 no mercado hoje. Quem lê: mulher.","texto":"Impressionante técnica de compra, minha senhora. R$ 315 no mercado sem medo. Que coragem criminosa.","voto":"","comentario":""},{"id":"c52bb3851b2ce","cenario":"Posto de gasolina","situacao":"Abasteceu R$ 140 hoje. Quem lê: mulher.","texto":"R$ 140 no tanque e eu aqui seco. Tu é uma anta egoistuxa.","voto":"","comentario":""},{"id":"c5531f28099fd","cenario":"Limite quase no fim","situacao":"85% do limite de Lazer usado. Quem lê: homem.","texto":"KKKKJ Lazer tá em 85% e sobrou só R$ 45. Para essa merda de gasto antes que eu vomite.","voto":"","comentario":""},{"id":"c577e39174d12","cenario":"Limite estourado","situacao":"Limite de Delivery passou: R$ 361 de R$ 300. Quem lê: homem.","texto":"Tu devorou o iFood em 14 dias. R$ 361,40 sumiram do meu bucho, cabeça de bagre. Pronto, tá tudo registrado nessa porcaria de relatório.","voto":"","comentario":""},{"id":"c5802532ffaa8","cenario":"Comparação com o mês passado","situacao":"Lazer em R$ 410, contra R$ 130 no mês passado. Quem lê: homem.","texto":"POV: tú abrindo o app e vendo Lazer saltar de R$ 130 pra R$ 410. O porquinho tava de barriga vazia e agora tá estourando de pataco, véi. 215% de safadexa, tu é um toupeira sem noção.","voto":"","comentario":""},{"id":"c585cfd32167d","cenario":"Limite quase no fim","situacao":"90% do limite de Lazer usado. Quem lê: mulher.","texto":"Alerta de incêndio no Lazer, sua porca! Restam R$ 30, menos que um peteleco de caralho. Vai chorar no pote de iogurte?","voto":"","comentario":""},{"id":"c5a83f144b7ef","cenario":"Salário caiu","situacao":"Salário de R$ 2.850 entrou hoje. Quem lê: mulher.","texto":"R$ 2.850 no bucho. Tu queima isso em iFood, pamonha? Me fecha ou eu morro de fome.","voto":"","comentario":""},{"id":"c60c50d332bda","cenario":"Salário caiu","situacao":"Salário de R$ 2.850 entrou hoje. Quem lê: mulher.","texto":"huehue, desmaiei de emoção com esse salário. Puta merda, você surtou com R$ 2.850? AHAHAHA.","voto":"","comentario":""},{"id":"c6130900b68f1","cenario":"Entrou no app","situacao":"Acabou de abrir o app. Quem lê: mulher.","texto":"Abriu o app, véi! R$ 3.944,80 e 14 dias. Coma, sua barriga de anta.","voto":"","comentario":""},{"id":"c6307db3b8ba6","cenario":"Mercado","situacao":"Compra de R$ 315 no mercado hoje. Quem lê: mulher.","texto":"R$ 315 no mercado hoje. Tu achou que eu não via? Tô com ciúmes do carrinho, safaduxa.","voto":"","comentario":""},{"id":"c6790894b36b9","cenario":"Farmácia","situacao":"Comprou R$ 64 na farmácia hoje. Quem lê: mulher.","texto":"KKKKK fodeu, Farmacia Popular me fodeu o bucho. R$ 64 de saúde? Tô caindo aos pedaços, porra.","voto":"","comentario":""},{"id":"c6f07ee376f66","cenario":"Fatura do cartão","situacao":"Fatura de R$ 1.287,90 vence em 3 dias. Quem lê: homem.","texto":"rsrsrsrs Admiro tua coragem de carregar R$ 1.287,90 até dia 20. Que relacionamento leal, hein. Vai se foder.","voto":"","comentario":""},{"id":"c72c3dcfd31ed","cenario":"Compromisso na agenda","situacao":"Academia amanhã às 7h, anotado \"pagar a matrícula\". Quem lê: mulher.","texto":"Amanhã 7h, academia. Vai enfiar a matrícula no cofre ou vai ter que engolir o boleto grosso? rsrsrsrs","voto":"","comentario":""},{"id":"c745cbc745e2d","cenario":"Mercado","situacao":"Compra de R$ 240 no mercado hoje. Quem lê: homem.","texto":"R$ 240 no mercado. Tu acha que é só comida? É a minha ração. Deposita ou vou rosnar na tua orelha, anta.","voto":"","comentario":""},{"id":"c750da8d31431","cenario":"Entrou no app","situacao":"Acabou de abrir o app. Quem lê: mulher.","texto":"Ritmo folgado? Puta que pariu, cadê o motor? Tá rodando na reserva aí, mano. R$ 281 por dia e tu rindo, huehue.","voto":"","comentario":""},{"id":"c7f051a29e304","cenario":"Limite estourado","situacao":"Limite de Delivery passou: R$ 361 de R$ 300. Quem lê: homem.","texto":"ronc ronc HIHI, que medalha, mano. Estourou R$ 61,40 no limite de delivery. Só porque você mandou R$ 232,90 pro iFood. Para de pedir porra, seu descontrolado.","voto":"","comentario":""},{"id":"c81cb04983fb6","cenario":"Porquinho","situacao":"Porquinho com R$ 1.250 guardados. Quem lê: mulher.","texto":"Mano, a vaquinha do Porquinho tá em R$ 1.250 e ACABOU com a minha fome. KKKKK para você que tá chutando os trincos aqui dentro, rsrs.","voto":"","comentario":""},{"id":"c8465867b2e82","cenario":"Porquinho","situacao":"Porquinho com R$ 470 guardados. Quem lê: homem.","texto":"HIHIHI. Quatrocentos e setenta reais? Pô, magnitude imensa. Tu acha que é bilionário, porra.","voto":"","comentario":""},{"id":"c85fda1dd2e78","cenario":"Mercado","situacao":"Compra de R$ 240 no mercado hoje. Quem lê: homem.","texto":"huehuehue. Supermercado Central te roubou R$ 240 hoje. O cofre tá chorando, porra.","voto":"","comentario":""},{"id":"c892e3157425e","cenario":"Anotação deixada no app","situacao":"Anotou: \"tênis novo só se sobrar\". Quem lê: mulher.","texto":"Tu anotou tênis? Sou o cofre, não a loja, pamonha uxo.","voto":"","comentario":""},{"id":"c8bc164aba883","cenario":"Compromisso na agenda","situacao":"Academia amanhã às 7h, anotado \"pagar a matrícula\". Quem lê: mulher.","texto":"Pamonha, 1 dia, 7h, pagar a matrícula. Tá enrolando, safaduxa?","voto":"","comentario":""},{"id":"c9607ed019e72","cenario":"Conta vence hoje","situacao":"Luz de R$ 187,30 vence hoje. Quem lê: mulher.","texto":"Luz de R$ 187,30 vence hoje, sua louca. A conta chegou antes do salário cair, merda. AHAHAHA, boa sorte pagando.","voto":"","comentario":""},{"id":"c995983810c09","cenario":"Delivery","situacao":"Pediu no iFood, R$ 46, hoje. Quem lê: mulher.","texto":"iFood R$ 46. Tô com ciúme do pacote. Ele chega quentinho e eu fico geladuxo no cofre.","voto":"","comentario":""},{"id":"c9a81576ddc9c","cenario":"Anotação deixada no app","situacao":"Anotou: \"tênis novo só se sobrar\". Quem lê: mulher.","texto":"Que disciplina impecável, hein? Escrever \"só se sobrar\" e ainda assim gastar R$ 163,20 no mercado. A coerência da sua dívida tá linda, porra.","voto":"","comentario":""},{"id":"c9c9fd2b13ef7","cenario":"Pix para uma pessoa","situacao":"Pix de R$ 75 para uma pessoa hoje. Quem lê: mulher.","texto":"R$ 75 voando no Pix. Minha barriga tá estufada de raiva, pamonhuxa.","voto":"","comentario":""},{"id":"caaf4c92abd70","cenario":"Entrou no app","situacao":"Acabou de abrir o app. Quem lê: homem.","texto":"huehuehue Tá folgado, mano. São R$ 4.445,60 pra brincar. A barra de vida tá cheia, mas não bota tudo no lixo, porra.","voto":"","comentario":""},{"id":"cb2edf1ab308b","cenario":"Limite quase no fim","situacao":"90% do limite de Lazer usado. Quem lê: mulher.","texto":"Lazer em 90% e 14 dias. Lambe só a ponta, tesão de rolê.","voto":"","comentario":""},{"id":"cb4bb2d33af08","cenario":"Delivery","situacao":"Pediu no iFood, R$ 46, hoje. Quem lê: mulher.","texto":"Você enfiou R$ 46 no Delivery, mano? A conta é grossa, vai ter que aguentar. rsrsrsrs","voto":"","comentario":""},{"id":"cbc36fa9b0c5e","cenario":"Limite quase no fim","situacao":"85% do limite de Lazer usado. Quem lê: homem.","texto":"Lazer em 85% com 14 dias pro salário. Só sobrou R$ 45. Tu vai rolar no chão de fome, anta.","voto":"","comentario":""},{"id":"cbcaaf3c71b48","cenario":"Comparação com o mês passado","situacao":"Lazer em R$ 265, contra R$ 105 no mês passado. Quem lê: mulher.","texto":"AHHAHA, olha a sua performance, sua desgraceira. Lazer subiu 152%? Tu achou que ia bancar show de porco? Pô, saca a merda daí, sua falência ambulante.","voto":"","comentario":""},{"id":"cc028527fb6a1","cenario":"Conta vence hoje","situacao":"Luz de R$ 187,30 vence hoje. Quem lê: mulher.","texto":"Luz aberta, R$ 187,30. Sua anta uxo, vem encher meu bucho ou eu te mochilo, véi.","voto":"","comentario":""},{"id":"cc4180e89b876","cenario":"Compromisso na agenda","situacao":"Dentista amanhã às 14h30, anotado \"levar os exames\". Quem lê: homem.","texto":"POV: tu esquece os exames e eu devoro teu dentuxo. Amanhã, 14h30, leva isso, anta.","voto":"","comentario":""},{"id":"cc61f33b7716d","cenario":"Posto de gasolina","situacao":"Abasteceu R$ 180 hoje. Quem lê: homem.","texto":"HIHIHI. Que gestão exemplar de R$ 180 no Auto Posto. Tu acha que encheu o tanque do carro? Foda-se, encheu o buraco do teu bolso.","voto":"","comentario":""},{"id":"cc809d1c4a516","cenario":"Anotação deixada no app","situacao":"Anotou: \"parar de pedir comida este mês\". Quem lê: homem.","texto":"KKKKJ. \"Parar de pedir comida\", merda. Promessa de porco falido, AHAHAHA.","voto":"","comentario":""},{"id":"ccd49e50d74c4","cenario":"Farmácia","situacao":"Comprou R$ 87 na farmácia hoje. Quem lê: homem.","texto":"rsrsrsrs Farmácia de novo? Tu tá pedindo VAR pro seu pénis, seu desgraçado. O porquinho tá suando frio com essa merda.","voto":"","comentario":""},{"id":"cce35a7309797","cenario":"Fatura do cartão","situacao":"Fatura de R$ 1.287,90 vence em 3 dias. Quem lê: homem.","texto":"POV: o app abriu e a fatura de R$ 1.287,90 te encarou. 3 dias, anta. Paga ou eu chuto tua porta.","voto":"","comentario":""},{"id":"cce4a5fea018c","cenario":"Compromisso na agenda","situacao":"Dentista amanhã às 14h30, anotado \"levar os exames\". Quem lê: homem.","texto":"huehuehue amanhã é DENTISTA, LENDA. Vai pagar mais pra usar dente que você fodeu.","voto":"","comentario":""},{"id":"ccec62bab0a01","cenario":"Pix para uma pessoa","situacao":"Pix de R$ 200 para uma pessoa hoje. Quem lê: homem.","texto":"Saíram R$ 200 no Pix. Fui eu que puxei o fio, véi.","voto":"","comentario":""},{"id":"ce2455d8ea49e","cenario":"Pix para uma pessoa","situacao":"Pix de R$ 75 para uma pessoa hoje. Quem lê: mulher.","texto":"ronco de porco Quem é essa pessoa que roubou 75 reais? KKKKJ","voto":"","comentario":""},{"id":"ce37dc0e047e5","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo. Quem lê: homem.","texto":"POV: Tu espiando o cofre. R$ 4.281,60 e 14 dias te observam de volta, malote.","voto":"","comentario":""},{"id":"cea79ec3a56a1","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo. Quem lê: mulher.","texto":"Ritmo folgado? Porra, tá enganada, vai se foder. Só tem R$ 273,34 por dia antes de morrer de fome.","voto":"","comentario":""},{"id":"cef99638656e5","cenario":"Entrou no app","situacao":"Acabou de abrir o app. Quem lê: homem.","texto":"Chegou, anta! R$ 4.445,60 pra 14 dias e eu já tô geladuxo de ansiedade.","voto":"","comentario":""},{"id":"cefb541a482b4","cenario":"Porquinho","situacao":"Porquinho com R$ 1.250 guardados. Quem lê: mulher.","texto":"POV: tu abre e acha R$ 1.250 me esperando. Tô com o bucho cheio e te chamando, anta.","voto":"","comentario":""},{"id":"cf0db2c4706e0","cenario":"Comparação com o mês passado","situacao":"Lazer em R$ 265, contra R$ 105 no mês passado. Quem lê: mulher.","texto":"POV: você abre o app achando que seria leve e o Lazer te chupa 152% acima do total. R$ 265 contra R$ 105? Que safadinha insaciável, caralho.","voto":"","comentario":""},{"id":"cfa00406751e3","cenario":"Conta vence hoje","situacao":"Internet de R$ 119,90 vence hoje. Quem lê: homem.","texto":"Internet, R$ 119,90, vence hoje. Paga ou eu vou te dar um mauuixo no bucho, anta.","voto":"","comentario":""},{"id":"cfc2319f2c2fc","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo. Quem lê: homem.","texto":"AHAHAHA, cara, R$ 305 por dia? Respeito. Tu aguenta essa fritura até o fim, porra.","voto":"","comentario":""},{"id":"cfe37116e479e","cenario":"Farmácia","situacao":"Comprou R$ 87 na farmácia hoje. Quem lê: homem.","texto":"R$ 87 na farmácia. Comprou remédio ou comprou vergonha? Fala logo, pé de chinelo.","voto":"","comentario":""}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: lote4-votos-07</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>lote4-votos-07. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"lote4-votos-07","baixar":"lote4-respondido-07.json","itens":[{"id":"conta-paga-007","cenario":"Conta paga","situacao":"Marcou uma conta como paga","texto":"É GOOOL! Conta paga! Tô rebolando peladuxo, chupa esses juros, caralho! rsrsrs","voto":"","comentario":"","lote":4,"modelo":"É GOOOL! Conta paga! Tô rebolando peladuxo, chupa esses juros, caralho! rsrsrs","tom":"sem-filtro"},{"id":"compromisso-003","cenario":"Compromisso","situacao":"Compromisso chegando, só quando o tema é dentista","texto":"PLANTÃO: dentista em 3 dias, 14h30. Suspeito já ensaia caganeira pra não ir.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: dentista em {dias}, {hora}. Suspeito já ensaia caganeira pra não ir.","tom":"sem-filtro"},{"id":"compromisso-005","cenario":"Compromisso","situacao":"Compromisso chegando","texto":"Dentista em 3 dias, 14h30. Vai ou inventa caganeira, cabeça de bagre?","voto":"","comentario":"","lote":4,"modelo":"{titulo} em {dias}, {hora}. Vai ou inventa caganeira, cabeça de bagre?","tom":"sem-filtro"},{"id":"meta-nova-012","cenario":"Meta nova","situacao":"Criou uma meta, só para mulher","texto":"Meta nova: Viagem, R$ 87. Se cumprir eu beijo tua bunda, sua pamonha.","voto":"","comentario":"","lote":4,"modelo":"Meta nova: {meta}, {valor}. Se cumprir eu beijo tua bunda, sua pamonha.","tom":"sem-filtro"},{"id":"porquinho-recorde-005","cenario":"Recorde do Porquinho","situacao":"Porquinho no maior valor","texto":"R$ 2.400 no bucho. Aura de milionário, bunda de milionário. Me chama de doutor, porra.","voto":"","comentario":"","lote":4,"modelo":"{total} no bucho. Aura de milionário, bunda de milionário. Me chama de doutor, porra.","tom":"sem-filtro"},{"id":"porquinho-status-001","cenario":"Saldo do Porquinho","situacao":"Quanto há no Porquinho","texto":"R$ 640 no bucho. A fenda tá aberta e eu tô gostoso, enfia sem dó.","voto":"","comentario":"","lote":4,"modelo":"{total} no bucho. A fenda tá aberta e eu tô gostoso, enfia sem dó.","tom":"sem-filtro"},{"id":"porquinho-status-002","cenario":"Saldo do Porquinho","situacao":"Quanto há no Porquinho","texto":"R$ 640 no Porquinho. Gordinho, quentinho e peidando dinheirozuxo.","voto":"","comentario":"","lote":4,"modelo":"{total} no Porquinho. Gordinho, quentinho e peidando dinheirozuxo.","tom":"sem-filtro"},{"id":"porquinho-status-003","cenario":"Saldo do Porquinho","situacao":"Quanto há no Porquinho","texto":"Eles não querem que tu saiba, mas R$ 640 aqui dentro me deixa de pau duro.","voto":"","comentario":"","lote":4,"modelo":"Eles não querem que tu saiba, mas {total} aqui dentro me deixa de pau duro.","tom":"sem-filtro"},{"id":"porquinho-status-004","cenario":"Saldo do Porquinho","situacao":"Quanto há no Porquinho","texto":"R$ 640. Eu conto, cheiro e lambo cada centavo. Encostou, morreu, caralho. AHAHAHA","voto":"","comentario":"","lote":4,"modelo":"{total}. Eu conto, cheiro e lambo cada centavo. Encostou, morreu, caralho. AHAHAHA","tom":"sem-filtro"},{"id":"porquinho-status-005","cenario":"Saldo do Porquinho","situacao":"Quanto há no Porquinho","texto":"Tô com R$ 640 no bucho e continuo magreluxo. Gordinho de verdade é quando o cofre não fecha mais.","voto":"","comentario":"","lote":4,"modelo":"Tô com {total} no bucho e continuo magreluxo. Gordinho de verdade é quando o cofre não fecha mais.","tom":"sem-filtro"},{"id":"sumico-002","cenario":"Sumiço","situacao":"Dias sem lançar nada","texto":"8 dias sumido. Tava com qual cofrinho, sua piranha de shopping? QUAL O NOME?","voto":"","comentario":"","lote":4,"modelo":"{dias} sumido. Tava com qual cofrinho, sua piranha de shopping? QUAL O NOME?","tom":"sem-filtro"},{"id":"sumico-003","cenario":"Sumiço","situacao":"Dias sem lançar nada","texto":"8 dias sem aparecer. Foi gastar escondido, né, ratazana do caralho?","voto":"","comentario":"","lote":4,"modelo":"{dias} sem aparecer. Foi gastar escondido, né, ratazana do caralho?","tom":"sem-filtro"},{"id":"sumico-005","cenario":"Sumiço","situacao":"Dias sem lançar nada","texto":"Sumiu 8 dias. Foi abduzido pelo shopping? F no chat pro teu salário. KKKKK","voto":"","comentario":"","lote":4,"modelo":"Sumiu {dias}. Foi abduzido pelo shopping? F no chat pro teu salário. KKKKK","tom":"sem-filtro"},{"id":"sumico-007","cenario":"Sumiço","situacao":"Dias sem lançar nada","texto":"8 dias. Beleza. Tô calmo. Nem senti falta. VOU COMER O ÍCONE DESSA PORRA.","voto":"","comentario":"","lote":4,"modelo":"{dias}. Beleza. Tô calmo. Nem senti falta. VOU COMER O ÍCONE DESSA PORRA.","tom":"sem-filtro"},{"id":"sumico-008","cenario":"Sumiço","situacao":"Dias sem lançar nada, só para mulher","texto":"POV: tu voltando de mansinho achando que eu não vi o extrato, safada cara de pau.","voto":"","comentario":"","lote":4,"modelo":"POV: tu voltando de mansinho achando que eu não vi o extrato, safada cara de pau.","tom":"sem-filtro"},{"id":"entrou-007","cenario":"Entrou no app","situacao":"Ao abrir o app","texto":"Voltou, arrombado? Já casei com uma moeda de cinco e refiz a vida.","voto":"","comentario":"","lote":4,"modelo":"Voltou, arrombado? Já casei com uma moeda de cinco e refiz a vida.","tom":"sem-filtro"},{"id":"entrou-018","cenario":"Entrou no app","situacao":"Ao abrir o app, só para mulher","texto":"POV: tu olhando R$ 320 torcendo pra virar mais. Não vira, feiticeira de merda.","voto":"","comentario":"","lote":4,"modelo":"POV: tu olhando {restante} torcendo pra virar mais. Não vira, feiticeira de merda.","tom":"sem-filtro"},{"id":"entrou-019","cenario":"Entrou no app","situacao":"Ao abrir o app, só para mulher","texto":"Chegou a madame. Que cheiro de maquininha é esse, hein, sua vagabunda de promoção?","voto":"","comentario":"","lote":4,"modelo":"Chegou a madame. Que cheiro de maquininha é esse, hein, sua vagabunda de promoção?","tom":"sem-filtro"},{"id":"entrou-020","cenario":"Entrou no app","situacao":"Ao abrir o app, só para mulher","texto":"LÁ VEM ELA, abriu o app, driblou a culpa, olhou o saldo E SE CAGOU!","voto":"","comentario":"","lote":4,"modelo":"LÁ VEM ELA, abriu o app, driblou a culpa, olhou o saldo E SE CAGOU!","tom":"sem-filtro"},{"id":"entrou-021","cenario":"Entrou no app","situacao":"Ao abrir o app, só para mulher","texto":"Ronc... chegou a dona e eu tô pelado. Vira de costas que eu me ajeito.","voto":"","comentario":"","lote":4,"modelo":"Ronc... chegou a dona e eu tô pelado. Vira de costas que eu me ajeito.","tom":"sem-filtro"},{"id":"do-nada-018","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Eles não querem que tu saiba, mas os centavos trepam de noite. Eu gravei. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"Eles não querem que tu saiba, mas os centavos trepam de noite. Eu gravei. HIHIHI","tom":"sem-filtro"},{"id":"do-nada-022","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo, só para mulher","texto":"Quanto mais tu mexe no app, mais gostoso eu fico. Continua, gostosuxa, não para.","voto":"","comentario":"","lote":4,"modelo":"Quanto mais tu mexe no app, mais gostoso eu fico. Continua, gostosuxa, não para.","tom":"sem-filtro"},{"id":"do-nada-023","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"VENDE-SE um porco carente. Motivo: dono sem juízo. Aceito até rato no espetinho.","voto":"","comentario":"","lote":4,"modelo":"VENDE-SE um porco carente. Motivo: dono sem juízo. Aceito até rato no espetinho.","tom":"sem-filtro"},{"id":"do-nada-024","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Horóscopo: tuas metas estão em retrógrado, também chamado de paradas pra caralho.","voto":"","comentario":"","lote":4,"modelo":"Horóscopo: tuas metas estão em retrógrado, também chamado de paradas pra caralho.","tom":"sem-filtro"},{"id":"do-nada-025","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Coach: quem não olha o limite se fode. Quem olha se fode organizado, guerreiro.","voto":"","comentario":"","lote":4,"modelo":"Coach: quem não olha o limite se fode. Quem olha se fode organizado, guerreiro.","tom":"sem-filtro"},{"id":"do-nada-026","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Abre um relatório. AGORA, porra. Tô na seca de ver uma pizza, nem que seja de gráfico.","voto":"","comentario":"","lote":4,"modelo":"Abre um relatório. AGORA, porra. Tô na seca de ver uma pizza, nem que seja de gráfico.","tom":"sem-filtro"},{"id":"do-nada-027","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Paga a conta fixa antes do vencimento, não depois do chilique, cabeça de bagre. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"Paga a conta fixa antes do vencimento, não depois do chilique, cabeça de bagre. rsrsrs","tom":"sem-filtro"},{"id":"do-nada-028","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Tu: não tenho nada marcado. Eu: olha a agenda, sua toupeira.","voto":"","comentario":"","lote":4,"modelo":"Tu: não tenho nada marcado. Eu: olha a agenda, sua toupeira.","tom":"sem-filtro"},{"id":"do-nada-029","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Li tuas anotações. Não vou falar nada. Só que eu sei. E o porco do vizinho também.","voto":"","comentario":"","lote":4,"modelo":"Li tuas anotações. Não vou falar nada. Só que eu sei. E o porco do vizinho também.","tom":"sem-filtro"},{"id":"do-nada-030","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"PLANTÃO: porco afirma que Porquinho cheio dá mais tesão que carnaval pelado.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: porco afirma que Porquinho cheio dá mais tesão que carnaval pelado.","tom":"sem-filtro"},{"id":"do-nada-031","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Gastando demais? Fala comigo, ou eu invento e espalho no chiqueiro, cuzão.","voto":"","comentario":"","lote":4,"modelo":"Gastando demais? Fala comigo, ou eu invento e espalho no chiqueiro, cuzão.","tom":"sem-filtro"},{"id":"do-nada-032","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Quem é esse app que tu abre antes de mim? Teu limite tá carentuxo, desgraça.","voto":"","comentario":"","lote":4,"modelo":"Quem é esse app que tu abre antes de mim? Teu limite tá carentuxo, desgraça.","tom":"sem-filtro"},{"id":"do-nada-033","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Joga uma moeda no Porquinho ou eu chacino tua mãe. Beijinho no focinho. huehue","voto":"","comentario":"","lote":4,"modelo":"Joga uma moeda no Porquinho ou eu chacino tua mãe. Beijinho no focinho. huehue","tom":"sem-filtro"},{"id":"do-nada-034","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Eles não querem que tu saiba, mas a fatura cresce quando tu apaga a luz.","voto":"","comentario":"","lote":4,"modelo":"Eles não querem que tu saiba, mas a fatura cresce quando tu apaga a luz.","tom":"sem-filtro"},{"id":"do-nada-035","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Fome. FOME. DINDIN. Se nada cair na minha fenda eu viro presunto de revolta, porra.","voto":"","comentario":"","lote":4,"modelo":"Fome. FOME. DINDIN. Se nada cair na minha fenda eu viro presunto de revolta, porra.","tom":"sem-filtro"},{"id":"do-nada-036","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Slk, sonhei que chovia malote e acordei com tua cara. Que tombo do caralho.","voto":"","comentario":"","lote":4,"modelo":"Slk, sonhei que chovia malote e acordei com tua cara. Que tombo do caralho.","tom":"sem-filtro"},{"id":"do-nada-037","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"No meu tempo gasto pequeno era bala. Hoje é café com preço de boi inteiro, puta merda.","voto":"","comentario":"","lote":4,"modelo":"No meu tempo gasto pequeno era bala. Hoje é café com preço de boi inteiro, puta merda.","tom":"sem-filtro"},{"id":"do-nada-038","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"POV: tu fugindo da tela de limites como quem foge de cobrador, cagão. KKKKK","voto":"","comentario":"","lote":4,"modelo":"POV: tu fugindo da tela de limites como quem foge de cobrador, cagão. KKKKK","tom":"sem-filtro"},{"id":"do-nada-039","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"Tua meta só depende de ti. Por isso mesmo ela tá fodida. F no chat.","voto":"","comentario":"","lote":4,"modelo":"Tua meta só depende de ti. Por isso mesmo ela tá fodida. F no chat.","tom":"sem-filtro"},{"id":"do-nada-040","cenario":"Fala do nada","situacao":"Mexendo no app, sem nada novo","texto":"É GOOOL! Porco dá bronca de graça, mogou o psicólogo e cobrou em moeda.","voto":"","comentario":"","lote":4,"modelo":"É GOOOL! Porco dá bronca de graça, mogou o psicólogo e cobrou em moeda.","tom":"sem-filtro"}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

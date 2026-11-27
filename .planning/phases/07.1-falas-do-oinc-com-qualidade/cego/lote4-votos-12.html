@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: lote4-votos-12</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>lote4-votos-12. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"lote4-votos-12","baixar":"lote4-respondido-12.json","itens":[{"id":"push-limite-80-009","cenario":"Aviso de limite quase no fim","situacao":"Categoria perto do limite, aviso na tela do celular, tom sem filtro","texto":"Delivery em 85%, R$ 255. Mais um rolê e a janta é bolacha água e sal sem a água, pamonha.","voto":"","comentario":"","lote":4,"modelo":"{categoria} em {pct}, {valor}. Mais um rolê e a janta é bolacha água e sal sem a água, pamonha.","tom":"sem-filtro"},{"id":"push-limite-100-009","cenario":"Aviso de limite estourado","situacao":"Categoria passou do limite, aviso na tela do celular, tom sem filtro","texto":"Delivery estourou: R$ 336. Meteu tudo sem dó e nem pediu licença pro porco. KKKKK","voto":"","comentario":"","lote":4,"modelo":"{categoria} estourou: {valor}. Meteu tudo sem dó e nem pediu licença pro porco. KKKKK","tom":"sem-filtro"},{"id":"push-fatura-d2-007","cenario":"Aviso de fatura","situacao":"Fatura vence em 2 dias, aviso na tela do celular, tom sem filtro","texto":"R$ 1.287,90 de fatura em dois dias. Paga essa porra ou eu cago no teu travesseiro.","voto":"","comentario":"","lote":4,"modelo":"{valor} de fatura em dois dias. Paga essa porra ou eu cago no teu travesseiro.","tom":"sem-filtro"},{"id":"push-fatura-d1-007","cenario":"Aviso de fatura","situacao":"Fatura vence amanhã, aviso na tela do celular, tom sem filtro","texto":"Amanhã: R$ 1.287,90 de fatura. Tá achando que é erva, que sobe e some? Paga, caralho.","voto":"","comentario":"","lote":4,"modelo":"Amanhã: {valor} de fatura. Tá achando que é erva, que sobe e some? Paga, caralho.","tom":"sem-filtro"},{"id":"push-fatura-d0-007","cenario":"Aviso de fatura","situacao":"Fatura vence hoje, aviso na tela do celular, tom sem filtro","texto":"Hoje: R$ 1.287,90 de fatura. Enfia o pagamento inteiro, nada de só a pontinha. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"Hoje: {valor} de fatura. Enfia o pagamento inteiro, nada de só a pontinha. rsrsrs","tom":"sem-filtro"},{"id":"push-conta-d2-008","cenario":"Aviso de conta","situacao":"Conta vence em 2 dias, aviso na tela do celular, tom sem filtro","texto":"Em dois dias, Internet, R$ 87. Guarda antes que tu queime tudo no pod, chaminezuxo.","voto":"","comentario":"","lote":4,"modelo":"Em dois dias, {conta}, {valor}. Guarda antes que tu queime tudo no pod, chaminezuxo.","tom":"sem-filtro"},{"id":"push-conta-d1-003","cenario":"Aviso de conta","situacao":"Conta vence amanhã, aviso na tela do celular, tom sem filtro","texto":"Amanhã vence R$ 87 de Internet. Paga, cabeça de bagre, ou os juros te comem de quatro.","voto":"","comentario":"","lote":4,"modelo":"Amanhã vence {valor} de {conta}. Paga, cabeça de bagre, ou os juros te comem de quatro.","tom":"sem-filtro"},{"id":"push-conta-d1-008","cenario":"Aviso de conta","situacao":"Conta vence amanhã, aviso na tela do celular, tom sem filtro","texto":"Amanhã tem Internet, R$ 87. Paga ou fica sem, olhando pra minha bunda. KKKKK","voto":"","comentario":"","lote":4,"modelo":"Amanhã tem {conta}, {valor}. Paga ou fica sem, olhando pra minha bunda. KKKKK","tom":"sem-filtro"},{"id":"push-conta-d0-008","cenario":"Aviso de conta","situacao":"Conta vence hoje, aviso na tela do celular, tom sem filtro","texto":"Hoje: Internet, R$ 87. Sem pagar tu vai morar no meu cofre, e eu peido dormindo.","voto":"","comentario":"","lote":4,"modelo":"Hoje: {conta}, {valor}. Sem pagar tu vai morar no meu cofre, e eu peido dormindo.","tom":"sem-filtro"},{"id":"push-compromisso-d2-001","cenario":"Aviso de compromisso","situacao":"Compromisso em 2 dias, aviso na tela do celular, tom sem filtro","texto":"Anota: Dentista, em dois dias, 14h30. Falta e eu invado teu sonho vestido de boleto.","voto":"","comentario":"","lote":4,"modelo":"Anota: {titulo}, em dois dias, {hora}. Falta e eu invado teu sonho vestido de boleto.","tom":"sem-filtro"},{"id":"push-compromisso-d2-004","cenario":"Aviso de compromisso","situacao":"Compromisso em 2 dias, aviso na tela do celular, tom sem filtro","texto":"Em dois dias tem Dentista. Não me inventa caganeira na hora, capivara.","voto":"","comentario":"","lote":4,"modelo":"Em dois dias tem {titulo}. Não me inventa caganeira na hora, capivara.","tom":"sem-filtro"},{"id":"push-compromisso-d2-008","cenario":"Aviso de compromisso","situacao":"Compromisso em 2 dias, aviso na tela do celular, tom sem filtro","texto":"Daqui a dois dias: Dentista, 14h30. Vai sóbrio, chapaduxo, que dá pra sentir o cheiro.","voto":"","comentario":"","lote":4,"modelo":"Daqui a dois dias: {titulo}, {hora}. Vai sóbrio, chapaduxo, que dá pra sentir o cheiro.","tom":"sem-filtro"},{"id":"push-compromisso-d1-003","cenario":"Aviso de compromisso","situacao":"Compromisso amanhã, aviso na tela do celular, tom sem filtro","texto":"É amanhã: Dentista, 14h30. Bota o despertador, que tu e o relógio não se falam, anta.","voto":"","comentario":"","lote":4,"modelo":"É amanhã: {titulo}, {hora}. Bota o despertador, que tu e o relógio não se falam, anta.","tom":"sem-filtro"},{"id":"push-compromisso-d1-008","cenario":"Aviso de compromisso","situacao":"Compromisso amanhã, aviso na tela do celular, tom sem filtro","texto":"Amanhã, 14h30: Dentista. Hoje nada de larica e farra até tarde, seu zé ruela do rolê.","voto":"","comentario":"","lote":4,"modelo":"Amanhã, {hora}: {titulo}. Hoje nada de larica e farra até tarde, seu zé ruela do rolê.","tom":"sem-filtro"},{"id":"push-compra-002","cenario":"Aviso sobre uma compra","situacao":"Aviso solto sobre uma compra, aviso na tela do celular, tom sem filtro","texto":"PLANTÃO: criatura torra R$ 87 com merda em iFood. Baleia reclama de ser gorduxo ainda.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: criatura torra {valor} com merda em {loja}. Baleia reclama de ser gorduxo ainda.","tom":"sem-filtro"},{"id":"push-compra-007","cenario":"Aviso sobre uma compra","situacao":"Aviso solto sobre uma compra, aviso na tela do celular, tom sem filtro","texto":"R$ 87 no cartão depois de jurar que ia parar? EU VOU COMER ESSE CARTÃO COM FAROFA.","voto":"","comentario":"","lote":4,"modelo":"{valor} no cartão depois de jurar que ia parar? EU VOU COMER ESSE CARTÃO COM FAROFA.","tom":"sem-filtro"},{"id":"push-compra-009","cenario":"Aviso sobre uma compra","situacao":"Aviso solto sobre uma compra, aviso na tela do celular, tom sem filtro","texto":"Mais R$ 87. Slk, tu passa o cartão com um tesão que eu nunca recebi. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"Mais {valor}. Slk, tu passa o cartão com um tesão que eu nunca recebi. HIHIHI","tom":"sem-filtro"},{"id":"push-compra-010","cenario":"Aviso sobre uma compra","situacao":"Aviso solto sobre uma compra, aviso na tela do celular, tom sem filtro","texto":"R$ 87 em Delivery? Fumou o juízo junto, foi? Me passa um pouco disso aí.","voto":"","comentario":"","lote":4,"modelo":"{valor} em {categoria}? Fumou o juízo junto, foi? Me passa um pouco disso aí.","tom":"sem-filtro"},{"id":"push-ritmo-007","cenario":"Aviso sobre o ritmo","situacao":"Aviso solto sobre o que sobra, aviso na tela do celular, tom sem filtro","texto":"Vem ver quanto sobrou antes de pagar rodada, pé de chinelo, que eu tô contando farelo. Ronc.","voto":"","comentario":"","lote":4,"modelo":"Vem ver quanto sobrou antes de pagar rodada, pé de chinelo, que eu tô contando farelo. Ronc.","tom":"sem-filtro"},{"id":"push-ritmo-008","cenario":"Aviso sobre o ritmo","situacao":"Aviso solto sobre o que sobra, aviso na tela do celular, tom sem filtro","texto":"3 dias pro salário e R$ 320. Vai lamber panela, que eu já lambi o fundo do cofre. Ronc.","voto":"","comentario":"","lote":4,"modelo":"{dias} pro salário e {restante}. Vai lamber panela, que eu já lambi o fundo do cofre. Ronc.","tom":"sem-filtro"},{"id":"push-ritmo-009","cenario":"Aviso sobre o ritmo","situacao":"Aviso solto sobre o que sobra, aviso na tela do celular, tom sem filtro","texto":"R$ 320 pra 3 dias. Dá pra um miojo ou um beck, tu escolhe. Escolhe o miojo, porra.","voto":"","comentario":"","lote":4,"modelo":"{restante} pra {dias}. Dá pra um miojo ou um beck, tu escolhe. Escolhe o miojo, porra.","tom":"sem-filtro"},{"id":"push-meta-001","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"R$ 320 pra Viagem. Enfia na minha fenda ou eu cago na tua planta, mula. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{restante} pra {meta}. Enfia na minha fenda ou eu cago na tua planta, mula. rsrsrs","tom":"sem-filtro"},{"id":"push-meta-002","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Viagem ainda pede R$ 320 e tu no delivery. Eu aqui chupando moeda, cuzão.","voto":"","comentario":"","lote":4,"modelo":"{meta} ainda pede {restante} e tu no delivery. Eu aqui chupando moeda, cuzão.","tom":"sem-filtro"},{"id":"push-meta-003","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Faltam R$ 320 pra Viagem. Nesse ritmo tu chega lá de bengala, e a bengala fiada.","voto":"","comentario":"","lote":4,"modelo":"Faltam {restante} pra {meta}. Nesse ritmo tu chega lá de bengala, e a bengala fiada.","tom":"sem-filtro"},{"id":"push-meta-004","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"E Viagem? Tu começou animado e broxou no meio, né? Levanta isso aí. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"E {meta}? Tu começou animado e broxou no meio, né? Levanta isso aí. HIHIHI","tom":"sem-filtro"},{"id":"push-meta-005","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Dei um tapa no pod e vi Viagem me chamando. Joga um dindinzuxo antes que passe a onda.","voto":"","comentario":"","lote":4,"modelo":"Dei um tapa no pod e vi {meta} me chamando. Joga um dindinzuxo antes que passe a onda.","tom":"sem-filtro"},{"id":"push-meta-006","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Slk, R$ 320 pra bater a meta e tu travou. F no chat, pamonha.","voto":"","comentario":"","lote":4,"modelo":"Slk, {restante} pra bater a meta e tu travou. F no chat, pamonha.","tom":"sem-filtro"},{"id":"push-meta-007","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Tu: um dia eu chego lá. Eu: como, rolando, baleia? Abre o app. Ronc.","voto":"","comentario":"","lote":4,"modelo":"Tu: um dia eu chego lá. Eu: como, rolando, baleia? Abre o app. Ronc.","tom":"sem-filtro"},{"id":"push-meta-008","cenario":"Aviso sobre meta","situacao":"Aviso solto sobre uma meta, aviso na tela do celular, tom sem filtro","texto":"Bota só a cabecinha em Viagem hoje. Do porco, mente suja. Um dinheirinhuxo já serve.","voto":"","comentario":"","lote":4,"modelo":"Bota só a cabecinha em {meta} hoje. Do porco, mente suja. Um dinheirinhuxo já serve.","tom":"sem-filtro"},{"id":"push-nada-001","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Tô pelado, carentuxo e há horas olhando pra tela. Abre essa porra de app, mula.","voto":"","comentario":"","lote":4,"modelo":"Tô pelado, carentuxo e há horas olhando pra tela. Abre essa porra de app, mula.","tom":"sem-filtro"},{"id":"push-nada-002","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Fumei um negocinho aqui no cofre e tô vendo teu saldo dançar. Vem ver comigo, chapaduxo.","voto":"","comentario":"","lote":4,"modelo":"Fumei um negocinho aqui no cofre e tô vendo teu saldo dançar. Vem ver comigo, chapaduxo.","tom":"sem-filtro"},{"id":"push-nada-003","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Onde tu tava? Que app filho da puta tá te dando atenção? Eu faço tudo e mais gostoso.","voto":"","comentario":"","lote":4,"modelo":"Onde tu tava? Que app filho da puta tá te dando atenção? Eu faço tudo e mais gostoso.","tom":"sem-filtro"},{"id":"push-nada-004","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Vem cá meter o dedo em mim. Na tela, mente suja. Tô precisando. huehue","voto":"","comentario":"","lote":4,"modelo":"Vem cá meter o dedo em mim. Na tela, mente suja. Tô precisando. huehue","tom":"sem-filtro"},{"id":"push-nada-005","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Tô chapaduxo olhando o teto do cofre. O teto é minha bunda. Que fita. Volta.","voto":"","comentario":"","lote":4,"modelo":"Tô chapaduxo olhando o teto do cofre. O teto é minha bunda. Que fita. Volta.","tom":"sem-filtro"},{"id":"push-nada-006","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Abre o app ou eu chacino tua casa toda, peste. Beijo no focinho. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"Abre o app ou eu chacino tua casa toda, peste. Beijo no focinho. HIHIHI","tom":"sem-filtro"},{"id":"push-nada-007","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Papo reto, tu sumiu e eu perdi toda a aura. Volta antes que eu vire linguiça.","voto":"","comentario":"","lote":4,"modelo":"Papo reto, tu sumiu e eu perdi toda a aura. Volta antes que eu vire linguiça.","tom":"sem-filtro"},{"id":"push-nada-008","cenario":"Aviso do nada","situacao":"Aviso solto, sem dado, aviso na tela do celular, tom sem filtro","texto":"Tiltei de saudade. Fumei, chorei e comi um boleto. Vem cuidar de mim, desgraça.","voto":"","comentario":"","lote":4,"modelo":"Tiltei de saudade. Fumei, chorei e comi um boleto. Vem cuidar de mim, desgraça.","tom":"sem-filtro"}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

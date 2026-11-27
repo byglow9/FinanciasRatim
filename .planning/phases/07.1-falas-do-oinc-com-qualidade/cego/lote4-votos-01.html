@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: lote4-votos-01</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>lote4-votos-01. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"lote4-votos-01","baixar":"lote4-respondido-01.json","itens":[{"id":"posto-008","cenario":"Posto de gasolina","situacao":"Abasteceu, só para mulher","texto":"Encheu o tanque com R$ 180 e me deixou aqui no vazio. Egoistuxa.","voto":"","comentario":"","lote":4,"modelo":"Encheu o tanque com {valor} e me deixou aqui no vazio. Egoistuxa.","tom":"sem-filtro"},{"id":"posto-009","cenario":"Posto de gasolina","situacao":"Abasteceu","texto":"R$ 180 de gasolina. Teu carro tá mais bem alimentado que eu, e olha que o gordinho aqui sou eu.","voto":"","comentario":"","lote":4,"modelo":"{valor} de gasolina. Teu carro tá mais bem alimentado que eu, e olha que o gordinho aqui sou eu.","tom":"sem-filtro"},{"id":"posto-010","cenario":"Posto de gasolina","situacao":"Abasteceu","texto":"R$ 180 no posto. Esse carro bebe igual tio no churrasco, e quem fica de ressaca é o meu bucho. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{valor} no posto. Esse carro bebe igual tio no churrasco, e quem fica de ressaca é o meu bucho. rsrsrs","tom":"sem-filtro"},{"id":"posto-011","cenario":"Posto de gasolina","situacao":"Abasteceu","texto":"R$ 180 de gasolina. Frentista feliz, carro cheio, porco vazio. Ronc, que injustiça.","voto":"","comentario":"","lote":4,"modelo":"{valor} de gasolina. Frentista feliz, carro cheio, porco vazio. Ronc, que injustiça.","tom":"sem-filtro"},{"id":"posto-012","cenario":"Posto de gasolina","situacao":"Abasteceu, só para homem","texto":"R$ 180 de combustível. Tanta vontade de encher o tanque e nenhuma de encher o Porquinho, safaduxo.","voto":"","comentario":"","lote":4,"modelo":"{valor} de combustível. Tanta vontade de encher o tanque e nenhuma de encher o Porquinho, safaduxo.","tom":"sem-filtro"},{"id":"posto-013","cenario":"Posto de gasolina","situacao":"Abasteceu, só para mulher","texto":"R$ 180 de combustível. Tanta vontade de encher o tanque e nenhuma de encher o Porquinho, safaduxa.","voto":"","comentario":"","lote":4,"modelo":"{valor} de combustível. Tanta vontade de encher o tanque e nenhuma de encher o Porquinho, safaduxa.","tom":"sem-filtro"},{"id":"farmacia-002","cenario":"Farmácia","situacao":"Comprou na farmácia","texto":"R$ 87 de farmácia. Comprou camisinha ou comprou juízo? Um dos dois faltava. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{valor} de farmácia. Comprou camisinha ou comprou juízo? Um dos dois faltava. rsrsrs","tom":"sem-filtro"},{"id":"farmacia-003","cenario":"Farmácia","situacao":"Comprou na farmácia","texto":"Farmácia, R$ 87. Eu também tô doente: de saudade de depósito. Tem remédio pra isso?","voto":"","comentario":"","lote":4,"modelo":"Farmácia, {valor}. Eu também tô doente: de saudade de depósito. Tem remédio pra isso?","tom":"sem-filtro"},{"id":"farmacia-004","cenario":"Farmácia","situacao":"Comprou na farmácia","texto":"R$ 87 na farmácia. Foi vitamina, pomada ou aquele creme que promete milagre? Fala logo, hehehe.","voto":"","comentario":"","lote":4,"modelo":"{valor} na farmácia. Foi vitamina, pomada ou aquele creme que promete milagre? Fala logo, hehehe.","tom":"sem-filtro"},{"id":"farmacia-005","cenario":"Farmácia","situacao":"Comprou na farmácia","texto":"R$ 87 de farmácia. Cuida da saúde, mas cuida do bolso também, que ele tá com febre.","voto":"","comentario":"","lote":4,"modelo":"{valor} de farmácia. Cuida da saúde, mas cuida do bolso também, que ele tá com febre.","tom":"sem-filtro"},{"id":"assinaturas-001","cenario":"Assinaturas","situacao":"Várias assinaturas no mês","texto":"Um monte de assinatura, R$ 164. Tu não tem olho pra assistir isso tudo.","voto":"","comentario":"","lote":4,"modelo":"Um monte de assinatura, {total}. Tu não tem olho pra assistir isso tudo.","tom":"sem-filtro"},{"id":"assinaturas-003","cenario":"Assinaturas","situacao":"Várias assinaturas no mês","texto":"Assinou um monte, usa um e meio. O resto é caridade pra bilionário, HIHIHI.","voto":"","comentario":"","lote":4,"modelo":"Assinou um monte, usa um e meio. O resto é caridade pra bilionário, HIHIHI.","tom":"sem-filtro"},{"id":"assinaturas-004","cenario":"Assinaturas","situacao":"Várias assinaturas no mês","texto":"Assinatura de R$ 39,90 caindo de novo. Dá preguiça cancelar, né? Preguiça cara pra caralho.","voto":"","comentario":"","lote":4,"modelo":"Assinatura de {valor} caindo de novo. Dá preguiça cancelar, né? Preguiça cara pra caralho.","tom":"sem-filtro"},{"id":"assinaturas-005","cenario":"Assinaturas","situacao":"Várias assinaturas no mês","texto":"R$ 39,90 de assinatura. Tu paga e eu fico no vácuo: sem série, sem pipoca, só boleto. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"{valor} de assinatura. Tu paga e eu fico no vácuo: sem série, sem pipoca, só boleto. HIHIHI","tom":"sem-filtro"},{"id":"compra-madrugada-002","cenario":"Compra de madrugada","situacao":"Compra de madrugada","texto":"2h40 da madrugada e o dedinho passeando no carrinho. Vai DORMIR, porra.","voto":"","comentario":"","lote":4,"modelo":"{hora} da madrugada e o dedinho passeando no carrinho. Vai DORMIR, porra.","tom":"sem-filtro"},{"id":"compra-madrugada-004","cenario":"Compra de madrugada","situacao":"Compra de madrugada","texto":"R$ 87 em compra de madrugada. Dormir é de graça, a besteira é que sai cara, caralho.","voto":"","comentario":"","lote":4,"modelo":"{valor} em compra de madrugada. Dormir é de graça, a besteira é que sai cara, caralho.","tom":"sem-filtro"},{"id":"compra-madrugada-005","cenario":"Compra de madrugada","situacao":"Compra de madrugada","texto":"R$ 87 com todo mundo dormindo. Tu gasta de olho aberto e eu durmo de olho fechado. Ronc.","voto":"","comentario":"","lote":4,"modelo":"{valor} com todo mundo dormindo. Tu gasta de olho aberto e eu durmo de olho fechado. Ronc.","tom":"sem-filtro"},{"id":"pix-pessoa-003","cenario":"Pix para uma pessoa","situacao":"Mandou um Pix","texto":"R$ 87 voando no Pix, e pra mim nunca sobra nem um pixzuxo.","voto":"","comentario":"","lote":4,"modelo":"{valor} voando no Pix, e pra mim nunca sobra nem um pixzuxo.","tom":"sem-filtro"},{"id":"pix-pessoa-004","cenario":"Pix para uma pessoa","situacao":"Mandou um Pix","texto":"Saiu R$ 87 no Pix. Eu sou porco, mas fofoqueiro também. Pra quem foi? HIHIHI","voto":"","comentario":"","lote":4,"modelo":"Saiu {valor} no Pix. Eu sou porco, mas fofoqueiro também. Pra quem foi? HIHIHI","tom":"sem-filtro"},{"id":"pix-pessoa-005","cenario":"Pix para uma pessoa","situacao":"Mandou um Pix","texto":"R$ 87 de Pix pra alguém. Se for dívida, paga com gosto. Se for presente, que seja pra mim. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{valor} de Pix pra alguém. Se for dívida, paga com gosto. Se for presente, que seja pra mim. rsrsrs","tom":"sem-filtro"},{"id":"gasto-minusculo-001","cenario":"Gasto minúsculo","situacao":"Compra de poucos reais","texto":"R$ 3,50 em Amazon. Anotei. Aqui ninguém passa batido, nem bala.","voto":"","comentario":"","lote":4,"modelo":"{valor} em {loja}. Anotei. Aqui ninguém passa batido, nem bala.","tom":"sem-filtro"},{"id":"gasto-minusculo-002","cenario":"Gasto minúsculo","situacao":"Compra de poucos reais","texto":"R$ 3,50, é? Começa assim, daqui a pouco tá financiando chiclete.","voto":"","comentario":"","lote":4,"modelo":"{valor}, é? Começa assim, daqui a pouco tá financiando chiclete.","tom":"sem-filtro"},{"id":"gasto-minusculo-003","cenario":"Gasto minúsculo","situacao":"Compra de poucos reais","texto":"R$ 3,50. Alerta máximo, chamem o exército. Brincadeira. Mas anotei.","voto":"","comentario":"","lote":4,"modelo":"{valor}. Alerta máximo, chamem o exército. Brincadeira. Mas anotei.","tom":"sem-filtro"},{"id":"gasto-minusculo-004","cenario":"Gasto minúsculo","situacao":"Compra de poucos reais","texto":"Gastinho de R$ 3,50. Eu engordei foi de miúdo em miúdo, e o mês emagrece igual. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"Gastinho de {valor}. Eu engordei foi de miúdo em miúdo, e o mês emagrece igual. rsrsrs","tom":"sem-filtro"},{"id":"gasto-minusculo-005","cenario":"Gasto minúsculo","situacao":"Compra de poucos reais","texto":"Só R$ 3,50? Beleza, anotei. Porco bom conta até o troco, porco ruim finge que não viu, huehue.","voto":"","comentario":"","lote":4,"modelo":"Só {valor}? Beleza, anotei. Porco bom conta até o troco, porco ruim finge que não viu, huehue.","tom":"sem-filtro"},{"id":"parcelamento-001","cenario":"Parcelamento","situacao":"Comprou parcelado","texto":"3 vezes de R$ 87. Parabéns, adotou um boleto e ele fica um tempão.","voto":"","comentario":"","lote":4,"modelo":"{vezes} de {valor}. Parabéns, adotou um boleto e ele fica um tempão.","tom":"sem-filtro"},{"id":"parcelamento-002","cenario":"Parcelamento","situacao":"Comprou parcelado","texto":"Parcelou em 3 vezes. Quando acabar, o produto já tá no lixo e tu ainda pagando.","voto":"","comentario":"","lote":4,"modelo":"Parcelou em {vezes}. Quando acabar, o produto já tá no lixo e tu ainda pagando.","tom":"sem-filtro"},{"id":"parcelamento-003","cenario":"Parcelamento","situacao":"Comprou parcelado","texto":"R$ 87 por mês, tu falou. 3 vezes, tu não falou. rsrsrsrs","voto":"","comentario":"","lote":4,"modelo":"{valor} por mês, tu falou. {vezes}, tu não falou. rsrsrsrs","tom":"sem-filtro"},{"id":"parcelamento-004","cenario":"Parcelamento","situacao":"Comprou parcelado","texto":"Parcelou em 3 vezes de R$ 87. Tu comprou o gosto e mandou a dor pro eu do futuro. Ele já me ligou.","voto":"","comentario":"","lote":4,"modelo":"Parcelou em {vezes} de {valor}. Tu comprou o gosto e mandou a dor pro eu do futuro. Ele já me ligou.","tom":"sem-filtro"},{"id":"parcelamento-005","cenario":"Parcelamento","situacao":"Comprou parcelado","texto":"3 vezes de R$ 87. Parcela é tipo carrapato: gruda quietinha e só percebe quando já chupou tudo. KKKKKJ","voto":"","comentario":"","lote":4,"modelo":"{vezes} de {valor}. Parcela é tipo carrapato: gruda quietinha e só percebe quando já chupou tudo. KKKKKJ","tom":"sem-filtro"},{"id":"padaria-001","cenario":"Padaria","situacao":"Passou na padaria","texto":"3 vezes na padaria. O padeiro já separa teu pão quando ouve o chinelo.","voto":"","comentario":"","lote":4,"modelo":"{vezes} na padaria. O padeiro já separa teu pão quando ouve o chinelo.","tom":"sem-filtro"},{"id":"padaria-002","cenario":"Padaria","situacao":"Passou na padaria","texto":"R$ 87 de padaria. Isso é muito pãozuxo pra uma barriga só.","voto":"","comentario":"","lote":4,"modelo":"{valor} de padaria. Isso é muito pãozuxo pra uma barriga só.","tom":"sem-filtro"},{"id":"padaria-003","cenario":"Padaria","situacao":"Passou na padaria","texto":"R$ 87 na padaria. Tu tem fraco por pão quente, eu tenho fraco por dindin quente. A gente se completa.","voto":"","comentario":"","lote":4,"modelo":"{valor} na padaria. Tu tem fraco por pão quente, eu tenho fraco por dindin quente. A gente se completa.","tom":"sem-filtro"},{"id":"padaria-004","cenario":"Padaria","situacao":"Passou na padaria","texto":"Padaria, R$ 87. Quem sai de lá só com o pão que foi buscar? Ninguém. Bolinho entrou de gaiato, rsrsrs.","voto":"","comentario":"","lote":4,"modelo":"Padaria, {valor}. Quem sai de lá só com o pão que foi buscar? Ninguém. Bolinho entrou de gaiato, rsrsrs.","tom":"sem-filtro"},{"id":"padaria-005","cenario":"Padaria","situacao":"Passou na padaria","texto":"R$ 87 de padaria. Eu aqui sonhando com pão e tu comprando. Divide aí, sou porco de boa vontade, hehehe.","voto":"","comentario":"","lote":4,"modelo":"{valor} de padaria. Eu aqui sonhando com pão e tu comprando. Divide aí, sou porco de boa vontade, hehehe.","tom":"sem-filtro"},{"id":"app-corrida-001","cenario":"Corrida de app","situacao":"Pediu um carro no app","texto":"R$ 87 de corrida. Tuas pernas pediram baixa por falta de uso.","voto":"","comentario":"","lote":4,"modelo":"{valor} de corrida. Tuas pernas pediram baixa por falta de uso.","tom":"sem-filtro"},{"id":"app-corrida-002","cenario":"Corrida de app","situacao":"Pediu um carro no app","texto":"R$ 87 de corrida. O motorista já sabe até com quem tu brigou.","voto":"","comentario":"","lote":4,"modelo":"{valor} de corrida. O motorista já sabe até com quem tu brigou.","tom":"sem-filtro"},{"id":"app-corrida-003","cenario":"Corrida de app","situacao":"Pediu um carro no app","texto":"Corrida de novo? Anda, criatura, o chão é de graça. KKKKKJ","voto":"","comentario":"","lote":4,"modelo":"Corrida de novo? Anda, criatura, o chão é de graça. KKKKKJ","tom":"sem-filtro"},{"id":"app-corrida-004","cenario":"Corrida de app","situacao":"Pediu um carro no app","texto":"R$ 87 de corrida. Se foi pressa, tudo bem. Se foi preguiça, o chão continua de graça, porra.","voto":"","comentario":"","lote":4,"modelo":"{valor} de corrida. Se foi pressa, tudo bem. Se foi preguiça, o chão continua de graça, porra.","tom":"sem-filtro"},{"id":"app-corrida-005","cenario":"Corrida de app","situacao":"Pediu um carro no app","texto":"R$ 87 no app de corrida. Tá aí uma coisa que anda mais que eu: teu dinheiro. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"{valor} no app de corrida. Tá aí uma coisa que anda mais que eu: teu dinheiro. HIHIHI","tom":"sem-filtro"}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: lote4-votos-04</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>lote4-votos-04. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"lote4-votos-04","baixar":"lote4-respondido-04.json","itens":[{"id":"loja-repete-004","cenario":"Loja repetida","situacao":"A mesma loja várias vezes na semana","texto":"3 vezes no Amazon. Isso não é compra, é namorico. Cadê meu chifruxo de ouro? KKKKK","voto":"","comentario":"","lote":4,"modelo":"{vezes} no {loja}. Isso não é compra, é namorico. Cadê meu chifruxo de ouro? KKKKK","tom":"sem-filtro"},{"id":"loja-repete-008","cenario":"Loja repetida","situacao":"A mesma loja várias vezes na semana","texto":"3 vezes no Amazon na semana. Pede carteira assinada lá, parça, que tu já bate ponto.","voto":"","comentario":"","lote":4,"modelo":"{vezes} no {loja} na semana. Pede carteira assinada lá, parça, que tu já bate ponto.","tom":"sem-filtro"},{"id":"black-friday-001","cenario":"Black Friday","situacao":"Gasto na Black Friday","texto":"Black Friday e já foram R$ 87 em Amazon. Mó promoçãozuxa, e o pobre sou eu.","voto":"","comentario":"","lote":4,"modelo":"Black Friday e já foram {valor} em {loja}. Mó promoçãozuxa, e o pobre sou eu.","tom":"sem-filtro"},{"id":"vespera-salario-001","cenario":"Véspera do salário","situacao":"O salário cai amanhã","texto":"R$ 320 e amanhã cai mais. Nadando em grana por uma noite, patacuxo pra todo lado.","voto":"","comentario":"","lote":4,"modelo":"{restante} e amanhã cai mais. Nadando em grana por uma noite, patacuxo pra todo lado.","tom":"sem-filtro"},{"id":"vespera-salario-002","cenario":"Véspera do salário","situacao":"O salário cai amanhã","texto":"Falta 1 dia e sobrou R$ 320. Quem é tu e o que fez com a criatura do delivery? KKKKKJ","voto":"","comentario":"","lote":4,"modelo":"Falta {dias} e sobrou {restante}. Quem é tu e o que fez com a criatura do delivery? KKKKKJ","tom":"sem-filtro"},{"id":"vespera-salario-003","cenario":"Véspera do salário","situacao":"O salário cai amanhã","texto":"Amanhã cai o pataco e ainda tem R$ 320. Tô emocionaduxo, vou ligar pra minha mãe porca.","voto":"","comentario":"","lote":4,"modelo":"Amanhã cai o pataco e ainda tem {restante}. Tô emocionaduxo, vou ligar pra minha mãe porca.","tom":"sem-filtro"},{"id":"vespera-salario-004","cenario":"Véspera do salário","situacao":"O salário cai amanhã","texto":"Última noite do aperto, com R$ 320 na conta. Dorme cedo pro tempo passar e eu ronco junto. Ronc.","voto":"","comentario":"","lote":4,"modelo":"Última noite do aperto, com {restante} na conta. Dorme cedo pro tempo passar e eu ronco junto. Ronc.","tom":"sem-filtro"},{"id":"vespera-salario-005","cenario":"Véspera do salário","situacao":"O salário cai amanhã","texto":"Véspera de salário e sobram R$ 320. Joga um dindinzuxo em mim antes que tu invente moda, caralho.","voto":"","comentario":"","lote":4,"modelo":"Véspera de salário e sobram {restante}. Joga um dindinzuxo em mim antes que tu invente moda, caralho.","tom":"sem-filtro"},{"id":"semana-sem-gastar-001","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto","texto":"7 dias sem gastar. Quem é tu? Devolve minha criatura gastona, tô com saudade do sustuxo.","voto":"","comentario":"","lote":4,"modelo":"{dias} sem gastar. Quem é tu? Devolve minha criatura gastona, tô com saudade do sustuxo.","tom":"sem-filtro"},{"id":"semana-sem-gastar-002","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto","texto":"7 dias sem passar o cartão. A maquininha tá com saudade, rsrsrs.","voto":"","comentario":"","lote":4,"modelo":"{dias} sem passar o cartão. A maquininha tá com saudade, rsrsrs.","tom":"sem-filtro"},{"id":"semana-sem-gastar-003","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto","texto":"7 dias zerados. Tô tão orgulhoso que o ronc saiu fino.","voto":"","comentario":"","lote":4,"modelo":"{dias} zerados. Tô tão orgulhoso que o ronc saiu fino.","tom":"sem-filtro"},{"id":"semana-sem-gastar-004","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto, só para homem","texto":"Foram 7 dias sem gastar nada. Ou tá com febre, ou virou outra pessoa, ou tá me escondendo coisa, safaduxo.","voto":"","comentario":"","lote":4,"modelo":"Foram {dias} sem gastar nada. Ou tá com febre, ou virou outra pessoa, ou tá me escondendo coisa, safaduxo.","tom":"sem-filtro"},{"id":"semana-sem-gastar-005","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto","texto":"7 dias sem passar o cartão. Ele achou que tu morreu. Deixa ele achando.","voto":"","comentario":"","lote":4,"modelo":"{dias} sem passar o cartão. Ele achou que tu morreu. Deixa ele achando.","tom":"sem-filtro"},{"id":"semana-sem-gastar-006","cenario":"Semana sem gastar","situacao":"Dias seguidos sem gasto, só para mulher","texto":"Foram 7 dias sem gastar nada. Ou tá com febre, ou virou outra pessoa, ou tá me escondendo coisa, safaduxa.","voto":"","comentario":"","lote":4,"modelo":"Foram {dias} sem gastar nada. Ou tá com febre, ou virou outra pessoa, ou tá me escondendo coisa, safaduxa.","tom":"sem-filtro"},{"id":"salario-016","cenario":"Salário","situacao":"O salário caiu, só para mulher","texto":"CAIU R$ 3.200! Ai, enfia tudo em mim, devagarinho... na fenda, pervertida. KKKKKJ","voto":"","comentario":"","lote":4,"modelo":"CAIU {valor}! Ai, enfia tudo em mim, devagarinho... na fenda, pervertida. KKKKKJ","tom":"sem-filtro"},{"id":"salario-017","cenario":"Salário","situacao":"O salário caiu, só para mulher","texto":"R$ 3.200 chegando e tu já abrindo o iFood. Eu te CONHEÇO, safada.","voto":"","comentario":"","lote":4,"modelo":"{valor} chegando e tu já abrindo o iFood. Eu te CONHEÇO, safada.","tom":"sem-filtro"},{"id":"salario-018","cenario":"Salário","situacao":"O salário caiu, só para mulher","texto":"R$ 3.200 de salário. Em dois dias tu faz sumir tudo, caloteira de si mesma. Me dá metade ou eu grito.","voto":"","comentario":"","lote":4,"modelo":"{valor} de salário. Em dois dias tu faz sumir tudo, caloteira de si mesma. Me dá metade ou eu grito.","tom":"sem-filtro"},{"id":"salario-019","cenario":"Salário","situacao":"O salário caiu, só para mulher","texto":"Entrou o malote, R$ 3.200. Respira, sua playgirl, e paga o aluguel antes de pedir delivery.","voto":"","comentario":"","lote":4,"modelo":"Entrou o malote, {valor}. Respira, sua playgirl, e paga o aluguel antes de pedir delivery.","tom":"sem-filtro"},{"id":"salario-020","cenario":"Salário","situacao":"O salário caiu, só para mulher","texto":"Caiu a grana. Primeiro as contas, depois o Porquinho, depois o pod. Nessa ordem, chapaduxa.","voto":"","comentario":"","lote":4,"modelo":"Caiu a grana. Primeiro as contas, depois o Porquinho, depois o pod. Nessa ordem, chapaduxa.","tom":"sem-filtro"},{"id":"limite-quase-001","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"Faltam 3 dias pro salário e Lazer já foi 85%. Mó fitazuxa, véi. Hiberna.","voto":"","comentario":"","lote":4,"modelo":"Faltam {dias} pro salário e {categoria} já foi {pct}. Mó fitazuxa, véi. Hiberna.","tom":"sem-filtro"},{"id":"limite-quase-002","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"85% de Lazer e 3 dias pela frente. Segura o fogo, tesão de rolê, rsrsrsrs.","voto":"","comentario":"","lote":4,"modelo":"{pct} de {categoria} e {dias} pela frente. Segura o fogo, tesão de rolê, rsrsrsrs.","tom":"sem-filtro"},{"id":"limite-quase-003","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"Lazer em 85%, quase no talo. Põe só a pontinha, hein. Do limite.","voto":"","comentario":"","lote":4,"modelo":"{categoria} em {pct}, quase no talo. Põe só a pontinha, hein. Do limite.","tom":"sem-filtro"},{"id":"limite-quase-005","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"Calma aí. 85% de Lazer já foi e o mês nem escovou o dentuxo ainda.","voto":"","comentario":"","lote":4,"modelo":"Calma aí. {pct} de {categoria} já foi e o mês nem escovou o dentuxo ainda.","tom":"sem-filtro"},{"id":"limite-quase-006","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"85% de Lazer e ainda faltam 3 dias. Modo sobrevivência: miojo, água e fé.","voto":"","comentario":"","lote":4,"modelo":"{pct} de {categoria} e ainda faltam {dias}. Modo sobrevivência: miojo, água e fé.","tom":"sem-filtro"},{"id":"limite-quase-010","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"Lazer em 85% do limite. É miojo até virar o mês, ronc.","voto":"","comentario":"","lote":4,"modelo":"{categoria} em {pct} do limite. É miojo até virar o mês, ronc.","tom":"sem-filtro"},{"id":"limite-quase-013","cenario":"Limite quase no fim","situacao":"Uma categoria está perto do limite","texto":"Sobrou um farelinho do limite de Lazer. Lambe devagaruxo que não vem mais.","voto":"","comentario":"","lote":4,"modelo":"Sobrou um farelinho do limite de {categoria}. Lambe devagaruxo que não vem mais.","tom":"sem-filtro"},{"id":"limite-estourou-001","cenario":"Limite estourado","situacao":"Uma categoria passou do limite, só para homem","texto":"Passou R$ 87 do limite de Delivery. Mano. MANO. Eu tô suando pelo rabinho, porra.","voto":"","comentario":"","lote":4,"modelo":"Passou {valor} do limite de {categoria}. Mano. MANO. Eu tô suando pelo rabinho, porra.","tom":"sem-filtro"},{"id":"limite-estourou-002","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Estourou Delivery. R$ 87 pra fora. Não coube e tu forçou, né? Que bagunçuxa.","voto":"","comentario":"","lote":4,"modelo":"Estourou {categoria}. {valor} pra fora. Não coube e tu forçou, né? Que bagunçuxa.","tom":"sem-filtro"},{"id":"limite-estourou-004","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Estourou Delivery, caralho. Nem no joguinho tu respeita barreira, imagina na vida.","voto":"","comentario":"","lote":4,"modelo":"Estourou {categoria}, caralho. Nem no joguinho tu respeita barreira, imagina na vida.","tom":"sem-filtro"},{"id":"limite-estourou-007","cenario":"Limite estourado","situacao":"Uma categoria passou do limite, só para mulher","texto":"Passou R$ 87 do limite de Delivery, caralho. Foi tu que escolheu, sua mentirosa.","voto":"","comentario":"","lote":4,"modelo":"Passou {valor} do limite de {categoria}, caralho. Foi tu que escolheu, sua mentirosa.","tom":"sem-filtro"},{"id":"limite-estourou-008","cenario":"Limite estourado","situacao":"Uma categoria passou do limite, só para mulher","texto":"Estourou antes da hora. Delivery em 120% e o mês ainda nem acabou. Que pressa é essa, campeã?","voto":"","comentario":"","lote":4,"modelo":"Estourou antes da hora. {categoria} em {pct} e o mês ainda nem acabou. Que pressa é essa, campeã?","tom":"sem-filtro"},{"id":"limite-estourou-009","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"120% de Delivery. Passou do limite, caralho. Enfiou tudo e nem pediu licença pro porco.","voto":"","comentario":"","lote":4,"modelo":"{pct} de {categoria}. Passou do limite, caralho. Enfiou tudo e nem pediu licença pro porco.","tom":"sem-filtro"},{"id":"limite-estourou-010","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Estourou Delivery, R$ 87 a mais. Não tankei. Tô deitado no cofre ouvindo música triste.","voto":"","comentario":"","lote":4,"modelo":"Estourou {categoria}, {valor} a mais. Não tankei. Tô deitado no cofre ouvindo música triste.","tom":"sem-filtro"},{"id":"limite-estourou-011","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Delivery estourou em R$ 87. Merdinha grandona. Respira, anota e senta nessa mãozuxa até o mês acabar.","voto":"","comentario":"","lote":4,"modelo":"{categoria} estourou em {valor}. Merdinha grandona. Respira, anota e senta nessa mãozuxa até o mês acabar.","tom":"sem-filtro"},{"id":"limite-estourou-012","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Limite de Delivery furado, R$ 87 a mais. O buraco é tão fundo que ouvi um eco: pobreeeza. KKKKK","voto":"","comentario":"","lote":4,"modelo":"Limite de {categoria} furado, {valor} a mais. O buraco é tão fundo que ouvi um eco: pobreeeza. KKKKK","tom":"sem-filtro"},{"id":"limite-estourou-013","cenario":"Limite estourado","situacao":"Uma categoria passou do limite","texto":"Delivery bateu 120%. Foi sem querer ou querendo muito? Pode falar que eu guardo segredo, KKKKKJ.","voto":"","comentario":"","lote":4,"modelo":"{categoria} bateu {pct}. Foi sem querer ou querendo muito? Pode falar que eu guardo segredo, KKKKKJ.","tom":"sem-filtro"},{"id":"limite-novo-001","cenario":"Limite novo","situacao":"Criou um limite","texto":"Limite de R$ 87 em Lazer. Bonito. Dou uma semana pra tu fingir que não viu.","voto":"","comentario":"","lote":4,"modelo":"Limite de {valor} em {categoria}. Bonito. Dou uma semana pra tu fingir que não viu.","tom":"sem-filtro"},{"id":"limite-novo-002","cenario":"Limite novo","situacao":"Criou um limite","texto":"Botou limite em Lazer, R$ 87. O motoboyzuxo tá de luto, usando fitinha preta no capacete.","voto":"","comentario":"","lote":4,"modelo":"Botou limite em {categoria}, {valor}. O motoboyzuxo tá de luto, usando fitinha preta no capacete.","tom":"sem-filtro"},{"id":"limite-novo-003","cenario":"Limite novo","situacao":"Criou um limite, só para homem","texto":"R$ 87 de teto pra Lazer. Se segura, gulosuxo, que eu tô contando.","voto":"","comentario":"","lote":4,"modelo":"{valor} de teto pra {categoria}. Se segura, gulosuxo, que eu tô contando.","tom":"sem-filtro"},{"id":"limite-novo-004","cenario":"Limite novo","situacao":"Criou um limite, só para mulher","texto":"R$ 87 de teto pra Lazer. Se segura, gulosuxa, que eu tô contando.","voto":"","comentario":"","lote":4,"modelo":"{valor} de teto pra {categoria}. Se segura, gulosuxa, que eu tô contando.","tom":"sem-filtro"}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

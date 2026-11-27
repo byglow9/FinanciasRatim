@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-aJq5eLtrvIcJmt+oMbgrf75a11w+grH5gh3eqnIGNwo='">
+<title>Voto das falas: lote4-votos-06</title>
+<style>
+:root { color-scheme: light dark }
+body { font: 16px/1.4 system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 0 1rem 7rem }
+.cartao { border: 1px solid #8886; border-radius: 12px; margin: 0 0 1rem; padding: .75rem 1rem }
+.cartao p { margin: .25rem 0 }
+.cenario { font-weight: 700 }
+.situacao { font-size: .85rem; opacity: .75 }
+.texto { font-size: 1.15rem; overflow-wrap: anywhere }
+.botoes { display: flex; gap: .5rem; margin: .5rem 0 }
+button { border: 2px solid #8888; border-radius: 10px; background: none; color: inherit; font: inherit; min-height: 48px; cursor: pointer }
+.voto { flex: 1 }
+.sim[aria-pressed="true"] { background: #1a7f37; border-color: #1a7f37; color: #fff }
+.nao[aria-pressed="true"] { background: #b42318; border-color: #b42318; color: #fff }
+textarea { box-sizing: border-box; width: 100%; font: inherit }
+footer { position: fixed; left: 0; right: 0; bottom: 0; background: Canvas; border-top: 1px solid #8886; padding: .5rem 1rem; text-align: center }
+footer p { margin: .25rem 0 }
+#baixar { width: 100%; max-width: 40rem }
+</style>
+</head>
+<body>
+<h1>Voto das falas do OINC</h1>
+<p>lote4-votos-06. Toque em Sim ou Não em cada fala. No fim, baixe os votos.</p>
+<main id="lista"></main>
+<footer>
+<p id="progresso"></p>
+<button type="button" id="baixar">baixar votos</button>
+<p id="aviso" role="status"></p>
+</footer>
+<script type="application/json" id="dados">{"nome":"lote4-votos-06","baixar":"lote4-respondido-06.json","itens":[{"id":"conta-hoje-006","cenario":"Conta vence hoje","situacao":"Conta vence hoje","texto":"Internet, R$ 87, vence hoje. Paga ou eu chacino tua mãe, sua mula de teta.","voto":"","comentario":"","lote":4,"modelo":"{conta}, {valor}, vence hoje. Paga ou eu chacino tua mãe, sua mula de teta.","tom":"sem-filtro"},{"id":"aviso-2-dias-008","cenario":"Conta em 2 dias","situacao":"Conta vence em 1 ou 2 dias, só para mulher, na véspera","texto":"Conta de R$ 87 vence amanhã. Paga, jumenta de teta, ou eu conto pra tua mãe. KKKKK","voto":"","comentario":"","lote":4,"modelo":"Conta de {valor} vence amanhã. Paga, jumenta de teta, ou eu conto pra tua mãe. KKKKK","tom":"sem-filtro"},{"id":"aviso-2-dias-009","cenario":"Conta em 2 dias","situacao":"Conta vence em 1 ou 2 dias","texto":"LÁ VEM Internet, R$ 87, faltam 2 dias, o juro tá livre! PAGA, ANTA DE PATINS!","voto":"","comentario":"","lote":4,"modelo":"LÁ VEM {conta}, {valor}, faltam {dias}, o juro tá livre! PAGA, ANTA DE PATINS!","tom":"sem-filtro"},{"id":"conta-paga-007","cenario":"Conta paga","situacao":"Marcou uma conta como paga","texto":"É GOOOL! Conta paga! Tô rebolando peladuxo, chupa, juro do caralho! rsrsrs","voto":"","comentario":"","lote":4,"modelo":"É GOOOL! Conta paga! Tô rebolando peladuxo, chupa, juro do caralho! rsrsrs","tom":"sem-filtro"},{"id":"compromisso-001","cenario":"Compromisso","situacao":"Compromisso chegando, só quando o tema é dentista","texto":"3 dias, 14h30, dentista. Escova esse dentuxo podre, bafo de capivara. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{dias}, {hora}, dentista. Escova esse dentuxo podre, bafo de capivara. rsrsrs","tom":"sem-filtro"},{"id":"compromisso-002","cenario":"Compromisso","situacao":"Compromisso chegando, só quando o tema é dentista","texto":"Dentista em 3 dias, 14h30. Falta e eu arranco teu dentuxo na patada.","voto":"","comentario":"","lote":4,"modelo":"Dentista em {dias}, {hora}. Falta e eu arranco teu dentuxo na patada.","tom":"sem-filtro"},{"id":"compromisso-003","cenario":"Compromisso","situacao":"Compromisso chegando, só quando o tema é dentista","texto":"PLANTÃO: dentista em 3 dias, 14h30. Suspeito já ensaia a caganeira.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: dentista em {dias}, {hora}. Suspeito já ensaia a caganeira.","tom":"sem-filtro"},{"id":"compromisso-004","cenario":"Compromisso","situacao":"Compromisso chegando","texto":"3 dias, 14h30, compromisso. Toma banho, que teu sovaco tá mogando o chiqueiro.","voto":"","comentario":"","lote":4,"modelo":"{dias}, {hora}, compromisso. Toma banho, que teu sovaco tá mogando o chiqueiro.","tom":"sem-filtro"},{"id":"compromisso-005","cenario":"Compromisso","situacao":"Compromisso chegando","texto":"Dentista em 3 dias, 14h30. Quem marcou essa porra sem me chamar? FALA.","voto":"","comentario":"","lote":4,"modelo":"{titulo} em {dias}, {hora}. Quem marcou essa porra sem me chamar? FALA.","tom":"sem-filtro"},{"id":"aniversario-001","cenario":"Aniversário","situacao":"Aniversário na agenda","texto":"Aniversário em 3 dias. Dar chiclete do posto é red flag, sua marmota.","voto":"","comentario":"","lote":4,"modelo":"Aniversário em {dias}. Dar chiclete do posto é red flag, sua marmota.","tom":"sem-filtro"},{"id":"aniversario-004","cenario":"Aniversário","situacao":"Aniversário na agenda","texto":"3 dias pro aniversário. Sem grana, dá um abracinhuxo e finge que é caro, porra.","voto":"","comentario":"","lote":4,"modelo":"{dias} pro aniversário. Sem grana, dá um abracinhuxo e finge que é caro, porra.","tom":"sem-filtro"},{"id":"aniversario-005","cenario":"Aniversário","situacao":"Aniversário na agenda","texto":"Aniversário em 3 dias. E o MEU, quem lembra? Ninguém, bando de cuzão.","voto":"","comentario":"","lote":4,"modelo":"Aniversário em {dias}. E o MEU, quem lembra? Ninguém, bando de cuzão.","tom":"sem-filtro"},{"id":"agenda-notas-003","cenario":"Agenda e anotações","situacao":"Comentário sobre algo anotado","texto":"Quem é \"Promessa\"? Tá na tua agenda. Há quanto tempo essa putaria rola?","voto":"","comentario":"","lote":4,"modelo":"Quem é \"{titulo}\"? Tá na tua agenda. Há quanto tempo essa putaria rola?","tom":"sem-filtro"},{"id":"agenda-notas-004","cenario":"Agenda e anotações","situacao":"Comentário sobre algo anotado","texto":"Promessa em 3 dias. Eu li tudo, sou fofoqueiruxo do caralho e não me arrependo.","voto":"","comentario":"","lote":4,"modelo":"{titulo} em {dias}. Eu li tudo, sou fofoqueiruxo do caralho e não me arrependo.","tom":"sem-filtro"},{"id":"agenda-notas-005","cenario":"Agenda e anotações","situacao":"Comentário sobre algo anotado","texto":"PLANTÃO: porco lê \"Promessa\" na agenda e fica mogado de curiosidade. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: porco lê \"{titulo}\" na agenda e fica mogado de curiosidade. HIHIHI","tom":"sem-filtro"},{"id":"meta-nova-010","cenario":"Meta nova","situacao":"Criou uma meta","texto":"Coach: R$ 87 pra Viagem. Acredita, guerreiro do boleto, que é de graça, porra. KKKKK","voto":"","comentario":"","lote":4,"modelo":"Coach: {valor} pra {meta}. Acredita, guerreiro do boleto, que é de graça, porra. KKKKK","tom":"sem-filtro"},{"id":"meta-nova-012","cenario":"Meta nova","situacao":"Criou uma meta, só para mulher","texto":"Meta nova: Viagem, R$ 87. Farmando aura, hein, gostosa? Quem é essa adulta?","voto":"","comentario":"","lote":4,"modelo":"Meta nova: {meta}, {valor}. Farmando aura, hein, gostosa? Quem é essa adulta?","tom":"sem-filtro"},{"id":"meta-aporte-001","cenario":"Aporte na meta","situacao":"Colocou dinheiro numa meta","texto":"LÁ VEM R$ 87 em Viagem, tá em 85%, É GOL DESSE PORCO GOSTOSO DO CARALHO!","voto":"","comentario":"","lote":4,"modelo":"LÁ VEM {valor} em {meta}, tá em {pct}, É GOL DESSE PORCO GOSTOSO DO CARALHO!","tom":"sem-filtro"},{"id":"meta-aporte-002","cenario":"Aporte na meta","situacao":"Colocou dinheiro numa meta","texto":"85% de Viagem! Ronc, tô chorando, rebolando e farmando aura juntinhuxo.","voto":"","comentario":"","lote":4,"modelo":"{pct} de {meta}! Ronc, tô chorando, rebolando e farmando aura juntinhuxo.","tom":"sem-filtro"},{"id":"meta-aporte-003","cenario":"Aporte na meta","situacao":"Colocou dinheiro numa meta","texto":"R$ 87 em Viagem, 85%. Tira um centavo e eu chacino tua mãe, peste.","voto":"","comentario":"","lote":4,"modelo":"{valor} em {meta}, {pct}. Tira um centavo e eu chacino tua mãe, peste.","tom":"sem-filtro"},{"id":"meta-aporte-005","cenario":"Aporte na meta","situacao":"Colocou dinheiro numa meta","texto":"85% de Viagem. Não para agora, porra, que meia bomba ninguém merece. huehue","voto":"","comentario":"","lote":4,"modelo":"{pct} de {meta}. Não para agora, porra, que meia bomba ninguém merece. huehue","tom":"sem-filtro"},{"id":"meta-batida-001","cenario":"Meta batida","situacao":"Completou uma meta","texto":"META BATIDA, CARALHO! EU VOU ME CAGAR DE FELICIDADE ATÉ MORREEEER.","voto":"","comentario":"","lote":4,"modelo":"META BATIDA, CARALHO! EU VOU ME CAGAR DE FELICIDADE ATÉ MORREEEER.","tom":"sem-filtro"},{"id":"meta-batida-010","cenario":"Meta batida","situacao":"Completou uma meta, só para homem","texto":"PLANTÃO: criatura bate Viagem. Cientistas em choque, achavam que era um NPC.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: criatura bate {meta}. Cientistas em choque, achavam que era um NPC.","tom":"sem-filtro"},{"id":"meta-batida-012","cenario":"Meta batida","situacao":"Completou uma meta, só para mulher","texto":"Viagem batida. Puta que pariu, gostosa! Cadê minha caloteira de estimação?","voto":"","comentario":"","lote":4,"modelo":"{meta} batida. Puta que pariu, gostosa! Cadê minha caloteira de estimação?","tom":"sem-filtro"},{"id":"meta-batida-013","cenario":"Meta batida","situacao":"Completou uma meta, só para mulher","texto":"Meta batida! Me traz um ímã de geladeira, ingrata, ou eu faço barraco.","voto":"","comentario":"","lote":4,"modelo":"Meta batida! Me traz um ímã de geladeira, ingrata, ou eu faço barraco.","tom":"sem-filtro"},{"id":"meta-batida-014","cenario":"Meta batida","situacao":"Completou uma meta, só para mulher","texto":"R$ 87 juntos. Aura infinita, rica insuportável. Agora me beija o focinho.","voto":"","comentario":"","lote":4,"modelo":"{valor} juntos. Aura infinita, rica insuportável. Agora me beija o focinho.","tom":"sem-filtro"},{"id":"meta-batida-015","cenario":"Meta batida","situacao":"Completou uma meta, só para mulher","texto":"Viagem batida! Mogou o banco, mogou o boleto, mogou todo mundo, porra. KKKKK","voto":"","comentario":"","lote":4,"modelo":"{meta} batida! Mogou o banco, mogou o boleto, mogou todo mundo, porra. KKKKK","tom":"sem-filtro"},{"id":"meta-parada-002","cenario":"Meta parada","situacao":"Meta sem aporte há tempo","texto":"3 dias sem nada em Viagem. Pra quem tu tá dando teu dindinzuxo? FALA O NOME.","voto":"","comentario":"","lote":4,"modelo":"{dias} sem nada em {meta}. Pra quem tu tá dando teu dindinzuxo? FALA O NOME.","tom":"sem-filtro"},{"id":"meta-parada-004","cenario":"Meta parada","situacao":"Meta sem aporte há tempo","texto":"VENDE-SE Viagem, parada há 3 dias em 85%. Aceito até rato no espetinho.","voto":"","comentario":"","lote":4,"modelo":"VENDE-SE {meta}, parada há {dias} em {pct}. Aceito até rato no espetinho.","tom":"sem-filtro"},{"id":"meta-parada-005","cenario":"Meta parada","situacao":"Meta sem aporte há tempo","texto":"Viagem parada em 85%. Todo mundo tem as mesmas 24h, sua ameba. É só querer.","voto":"","comentario":"","lote":4,"modelo":"{meta} parada em {pct}. Todo mundo tem as mesmas 24h, sua ameba. É só querer.","tom":"sem-filtro"},{"id":"meta-status-001","cenario":"Andamento da meta","situacao":"Como a meta está","texto":"Viagem em 85%, faltam R$ 320. E eu babando de quatro no cofrezuxo, ronc. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"{meta} em {pct}, faltam {restante}. E eu babando de quatro no cofrezuxo, ronc. rsrsrs","tom":"sem-filtro"},{"id":"meta-status-002","cenario":"Andamento da meta","situacao":"Como a meta está","texto":"Viagem em 85%. Sozinha ela não anda, lesma do caralho, empurra essa porra.","voto":"","comentario":"","lote":4,"modelo":"{meta} em {pct}. Sozinha ela não anda, lesma do caralho, empurra essa porra.","tom":"sem-filtro"},{"id":"meta-status-003","cenario":"Andamento da meta","situacao":"Como a meta está","texto":"Viagem em 85%. Completa essa merda ou eu mastigo teu controle remoto.","voto":"","comentario":"","lote":4,"modelo":"{meta} em {pct}. Completa essa merda ou eu mastigo teu controle remoto.","tom":"sem-filtro"},{"id":"meta-status-004","cenario":"Andamento da meta","situacao":"Como a meta está","texto":"Viagem em 85%. Eu não cobro. Só olho. Sem piscar. De pau na mão. KKKKKJ","voto":"","comentario":"","lote":4,"modelo":"{meta} em {pct}. Eu não cobro. Só olho. Sem piscar. De pau na mão. KKKKKJ","tom":"sem-filtro"},{"id":"meta-status-005","cenario":"Andamento da meta","situacao":"Como a meta está","texto":"85% de Viagem. Largar no meio é skill issue, seu poço de frouxura.","voto":"","comentario":"","lote":4,"modelo":"{pct} de {meta}. Largar no meio é skill issue, seu poço de frouxura.","tom":"sem-filtro"},{"id":"porquinho-encheu-002","cenario":"Porquinho encheu","situacao":"Guardou no Porquinho","texto":"R$ 87! PLANTÃO: porco engorda, fica insuportável e mostra a bunda de felicidade. HIHIHI","voto":"","comentario":"","lote":4,"modelo":"{valor}! PLANTÃO: porco engorda, fica insuportável e mostra a bunda de felicidade. HIHIHI","tom":"sem-filtro"},{"id":"porquinho-sacou-011","cenario":"Saque do Porquinho","situacao":"Tirou do Porquinho, só para mulher","texto":"Tirou R$ 87 de mim, caloteira? Senti o vazio no cu. Devolve essa porra.","voto":"","comentario":"","lote":4,"modelo":"Tirou {valor} de mim, caloteira? Senti o vazio no cu. Devolve essa porra.","tom":"sem-filtro"},{"id":"porquinho-sacou-012","cenario":"Saque do Porquinho","situacao":"Tirou do Porquinho, só para mulher","texto":"Tirou R$ 87 pra dar pra quem? OLHA NOS MEUS OLHOS, vaca leiteira. rsrsrs","voto":"","comentario":"","lote":4,"modelo":"Tirou {valor} pra dar pra quem? OLHA NOS MEUS OLHOS, vaca leiteira. rsrsrs","tom":"sem-filtro"},{"id":"porquinho-recorde-001","cenario":"Recorde do Porquinho","situacao":"Porquinho no maior valor","texto":"R$ 2.400 aqui dentro. Tô pesaduxo, rico e cagando pra pobre. Volta, brincadeira.","voto":"","comentario":"","lote":4,"modelo":"{total} aqui dentro. Tô pesaduxo, rico e cagando pra pobre. Volta, brincadeira.","tom":"sem-filtro"},{"id":"porquinho-recorde-004","cenario":"Recorde do Porquinho","situacao":"Porquinho no maior valor","texto":"PLANTÃO: porco atinge R$ 2.400, mete óculos escuros e manda os parentes pro caralho.","voto":"","comentario":"","lote":4,"modelo":"PLANTÃO: porco atinge {total}, mete óculos escuros e manda os parentes pro caralho.","tom":"sem-filtro"}]}</script>
+<script>
+const { nome, baixar, itens } = JSON.parse(document.getElementById('dados').textContent)
+const CHAVE = 'oinc-votos:' + nome
+let guardado = {}
+try { guardado = JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { guardado = {} }
+const estado = itens.map((item) => {
+  const antes = Object.prototype.hasOwnProperty.call(guardado, item.id) ? guardado[item.id] : null
+  const vale = antes && antes.texto === item.texto
+  return { voto: vale ? antes.voto : item.voto || '', comentario: vale ? antes.comentario : item.comentario || '' }
+})
+const faltam = () => estado.filter((e) => e.voto !== 'sim' && e.voto !== 'nao').length
+function progresso() {
+  document.getElementById('progresso').textContent = (itens.length - faltam()) + ' de ' + itens.length + ' votadas'
+}
+function guardar(i) {
+  guardado[itens[i].id] = { texto: itens[i].texto, voto: estado[i].voto, comentario: estado[i].comentario }
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(guardado))
+  } catch {
+    document.getElementById('aviso').textContent = 'Este navegador não guarda o voto parcial: baixe antes de fechar.'
+  }
+  progresso()
+}
+function el(tag, classe, texto) {
+  const no = document.createElement(tag)
+  no.className = classe
+  if (texto !== undefined) no.textContent = texto
+  return no
+}
+itens.forEach((item, i) => {
+  const cartao = el('section', 'cartao')
+  const botoes = el('div', 'botoes')
+  const par = [['sim', 'Sim'], ['nao', 'Não']].map(([valor, rotulo]) => {
+    const botao = el('button', 'voto ' + valor, rotulo)
+    botao.setAttribute('type', 'button')
+    botao.addEventListener('click', () => {
+      estado[i].voto = valor
+      pintar()
+      guardar(i)
+    })
+    return [valor, botao]
+  })
+  function pintar() {
+    for (const [valor, botao] of par) botao.setAttribute('aria-pressed', String(estado[i].voto === valor))
+  }
+  const comentario = el('textarea', 'comentario')
+  comentario.setAttribute('rows', '1')
+  comentario.setAttribute('placeholder', 'comentário (se quiser)')
+  comentario.value = estado[i].comentario
+  comentario.addEventListener('input', () => {
+    estado[i].comentario = comentario.value
+    guardar(i)
+  })
+  botoes.append(...par.map(([, botao]) => botao))
+  cartao.append(
+    el('p', 'cenario', (i + 1) + '. ' + item.cenario),
+    el('p', 'situacao', item.situacao),
+    el('p', 'texto', item.texto),
+    botoes,
+    comentario,
+  )
+  pintar()
+  document.getElementById('lista').append(cartao)
+})
+document.getElementById('baixar').addEventListener('click', () => {
+  const saida = itens.map((item, i) => ({ ...item, voto: estado[i].voto, comentario: estado[i].comentario }))
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(saida, null, 2) + '\n'], { type: 'application/json' }))
+  link.download = baixar
+  link.click()
+  const n = faltam()
+  document.getElementById('aviso').textContent =
+    (n > 0 ? 'Baixado, mas faltam ' + n + ' sem voto. ' : 'Baixado. ') + 'Salve ' + baixar + ' na mesma pasta deste arquivo.'
+})
+progresso()
+</script>
+</body>
+</html>

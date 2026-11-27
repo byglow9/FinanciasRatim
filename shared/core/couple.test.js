@@ -250,3 +250,90 @@ test('coupleBudget: lado nulo conta zero e nao quebra', () => {
   assert.equal(none.safeTogetherCents, 0)
   assert.deepEqual(none.rows, [])
 })
+
+// Linha de limite de uma view (formato de spend.rows)
+const lim = (categoryId, spentCents, limitCents) => ({ categoryId, spentCents, limitCents })
+
+test('coupleBudget rows: limite nos dois lados soma limites e gastos, pct sem saturar', () => {
+  const r = coupleBudget({
+    first: view({ rows: [lim('mercado', 30000, 40000)] }),
+    second: view({ rows: [lim('mercado', 25000, 20000)] }),
+  })
+  assert.equal(r.rows.length, 1)
+  const row = r.rows[0]
+  assert.equal(row.categoryId, 'mercado')
+  assert.equal(row.limitCents, 60000)
+  assert.equal(row.spentCents, 55000)
+  assert.equal(row.pct, 91)
+  assert.equal(row.state, 'warn')
+  assert.deepEqual(row.parts.first, { hasLimit: true, limitCents: 40000, spentCents: 30000 })
+  assert.deepEqual(row.parts.second, { hasLimit: true, limitCents: 20000, spentCents: 25000 })
+  const over = coupleBudget({
+    first: view({ rows: [lim('lazer', 45000, 20000)] }),
+    second: view({ rows: [lim('lazer', 45000, 20000)] }),
+  })
+  assert.equal(over.rows[0].pct, 225)
+  assert.equal(over.rows[0].state, 'over')
+})
+
+test('coupleBudget rows: limite de um so soma so esse lado e o outro entra como sem limite', () => {
+  const r = coupleBudget({
+    first: view({ rows: [lim('lazer', 10000, 30000)] }),
+    second: view({ general: [{ categoryId: 'lazer', cents: 7000 }, { categoryId: 'outra', cents: 1 }] }),
+  })
+  assert.equal(r.rows.length, 1)
+  const row = r.rows[0]
+  assert.equal(row.limitCents, 30000)
+  assert.equal(row.spentCents, 10000)
+  assert.equal(row.pct, 33)
+  assert.equal(row.state, 'ok')
+  assert.deepEqual(row.parts.first, { hasLimit: true, limitCents: 30000, spentCents: 10000 })
+  assert.deepEqual(row.parts.second, { hasLimit: false, limitCents: null, spentCents: 7000 })
+  // sem entrada no gasto geral, o gasto de quem nao tem limite e zero
+  const none = coupleBudget({ first: view({ rows: [lim('lazer', 1, 100)] }), second: view() })
+  assert.deepEqual(none.rows[0].parts.second, { hasLimit: false, limitCents: null, spentCents: 0 })
+})
+
+test('coupleBudget rows: categoria sem limite nos dois lados nao vira linha', () => {
+  const r = coupleBudget({
+    first: view({ general: [{ categoryId: 'mercado', cents: 5000 }] }),
+    second: view({ general: [{ categoryId: 'mercado', cents: 3000 }] }),
+  })
+  assert.deepEqual(r.rows, [])
+})
+
+test('coupleBudget rows: ciclos diferentes somam sem misturar lancamentos', () => {
+  const r = coupleBudget({
+    first: view({ cycleKey: '2026-10', rows: [lim('mercado', 10000, 50000)] }),
+    second: view({ cycleKey: '2026-11', rows: [lim('mercado', 20000, 50000)] }),
+  })
+  assert.equal(r.rows[0].spentCents, 30000)
+  assert.equal(r.rows[0].limitCents, 100000)
+  assert.equal(r.rows[0].pct, 30)
+})
+
+test('coupleBudget rows: ordena por urgencia, depois gasto desc e categoryId', () => {
+  const r = coupleBudget({
+    first: view({
+      rows: [
+        lim('c-ok-baixo', 1000, 10000),
+        lim('b-ok-alto', 5000, 10000),
+        lim('a-over', 12000, 10000),
+        lim('d-warn', 9000, 10000),
+        lim('e-ok-alto', 5000, 10000),
+      ],
+    }),
+    second: null,
+  })
+  assert.deepEqual(
+    r.rows.map((x) => x.categoryId),
+    ['a-over', 'd-warn', 'b-ok-alto', 'e-ok-alto', 'c-ok-baixo']
+  )
+})
+
+test('coupleBudget rows: view nula num dos lados traz so as linhas do outro', () => {
+  const r = coupleBudget({ first: null, second: view({ rows: [lim('mercado', 100, 1000)] }) })
+  assert.equal(r.rows.length, 1)
+  assert.deepEqual(r.rows[0].parts.first, { hasLimit: false, limitCents: null, spentCents: 0 })
+  assert.deepEqual(r.rows[0].parts.second, { hasLimit: true, limitCents: 1000, spentCents: 100 })
+})

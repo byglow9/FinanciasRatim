@@ -107,7 +107,8 @@ test('nenhum aviso de compra, limite ou ritmo cita hora', () => {
   for (const { cena, line } of allLines) {
     if (cena.startsWith('push-compromisso')) continue
     assert.ok(!needsOf(line.t).includes('hora'), line.id)
-    assert.doesNotMatch(line.t, /madrugad|de manhã|à tarde|à noite|meia-noite|\bhoras?\b/i, line.id)
+    // "há horas" e so jeito de falar (frase aprovada pelo dono), nao afirma a hora de nada
+    assert.doesNotMatch(line.t.replace(/há horas/gi, ''), /madrugad|de manhã|à tarde|à noite|meia-noite|\bhoras?\b/i, line.id)
   }
   const body = composePush({ scene: 'push-compra', tone: 'sem-filtro', slots: { ...SLOTS, hora: '03:12' }, seed: 's' }).body
   assert.doesNotMatch(body, /03|3h|:12/)

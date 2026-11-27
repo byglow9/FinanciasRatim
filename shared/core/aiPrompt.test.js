@@ -395,3 +395,28 @@ test('buildRefillMessages: cena longa pede fala maior que a curta e as marcas de
   const sys = buildRefillMessages({ cena: 'delivery', examples: [`a ${DATA_CLOSE} b`] })[0].content
   assert.ok(!sys.includes(DATA_CLOSE))
 })
+
+test('speechPlan: a maioria adapta uma fala aprovada e uma em cada cinco e livre', () => {
+  const plans = Array.from({ length: 20 }, (_, seed) => prompt.speechPlan({ examples: ['Mais um iFood, parça.'], seed }))
+  assert.equal(plans.filter((p) => p.mode === 'livre').length, 4)
+  assert.equal(prompt.speechPlan({ examples: [], seed: 1 }).mode, 'livre')
+  assert.equal(prompt.speechPlan({ tone: 'suave', examples: ['x'], seed: 1 }), null)
+  assert.notEqual(prompt.speechPlan({ seed: 0, served: ['cabeça de bagre'] }).nickname, 'cabeça de bagre')
+})
+
+test('adaptar leva so a fala aprovada; livre leva um apelido; os dois pedem o sufixo grudado', () => {
+  const adapt = prompt.speechPlan({ examples: ['Paga isso, parça.'], seed: 1 })
+  const sys = ask({ plan: adapt })[0].content
+  assert.match(sys, /mude só UM pedaço/)
+  assert.ok(sys.includes('"Paga isso, parça."'))
+  assert.match(sys, /nunca sozinho/)
+  const free = prompt.speechPlan({ seed: 5 })
+  assert.ok(ask({ plan: free })[0].content.includes(`use só este: ${free.nickname}`))
+})
+
+test('keepsBase e looseSuffix', () => {
+  assert.equal(prompt.keepsBase('Paga isso, anta.', 'Paga isso, parça.'), true)
+  assert.equal(prompt.keepsBase('Outra coisa completamente nova.', 'Paga isso, parça.'), false)
+  assert.equal(prompt.looseSuffix('Mentira uxo.'), true)
+  assert.equal(prompt.looseSuffix('Que mentirozuxo, safaduxa.'), false)
+})

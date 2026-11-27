@@ -10,6 +10,7 @@
 //
 // Opcoes:
 //   --list            confere o catalogo e sai sem pedir fala nenhuma
+//   --novo            so o prompt de hoje (metade das falas)
 //   --only a,b        provedores (groq, cloudflare) ou trechos do id do modelo (sem isso, os padroes)
 //   --out PASTA       onde gravar os dois arquivos (padrao: a pasta cego da 07.1)
 //   --pause-ms N      pausa entre chamadas (padrao 1500)
@@ -31,7 +32,7 @@ import { fetchCatalog, parseArgs } from './ai-compare.js'
 import { buildMessages as buildMessagesV1, maxTokens as maxTokensV1 } from './lib/ai-prompt-v1.js'
 import { prepareCase } from './lib/ai-compare-fixtures.js'
 import { blindCases } from './lib/ai-blind-fixtures.js'
-import { TEMPERATURE, buildMessages, examplesFor, maxTokens, promptFact, speechContext } from '../../shared/core/aiPrompt.js'
+import { ADAPT_TEMPERATURE, TEMPERATURE, buildMessages, examplesFor, keepsBase, looseSuffix, maxTokens, promptFact, speechContext, speechPlan } from '../../shared/core/aiPrompt.js'
 import { findLeaks } from '../../shared/core/aiPrivacy.js'
 import { normalizeSpeech, validateSpeech } from '../../shared/core/aiValidate.js'
 import { buildFacts, factOfTransaction } from '../../shared/core/oincFacts.js'
@@ -174,9 +175,14 @@ function newRequest(raw, seed) {
     tone: TONE,
     seed,
   })
+  // O mesmo plano do servidor: adaptar uma fala aprovada ou criar do zero.
+  const plan = speechPlan({ tone: TONE, examples, seed })
+  const adapting = plan?.mode === 'adaptar'
   return {
     cena: fact.cena,
+    temperature: adapting ? ADAPT_TEMPERATURE : TEMPERATURE,
     messages: buildMessages({
+      plan,
       tone: TONE,
       fact,
       examples,
@@ -188,7 +194,9 @@ function newRequest(raw, seed) {
     maxTokens: maxTokens(ctx.length),
     judge: (text) => {
       const v = validateSpeech(text, ctx)
-      if (v.ok && isNearCopy(v.text, examples)) return { valido: false, motivo: 'copia' }
+      if (v.ok && !adapting && isNearCopy(v.text, examples)) return { valido: false, motivo: 'copia' }
+      if (v.ok && looseSuffix(v.text)) return { valido: false, motivo: 'sufixo' }
+      if (v.ok && adapting && !keepsBase(v.text, plan?.base ?? '')) return { valido: false, motivo: 'desviou' }
       return verdict(v)
     },
   }
@@ -282,6 +290,9 @@ export async function main({
   const say = (text) => log(redact(text))
   const warn = (text) => logError(redact(`${PREFIX} ${text}`))
 
+  // --novo: so o prompt de hoje (o antigo ja foi medido).
+  const prompts = argv.includes('--novo') ? ['novo'] : BLIND_PROMPTS
+  argv = argv.filter((a) => a !== '--novo')
   const foreign = argv.find((a) => /^--(samples|geral)(=|$)/.test(a))
   const opts = foreign ? { error: `opção desconhecida: ${foreign.split('=')[0]}` } : parseArgs(argv)
   if (opts.error) {
@@ -332,7 +343,7 @@ export async function main({
   const cases = blindCases()
   let tasks = []
   cases.forEach((raw, index) => {
-    for (const prompt of BLIND_PROMPTS) {
+    for (const prompt of prompts) {
       for (const c of ready) if (!done.has(comboOf(raw.id, prompt, c))) tasks.push({ raw, index, prompt, c })
     }
   })
@@ -435,7 +446,7 @@ export async function main({
       const r = await clients.get(labelOf(c)).call({
         messages: request.messages,
         maxTokens: request.maxTokens * c.tokensFactor,
-        temperature: TEMPERATURE,
+        temperature: request.temperature ?? TEMPERATURE,
       })
       const ms = Math.round(clock() - started)
 

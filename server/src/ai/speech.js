@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { buildFacts, factOfTransaction } from '../../../shared/core/oincFacts.js'
-import { TEMPERATURE, buildMessages, examplesFor, maxTokens, promptFact, speechContext } from '../../../shared/core/aiPrompt.js'
+import { ADAPT_TEMPERATURE, TEMPERATURE, buildMessages, examplesFor, keepsBase, looseSuffix, maxTokens, promptFact, speechContext, speechPlan } from '../../../shared/core/aiPrompt.js'
 import { findLeaks } from '../../../shared/core/aiPrivacy.js'
 import { validateSpeech } from '../../../shared/core/aiValidate.js'
 import { canonicalKey, labelHash } from '../../../shared/core/aiCacheKey.js'
@@ -267,6 +267,8 @@ export function createSpeech({
       requireProfanity: config.requireProfanity === true,
     })
     const memory = await memoryOf(state, { hid, person }, fact)
+    // Semente so gira os exemplos e escolhe o modo a cada pedido.
+    const seed = Math.floor(input.now.getTime() / 1000)
     const examples = examplesFor({
       liked: memory.liked,
       cena: fact.cena,
@@ -275,9 +277,10 @@ export function createSpeech({
       conds: fact.conds,
       tone,
       bank,
-      // Semente so gira os exemplos a cada pedido.
-      seed: Math.floor(input.now.getTime() / 1000),
+      seed,
     })
+    const plan = speechPlan({ tone, examples, seed, served: memory.served })
+    const adapting = plan?.mode === 'adaptar'
     const messages = buildMessages({
       tone,
       fact,
@@ -285,13 +288,16 @@ export function createSpeech({
       person,
       length: ctx.length,
       situation: PROMPT_SITUATION[key],
+      plan,
     })
 
     /** A regua da saida e mais a recusa de quase copia dos exemplos e da fala reprovada pelo voto. */
     const judge = (/** @type {string} */ text) => {
       const v = validateSpeech(text, ctx)
       if (!v.ok) return v
-      if (isNearCopy(v.text, examples)) return { ok: /** @type {const} */ (false), reason: 'copia' }
+      // Adaptando, parecer com a fala aprovada e o esperado.
+      if (!adapting && isNearCopy(v.text, examples)) return { ok: /** @type {const} */ (false), reason: 'copia' }
+      if (tone === 'sem-filtro' && looseSuffix(v.text)) return { ok: /** @type {const} */ (false), reason: 'sufixo' }
       if (memory.rejected.has(idOf(v.text))) return { ok: /** @type {const} */ (false), reason: 'reprovada' }
       return v
     }
@@ -302,6 +308,7 @@ export function createSpeech({
     const judgeNew = (/** @type {string} */ text) => {
       const v = judge(text)
       if (v.ok && isNearCopy(v.text, memory.served)) return { ok: /** @type {const} */ (false), reason: 'repetida' }
+      if (v.ok && adapting && !keepsBase(v.text, plan?.base ?? '')) return { ok: /** @type {const} */ (false), reason: 'desviou' }
       return v
     }
     /** Texto aprovado e normalizado pela regua atual, ou null (revalida o que veio do cache). */
@@ -377,7 +384,7 @@ export function createSpeech({
       const result = await providers.complete({
         messages,
         maxTokens: maxTokens(ctx.length, config.tokensFactor),
-        temperature: TEMPERATURE,
+        temperature: adapting ? ADAPT_TEMPERATURE : TEMPERATURE,
         validate: judgeNew,
       })
       if (!(result.ok && typeof result.text === 'string')) return null

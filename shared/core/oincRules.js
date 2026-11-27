@@ -144,7 +144,8 @@ export function checkLine({ line, cena, meta }) {
   if (EMOJI.test(t)) add('emoji')
   if (DASH.test(t)) add('travessao ou meia-risca')
   if (MARKUP.some((re) => re.test(t))) add('markup ou url')
-  if (/[0-9]/.test(t)) add('digito no modelo (todo numero entra por encaixe)')
+  // "24h" e o bordao de coach que o dono pediu; os demais numeros continuam entrando por encaixe
+  if (/[0-9]/.test(t.replace(/(?<![0-9])24h(?![0-9])/g, ''))) add('digito no modelo (todo numero entra por encaixe)')
 
   // vocabulario
   if (/mulamb/.test(norm)) add('palavra vetada (D-30)')

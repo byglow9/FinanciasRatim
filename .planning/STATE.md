@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: "07.1"
-current_phase_name: Falas do OINC com qualidade
+current_phase: 8
+current_phase_name: Visão do casal e multiusuário
 status: executing
-stopped_at: Completed 07.1-12-PLAN.md
-last_updated: "2026-11-27T12:06:24.529Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-11-27T20:23:31.338Z"
 last_activity: 2026-11-27
-last_activity_desc: Phase 07.1 execution started
-state_head: 91470475b3454cb6c76759c8bfb6dce5be018b80
+last_activity_desc: Phase 8 execution started
+state_head: 5818e6909af9cd7c5780773ac8918c62cafc2371
 progress:
   total_phases: 10
   completed_phases: 2
-  total_plans: 165
-  completed_plans: 160
+  total_plans: 179
+  completed_plans: 165
   percent: 20
 ---
 
@@ -23,15 +23,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 07.1 — Falas do OINC com qualidade
+**Current focus:** Phase 8 — Visão do casal e multiusuário
 
 ## Current Position
 
-Phase: 07.1 (Falas do OINC com qualidade) — EXECUTING
-Plan: 1 of 17
-Status: Executing Phase 07.1
-Last activity: 2026-11-27 — Phase 07.1 execution started
-Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
+Phase: 8 (Visão do casal e multiusuário) — EXECUTING
+Plan: 2 of 14
+Status: Ready to execute
+Last activity: 2026-11-27 — Phase 8 execution started
+Retomar por: /gsd-plan-phase 8 (contexto pronto); aceite da 07.1 pendente em .planning/phases/07.1-falas-do-oinc-com-qualidade/.continue-here.md
 
 ## Performance Metrics
 
@@ -165,6 +165,7 @@ Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 | Phase 07.1 P13 | 10 min | 2 tasks | 5 files |
 | Phase 07.1 P11 | 5 min | 2 tasks | 11 files |
 | Phase 07.1 P12 | 8 min | 2 tasks | 11 files |
+| Phase 08 P01 | 25 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -269,6 +270,7 @@ Recent decisions affecting current work:
 - [Phase 07.1]: 07.1-11: retido de limite usa o ciclo do aviso e, de volta abaixo do limiar, sai sem numeros; falha de leitura deixa pendente
 - [Phase 07.1]: 07.1-11: dica do espontaneo ja fala em algumas por dia; nao publicar o site antes do 07.1-12, e o servidor vai antes do site
 - [Phase 07.1]: avisos aleatorios: um por faixa; compra de ontem sem loja nem categoria nao e narrada; suave e direto nao carregam os dados do mes
+- [Phase 08]: 08-01: categoria com limite de um so soma so quem tem limite; o outro aparece no detalhe como sem limite — pergunta aberta 1 da pesquisa, resolvida pelo dono
 
 ### Pending Todos
 
@@ -302,9 +304,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-27T18:05:00.000Z
-Stopped at: 07.1-15 T2, publicação a confirmar (.continue-here.md da 07.1)
-Resume file: .planning/phases/07.1-falas-do-oinc-com-qualidade/.continue-here.md
+Last session: 2026-11-27T20:23:31.177Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)
 

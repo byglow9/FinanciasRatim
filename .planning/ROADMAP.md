@@ -584,13 +584,13 @@ Plans:
   2. O dono cria a conta do amigo por convite, e o amigo entra e vê apenas os próprios dados, sem acesso aos do casal
   3. A sincronização e os webhooks do banco funcionam por dono, sem misturar dados de pessoas diferentes
 
-**Plans**: 0/14 plans executed
+**Plans**: 1/14 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Aba Casal somente leitura: Pode gastar juntos, gasto e sobra somados e limites por categoria (CASAL-01, CASAL-02; D-14 a D-17)
+- [x] 08-01-PLAN.md — Aba Casal somente leitura: Pode gastar juntos, gasto e sobra somados e limites por categoria (CASAL-01, CASAL-02; D-14 a D-17)
 - [ ] 08-02-PLAN.md — Contrato de isolamento: ids com dono, regras com households, rollback seguro e núcleo de perfil e gênero (MULTI-01; D-06)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -636,4 +636,4 @@ Plans:
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
 | 6. Cartão de crédito | 18/20 | In Progress|  |
 | 7. Push e Vintém com IA | 19/19 | Complete (UAT em aberto) | 2026-11-27 |
-| 8. Visão do casal e multiusuário | 0/14 | Planned | - |
+| 8. Visão do casal e multiusuário | 1/14 | In Progress|  |

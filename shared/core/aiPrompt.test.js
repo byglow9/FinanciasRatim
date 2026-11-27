@@ -414,6 +414,13 @@ test('adaptar leva so a fala aprovada; livre leva um apelido; os dois pedem o su
   assert.ok(ask({ plan: free })[0].content.includes(`use só este: ${free.nickname}`))
 })
 
+test('o tempero roda pela semente e entra na mensagem', () => {
+  const smoke = prompt.speechPlan({ examples: ['x'], seed: 1 })
+  assert.match(smoke.spice, /chapaduxo/)
+  assert.ok(ask({ plan: smoke })[0].content.includes('Tempero desta vez'))
+  assert.equal(prompt.speechPlan({ examples: ['x'], seed: 2 }).spice, null)
+})
+
 test('keepsBase e looseSuffix', () => {
   assert.equal(prompt.keepsBase('Paga isso, anta.', 'Paga isso, parça.'), true)
   assert.equal(prompt.keepsBase('Outra coisa completamente nova.', 'Paga isso, parça.'), false)

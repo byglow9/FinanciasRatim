@@ -80,12 +80,18 @@ const FORMAT_HINTS = Object.freeze([
   'falar direto com a pessoa, sem formato nenhum', 'ameaça fofa bem exagerada', 'coach de internet', 'plantão de notícia',
 ])
 
+/** Tempero de algumas falas, em rodizio pela semente (pedido do dono depois do segundo teste cego). */
+const SPICES = Object.freeze([
+  null, 'porco chapaduxo: ponha uma referência de fumaça, mesmo que o fato não seja sobre isso', null,
+  'mais pesado desta vez', null, 'humor de internet (tankar, aura, F no chat, slk, tiltei)',
+])
+
 /**
  * Como a fala do sem filtro sera feita: adaptar uma fala aprovada (a maioria) ou criar do zero. A
  * semente decide, sem acaso: o modo, o apelido sugerido e o formato. Apelido usado nas ultimas falas
  * servidas nao volta.
  * @param {{ tone?: string, examples?: ReadonlyArray<string> | null, seed?: number, served?: ReadonlyArray<string> | null }} args
- * @returns {{ mode: 'adaptar' | 'livre', base: string | null, nickname: string, format: string } | null}
+ * @returns {{ mode: 'adaptar' | 'livre', base: string | null, nickname: string, format: string, spice: string | null } | null}
  */
 export function speechPlan({ tone = 'sem-filtro', examples, seed = 0, served } = {}) {
   if (toneOf(tone) !== 'sem-filtro') return null
@@ -99,11 +105,13 @@ export function speechPlan({ tone = 'sem-filtro', examples, seed = 0, served } =
     base,
     nickname: pool[k % pool.length],
     format: FORMAT_HINTS[k % FORMAT_HINTS.length],
+    spice: SPICES[k % SPICES.length],
   }
 }
 
 /**
- * A fala adaptada precisa continuar sendo a aprovada: metade ou mais das palavras dela.
+ * A fala adaptada precisa continuar parente da aprovada: 3 em cada 10 palavras dela ou mais (com metade,
+ * o filtro descartava falas que o dono aprovou).
  * @param {string} text
  * @param {string} base
  * @returns {boolean}
@@ -114,7 +122,7 @@ export function keepsBase(text, base) {
   const got = words(text)
   let kept = 0
   for (const w of from) if (got.has(w)) kept++
-  return from.size > 0 && kept / from.size >= 0.5
+  return from.size > 0 && kept / from.size >= 0.3
 }
 
 /** "uxo" e sufixo: solto na frase e erro. @param {string} text */
@@ -320,11 +328,12 @@ function systemText(tone, length, person, examples, plan) {
       ? 'Tamanho longo: até 200 caracteres, no máximo três frases curtas.'
       : 'Tamanho: até 100 caracteres, em frases curtas.',
     ...(wild
-      ? ['O sufixo uxo vai grudado no fim de uma palavra inteira (pixzuxo, mentirozuxo), nunca sozinho. No máximo um por fala.']
+      ? ['O sufixo uxo vai grudado no fim de uma palavra inteira (pixzuxo, mentirozuxo), nunca sozinho, e concorda: palavra ou pessoa no feminino leva uxa (safaduxa, conspiraçãozuxa). No máximo um por fala.']
       : []),
     ...(wild && plan?.mode === 'livre'
       ? [`Se usar apelido, use só este: ${plan.nickname}. Jeito desta vez: ${plan.format}.`]
       : []),
+    ...(wild && plan?.spice ? [`Tempero desta vez: ${plan.spice}.`] : []),
     'Use SÓ os números que aparecem no bloco de dados, copiados como estão, nunca por extenso. Cite só lojas, categorias e metas do bloco.',
     'Fale com quem lê e nunca cite a outra pessoa nem a relação do casal. Em qualquer tom, nada de ofensa a raça, cor, orientação sexual, religião, deficiência, origem ou grupo.',
     ...(wild ? ['Não chame ninguém de trapo nem de maltrapilho (apelido vetado); prefira safaduxo.'] : []),

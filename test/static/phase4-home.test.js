@@ -62,14 +62,16 @@ test('VintemHomeBalloon: sem temporizador de sumico e com os atributos de teste'
   assert.match(src, /onDismiss=\{dismiss\}/)
 })
 
-test('useHomeVintem: humor puro, toque por situationForTap e giro so sem movimento reduzido', () => {
+test('useHomeVintem: humor puro, toque fala um fato de agora, sem giro', () => {
   const src = code(HOOK)
-  for (const needle of ['situationForTap', 'deriveVintemState', 'useReducedMotion']) {
+  for (const needle of ['situationForTap', 'deriveVintemState', 'cutucar()']) {
     assert.ok(src.includes(needle), `${HOOK} sem "${needle}"`)
   }
   assert.match(src, /announce:\s*false/, 'a fala de entrada deve usar announce: false')
   assert.match(src, /announce:\s*true/, 'a fala por toque deve usar announce: true')
-  assert.match(src, /!reduced\s*&&[\s\S]{0,80}handle/, 'o giro precisa ficar atras de !reduced')
+  // o dono trocou o giro de lado por um empurrao, que fica no slot e respeita movimento reduzido
+  assert.doesNotMatch(src, /setTurn/, 'o toque voltou a virar o porco de lado')
+  assert.match(code('src/components/vintem/VintemSlot.tsx'), /!reduced\s*&&/, 'o empurrao precisa ficar atras de !reduced')
   assert.doesNotMatch(src, /Math\.random/, 'acaso nativo no hook')
 })
 

@@ -9,11 +9,12 @@ import { normalize } from './classify.js'
 
 /** @type {ReadonlyArray<[LineMood, RegExp]>} */
 const RULES = [
-  ['sonolento', /acordei|acorda agora|cochil|dormindo|sonhei|sonho\b|bocej|zzz|bom diazuxo/],
-  ['feliz', /g[o]{2,}l|conta paga|paga!|foi paga|meta batida|bate(u)? \S+!|rebol|orgulh|beijo de focinho|que evolucao|gordinho e feliz|aura infinita|me cagar de felicidade|tá podre de rico|nadando em grana/],
-  ['bravo', /chacin|que porra|estourou|estour[ae]|caloteir|mordo|rosnar|cago n|chuto|come(r)? (tua|teu)|arranco|mastig|fodeu|vai tomar|roubar|paga essa|paga agora|paga,? porra|\bou eu\b|escandalo|barraco|desgraca|safadeza/],
+  // chapado fica de olho caido
+  ['sonolento', /poduxo|chapad|fumei|fritadux|acordei|acorda agora|cochil|dormindo|sonhei|sonho\b|bocej|zzz|bom diazuxo/],
+  ['feliz', /g[o]{2,}l|conta paga|paga!|foi paga|meta batida|bate(u)? \S+!|rebol|orgulh|beijo de focinho|que evolucao|gordinho e feliz|aura infinita|me cagar de felicidade|folgad|obrigad|emocion|sobrando|de sobra|bonit|caiu a grana|tá podre de rico|nadando em grana/],
+  ['bravo', /chacin|que porra|estourou|estour[ae]|caloteir|mordo|rosnar|cago n|chuto|come(r)? (tua|teu)|arranco|mastig|fodeu|vai tomar|roubar|porra|caralho|merda|paga essa|paga agora|paga,? porra|\bou eu\b|escandalo|barraco|desgraca|safadeza/],
   ['surpreso', /piripaque|morree|socorro|mano\. mano|puta que pariu|\?!|aaaa|plantao|caiu \S*r\$|ronc\. ronc|em choque|susto|nao tankei/],
-  ['triste', /saudade|sozinh|abandon|carente|senti falta|sumiu|sumido|choro|chorando|triste|magr|vazio|miojo|farelo|bolacha agua|liso|tô calmo|to calmo|nem um|devolve/],
+  ['triste', /saudade|sozinh|abandon|carente|senti falta|me ama|so queria|sumiu|sumido|choro|chorando|triste|magr|vazio|miojo|farelo|bolacha agua|liso|tô calmo|to calmo|nem um|devolve/],
   ['atento', /de olho|vigiando|cuidado|segura|calma ai|freia|nao mosca|vence (hoje|amanha)|faltam? (um|dois|tres|\S+ dias?)/],
   ['feliz', /hihi|huehue|hehe|kkk|rsrs|ahah|gostos|delicia|engordei|ronc ronc/],
 ]
@@ -28,5 +29,6 @@ export function moodOfLine(text) {
   const plain = normalize(text)
   const raw = text.toLowerCase()
   for (const [mood, re] of RULES) if (re.test(plain) || re.test(raw)) return mood
-  return 'neutro'
+  // gritando em caixa alta: bronca
+  return /\p{Lu}{4,}/u.test(text) ? 'bravo' : 'neutro'
 }

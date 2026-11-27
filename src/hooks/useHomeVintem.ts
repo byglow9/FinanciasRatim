@@ -4,7 +4,6 @@ import { useCycle } from '@/contexts/CycleContext'
 import { useVintem, type SlotsRaw } from '@/contexts/VintemContext'
 import type { VintemHandle, VintemState } from '@/components/vintem/Vintem'
 import { useOincFacts } from '@/hooks/useOincFacts'
-import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { useVintemInsights } from '@/hooks/useVintemInsights'
 import type { CategoryDef, Transaction } from '@/types'
 import type { useCycleBudget } from '@/hooks/useCycleBudget'
@@ -44,8 +43,6 @@ let openingAsked = false
 // Entrada no sem filtro (07.1, D-10, D-17): a primeira Home da carga fala pela entrada do provedor, sem pedir a IA.
 let entradaFalada = false
 
-/** Tempo em perfil antes de voltar (o giro todo dura cerca de 1,6 s). */
-const TURN_HOLD_MS = 600
 
 type View = NonNullable<Budget['view']>
 
@@ -133,7 +130,7 @@ function slotsFor(
  * Chamado antes dos retornos antecipados da pagina; tudo sai da `view`, nada de variavel tardia.
  */
 export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: UseHomeVintemArgs): HomeVintem {
-  const { tone, speak, speakAi, entrar, canVote, slot, cheer, setFacts } = useVintem()
+  const { tone, speak, speakAi, entrar, canVote, slot, cheer, setFacts, cutucar } = useVintem()
   const { categoryDefs } = useArea()
   const { now, viewPerson, isCurrent } = useCycle()
   const todayKey = dayKeyOf(now)
@@ -288,41 +285,19 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     })
   }, [bankArrival, view, enabled, readOnly, entryKey, slot, speakAi, categoryDefs, insights, todayKey, transactions])
 
-  // Toque: sem view, ciclo passado, sem renda ou somente leitura nao fala nem gira. Os temporizadores
-  // do giro ficam em ref e sao limpos ao desmontar.
-  const reduced = useReducedMotion()
-  const turnTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const turned = useRef<VintemHandle | null>(null)
-  useEffect(
-    () => () => {
-      if (turnTimer.current !== null) clearTimeout(turnTimer.current)
-      turned.current?.setTurn(false)
-    },
-    [],
-  )
+  // Cutucao: sem view, ciclo passado, sem renda ou somente leitura nao fala. O empurrao visual e do
+  // VintemSlot; aqui so a fala: um fato de agora pelo acervo e, sem ele, a do banco da situacao do mes.
   const onTap = useCallback(
     (handle: VintemHandle | null) => {
       if (view === null || !enabled || readOnly || view.isPast || !view.income.hasIncome) return
+      // Acorda o sonolento, ou so pisca.
+      handle?.touch()
+      if (cutucar()) return
       const tapSituation = situationForTap(facts)
       if (tapSituation === null) return
-      const raw = slotsFor(tapSituation, null, view, categoryDefs)
-      // Acordou o sonolento: o susto do proprio Vintem basta, sem giro.
-      if (handle?.touch()) {
-        speak({ situation: tapSituation, raw, announce: true })
-        return
-      }
-      if (!reduced && handle) {
-        if (turnTimer.current !== null) clearTimeout(turnTimer.current)
-        handle.setTurn(true)
-        turned.current = handle
-        turnTimer.current = setTimeout(() => {
-          handle.setTurn(false)
-          turnTimer.current = null
-        }, TURN_HOLD_MS)
-      }
-      speak({ situation: tapSituation, raw, announce: true })
+      speak({ situation: tapSituation, raw: slotsFor(tapSituation, null, view, categoryDefs), announce: true })
     },
-    [view, enabled, readOnly, facts, categoryDefs, speak, reduced],
+    [view, enabled, readOnly, facts, categoryDefs, speak, cutucar],
   )
 
   return { ...mood, onTap }

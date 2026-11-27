@@ -183,6 +183,8 @@ export interface VintemContextType {
   onGoal: (args: { valorCents: number }) => void
   /** Conta fixa marcada como paga: festa e fala do acervo, so no sem filtro. Desmarcar nao chama. */
   onBillPaid: (args: { name: string; valorCents: number }) => void
+  /** Cutucao no porco: fala do acervo sobre um fato de agora. Falso quando nao tem o que dizer. */
+  cutucar: () => boolean
   /** Comemoracao ativa para o humor de fundo da Home; o nucleo garante que um estouro vence a festa. */
   cheer: Cheer | null
   /** Guarda os fatos locais da propria pessoa para as falas (D-19): so em memoria, sem novo render. */
@@ -592,6 +594,21 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     recentScenes.current = [...recentScenes.current.filter((c) => c !== cena), cena].slice(-RECENT_SCENES)
   }, [])
 
+  // Cutucao no porco: uma fala do acervo sobre um fato de agora (saldo, conta, meta, agenda, anotacao),
+  // sem repetir a cena anterior. Falso quando nao ha fato ou fala; nunca pede a IA.
+  const cutucar = useCallback((): boolean => {
+    if (tone !== 'sem-filtro') return false
+    rand.current ??= mulberry32(Date.now())
+    const fact = pickFact(
+      currentFacts().filter((f) => f.cena !== 'entrou'),
+      { recentScenes: recentScenes.current, rand: rand.current },
+    )
+    if (fact === null) return false
+    const said = speak({ situation: 'espiar', cena: fact.cena, slots: fact.slots, conds: fact.conds, announce: true })
+    if (said) lembrar(fact.cena)
+    return said
+  }, [tone, currentFacts, speak, lembrar])
+
   // Fala sem gatilho da IA (D-12 b): so o texto dela, que cobre anotacoes, agenda e padroes. Sem texto nada
   // aparece por aqui, e o verdadeiro devolvido diz que a IA nao respondeu. Se um lancamento ou uma edicao
   // abriu durante a espera, a vez passa.
@@ -840,10 +857,11 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       onLaunched,
       onGoal,
       onBillPaid,
+      cutucar,
       cheer,
       setFacts,
     }),
-    [tone, speech, speak, draw, speakText, speakAi, entrar, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, onBillPaid, cheer, setFacts],
+    [tone, speech, speak, draw, speakText, speakAi, entrar, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, onBillPaid, cutucar, cheer, setFacts],
   )
 
   return (

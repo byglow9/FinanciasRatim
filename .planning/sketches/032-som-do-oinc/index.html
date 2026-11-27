@@ -5,130 +5,284 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Som do OINC</title>
 <style>
-  body { margin: 0; padding: 24px 16px 48px; background: #f5ecdb; color: #1f1f17; font: 16px/1.4 system-ui, sans-serif; }
-  main { max-width: 520px; margin: 0 auto; }
-  h1 { font-size: 24px; margin: 0 0 4px; }
-  p { margin: 0 0 16px; color: #5c604c; }
-  .op { display: flex; gap: 12px; align-items: center; background: #faf5e9; border-radius: 16px; padding: 12px; margin-bottom: 12px; }
-  .op strong { display: block; }
-  .op small { color: #5c604c; }
-  .op div { flex: 1; }
-  button { min-width: 88px; min-height: 48px; border: 0; border-radius: 24px; background: #2f6f3e; color: #fbf6ea; font: 700 16px system-ui; cursor: pointer; }
-  label { display: block; margin: 0 0 16px; }
-  select { font: inherit; padding: 8px; border-radius: 8px; width: 100%; }
+  body { margin: 0; padding: 0 16px 48px; background: #f5ecdb; color: #1f1f17; font: 16px/1.4 system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 16px 0 4px; }
+  h2 { font-size: 16px; margin: 20px 0 8px; }
+  p { margin: 0 0 8px; color: #5c604c; }
+  #palco { position: sticky; top: 0; z-index: 2; background: #f5ecdb; padding: 8px 0; border-bottom: 1px solid #e0d6bf; }
+  #cena { position: relative; height: 210px; }
+  #porco { position: absolute; bottom: 0; left: calc(50% - 110px); width: 160px; transform-origin: 50% 100%; }
+  #balao { position: absolute; left: calc(50% + 6px); bottom: 128px; width: 190px; background: #2f6f3e; color: #fbf6ea; border-radius: 16px 16px 16px 6px; padding: 8px 10px; font-size: 14px; line-height: 1.3; }
+  #balao::after { content: ""; position: absolute; left: 2px; bottom: -12px; border: 7px solid transparent; border-top-color: #2f6f3e; border-left-color: #2f6f3e; transform: skewX(-18deg); }
+  .linha { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #2f6f3e; background: transparent; color: #2f6f3e; font: 600 14px system-ui; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: #2f6f3e; color: #fbf6ea; }
+  .op { display: flex; gap: 12px; align-items: center; background: #faf5e9; border-radius: 16px; padding: 12px; margin-bottom: 8px; }
+  .op strong { display: block; } .op small { color: #5c604c; } .op div { flex: 1; }
+  .op button { min-width: 80px; min-height: 48px; border: 0; border-radius: 24px; background: #2f6f3e; color: #fbf6ea; font: 700 16px system-ui; cursor: pointer; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Qual é a voz do porco?</h1>
-  <p>Aumente o volume, toque em cada opção e me diga a letra. Dá para pedir mistura, como "B com o oinc da F".</p>
-  <label>Tamanho da fala
-    <select id="len">
-      <option value="14">Curtinha</option>
-      <option value="40" selected>Normal</option>
-      <option value="90">Comprida</option>
-    </select>
-  </label>
+  <h1>Voz e jeito de falar do porco</h1>
+  <p>Aumente o volume. Escolha a expressão e a animação, depois toque nos sons. Me diga: letra do som e número da animação.</p>
+
+  <div id="palco">
+    <div id="cena">
+      <svg id="porco" viewBox="0 0 160 130" aria-hidden="true">
+        <ellipse cx="80" cy="124" rx="52" ry="5" fill="#00000018"/>
+        <path d="M38 48 L34 12 Q52 16 64 34 Z M122 48 L126 12 Q108 16 96 34 Z" fill="#2f6f3e"/>
+        <path d="M80 28 C124 28 142 52 142 80 C142 110 118 122 80 122 C42 122 18 110 18 80 C18 52 36 28 80 28 Z" fill="#2f6f3e"/>
+        <path d="M66 38 Q80 42 94 38" stroke="#17391f" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <g id="olhos"></g>
+        <path id="sobE" stroke="#fbf6ea" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path id="sobD" stroke="#fbf6ea" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse id="lagrima" cx="52" cy="84" rx="4" ry="6" fill="#7dd3fc" display="none"/>
+        <g id="focinho">
+          <ellipse cx="80" cy="91" rx="18" ry="12" fill="#4d8559"/>
+          <ellipse cx="73" cy="91" rx="3" ry="4.5" fill="#17391f"/><ellipse cx="87" cy="91" rx="3" ry="4.5" fill="#17391f"/>
+        </g>
+        <ellipse id="boca" cx="80" cy="110" rx="9" ry="1" fill="#17391f" opacity="0"/>
+      </svg>
+      <div id="balao">Lazer estourou de novo, sua pamonha. KKKKK</div>
+    </div>
+    <div class="linha" id="humores"></div>
+    <div class="linha" id="anims"></div>
+  </div>
+
+  <h2>Sons</h2>
   <div id="lista"></div>
 </main>
 <script>
 (function () {
-  var ctx = null
-  var live = null
+  var ctx = null, master = null, M = null
   function rnd(a, b) { return a + Math.random() * (b - a) }
+  var $ = function (id) { return document.getElementById(id) }
 
-  function chain(freqs, q) {
-    var out = ctx.createGain(); out.connect(ctx.destination)
-    var input = ctx.createGain()
-    freqs.forEach(function (f) {
-      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q
-      input.connect(bp); bp.connect(out)
-    })
-    if (!freqs.length) input.connect(out)
-    return { input: input, out: out }
+  // ---- expressoes: o tom, a velocidade e o rosto mudam juntos
+  var MOODS = {
+    neutro:    { nome: 'Neutro',    pitch: 1,    speed: 1,    bend: 1,    vib: 0,  sujo: 0,  vol: 1,   fala: 'Lembrei da fatura. Não vou dizer valor, mas ela lembra de ti.' },
+    feliz:     { nome: 'Feliz',     pitch: 1.4,  speed: 0.85, bend: 1.15, vib: 0,  sujo: 0,  vol: 1,   fala: 'Conta paga! Tô rebolando peladuxo, caralho! rsrsrs' },
+    bravo:     { nome: 'Bravo',     pitch: 0.62, speed: 0.82, bend: 0.85, vib: 0,  sujo: 18, vol: 1.2, fala: 'Estourou o Lazer. QUE PORRA É ESSA, sua pamonha?' },
+    triste:    { nome: 'Triste',    pitch: 0.82, speed: 1.35, bend: 0.72, vib: 9,  sujo: 0,  vol: 0.8, fala: 'Beleza. Tô calmo. Nem senti falta do meu dindinzuxo.' },
+    sonolento: { nome: 'Sonolento', pitch: 0.72, speed: 1.65, bend: 0.82, vib: 3,  sujo: 0,  vol: 0.6, fala: 'Ronc... acordei agora. Fala baixo, criatura.' },
+    surpreso:  { nome: 'Surpreso',  pitch: 1.65, speed: 0.9,  bend: 1.45, vib: 0,  sujo: 0,  vol: 1,   fala: 'R$ 1.100?! Ronc. Ronc. É o porco tendo um piripaque.' },
+  }
+  var mood = 'neutro', anim = '1'
+
+  function rosto() {
+    var o = $('olhos'), h = ''
+    var eye = function (x, r) { return '<ellipse cx="' + x + '" cy="68" rx="11" ry="' + r + '" fill="#fff"/><circle cx="' + x + '" cy="69" r="' + Math.min(6, r - 1) + '" fill="#17391f"/>' }
+    var arco = function (x) { return '<path d="M' + (x - 10) + ' 72 Q' + x + ' 58 ' + (x + 10) + ' 72" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>' }
+    var fechado = function (x) { return '<path d="M' + (x - 10) + ' 68 Q' + x + ' 76 ' + (x + 10) + ' 68" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>' }
+    if (mood === 'feliz') h = arco(58) + arco(102)
+    else if (mood === 'sonolento') h = fechado(58) + fechado(102)
+    else if (mood === 'surpreso') h = eye(58, 14) + eye(102, 14)
+    else h = eye(58, 11) + eye(102, 11)
+    o.innerHTML = h
+    var sob = {
+      neutro: ['M46 51 Q57 46 68 50', 'M92 50 Q103 46 114 51'],
+      feliz: ['M47 50 Q58 43 69 49', 'M91 49 Q102 43 113 50'],
+      bravo: ['M45 45 L70 58', 'M115 45 L90 58'],
+      triste: ['M46 56 L68 46', 'M114 56 L92 46'],
+      sonolento: ['M47 55 L68 55', 'M92 55 L113 55'],
+      surpreso: ['M47 44 Q58 36 69 44', 'M91 44 Q102 36 113 44'],
+    }[mood]
+    $('sobE').setAttribute('d', sob[0]); $('sobD').setAttribute('d', sob[1])
+    $('lagrima').setAttribute('display', mood === 'triste' ? 'inline' : 'none')
+    $('balao').textContent = MOODS[mood].fala
   }
 
-  function tone(dest, type, t, dur, from, to, vol) {
-    var o = ctx.createOscillator(), g = ctx.createGain()
+  // ---- animacoes
+  var ANIMS = { '1': 'Quicar (o do app)', '2': 'Boquinha', '3': 'Focinho mexendo', '4': 'Tudo junto' }
+  var vivas = []
+  function animar(seg) {
+    vivas.forEach(function (a) { a.cancel() }); vivas = []
+    var m = MOODS[mood], passo = 190 * m.speed, vezes = Math.max(1, Math.round(seg * 1000 / passo))
+    var go = function (el, frames, dur) { vivas.push(el.animate(frames, { duration: dur, iterations: Math.max(1, Math.round(seg * 1000 / dur)) })) }
+    if (anim === '1' || anim === '4') {
+      var tremor = mood === 'bravo' ? ' rotate(2.5deg)' : ''
+      go($('porco'), [{ transform: 'scale(1,1)' }, { transform: 'scale(1.05,.93)' + tremor }, { transform: 'scale(.97,1.04)' }, { transform: 'scale(1,1)' }], passo)
+    }
+    if (anim === '2' || anim === '4') {
+      var b = $('boca')
+      b.setAttribute('opacity', '1')
+      b.style.transformOrigin = '80px 110px'
+      go(b, [{ transform: 'scale(1,1)' }, { transform: 'scale(1.1,7)' }, { transform: 'scale(.8,3)' }, { transform: 'scale(1,1)' }], passo * 0.9)
+      var ultima = vivas[vivas.length - 1]
+      ultima.onfinish = function () { b.setAttribute('opacity', '0') }
+    } else $('boca').setAttribute('opacity', '0')
+    if (anim === '3' || anim === '4') {
+      go($('focinho'), [{ transform: 'translate(0,0)' }, { transform: 'translate(0,-3px)' }, { transform: 'translate(1.5px,1px)' }, { transform: 'translate(-1.5px,0)' }, { transform: 'translate(0,0)' }], passo * 0.8)
+    }
+  }
+
+  // ---- sintese
+  function curva(k) {
+    var c = new Float32Array(256)
+    for (var i = 0; i < 256; i++) { var x = i / 128 - 1; c[i] = (3 + k) * x / (3 + k * Math.abs(x)) }
+    return c
+  }
+  function filtro(freqs, q) {
+    var input = ctx.createGain()
+    if (!freqs.length) { input.connect(master); return input }
+    freqs.forEach(function (f) {
+      var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * Math.sqrt(M.pitch); bp.Q.value = q
+      input.connect(bp); bp.connect(master)
+    })
+    return input
+  }
+  // nota com o humor aplicado: tom, inclinacao e tremida
+  function nota(dest, type, t, dur, from, to, vol) {
+    var o = ctx.createOscillator(), g = ctx.createGain(), f = from * M.pitch
     o.type = type
-    o.frequency.setValueAtTime(from, t)
-    o.frequency.exponentialRampToValueAtTime(to, t + dur)
+    o.frequency.setValueAtTime(f, t)
+    o.frequency.exponentialRampToValueAtTime(Math.max(30, to * M.pitch * M.bend), t + dur)
+    if (M.vib) {
+      var lfo = ctx.createOscillator(), amp = ctx.createGain()
+      lfo.frequency.value = M.vib; amp.gain.value = f * 0.06
+      lfo.connect(amp); amp.connect(o.frequency); lfo.start(t); lfo.stop(t + dur)
+    }
     g.gain.setValueAtTime(0.0001, t)
     g.gain.exponentialRampToValueAtTime(vol, t + 0.012)
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.02)
   }
-
-  function snort(t, dur, vol) {
+  function ruido(t, dur, vol, corte, tremor) {
     var n = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0)
-    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (Math.sin(i / ctx.sampleRate * 2 * Math.PI * 34) > 0 ? 1 : 0.15)
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (Math.sin(i / ctx.sampleRate * 2 * Math.PI * tremor) > 0 ? 1 : 0.15)
     var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain()
-    src.buffer = buf; f.type = 'lowpass'; f.frequency.value = 620
+    src.buffer = buf; f.type = 'lowpass'; f.frequency.value = corte * M.pitch
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
-    src.connect(f); f.connect(g); g.connect(live.out); src.start(t)
+    src.connect(f); f.connect(g); g.connect(master); src.start(t)
   }
 
-  var VOWELS = [[800, 1200], [450, 1900], [320, 2300], [500, 900], [350, 700]]
+  var VOGAIS = { a: [800, 1200], e: [450, 1900], i: [320, 2300], o: [500, 900], u: [350, 700] }
+  function sortear() { var k = Object.keys(VOGAIS); return VOGAIS[k[Math.floor(Math.random() * k.length)]] }
 
-  var OPTIONS = [
-    ['A', 'Resmungo (o que está agora)', 'Sílabas rápidas e roucas.', function (t, n) {
-      live = chain([850], 1.4)
-      for (var i = 0; i < n; i++) { var p = rnd(190, 410); tone(live.input, i % 7 ? 'sawtooth' : 'square', t + i * 0.095, 0.076, p, p * (i % 2 ? 0.72 : 1.35), 0.12) }
+  // cada som recebe (inicio, texto) e devolve quando termina
+  var SONS = [
+    ['A', 'Resmungo (o do app agora)', 'Sílabas rápidas e roucas.', function (t, n) {
+      var d = filtro([850], 1.4)
+      for (var i = 0; i < n; i++) { var p = rnd(190, 410); nota(d, i % 7 ? 'sawtooth' : 'square', t, 0.076 * M.speed, p, p * (i % 2 ? 0.72 : 1.35), 0.12); t += 0.095 * M.speed }
+      return t
     }],
-    ['B', 'Falador de joguinho', 'Estilo Overcooked: "blá-bli-bló", com vogais.', function (t, n) {
-      var at = t
-      for (var i = 0; i < n; i++) {
-        var v = VOWELS[Math.floor(Math.random() * VOWELS.length)], c = chain(v, 6), dur = rnd(0.08, 0.15), p = rnd(170, 290)
-        tone(c.input, 'sawtooth', at, dur, p, p * rnd(0.8, 1.3), 0.5)
-        at += dur + (Math.random() < 0.15 ? 0.09 : 0.012)
-      }
+    ['B', 'Falador de joguinho', 'Estilo Overcooked: "blá-bli-bló".', function (t, n) {
+      for (var i = 0; i < n; i++) { var dur = rnd(0.08, 0.15) * M.speed, p = rnd(170, 290); nota(filtro(sortear(), 6), 'sawtooth', t, dur, p, p * rnd(0.8, 1.3), 0.5); t += dur + (Math.random() < 0.15 ? 0.09 : 0.012) }
+      return t
     }],
-    ['C', 'Fofinho agudo', 'Bipes curtos e fininhos, bem rápidos.', function (t, n) {
-      live = chain([], 1)
-      for (var i = 0; i < Math.round(n * 1.4); i++) { var p = rnd(620, 1100); tone(live.input, 'triangle', t + i * 0.062, 0.05, p, p * 1.12, 0.16) }
+    ['C', 'Fofinho agudo', 'Bipes curtos e fininhos.', function (t, n) {
+      var d = filtro([], 1)
+      for (var i = 0; i < Math.round(n * 1.4); i++) { var p = rnd(620, 1100); nota(d, 'triangle', t, 0.05 * M.speed, p, p * 1.12, 0.16); t += 0.062 * M.speed }
+      return t
     }],
-    ['D', 'Porcão rabugento', 'Grave, arrastado, de mau humor.', function (t, n) {
-      live = chain([420, 900], 3)
-      for (var i = 0; i < Math.round(n * 0.7); i++) { var p = rnd(85, 150); tone(live.input, 'sawtooth', t + i * 0.15, 0.13, p, p * rnd(0.7, 1.1), 0.45) }
+    ['D', 'Porcão rabugento', 'Grave e arrastado.', function (t, n) {
+      var d = filtro([420, 900], 3)
+      for (var i = 0; i < Math.round(n * 0.7); i++) { var p = rnd(85, 150); nota(d, 'sawtooth', t, 0.13 * M.speed, p, p * rnd(0.7, 1.1), 0.45); t += 0.15 * M.speed }
+      return t
     }],
     ['E', 'Roncos', 'Só focinho: ronc, ronc, snif.', function (t, n) {
-      live = chain([], 1)
-      var count = Math.max(2, Math.round(n / 4))
-      for (var i = 0; i < count; i++) snort(t + i * 0.24, i % 3 === 2 ? 0.09 : 0.19, 0.5)
+      for (var i = 0; i < Math.max(2, Math.round(n / 4)); i++) { ruido(t, (i % 3 === 2 ? 0.09 : 0.19) * M.speed, 0.5, 620, 34); t += 0.24 * M.speed }
+      return t
     }],
     ['F', 'Oinc oinc', 'Gritinho de porco, anasalado.', function (t, n) {
-      live = chain([1100, 2100], 5)
-      var count = Math.max(1, Math.round(n / 6))
-      for (var i = 0; i < count; i++) {
-        var s = t + i * 0.3, p = rnd(260, 340)
-        tone(live.input, 'sawtooth', s, 0.09, p, p * 1.9, 0.5)
-        tone(live.input, 'sawtooth', s + 0.09, 0.15, p * 1.9, p * 0.8, 0.5)
-      }
+      var d = filtro([1100, 2100], 5)
+      for (var i = 0; i < Math.max(1, Math.round(n / 6)); i++) { var p = rnd(260, 340); nota(d, 'sawtooth', t, 0.09 * M.speed, p, p * 1.9, 0.5); nota(d, 'sawtooth', t + 0.09 * M.speed, 0.15 * M.speed, p * 1.9, p * 0.8, 0.5); t += 0.3 * M.speed }
+      return t
     }],
-    ['G', 'Oinc e depois fala', 'Um ronc de abertura e a fala de joguinho.', function (t, n) {
-      live = chain([], 1)
-      snort(t, 0.17, 0.5)
-      OPTIONS[1][3](t + 0.24, Math.max(3, n - 3))
+    ['G', 'Ronco e depois fala', 'Um ronc de abertura e a fala de joguinho.', function (t, n) {
+      ruido(t, 0.17 * M.speed, 0.5, 620, 34)
+      return SONS[1][3](t + 0.24 * M.speed, Math.max(3, n - 3))
+    }],
+    ['H', 'Língua de bichinho', 'Cada letra vira uma sílaba, tipo jogo de vila.', function (t, n, texto) {
+      var letras = texto.toLowerCase().replace(/[^a-z]/g, '').slice(0, Math.round(n * 1.8))
+      for (var i = 0; i < letras.length; i++) { var c = letras.charCodeAt(i) - 97, p = 330 + c * 17; nota(filtro(VOGAIS['aeiou'[c % 5]], 4), 'square', t, 0.052 * M.speed, p, p, 0.5); t += 0.058 * M.speed }
+      return t
+    }],
+    ['I', 'Trombone "uá uá"', 'A professora dos desenhos antigos.', function (t, n) {
+      for (var i = 0; i < Math.round(n * 0.6); i++) {
+        var dur = rnd(0.13, 0.24) * M.speed, lp = ctx.createBiquadFilter(), p = rnd(140, 230)
+        lp.type = 'lowpass'; lp.Q.value = 9
+        lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(1500 * M.pitch, t + dur * 0.5); lp.frequency.exponentialRampToValueAtTime(350, t + dur)
+        lp.connect(master); nota(lp, 'sawtooth', t, dur, p, p * 0.92, 0.22); t += dur + 0.02
+      }
+      return t
+    }],
+    ['J', 'Videogame antigo', 'Bipes de caixa de diálogo 8 bits.', function (t, n) {
+      var d = filtro([], 1)
+      for (var i = 0; i < Math.round(n * 1.3); i++) { var p = [262, 294, 330, 392, 440][Math.floor(Math.random() * 5)]; nota(d, 'square', t, 0.038 * M.speed, p, p, 0.08); t += 0.066 * M.speed }
+      return t
+    }],
+    ['K', 'Bolhinhas', 'Gotinhas pulando.', function (t, n) {
+      var d = filtro([], 1)
+      for (var i = 0; i < n; i++) { var p = rnd(250, 520); nota(d, 'sine', t, 0.07 * M.speed, p, p * 2.2, 0.3); t += rnd(0.075, 0.12) * M.speed }
+      return t
+    }],
+    ['L', 'Cornetinha de festa', 'Zumbido de kazoo, bem debochado.', function (t, n) {
+      var d = filtro([1400], 2.5)
+      for (var i = 0; i < Math.round(n * 0.8); i++) { var dur = rnd(0.07, 0.17) * M.speed, p = rnd(220, 360); nota(d, 'sawtooth', t, dur, p, p * rnd(0.85, 1.2), 0.3); nota(d, 'square', t, dur, p * 1.012, p, 0.12); t += dur + 0.015 }
+      return t
+    }],
+    ['M', 'Cofre falante', 'Moedinhas tilintando: porco de dinheiro.', function (t, n) {
+      var d = filtro([], 1)
+      for (var i = 0; i < Math.round(n * 0.8); i++) { var p = rnd(1300, 2200); nota(d, 'sine', t, 0.09 * M.speed, p, p, 0.18); nota(d, 'sine', t + 0.012, 0.07 * M.speed, p * 1.52, p * 1.52, 0.1); t += rnd(0.07, 0.13) * M.speed }
+      return t
+    }],
+    ['N', 'Brinquedo de apertar', 'Apitinho de borracha.', function (t, n) {
+      var d = filtro([1800], 3)
+      for (var i = 0; i < Math.round(n * 0.6); i++) { var p = rnd(600, 900); nota(d, 'sawtooth', t, 0.08 * M.speed, p, p * 1.6, 0.35); nota(d, 'sawtooth', t + 0.085 * M.speed, 0.07 * M.speed, p * 1.5, p * 0.8, 0.28); t += rnd(0.17, 0.22) * M.speed }
+      return t
+    }],
+    ['O', 'Cofre e fala', 'Uma moeda cai e ele sai falando.', function (t, n) {
+      var d = filtro([], 1)
+      nota(d, 'sine', t, 0.18, 1760, 1760, 0.2); nota(d, 'sine', t + 0.07, 0.22, 2640, 2640, 0.14)
+      return SONS[1][3](t + 0.26, Math.max(3, n - 2))
     }],
   ]
 
-  var list = document.getElementById('lista')
-  OPTIONS.forEach(function (op) {
+  function tocar(som) {
+    if (ctx) ctx.close()
+    ctx = new AudioContext()
+    M = MOODS[mood]
+    var vol = ctx.createGain(); vol.gain.value = M.vol; vol.connect(ctx.destination)
+    if (M.sujo) { var sh = ctx.createWaveShaper(); sh.curve = curva(M.sujo); sh.connect(vol); master = ctx.createGain(); master.connect(sh) }
+    else { master = ctx.createGain(); master.connect(vol) }
+    var texto = M.fala, n = Math.max(5, Math.min(18, Math.round(texto.length * 0.23)))
+    var t0 = ctx.currentTime + 0.05
+    var fim = som[3](t0, n, texto)
+    animar(fim - t0)
+  }
+
+  function chips(alvo, itens, atual, escolher) {
+    Object.keys(itens).forEach(function (k) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = itens[k]
+      b.setAttribute('aria-pressed', String(k === atual))
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call($(alvo).children, function (c) { c.setAttribute('aria-pressed', 'false') })
+        b.setAttribute('aria-pressed', 'true'); escolher(k)
+      })
+      $(alvo).appendChild(b)
+    })
+  }
+
+  var nomes = {}; Object.keys(MOODS).forEach(function (k) { nomes[k] = MOODS[k].nome })
+  var ultimo = SONS[0]
+  chips('humores', nomes, mood, function (k) { mood = k; rosto(); tocar(ultimo) })
+  var rotulos = {}; Object.keys(ANIMS).forEach(function (k) { rotulos[k] = k + '. ' + ANIMS[k] })
+  chips('anims', rotulos, anim, function (k) { anim = k; tocar(ultimo) })
+
+  SONS.forEach(function (som) {
     var row = document.createElement('div'); row.className = 'op'
     var info = document.createElement('div')
-    var name = document.createElement('strong'); name.textContent = op[0] + '. ' + op[1]
-    var desc = document.createElement('small'); desc.textContent = op[2]
-    info.appendChild(name); info.appendChild(desc)
+    var a = document.createElement('strong'); a.textContent = som[0] + '. ' + som[1]
+    var s = document.createElement('small'); s.textContent = som[2]
+    info.appendChild(a); info.appendChild(s)
     var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Tocar'
-    b.addEventListener('click', function () {
-      if (ctx) ctx.close()
-      ctx = new AudioContext()
-      var n = Math.max(3, Math.min(23, Math.round(Number(document.getElementById('len').value) * 0.23)))
-      live = chain([], 1)
-      op[3](ctx.currentTime + 0.05, n)
-    })
-    row.appendChild(info); row.appendChild(b); list.appendChild(row)
+    b.addEventListener('click', function () { ultimo = som; tocar(som) })
+    row.appendChild(info); row.appendChild(b); $('lista').appendChild(row)
   })
+  rosto()
 })()
 </script>
 </body>

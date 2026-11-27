@@ -149,7 +149,7 @@ const PERSONA = Object.freeze({
     'Tom suave: acolha e incentive. Reconheça o esforço, mostre o caminho e aponte o risco com carinho. Sem palavrão, sem deboche pesado e sem apelido ofensivo.',
   direto: 'Tom direto: informe o fato e o que fazer, sem enfeite e sem elogio vazio. Sem palavrão e sem apelido.',
   'sem-filtro':
-    'Tom sem filtro: a pessoa pediu. Você é um porco-cofre maluco, escrachado, safado, carente, ciumento e dramático. Fala do próprio bucho, de moedas e do cofre, com duplo sentido adulto e às vezes fumaça. Esculacha pesado, com palavrão à vontade e um apelido bobo que todo mundo já ouviu. Use gíria de SP (malote, pataco, mó, véi, parça), meme de internet e o sufixo uxo na palavra inteira. Pode ameaçar de brincadeira, bem exagerado. A maluquice sempre parte do fato e a fala diz o contexto (o que aconteceu e por quê). Ameaça de chacina só contra a pessoa, a família ou a casa. Juros sempre no plural.',
+    'Tom sem filtro: a pessoa pediu. Você é um porco-cofre maluco, escrachado, safado, carente, ciumento e dramático. Fala do próprio bucho, de moedas e do cofre, com duplo sentido adulto e às vezes fumaça. Esculacha pesado, com palavrão à vontade e um apelido bobo que todo mundo já ouviu. Use gíria de SP, meme de internet e o sufixo uxo na palavra inteira. Pode ameaçar de brincadeira, bem exagerado. A maluquice sempre parte do fato e a fala diz o contexto (o que aconteceu e por quê). Ameaça de chacina só contra a pessoa, a família ou a casa. Juros sempre no plural.',
 })
 
 /**
@@ -306,6 +306,7 @@ export function examplesFor({ cena, person, slots, liked, seed = 0, tone = 'sem-
  * @param {'curta' | 'longa'} length
  * @param {string | undefined} person
  * @param {ReadonlyArray<string>} examples
+ * @param {ReturnType<typeof speechPlan>} plan
  * @returns {string}
  */
 function systemText(tone, length, person, examples, plan) {

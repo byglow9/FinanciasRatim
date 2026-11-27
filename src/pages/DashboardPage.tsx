@@ -13,6 +13,7 @@ import { VintemSlot } from '@/components/vintem/VintemSlot'
 import { VintemHomeBalloon } from '@/components/vintem/VintemHomeBalloon'
 import { useVintem } from '@/contexts/VintemContext'
 import { useOincTalk } from '@/hooks/useOincTalk'
+import { isHomePigOffScreen } from '@/lib/vintem/stage'
 import { moodOfLine } from '@shared/core/oincMood.js'
 import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
@@ -60,7 +61,8 @@ export function DashboardPage() {
   const talking = speech !== null && view !== null && !noIncome
   // A cara vem da frase: ele nao chora ameacando. Calado, volta o humor do mes.
   const lineMood = talking ? moodOfLine(speech.text) : null
-  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey, () => lineMood ?? vintem.state)
+  // fora da tela quem fala e o porco de lado: o de cima nao solta a voz junto
+  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey, () => lineMood ?? vintem.state, isHomePigOffScreen)
   useEffect(() => {
     // uma reacao em curso com outra cara cede para a da frase
     if (lineMood !== null && slot.current !== null && slot.current.mood() !== lineMood) {

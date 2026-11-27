@@ -16,6 +16,7 @@ test('a cara combina com a frase', () => {
     ['Mês folgado! Tô tão leve que voava.', 'feliz'],
     ['Fiquei poduxo só de olhar teu extrato.', 'sonolento'],
     ['Nada não, só queria saber se tu ainda me ama.', 'triste'],
+    ['Mês no azul. Tô tão feliz que dancei.', 'feliz'],
     ['Pet shop de R$ 87.', 'neutro'],
     ['Olha que o gordinho aqui sou eu.', 'neutro'],
     ['', 'neutro'],

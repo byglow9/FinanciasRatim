@@ -492,7 +492,7 @@ function runPeek({ canAsk = true, naHome = true, hints = HINTS, random = 0.5, vi
       useEffect: (fn) => world.cleanups.push(fn()),
     },
     '@/lib/pwa/isBusy': { isBusy: () => world.busy },
-    '@/lib/vintem/stage': { isHomePigVisible: () => false },
+    '@/lib/vintem/stage': { isHomePigVisible: () => false, isHomePigOffScreen: () => false },
     '@/services/vintemSpeech.service': { ASK_TIMEOUT_OPEN_MS: 4000, getVintemHints: async () => hints },
     '@shared/core/oincSelect.js': { RESUME_AFTER_MS },
     '@shared/core/vintemSpring.js': { mulberry32: () => () => random },

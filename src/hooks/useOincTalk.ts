@@ -38,16 +38,25 @@ const MOTIONS: Readonly<Record<string, Motion>> = {
  * clima da expressao que o porco esta mostrando. `ref` envolve o desenho. `feel` diz a expressao na
  * hora em que a fala comeca. Movimento reduzido tira so a animacao. `popKey` reinicia a cada fala.
  */
-export function useOincTalk(ref: RefObject<HTMLElement | null>, text: string | null, popKey?: number, feel?: () => string) {
+export function useOincTalk(
+  ref: RefObject<HTMLElement | null>,
+  text: string | null,
+  popKey?: number,
+  feel?: () => string,
+  /** Verdadeiro quando outro porco e quem esta dizendo esta fala. */
+  quiet?: () => boolean,
+) {
   const reduced = useReducedMotion()
   // a expressao do momento da fala vale ate o fim dela: mudar depois nao recomeca o som
   const mood = useRef(feel)
+  const mute = useRef(quiet)
   useEffect(() => {
     mood.current = feel
+    mute.current = quiet
   })
 
   useEffect(() => {
-    if (text === null || text === '') return
+    if (text === null || text === '' || mute.current?.() === true) return
     const feeling = mood.current?.() ?? 'neutro'
     const motion = MOTIONS[feeling] ?? MOTIONS.neutro
     const stop = babble(text, feeling)

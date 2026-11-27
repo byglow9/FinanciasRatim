@@ -2,7 +2,7 @@ import { useEffect, useRef, type MouseEvent } from 'react'
 import { Vintem, type VintemHandle, type VintemState } from '@/components/vintem/Vintem'
 import { useVintem } from '@/contexts/VintemContext'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { setHomePigVisible } from '@/lib/vintem/stage'
+import { forgetHomePig, setHomePigVisible } from '@/lib/vintem/stage'
 
 const POKE_MS = 460
 
@@ -36,7 +36,7 @@ export function VintemSlot({
     observer.observe(el)
     return () => {
       observer.disconnect()
-      setHomePigVisible(false)
+      forgetHomePig()
     }
   }, [])
 

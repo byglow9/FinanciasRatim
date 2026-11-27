@@ -11,7 +11,7 @@ import { normalize } from './classify.js'
 const RULES = [
   // chapado fica de olho caido
   ['sonolento', /poduxo|chapad|fumei|fritadux|acordei|acorda agora|cochil|dormindo|sonhei|sonho\b|bocej|zzz|bom diazuxo/],
-  ['feliz', /g[o]{2,}l|conta paga|paga!|foi paga|meta batida|bate(u)? \S+!|rebol|orgulh|beijo de focinho|que evolucao|gordinho e feliz|aura infinita|me cagar de felicidade|folgad|obrigad|emocion|sobrando|de sobra|bonit|caiu a grana|tá podre de rico|nadando em grana/],
+  ['feliz', /g[o]{2,}l|conta paga|paga!|foi paga|meta batida|bate(u)? \S+!|rebol|orgulh|beijo de focinho|que evolucao|gordinho e feliz|aura infinita|me cagar de felicidade|folgad|\bfeliz|no azul|obrigad|emocion|sobrando|de sobra|bonit|caiu a grana|tá podre de rico|nadando em grana/],
   ['bravo', /chacin|que porra|estourou|estour[ae]|caloteir|mordo|rosnar|cago n|chuto|come(r)? (tua|teu)|arranco|mastig|fodeu|vai tomar|roubar|porra|caralho|merda|paga essa|paga agora|paga,? porra|\bou eu\b|escandalo|barraco|desgraca|safadeza/],
   ['surpreso', /piripaque|morree|socorro|mano\. mano|puta que pariu|\?!|aaaa|plantao|caiu \S*r\$|ronc\. ronc|em choque|susto|nao tankei/],
   ['triste', /saudade|sozinh|abandon|carente|senti falta|me ama|so queria|sumiu|sumido|choro|chorando|triste|magr|vazio|miojo|farelo|bolacha agua|liso|tô calmo|to calmo|nem um|devolve/],

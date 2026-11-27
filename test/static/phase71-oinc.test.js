@@ -334,7 +334,7 @@ function runProvider({ tone = 'sem-filtro', answer = null } = {}) {
       votar: async (id, voto) => void world.votes.push([id, voto]),
     },
     '@/lib/pwa/isBusy': { isBusy: () => world.busy },
-    '@/lib/vintem/stage': { isHomePigVisible: () => false },
+    '@/lib/vintem/stage': { isHomePigVisible: () => false, isHomePigOffScreen: () => false },
     '@/lib/oincHistory': {
       readOincHistory: () => ({ seen: {}, lastRisada: false }),
       markOincUsed: (_person, id) => world.used.push(id),

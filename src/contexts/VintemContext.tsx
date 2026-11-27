@@ -27,7 +27,7 @@ import type { OincFacts } from '@/hooks/useOincFacts'
 import { useVintemPeek } from '@/hooks/useVintemPeek'
 import { fetchAcervo, readRejected, repor, votar, type GeneratedLine, type Voto } from '@/services/oinc.service'
 import { isBusy } from '@/lib/pwa/isBusy'
-import { isHomePigVisible } from '@/lib/vintem/stage'
+import { isHomePigOffScreen, isHomePigVisible } from '@/lib/vintem/stage'
 import { markOincUsed, readOincHistory } from '@/lib/oincHistory'
 import { VintemVote } from '@/components/vintem/VintemVote'
 import { loadBaseline } from '@/lib/vintemBaseline'
@@ -577,6 +577,15 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     },
     [toast, canVote, rate],
   )
+
+  // Fala nova no balao da Home com o porco de cima fora da tela (conta paga la embaixo, por exemplo): a
+  // mesma fala aparece no porco de lado. Subindo, o de lado sai e o de cima continua com ela e com a cara.
+  const mirrored = useRef(0)
+  useEffect(() => {
+    if (speech === null || speech.popKey === mirrored.current) return
+    mirrored.current = speech.popKey
+    if (isHomePigOffScreen()) peekToast({ id: speech.id, text: speech.text, votavel: speech.votavel }, 'wake')
+  }, [speech, peekToast])
 
   // Uma fala do banco ou do acervo onde a pessoa estiver: balao na Home, toast fora dela. Falso sem frase.
   const mostrar = useCallback(

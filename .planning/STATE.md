@@ -302,9 +302,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-27T12:04:48.000Z
-Stopped at: 07.1-14 concluído; 07.1-15 aguarda o dono publicar (07.1-UAT-ROTEIRO.md)
-Resume file: None
+Last session: 2026-11-27T18:05:00.000Z
+Stopped at: 07.1-15 T2, publicação a confirmar (.continue-here.md da 07.1)
+Resume file: .planning/phases/07.1-falas-do-oinc-com-qualidade/.continue-here.md
 
 ## Pendências humanas abertas (24/11/2026)
 

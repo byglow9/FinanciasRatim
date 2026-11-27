@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-11-27T18:05:00Z",
+  "phase": "07.1",
+  "phase_name": "Falas do OINC com qualidade",
+  "phase_dir": ".planning/phases/07.1-falas-do-oinc-com-qualidade",
+  "plan": 15,
+  "task": 2,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": 1,
+      "name": "Portão e roteiro (07.1-15 T1)",
+      "status": "done",
+      "commit": "6b788b3c"
+    },
+    {
+      "id": 0,
+      "name": "Ajustes visuais e de som pedidos pelo dono",
+      "status": "done",
+      "commit": "367ff1e4"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": 2,
+      "name": "Publicar servidor e site (confirmar)",
+      "status": "in_progress"
+    },
+    {
+      "id": 3,
+      "name": "Aceite no aparelho e no uso",
+      "status": "not_started"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Falta o dono confirmar o deploy do site e as variáveis do Railway",
+      "type": "human_action",
+      "workaround": ""
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "Trocar a chave do Groq que apareceu na conversa",
+      "context": "chave exposta",
+      "blocking": true
+    },
+    {
+      "action": "Publicar o site e testar no iPhone",
+      "context": "07.1-UAT-ROTEIRO.md",
+      "blocking": true
+    },
+    {
+      "action": "Avisar a parceira sobre IA e tela bloqueada",
+      "context": "privacidade",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "IA ligada com qwen no Groq, adaptar e livre",
+      "rationale": "segundo teste cego 30 de 32",
+      "phase": "07.1"
+    },
+    {
+      "decision": "Pedido do dono vale mais que regra do projeto",
+      "rationale": "dito pelo dono",
+      "phase": "07.1"
+    }
+  ],
+  "uncommitted_files": [
+    " M .env.local",
+    " M .planning/state.json",
+    "?? .planning/milestone.lock",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/.continue-here.md",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/.gitkeep",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/cego-votos.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-01.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-01.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-02.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-02.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-03.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-03.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-04.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-04.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-05.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-05.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-06.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-06.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-07.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-07.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-08.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-08.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-09.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-09.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-10.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-10.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-11.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-11.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-12.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-12.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-13.html",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego/lote4-votos-13.json",
+    "?? .planning/phases/07.1-falas-do-oinc-com-qualidade/cego2/cego-votos.html",
+    "?? .planning/research/.cache/"
+  ],
+  "next_action": "Ler .continue-here.md da 07.1 e perguntar se o site foi publicado e o que o dono achou no celular",
+  "context_notes": "Sessão longa de voto de falas e ajustes de balão, som, animação e limites. Servidor de teste local desligado."
+}

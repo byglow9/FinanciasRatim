@@ -195,7 +195,19 @@ export function LimitsList({
   // O aviso de limite abre a Home numa categoria: se ela estiver escondida, mostra tudo.
   const wanted = categories.findIndex((c) => expandId === `cat-${c.key}`)
   const all = showAll || wanted >= TOP_CATEGORIES
-  const shown = all ? categories : categories.slice(0, TOP_CATEGORIES)
+  const renderCategory = (c: (typeof categories)[number]) =>
+    c.row !== null ? (
+      <LimitRow
+        key={c.key}
+        row={c.row}
+        categoryDefs={categoryDefs}
+        neutralOk={neutralOk}
+        open={isOpen(c.row.categoryId, expandId === `cat-${c.row.categoryId}`)}
+        onToggle={(open) => setOpen(c.key, open)}
+      />
+    ) : (
+      <FreeRow key={c.key} categoryId={c.categoryId ?? null} cents={c.cents} categoryDefs={categoryDefs} />
+    )
 
   return (
     <section id={id} aria-labelledby={titleId} className="scroll-mt-4 rounded-card bg-card p-4">
@@ -241,22 +253,22 @@ export function LimitsList({
         </div>
       )}
 
-      <ul>
-        {shown.map((c) =>
-          c.row !== null ? (
-            <LimitRow
-              key={c.key}
-              row={c.row}
-              categoryDefs={categoryDefs}
-              neutralOk={neutralOk}
-              open={isOpen(c.row.categoryId, expandId === `cat-${c.row.categoryId}`)}
-              onToggle={(open) => setOpen(c.key, open)}
-            />
-          ) : (
-            <FreeRow key={c.key} categoryId={c.categoryId ?? null} cents={c.cents} categoryDefs={categoryDefs} />
-          ),
-        )}
-      </ul>
+      <ul>{categories.slice(0, TOP_CATEGORIES).map(renderCategory)}</ul>
+
+      {/* O resto abre deslizando: a grade vai de 0 a 1 fracao de altura. */}
+      {categories.length > TOP_CATEGORIES && (
+        <div
+          aria-hidden={!all}
+          inert={!all}
+          className={`grid transition-[grid-template-rows,opacity] duration-500 ease-in-out motion-reduce:transition-none ${
+            all ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <ul className="border-t border-border">{categories.slice(TOP_CATEGORIES).map(renderCategory)}</ul>
+          </div>
+        </div>
+      )}
 
       {categories.length > TOP_CATEGORIES && (
         <button type="button" aria-expanded={all} onClick={() => setShowAll(!all)} className={`${LINK_44} w-full justify-center`}>

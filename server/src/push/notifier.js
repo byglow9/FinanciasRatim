@@ -1,6 +1,6 @@
 import { PCT_CAP } from '../../../shared/core/aiSummary.js'
 import { buildBudgetView } from '../../../shared/core/budget.js'
-import { categoryDisplayName } from '../../../shared/core/categories.js'
+import { categoryDisplayName, categoryIcon } from '../../../shared/core/categories.js'
 import { cycleOf, shiftCycle } from '../../../shared/core/cycle.js'
 import { formatReais } from '../../../shared/core/format.js'
 import { buildFacts, storeOf } from '../../../shared/core/oincFacts.js'
@@ -59,6 +59,12 @@ function stillReached(row, threshold) {
  * @param {{ marker: Record<string, any>, row?: import('../../../shared/core/budget.js').BudgetRow,
  *   person: string, tone: string, id: string }} args
  */
+/** Icone da categoria, para a piada combinar com o tipo dela. */
+const iconOf = (/** @type {any} */ defs, /** @type {unknown} */ categoryId) => {
+  const def = (Array.isArray(defs) ? defs : []).find((d) => d.id === categoryId)
+  return def ? categoryIcon(def) : undefined
+}
+
 function limitText({ marker, row, person, tone, id }) {
   /** @type {Record<string, unknown>} */
   const slots = { categoria: marker.categoryLabel }
@@ -69,7 +75,7 @@ function limitText({ marker, row, person, tone, id }) {
     slots.loja = storeOf(row.txs[0])
   }
   const scene = marker.threshold === 100 ? 'push-limite-100' : 'push-limite-80'
-  return composePush({ scene, tone, slots, gender: GENDER[person] ?? null, seed: id })
+  return composePush({ scene, tone, slots, gender: GENDER[person] ?? null, seed: id, icon: marker.categoryIcon })
 }
 
 /**
@@ -126,7 +132,7 @@ function topicText({ input, args, narrated }) {
       loja: storeOf(tx),
       categoria: categoryDisplayName(tx, input.categoryDefs),
     }
-    const payload = composePush({ ...args, scene: 'push-compra', slots })
+    const payload = composePush({ ...args, scene: 'push-compra', slots, icon: iconOf(input.categoryDefs, tx.categoryId) })
     if (fact.quando === 'ontem' && !/ontem/i.test(payload.body)) continue
     return { payload, txId: fact.txId }
   }
@@ -357,6 +363,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
         threshold: event.threshold,
         categoryId: event.categoryId,
         categoryLabel: categoryDisplayName({ categoryId: event.categoryId }, settings.categoryDefs),
+        categoryIcon: iconOf(settings.categoryDefs, event.categoryId) ?? null,
         cycleKey: event.cycleKey,
         tag: event.tag,
         url: event.url,

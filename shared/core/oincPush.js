@@ -18,6 +18,7 @@
 import { findLeaks, maskSensitiveNumbers, userSlot, LABEL_MAX, PERSON_LABEL } from './aiPrivacy.js'
 import { BRAND_DICTIONARY } from './insights.js'
 import { selectLine } from './oincSelect.js'
+import { fitsCategory } from './oincThemes.js'
 import { fill, needsOf } from './phrasePicker.js'
 import { mulberry32 } from './vintemSpring.js'
 import { PUSH_PHRASES, PUSH_TITLE, hashSeed } from './vintemPhrasesPush.js'
@@ -197,15 +198,17 @@ function leaks(template, slots) {
 /**
  * @param {ReadonlyArray<PushLine>} bank
  * @param {{ slots: Record<string, string>, gender: 'm' | 'f' | null, recent: string[], rejected: string[],
- *   rand: () => number }} args
+ *   rand: () => number, icon?: string }} args
  * @returns {{ id: string, text: string } | null}
  */
-function choose(bank, { slots, gender, recent, rejected, rand }) {
+function choose(bank, { slots, gender, recent, rejected, rand, icon }) {
   const eligible = bank.filter(
     (line) =>
       !rejected.includes(line.id) &&
       ((line.g ?? 'x') === 'x' || line.g === gender) &&
       needsOf(line.t).every((name) => Boolean(slots[name])) &&
+      // antes de estreitar por loja ou valor: a piada precisa combinar com o tipo da categoria
+      (!slots.categoria || fitsCategory(line.t, slots.categoria, icon)) &&
       !leaks(line.t, slots),
   )
   if (eligible.length === 0) return null
@@ -217,6 +220,7 @@ function choose(bank, { slots, gender, recent, rejected, rand }) {
     seen: recent,
     rejected,
     rand,
+    icon,
     maxLen: NO_MAX,
   })
 }
@@ -227,10 +231,10 @@ function choose(bank, { slots, gender, recent, rejected, rand }) {
  * daqui. `recent` sao os ids ja enviados (do mais antigo ao mais novo) e `rejected` os reprovados.
  * Cena desconhecida vira 'push-nada' e tom desconhecido, 'sem-filtro'. O corpo nunca sai vazio.
  * @param {{ scene: string, tone?: string, slots?: Record<string, unknown>, gender?: 'm' | 'f' | null,
- *   seed?: string, recent?: string[], rejected?: string[] }} args
+ *   seed?: string, recent?: string[], rejected?: string[], icon?: string | null }} args
  * @returns {{ title: string, body: string, phraseId: string }}
  */
-export function composePush({ scene: name, tone, slots, gender = null, seed = '', recent, rejected }) {
+export function composePush({ scene: name, tone, slots, gender = null, seed = '', recent, rejected, icon }) {
   const sceneName = Object.hasOwn(PUSH_SCENES, name) ? name : FALLBACK_SCENE
   const meta = PUSH_SCENES[/** @type {keyof typeof PUSH_SCENES} */ (sceneName)]
   const voice = tone === 'suave' || tone === 'direto' ? tone : 'sem-filtro'
@@ -248,6 +252,7 @@ export function composePush({ scene: name, tone, slots, gender = null, seed = ''
     recent: Array.isArray(recent) ? recent : [],
     rejected: Array.isArray(rejected) ? rejected : [],
     rand: mulberry32(hashSeed(String(seed))),
+    icon: icon ?? undefined,
   }
   const chosen = choose(primary, args) ?? choose(reserve, args)
   if (chosen) return { title: PUSH_TITLE, body: chosen.text, phraseId: chosen.id }

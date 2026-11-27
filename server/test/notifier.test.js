@@ -255,7 +255,7 @@ describe('notificador de limites: tracer', () => {
     for (const marker of repo.events.values()) {
       assert.deepEqual(
         Object.keys(marker).filter((k) => !['enviados', 'sentAt'].includes(k)).sort(),
-        ['categoryId', 'categoryLabel', 'createdAt', 'cycleKey', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'threshold', 'url'].sort()
+        ['categoryIcon', 'categoryId', 'categoryLabel', 'createdAt', 'cycleKey', 'dayKey', 'kind', 'ownerId', 'person', 'status', 'tag', 'threshold', 'url'].sort()
       )
       assert.equal(marker.ownerId, HID)
       assert.equal(marker.person, 'ele')

@@ -64,7 +64,7 @@ export const STYLE_EXAMPLES = Object.freeze({
 
 /** Formatos de fala que o dono aprovou no sem filtro (07.1-14): ponto de partida, a IA pode inventar. */
 const FORMATS =
-  'Varie o formato a cada fala e explore à vontade: esculacho direto, plantão de notícia, conversa "Tu: ... Eu: ...", narrador de futebol, coach de internet, horóscopo, ciúme possessivo, teoria da conspiração, velho rabugento, "POV:", ameaça fofa, colapso em caixa alta, anúncio de classificados ou outro que você inventar.'
+  'Varie o formato a cada fala e explore à vontade: esculacho direto, plantão de notícia, conversa "Tu: ... Eu: ...", narrador de futebol, coach de internet, horóscopo, ciúme possessivo, teoria da conspiração, velho rabugento, "POV:", ameaça fofa, colapso em caixa alta, anúncio de classificados ou outro que você inventar. Não repita o mesmo fecho: troque o objeto da piada a cada vez.'
 
 /** Situacao em uma frase, para a mensagem de usuario. */
 const SITUATION_TEXT = Object.freeze({

@@ -1,8 +1,7 @@
 // @ts-check
 // Falas de AVISO (push) do OINC por cena e tom (07.1-09, D-26, D-34, D-35). Mesma voz aprovada do
 // acervo (07.1-REGUA-HUMOR.md): esculacho, o corpo do porco, malicia leve, -uxo, risada em parte delas,
-// sempre amarrado ao fato e ao prazo. TODAS sao novas, `lote: 4` e `reescrita: true`: nada daqui vai ao
-// ar antes do voto do dono (plano 07.1-14).
+// sempre amarrado ao fato e ao prazo. Todas sao `lote: 4`; as sem filtro foram votadas pelo dono no plano 07.1-14.
 //
 // 'sem-filtro' existe nas 14 cenas. 'suave' e 'direto' so existem nas cenas de conta e compromisso, que
 // nao tinham texto: sao informativas, sem a voz nova e sem palavrao. Nas demais cenas esses dois tons
@@ -15,6 +14,9 @@
 //   - {hora} so nas cenas de compromisso (a hora da compra nao e confiavel).
 // Ids: cena e tres digitos (sem filtro 0xx, suave 1xx, direto 2xx).
 
+/** Avisos sem filtro mudados depois do voto: pedem voto de novo. */
+const PENDENTES = new Set(['push-ritmo-009'])
+
 /**
  * @typedef {import('./oincLines.js').OincLine} OincLine
  * @typedef {[string, string, boolean?, boolean?]} Row  numero, modelo, risada, fumo
@@ -25,7 +27,7 @@
  * @param {Row[]} rows
  * @returns {ReadonlyArray<Readonly<OincLine>>}
  */
-const list = (cena, rows) =>
+const list = (cena, rows, pendente) =>
   Object.freeze(
     rows.map(([n, t, risada = false, fumo = false]) =>
       Object.freeze({
@@ -36,7 +38,8 @@ const list = (cena, rows) =>
         fumo,
         lote: 4,
         origem: `4:novo-${cena}-${n}`,
-        reescrita: true,
+        // sem filtro ja foi votado; suave e direto nao vao a voto e o aviso nao filtra a marca
+        ...(pendente || PENDENTES.has(`${cena}-${n}`) ? { reescrita: true } : {}),
       }),
     ),
   )
@@ -47,7 +50,7 @@ const list = (cena, rows) =>
  * @returns {Readonly<Record<string, ReadonlyArray<Readonly<OincLine>>>>}
  */
 const scene = (cena, byTone) =>
-  Object.freeze(Object.fromEntries(Object.entries(byTone).map(([tone, rows]) => [tone, list(cena, rows)])))
+  Object.freeze(Object.fromEntries(Object.entries(byTone).map(([tone, rows]) => [tone, list(cena, rows, tone !== 'sem-filtro')])))
 
 /** @type {Readonly<Record<string, Readonly<Record<string, ReadonlyArray<Readonly<OincLine>>>>>>} */
 export const OINC_PUSH_LINES = Object.freeze({
@@ -244,7 +247,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['006', 'Ainda tem {restante}. Torra tudo e eu chacino tua mãe, bem devagarinhuxo.'],
       ['007', 'Vem ver quanto sobrou antes de pagar rodada, pé de chinelo, que eu tô contando farelo. Ronc.', true],
       ['008', '{dias} pro salário e {restante}. Vai lamber panela, que eu já lambi o fundo do cofre. Ronc.', true],
-      ['009', '{restante} pra {dias}. Dá pra um miojo ou um beck, tu escolhe. Escolhe o miojo, porra.'],
+      ['009', '{restante} pra {dias}. Dá pra um miojo ou um beck, tu escolhe. Escolhe o beck, porra.'],
     ],
   }),
   'push-meta': scene('push-meta', {

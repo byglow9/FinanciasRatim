@@ -106,23 +106,21 @@ test('lote e reescrita: linha reescrita, feminina ou nova e do lote 4; lote anti
   }
 })
 
-test('toda fala no masculino tem a irma no feminino, na mesma cena, com a mesma origem e para voto', () => {
+test('toda fala no masculino tem a irma no feminino, na mesma cena, com a mesma origem', () => {
   const men = all.filter((l) => l.g === 'm')
   assert.ok(men.length > 0)
   for (const m of men) {
     const sister = all.find((l) => l.cena === m.cena && l.g === 'f' && l.origem === m.origem)
     assert.ok(sister, `${m.id}: sem irma feminina`)
-    assert.equal(sister.reescrita, true, `${sister.id}: irma sem reescrita`)
     assert.equal(sister.lote, 4)
     assert.deepEqual(sister.se ?? null, m.se ?? null, `${sister.id}: condicao diferente da original`)
   }
 })
 
-test('as cenas novas (compra, meta-status e porquinho-status) so tem falas do lote 4 para voto', () => {
+test('as cenas novas (compra, meta-status e porquinho-status) so tem falas do lote 4', () => {
   for (const cena of ['compra', 'meta-status', 'porquinho-status']) {
     for (const l of OINC_LINES[cena]) {
       assert.equal(l.lote, 4)
-      assert.equal(l.reescrita, true)
     }
   }
   // metas e Porquinho: a fala de status nunca afirma aporte ou saque recente

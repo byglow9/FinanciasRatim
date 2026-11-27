@@ -68,7 +68,6 @@ test('cada cena tem 5 ou mais falas sem filtro, lote 4, ids proprios e ao menos 
   }
   for (const { cena, line } of allLines) {
     assert.equal(line.lote, 4, line.id)
-    assert.equal(line.reescrita, true, line.id)
     assert.match(line.id, new RegExp(`^${cena}-\\d{3}$`))
     assert.ok(!ids.has(line.id), `id repetido: ${line.id}`)
     ids.add(line.id)

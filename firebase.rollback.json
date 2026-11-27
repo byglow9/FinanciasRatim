@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "firestore.rules.legacy",
+    "rules": "firestore.rules.pre-fase8",
     "indexes": "firestore.indexes.json"
   },
   "emulators": {

@@ -46,8 +46,18 @@ const CLIENT_COLS = [
   'cardSettings',
 ]
 const BANK_COLS = ['bankConnections', 'bankImports', 'cards']
-// Colecoes so do servidor (Fase 7): marcadores de push, preferencias, contadores e cache da IA.
-const SERVER_COLS = ['pushRegistrations', 'pushPrefs', 'pushEvents', 'aiUsage', 'aiCache']
+// Colecoes so do servidor: marcadores de push, preferencias, contadores e cache da IA (Fase 7) e
+// convites, segredos do grupo e exclusoes de conta (Fase 8). Negadas ao cliente por padrao.
+const SERVER_COLS = [
+  'pushRegistrations',
+  'pushPrefs',
+  'pushEvents',
+  'aiUsage',
+  'aiCache',
+  'invites',
+  'householdSecrets',
+  'accountDeletions',
+]
 
 // Id que o cliente pode criar em cada colecao (Fase 8): settings so com o hid; limitAlerts e
 // vintemInsights com o prefixo do hid; as demais, qualquer id.

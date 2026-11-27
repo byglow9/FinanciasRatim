@@ -76,11 +76,31 @@ test('todo indice com ownerId comeca em ownerId ASCENDING', () => {
   }
 })
 
-test('firebase.rollback.json aponta para firestore.rules.legacy e o legado guarda o acesso aberto original', () => {
+test('firebase.rollback.json aponta para firestore.rules.pre-fase8 (as regras restritivas anteriores a Fase 8)', () => {
   const rollback = readJson('firebase.rollback.json')
-  assert.equal(rollback.firestore.rules, 'firestore.rules.legacy')
+  assert.equal(rollback.firestore.rules, 'firestore.rules.pre-fase8')
   assert.equal(rollback.firestore.indexes, 'firestore.indexes.json')
   assert.deepEqual(rollback.emulators, readJson('firebase.json').emulators)
+  assert.ok(fs.existsSync(path.join(ROOT, 'firestore.rules.pre-fase8')))
+  const target = read('firestore.rules.pre-fase8')
+  assert.match(target, /function isMember\(\)/)
+  assert.ok(!/if\s+true\b/.test(target), 'o alvo do rollback tem regra aberta (if true)')
+})
+
+test('o rollback nunca aponta para regras abertas', () => {
+  const rollback = readJson('firebase.rollback.json')
+  const target = read(rollback.firestore.rules)
+  const code = target
+    .split('\n')
+    .map((l) => l.replace(/\/\/.*$/, ''))
+    .join('\n')
+  assert.ok(!/allow\s+read\s*,\s*write\s*:\s*if\s+true\b/.test(code), 'allow read, write: if true no alvo do rollback')
+  assert.ok(!/if\s+true\b/.test(code), 'if true no alvo do rollback')
+  assert.ok(!/if\s+request\.auth\s*!=\s*null\s*;/.test(code), 'auth != null como unica condicao no alvo do rollback')
+  assert.notEqual(rollback.firestore.rules, 'firestore.rules.legacy')
+})
+
+test('firestore.rules.legacy continua so como historico do acesso aberto original', () => {
   assert.ok(fs.existsSync(path.join(ROOT, 'firestore.rules.legacy')))
   assert.match(read('firestore.rules.legacy'), /allow read, write: if true;/)
 })

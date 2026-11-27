@@ -20,6 +20,7 @@ import {
   setLogLevel,
   Timestamp,
 } from 'firebase/firestore'
+import { scopedId } from '../../shared/core/household.js'
 
 // O SDK registra cada PERMISSION_DENIED esperado; silenciar para a saida dos testes ficar legivel.
 setLogLevel('silent')
@@ -47,6 +48,11 @@ const CLIENT_COLS = [
 const BANK_COLS = ['bankConnections', 'bankImports', 'cards']
 // Colecoes so do servidor (Fase 7): marcadores de push, preferencias, contadores e cache da IA.
 const SERVER_COLS = ['pushRegistrations', 'pushPrefs', 'pushEvents', 'aiUsage', 'aiCache']
+
+// Id que o cliente pode criar em cada colecao (Fase 8): settings so com o hid; limitAlerts e
+// vintemInsights com o prefixo do hid; as demais, qualquer id.
+const createId = (col, hid, base) =>
+  col === 'settings' ? hid : col === 'limitAlerts' || col === 'vintemInsights' ? scopedId(hid, base) : base
 
 const [emuHost, emuPort] = (process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080').split(':')
 
@@ -81,6 +87,9 @@ describe('matriz de regras do Firestore', () => {
         await setDoc(doc(db, col, 'b1'), { ownerId: HID_B, person: 'ele', amount: 2, currentAmount: 0 })
       }
       await setDoc(doc(db, 'transactions', 'a1', 'sub', 'x'), { ownerId: HID_A })
+      // O casal atual ja tem settings/main: ele e semeado com as regras desligadas, porque o cliente
+      // nao cria mais esse id (Fase 8).
+      await setDoc(doc(db, 'settings', 'main'), { ownerId: HID_A, tabNames: { area1: 'Ele', area2: 'Ela', piggy: 'Porquinho' } })
     })
   })
 
@@ -114,11 +123,12 @@ describe('matriz de regras do Firestore', () => {
       ['ela', ela],
     ]) {
       for (const col of CLIENT_COLS) {
-        const ref = doc(db, col, `novo-${nome}`)
+        const novoId = createId(col, HID_A, `novo-${nome}`)
+        const ref = doc(db, col, novoId)
         await assertSucceeds(setDoc(ref, { ownerId: HID_A, person: nome, amount: 5 }))
         await assertSucceeds(getDoc(ref))
         const snap = await assertSucceeds(byOwner(db, col, HID_A))
-        assert.ok(snap.docs.some((d) => d.id === `novo-${nome}`), `${col}: lista deve conter o novo`)
+        assert.ok(snap.docs.some((d) => d.id === novoId), `${col}: lista deve conter o novo`)
         await assertSucceeds(updateDoc(ref, { amount: 6 }))
         await assertSucceeds(deleteDoc(ref))
         // Ela le e altera o que e de Ele, e vice-versa: a regra nao distingue person
@@ -245,29 +255,38 @@ describe('matriz de regras do Firestore', () => {
     )
   })
 
-  test('get de settings/main inexistente: permitido para membro, negado para anonimo e sem claim', async () => {
+  test('get de settings do proprio hid inexistente: permitido para membro, negado para anonimo e sem claim; main antigo segue legivel', async () => {
+    // o main do casal atual existe (semeado) e continua legivel por Ele e Ela
     await assertSucceeds(getDoc(doc(ele, 'settings', 'main')))
     await assertSucceeds(getDoc(doc(ela, 'settings', 'main')))
     await assertFails(getDoc(doc(anon, 'settings', 'main')))
     await assertFails(getDoc(doc(semClaim, 'settings', 'main')))
+    // o documento por grupo (settings/{hid}) ainda nao existe: o get de inexistente do proprio hid passa
+    await assertSucceeds(getDoc(doc(ele, 'settings', HID_A)))
+    await assertSucceeds(getDoc(doc(ela, 'settings', HID_A)))
+    await assertFails(getDoc(doc(anon, 'settings', HID_A)))
+    await assertFails(getDoc(doc(semClaim, 'settings', HID_A)))
+    // id de outro grupo ou qualquer outro id inexistente continua negado
+    await assertFails(getDoc(doc(ele, 'settings', HID_B)))
+    await assertFails(getDoc(doc(outro, 'settings', HID_A)))
+    await assertFails(getDoc(doc(ele, 'settings', 'qualquer')))
     // so settings e limitAlerts tem essa excecao: documento inexistente em outras colecoes continua negado
     await assertFails(getDoc(doc(ele, 'transactions', 'nao-existe')))
-    // settings/main existente de outro casal continua negado
+    // settings/main existente de outro casal continua negado (troca de dono feita com as regras desligadas)
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'settings', 'main'), { ownerId: HID_B, categories: [] })
     })
     await assertFails(getDoc(doc(ele, 'settings', 'main')))
     await assertSucceeds(getDoc(doc(outro, 'settings', 'main')))
+    // main inexistente deixa de ter excecao: o cliente nao cria mais esse id
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), 'settings', 'main'))
+    })
+    await assertFails(getDoc(doc(ele, 'settings', 'main')))
   })
 
   test('personConfig: updateDoc com caminho pontilhado cria o mapa pai e nao apaga o no da outra pessoa (A3)', async () => {
-    // espelha o que getSettings faz: cria settings/main com o dono e o que o app grava
-    await assertSucceeds(
-      setDoc(doc(ele, 'settings', 'main'), {
-        ownerId: HID_A,
-        tabNames: { area1: 'Ele', area2: 'Ela', piggy: 'Porquinho' },
-      })
-    )
+    // o settings/main do casal atual ja existe (semeado no beforeEach, dono HID_A): o cliente so atualiza
     const noEle = { salaryDay: 5, expectedIncomeCents: 600000, incomeOverrides: {}, limits: {} }
     const noEla = { salaryDay: 10, expectedIncomeCents: 450000, incomeOverrides: {}, limits: {} }
 
@@ -297,7 +316,7 @@ describe('matriz de regras do Firestore', () => {
   })
 
   test('limitAlerts: get de inexistente so para membro; criar-se-ausente por transacao e idempotente (LIM-07)', async () => {
-    const ALERT_ID = 'ele__2026-11__alimentacao__80'
+    const ALERT_ID = scopedId(HID_A, 'ele__2026-11__alimentacao__80')
 
     // (a) get de documento inexistente: membro passa; anonimo e sem claim falham; outras colecoes continuam negadas
     await assertSucceeds(getDoc(doc(ele, 'limitAlerts', ALERT_ID)))
@@ -345,7 +364,7 @@ describe('matriz de regras do Firestore', () => {
     await assertSucceeds(byOwner(ele, 'limitAlerts', HID_A))
   })
   test('vintemInsights: setDoc idempotente por dono, a parceira le, ownerId imutavel e outro casal negado (D-15)', async () => {
-    const INSIGHT_ID = 'ele__2026-11__delivery-heavy__delivery__2026-11-19'
+    const INSIGHT_ID = scopedId(HID_A, 'ele__2026-11__delivery-heavy__delivery__2026-11-19')
     const doc1 = () => ({
       ownerId: HID_A,
       id: INSIGHT_ID,
@@ -377,7 +396,7 @@ describe('matriz de regras do Firestore', () => {
     await assertFails(setDoc(doc(ele, 'vintemInsights', INSIGHT_ID), { ...doc1(), ownerId: HID_B }))
 
     // (d) criar com ownerId de outro casal e negado
-    await assertFails(setDoc(doc(ele, 'vintemInsights', 'ele__2026-11__x__y__z'), { ...doc1(), ownerId: HID_B }))
+    await assertFails(setDoc(doc(ele, 'vintemInsights', scopedId(HID_A, 'ele__2026-11__x__y__z')), { ...doc1(), ownerId: HID_B }))
 
     // (e) consulta por igualdade (dono, pessoa e ciclo) funciona para o casal A
     const consulta = (db, hid) =>
@@ -397,6 +416,122 @@ describe('matriz de regras do Firestore', () => {
     await assertFails(consulta(outro, HID_A))
     await assertFails(consulta(semClaim, HID_A))
     await assertFails(consulta(anon, HID_A))
-    await assertFails(setDoc(doc(semClaim, 'vintemInsights', 'ele__2026-11__a__b__c'), { ...doc1() }))
+    await assertFails(setDoc(doc(semClaim, 'vintemInsights', scopedId(HID_A, 'ele__2026-11__a__b__c')), { ...doc1() }))
+  })
+
+  test('households: get so do proprio grupo (inclusive inexistente); nenhuma listagem nem escrita do cliente', async () => {
+    // casal atual: o documento ainda nao existe e o get do proprio hid passa
+    await assertSucceeds(getDoc(doc(ele, 'households', HID_A)))
+    await assertSucceeds(getDoc(doc(ela, 'households', HID_A)))
+    await assertSucceeds(getDoc(doc(outro, 'households', HID_B)))
+    await assertFails(getDoc(doc(ele, 'households', HID_B)))
+    await assertFails(getDoc(doc(outro, 'households', HID_A)))
+    await assertFails(getDoc(doc(anon, 'households', HID_A)))
+    await assertFails(getDoc(doc(semClaim, 'households', HID_A)))
+
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'households', HID_A), { mode: 'casal', ownerId: HID_A })
+      await setDoc(doc(ctx.firestore(), 'households', HID_B), { mode: 'sozinho', ownerId: HID_B })
+    })
+    assert.equal((await assertSucceeds(getDoc(doc(ele, 'households', HID_A)))).data().mode, 'casal')
+    await assertSucceeds(getDoc(doc(ela, 'households', HID_A)))
+    await assertFails(getDoc(doc(ele, 'households', HID_B)))
+    await assertFails(getDoc(doc(outro, 'households', HID_A)))
+    await assertFails(getDoc(doc(anon, 'households', HID_A)))
+    await assertFails(getDoc(doc(semClaim, 'households', HID_A)))
+
+    // sem listagem, nem pelo ownerId
+    await assertFails(getDocs(collection(ele, 'households')))
+    await assertFails(byOwner(ele, 'households', HID_A))
+    // sem escrita do cliente, nem no proprio documento
+    for (const db of [ele, ela]) {
+      await assertFails(setDoc(doc(db, 'households', HID_A), { mode: 'sozinho', ownerId: HID_A }))
+      await assertFails(updateDoc(doc(db, 'households', HID_A), { mode: 'sozinho' }))
+      await assertFails(deleteDoc(doc(db, 'households', HID_A)))
+    }
+    await assertFails(setDoc(doc(ele, 'households', HID_B), { mode: 'casal', ownerId: HID_A }))
+    let depois
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      depois = (await getDoc(doc(ctx.firestore(), 'households', HID_A))).data()
+    })
+    assert.equal(depois.mode, 'casal')
+  })
+
+  test('settings por grupo: so o id igual ao proprio hid; A nao ocupa nem tranca o documento de B; o main legado segue ativo', async () => {
+    // A cria o proprio documento por grupo
+    await assertSucceeds(setDoc(doc(ele, 'settings', HID_A), { ownerId: HID_A, tabNames: { area1: 'A', area2: 'B', piggy: 'P' } }))
+    // A nao ocupa o documento de B, nem com ownerId de A nem com o de B
+    await assertFails(setDoc(doc(ele, 'settings', HID_B), { ownerId: HID_A }))
+    await assertFails(setDoc(doc(ele, 'settings', HID_B), { ownerId: HID_B }))
+    // B cria o dele (nada o trancou) e nao ocupa o de A
+    await assertSucceeds(setDoc(doc(outro, 'settings', HID_B), { ownerId: HID_B }))
+    await assertFails(setDoc(doc(outro, 'settings', HID_A), { ownerId: HID_B }))
+    await assertFails(setDoc(doc(outro, 'settings', HID_A), { ownerId: HID_A }))
+    // id qualquer novo nao cria (nem o main, que so existe quando semeado)
+    await assertFails(setDoc(doc(ele, 'settings', 'outro-id'), { ownerId: HID_A }))
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), 'settings', 'main'))
+    })
+    await assertFails(setDoc(doc(ele, 'settings', 'main'), { ownerId: HID_A }))
+    // com o main semeado, Ele e Ela continuam lendo e atualizando
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'settings', 'main'), { ownerId: HID_A, theme: 'light' })
+    })
+    await assertSucceeds(getDoc(doc(ele, 'settings', 'main')))
+    await assertSucceeds(updateDoc(doc(ela, 'settings', 'main'), { theme: 'dark' }))
+    await assertFails(updateDoc(doc(outro, 'settings', 'main'), { theme: 'dark' }))
+    await assertFails(updateDoc(doc(ele, 'settings', 'main'), { ownerId: HID_B }))
+  })
+
+  for (const col of ['limitAlerts', 'vintemInsights']) {
+    test(`${col}: so cria com o prefixo do proprio hid; id antigo sem prefixo segue atualizavel e apagavel`, async () => {
+      const dado = (hid) => ({ ownerId: hid, person: 'ele', readAt: null, amount: 1 })
+      // com o prefixo do proprio grupo
+      await assertSucceeds(setDoc(doc(ele, col, scopedId(HID_A, 'ele__x')), dado(HID_A)))
+      await assertSucceeds(setDoc(doc(outro, col, scopedId(HID_B, 'ele__x')), dado(HID_B)))
+      // prefixo do outro grupo falha, mesmo com o ownerId do proprio
+      await assertFails(setDoc(doc(ele, col, scopedId(HID_B, 'ele__y')), dado(HID_A)))
+      await assertFails(setDoc(doc(outro, col, scopedId(HID_A, 'ele__y')), dado(HID_B)))
+      // prefixo do proprio grupo com ownerId alheio falha
+      await assertFails(setDoc(doc(ele, col, scopedId(HID_A, 'ele__z')), dado(HID_B)))
+      // sem prefixo, prefixo sem id logico e prefixo parcial falham
+      await assertFails(setDoc(doc(ele, col, 'ele__2026-11__alimentacao__80'), dado(HID_A)))
+      await assertFails(setDoc(doc(ele, col, `${HID_A}__`), dado(HID_A)))
+      await assertFails(setDoc(doc(ele, col, `${HID_A}_x`), dado(HID_A)))
+      await assertFails(setDoc(doc(ele, col, `x${HID_A}__y`), dado(HID_A)))
+      // anonimo e sem claim nao criam nem com o prefixo certo
+      await assertFails(setDoc(doc(anon, col, scopedId(HID_A, 'ele__w')), dado(HID_A)))
+      await assertFails(setDoc(doc(semClaim, col, scopedId(HID_A, 'ele__w')), dado(HID_A)))
+      // documento antigo sem prefixo (a1, semeado): o dono atualiza e apaga; o outro grupo nao
+      await assertSucceeds(updateDoc(doc(ela, col, 'a1'), { readAt: Timestamp.now() }))
+      await assertFails(updateDoc(doc(outro, col, 'a1'), { readAt: Timestamp.now() }))
+      await assertFails(deleteDoc(doc(outro, col, 'a1')))
+      await assertSucceeds(deleteDoc(doc(ele, col, 'a1')))
+    })
+  }
+
+  test('limitAlerts: get de inexistente so com o prefixo do proprio grupo; transacao com get e set do id prefixado passa', async () => {
+    const proprio = scopedId(HID_A, 'ele__2026-11__alimentacao__80')
+    await assertSucceeds(getDoc(doc(ele, 'limitAlerts', proprio)))
+    await assertSucceeds(getDoc(doc(ela, 'limitAlerts', proprio)))
+    await assertFails(getDoc(doc(ele, 'limitAlerts', scopedId(HID_B, 'ele__2026-11__alimentacao__80'))))
+    await assertFails(getDoc(doc(outro, 'limitAlerts', proprio)))
+    await assertFails(getDoc(doc(ele, 'limitAlerts', 'ele__2026-11__alimentacao__80')))
+    await assertFails(getDoc(doc(anon, 'limitAlerts', proprio)))
+    await assertFails(getDoc(doc(semClaim, 'limitAlerts', proprio)))
+
+    const criaSeAusente = (db, id, hid) =>
+      runTransaction(db, async (transaction) => {
+        const ref = doc(db, 'limitAlerts', id)
+        const snap = await transaction.get(ref)
+        if (snap.exists()) return false
+        transaction.set(ref, { ownerId: hid, person: 'ele', readAt: null })
+        return true
+      })
+    assert.equal(await assertSucceeds(criaSeAusente(ele, proprio, HID_A)), true)
+    assert.equal(await assertSucceeds(criaSeAusente(ele, proprio, HID_A)), false)
+    // transacao com id sem prefixo ou de outro grupo falha no get
+    await assertFails(criaSeAusente(ele, 'ele__sem-prefixo', HID_A))
+    await assertFails(criaSeAusente(ele, scopedId(HID_B, 'ele__alheio'), HID_A))
   })
 })

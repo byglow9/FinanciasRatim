@@ -221,6 +221,6 @@ export const OINC_DINHEIRO = Object.freeze({
     ['conta-paga-004', 'Pagou antes de cortarem. Que evolução, tô até arrepiado.', 'x', false, false, 1, '1:s11-2'],
     ['conta-paga-005', 'Menos uma. Um adulto funcional, quem diria.', 'x', false, false, 1, '1:s11-3'],
     ['conta-paga-006', 'Conta de luz quitada. Hoje você não toma banho no escuro.', 'x', false, false, 1, '1:s11-4', { se: ['tema:luz'] }],
-    ['conta-paga-007', 'É GOOOL! Conta paga! Tô rebolando peladuxo, chupa, juro do caralho! rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-1', { reescrita: true }],
+    ['conta-paga-007', 'É GOOOL! Conta paga! Tô rebolando peladuxo, chupa esses juros, caralho! rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-1', { reescrita: true }],
   ]),
 })

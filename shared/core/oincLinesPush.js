@@ -56,8 +56,8 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['001', 'PLANTÃO: depois de {loja}, {categoria} chega a {pct}. {valor} de pura sem-vergonhice.'],
       ['002', 'Quem é {loja}? {categoria} em {pct}, {valor}. Tá me trocando por essa merda?'],
       ['003', 'LÁ VEM {categoria}, {pct}, {valor}, cara a cara com o limite... SEGURA, PORRA!'],
-      ['004', '{categoria} em {pct}, {valor}. Mó pataco, véi. Para, jegue de moletom. KKKKK', true],
-      ['005', 'POV: tu achando que {valor} em {categoria} não é nada, mula manca.'],
+      ['004', '{categoria} em {pct}, {valor}. Mó pataco, véi. Para, sua anta. KKKKK', true],
+      ['005', 'POV: tu achando que {valor} em {categoria} não é nada, sua toupeira.'],
       ['006', 'Depois de {loja}, um limite no talo: {valor}. Para ou eu mordo tua bunda.'],
       ['007', 'Limite quase estourando, {valor}. Beleza. Calmo. AAAAA PUTA QUE PARIU.'],
       ['008', 'Teu limite tá por um fiozuxo. Abre essa porra de app antes que dê merda.'],
@@ -69,7 +69,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['002', '{categoria} furou depois de {loja}: {valor}. Quem é essa loja pra ti? FALA, PESTE!'],
       ['003', '{categoria}: {valor}, {pct}. Beleza. EU VOU ME CAGAR ATÉ MORREEEEER.'],
       ['004', 'É GOOOL CONTRA! {categoria} estourou em {valor}. Que jogador de merda, hein.'],
-      ['005', '{valor} em {categoria}. Para ou eu chacino tua mãe, picolé de chuchu.'],
+      ['005', '{valor} em {categoria}. Para ou eu chacino tua mãe, cabeça de bagre.'],
       ['006', 'Depois de {loja}, limite morto: {valor}. Perdeu toda a aura, seu poço de merda.'],
       ['007', 'Limite estourado, {valor}. F no chat pro teu malotuxo, desgraça. Ronc.', true],
       ['008', 'Limite estourado. Skill issue do caralho, capivara. Vem ver essa vergonha.'],
@@ -78,7 +78,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   'push-fatura-d2': scene('push-fatura-d2', {
     'sem-filtro': [
       ['001', 'Fatura de {valor} em dois dias. Paga ou eu faço churrasco das tuas cuecas.'],
-      ['002', '{valor} de fatura em dois dias. Esconde o malotuxo, capivara de aparelho.'],
+      ['002', '{valor} de fatura em dois dias. Esconde o malotuxo, sua pamonha.'],
       ['003', 'PLANTÃO: fatura de {valor} cerca residência. Faltam dois dias, família.'],
       ['004', 'Coach: {valor} em dois dias. Todo mundo tem as mesmas 24h, é só querer.'],
       ['005', 'Quem é essa fatura de {valor}? Chega em dois dias e vai dormir na tua cama?'],
@@ -98,7 +98,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   'push-fatura-d0': scene('push-fatura-d0', {
     'sem-filtro': [
       ['001', 'HOJE: fatura de {valor}. PAGA AGORA ou o porco aqui toca fogo no parquinho.'],
-      ['002', 'É hoje: {valor}. Paga ou eu como teus controles remotos, galinha de chinelo.'],
+      ['002', 'É hoje: {valor}. Paga ou eu como teus controles remotos, pé de chinelo.'],
       ['003', 'Fatura de {valor} vence hoje. Enfia o pagamento sem dó, vai, gostoso. rsrsrs', true],
       ['004', 'Hoje, {valor} de fatura. VENDE-SE alma de caloteiro, aceito rato no espetinho.'],
       ['005', 'Fatura hoje, {valor}. O juro vai te comer sem beijo, corre, desgraça. Ronc.', true],
@@ -132,7 +132,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['002', 'Amanhã: {conta}, {valor}. POV: tu jurando que vai lembrar. Vai porra nenhuma.'],
       ['003', 'LÁ VEM {conta}, {valor}, é amanhã, o juro tá aquecendo no banco, caralho!'],
       ['004', '{valor} amanhã: {conta}. Beleza. Calmo. VOU RASPAR O COFRE COM O CASCO.'],
-      ['005', 'Amanhã é {conta}, {valor}. Gastou em skin? Chacino tua mãe, ameba de peruca.'],
+      ['005', 'Amanhã é {conta}, {valor}. Gastou em skin? Chacino tua mãe, songamonga.'],
       ['006', 'Amanhã vence {conta}. VENDE-SE memória de ameba, aceito um pastel murcho.'],
       ['007', 'Conta vencendo amanhã. Resolve, ou eu posto teu saldo no grupo da família.'],
     ],
@@ -149,7 +149,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   }),
   'push-conta-d0': scene('push-conta-d0', {
     'sem-filtro': [
-      ['001', 'HOJE: {conta}, {valor}. Paga ou eu chacino tua mãe, canário belga.'],
+      ['001', 'HOJE: {conta}, {valor}. Paga ou eu chacino tua mãe, sua anta.'],
       ['002', 'Hoje vence {conta}, {valor}. Todo mundo tem as mesmas 24h, é só querer.'],
       ['003', 'PLANTÃO: {conta} de {valor} vence hoje. Suspeito caga e anda.'],
       ['004', '{valor} pra hoje: {conta}. Tu: depois. Eu: depois é o caralho de asa.'],
@@ -176,7 +176,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['004', 'Em dois dias tem {titulo}. Lava esse sovacuxo podre, capivara.'],
       ['005', 'Anota: {titulo} em dois dias. Eles não querem que tu vá. Vai só de raiva.'],
       ['006', 'Dois dias pra {titulo}. Faltar é skill issue do caralho, marmota.'],
-      ['007', 'Compromisso em dois dias. Olha a agenda, marreco de bota, ou eu marco em cima.'],
+      ['007', 'Compromisso em dois dias. Olha a agenda, cabeça de vento, ou eu marco em cima.'],
     ],
     suave: [
       ['101', 'Daqui a dois dias, às {hora}, tem {titulo}. Dá para se preparar com calma.'],
@@ -230,12 +230,12 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['004', 'PLANTÃO: {dias} pro salário, {restante} na mão. Vítima cheira o próprio boleto. KKKKK', true],
       ['005', '{restante} pra {dias}. Beleza. Calmo. VOU LAMBER EMBALAGEM ATÉ O SALÁRIO. Ronc.', true],
       ['006', 'Ainda tem {restante}. Torra tudo e eu chacino tua mãe, bem devagarinhuxo.'],
-      ['007', 'Vem ver quanto sobrou antes de bancar rodada no rolê, peru de óculos. Ronc.', true],
+      ['007', 'Vem ver quanto sobrou antes de bancar rodada no rolê, pé de chinelo. Ronc.', true],
     ],
   }),
   'push-meta': scene('push-meta', {
     'sem-filtro': [
-      ['001', '{restante} pra {meta}. Deposita ou eu chacino tua planta, jabuti de patinete. rsrsrs', true],
+      ['001', '{restante} pra {meta}. Deposita ou eu chacino tua planta, sua mula. rsrsrs', true],
       ['002', 'PLANTÃO: {meta} ainda espera {restante}. Responsável é visto no delivery, cuzão.'],
       ['003', 'Horóscopo: {meta}, faltam {restante}. Os astros riram da tua cara de bunda.'],
       ['004', 'E {meta}? Já esqueceu? Quem é a meta nova? FALA O NOME DELA.'],

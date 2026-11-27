@@ -191,6 +191,8 @@ test('arquivos novos e reescritos respeitam a escala 12/16/28/56 e pesos 400/700
     if (rawHtml.test(src)) problems.push(`${f}: HTML bruto`)
     if (emoji.test(fs.readFileSync(path.join(ROOT, f), 'utf8'))) problems.push(`${f}: emoji`)
     for (const m of src.matchAll(/\btext-\[(\d+(?:\.\d+)?)px\]/g)) {
+      // o dono pediu a legenda do banco menor que as outras
+      if (m[1] === '11' && f.endsWith('dashboard/StaleNotice.tsx')) continue
       if (!['12', '16', '28', '56'].includes(m[1])) problems.push(`${f}: text-[${m[1]}px] fora da escala`)
     }
   }

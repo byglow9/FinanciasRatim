@@ -58,8 +58,9 @@ export const PUSH_SCENES = Object.freeze({
   'push-conta-d2': scene(['conta', 'valor'], null),
   'push-conta-d1': scene(['conta', 'valor'], null, ['amanha']),
   'push-conta-d0': scene(['conta', 'valor'], null, ['hoje']),
-  'push-compromisso-d2': scene(['titulo', 'hora'], null),
+  'push-compromisso-d2': scene(['titulo', 'hora', 'dias'], null),
   'push-compromisso-d1': scene(['titulo', 'hora'], null, ['amanha']),
+  'push-compromisso-d0': scene(['titulo', 'hora'], null, ['hoje']),
   'push-compra': scene(['quando', 'valor', 'loja', 'categoria'], 'push-espontanea'),
   'push-ritmo': scene(['restante', 'dias'], 'push-espontanea'),
   'push-meta': scene(['meta', 'restante'], 'push-espontanea'),
@@ -257,7 +258,8 @@ export function composePush({ scene: name, tone, slots, gender = null, seed = ''
   const chosen = choose(primary, args) ?? choose(reserve, args)
   if (chosen) return { title: PUSH_TITLE, body: chosen.text, phraseId: chosen.id }
 
-  // tudo reprovado: antes uma fala sem encaixe do tom do que um aviso vazio
-  const plain = /** @type {PushLine} */ (primary.find((line) => needsOf(line.t).length === 0))
+  // tudo reprovado: antes uma fala sem encaixe do tom do que um aviso vazio (sem ela no tom, a da reserva)
+  const bare = (/** @type {PushLine} */ line) => needsOf(line.t).length === 0
+  const plain = /** @type {PushLine} */ (primary.find(bare) ?? reserve.find(bare))
   return { title: PUSH_TITLE, body: plain.t, phraseId: plain.id }
 }

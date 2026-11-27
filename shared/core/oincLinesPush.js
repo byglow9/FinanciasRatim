@@ -3,7 +3,7 @@
 // acervo (07.1-REGUA-HUMOR.md): esculacho, o corpo do porco, malicia leve, -uxo, risada em parte delas,
 // sempre amarrado ao fato e ao prazo. Todas sao `lote: 4`; as sem filtro foram votadas pelo dono no plano 07.1-14.
 //
-// 'sem-filtro' existe nas 14 cenas. 'suave' e 'direto' so existem nas cenas de conta e compromisso, que
+// 'sem-filtro' existe nas 15 cenas. 'suave' e 'direto' so existem nas cenas de conta e compromisso, que
 // nao tinham texto: sao informativas, sem a voz nova e sem palavrao. Nas demais cenas esses dois tons
 // continuam no banco de aviso de hoje (D-35), que este arquivo nao copia.
 //
@@ -190,6 +190,8 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['006', 'Dois dias pra {titulo}. Faltar é skill issue do caralho, marmota.'],
       ['007', 'Compromisso em dois dias. Olha a agenda, cabeça de vento, ou eu marco em cima.'],
       ['008', 'Daqui a dois dias: {titulo}, {hora}. Vai sóbrio, chapaduxo, que dá pra sentir o cheiro.', false, true],
+      ['009', '{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.'],
+      ['010', 'Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.', true],
     ],
     suave: [
       ['101', 'Daqui a dois dias, às {hora}, tem {titulo}. Dá para se preparar com calma.'],
@@ -212,6 +214,7 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['006', 'Amanhã é {titulo}? E EU? Fico aqui de bunda sozinha no cofre? Vai então.'],
       ['007', 'Compromisso amanhã. Abre a agenda antes que dê merda cinematográfica.'],
       ['008', 'Amanhã, {hora}: {titulo}. Hoje nada de larica e farra até tarde, seu zé ruela do rolê.', false, true],
+      ['009', 'Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.'],
     ],
     suave: [
       ['101', 'Amanhã, às {hora}, tem {titulo}. Vale deixar tudo separado com calma.'],
@@ -222,6 +225,22 @@ export const OINC_PUSH_LINES = Object.freeze({
       ['201', 'Amanhã, às {hora}: {titulo}.'],
       ['202', 'Compromisso amanhã: {titulo}.'],
       ['203', 'Há um compromisso amanhã. Confira a agenda.'],
+    ],
+  }),
+  'push-compromisso-d0': scene('push-compromisso-d0', {
+    'sem-filtro': [
+      ['001', 'Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.'],
+      ['002', '{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.'],
+    ],
+    suave: [
+      ['101', 'Hoje, às {hora}, tem {titulo}. Vale se organizar com calma.'],
+      ['102', 'Um lembrete com carinho: {titulo} é hoje.'],
+      ['103', 'Tem compromisso hoje. Dá uma olhada na agenda quando puder.'],
+    ],
+    direto: [
+      ['201', 'Hoje, às {hora}: {titulo}.'],
+      ['202', 'Compromisso hoje: {titulo}.'],
+      ['203', 'Há um compromisso hoje. Confira a agenda.'],
     ],
   }),
   'push-compra': scene('push-compra', {

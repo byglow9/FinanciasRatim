@@ -92,6 +92,7 @@ function dueText({ stage, person, tone, id }) {
   if (kind === 'compromisso') {
     slots.titulo = nome
     slots.hora = hora
+    if (daysLeft === 2) slots.dias = '2 dias'
   }
   return composePush({ scene: `push-${kind}-d${daysLeft}`, tone, slots, gender: GENDER[person] ?? null, seed: id })
 }
@@ -397,7 +398,7 @@ export function createNotifier({ repo, sender, now = () => new Date(), config = 
 
   /**
    * Avisos fixos da pessoa e do casal (D-21, D-24, D-25): conta, fatura e compromisso 2 e 1 dia antes,
-   * conta e fatura tambem no dia se nao pagas. Um marcador por coisa, vencimento e estagio, e um aviso
+   * conta e fatura tambem no dia se nao pagas e compromisso no dia se a hora ainda nao passou. Um marcador por coisa, vencimento e estagio, e um aviso
    * por marcador (sem agrupar). Nada sai antes de `dueHour` de Sao Paulo, e antes disso nada e lido.
    * Sem excluir o aparelho em uso: estes avisos nao aparecem dentro da tela. Nunca le lancamentos.
    * @param {{ hid: string, person: string }} args

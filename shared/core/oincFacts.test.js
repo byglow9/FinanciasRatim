@@ -428,8 +428,8 @@ test('buildFacts: narrated deixa de fora o lancamento ja narrado', () => {
   assert.ok(!set.some((f) => f.txId === 'ps1'))
 })
 
-test('buildFacts: so gasto de hoje e ontem vira fato de lancamento', () => {
-  const facts = buildFacts(base({ transactions: [tx(12, 50, 'Algo hoje'), tx(11, 50, 'Algo ontem'), tx(9, 50, 'Algo antigo', { id: 'old' })] }))
+test('buildFacts: fora do app so gasto de hoje e ontem vira fato de lancamento', () => {
+  const facts = buildFacts(base({ transactions: [tx(12, 50, 'Algo hoje'), tx(11, 50, 'Algo ontem'), tx(9, 50, 'Algo antigo', { id: 'old' })] }), { surface: 'push' })
   const ids = facts.map((f) => f.txId)
   assert.ok(!ids.includes('old'))
   assert.equal(facts.filter((f) => f.cena === 'compra').length, 2)
@@ -744,4 +744,37 @@ test('pickFact: evita cenas recentes, sorteia entre as tres de maior prioridade 
   const seen = new Set()
   for (let i = 0; i < 30; i += 1) seen.add(pickFact(facts, { rand: () => i / 30 }).cena)
   assert.deepEqual([...seen].sort(), ['a', 'b', 'c'])
+})
+
+test('app: compra de dias atras e compromisso da semana viram fato; push segue na janela curta', () => {
+  const now = new Date('2026-11-20T15:00:00-03:00')
+  const input = {
+    now,
+    person: 'ele',
+    transactions: [{ id: 'v1', type: 'saida', amount: 80, description: 'Posto Shell', person: 'ele', date: new Date('2026-11-16T12:00:00-03:00') }],
+    events: [{ id: 'e1', title: 'Dentista', time: '14:00', person: 'ele', date: new Date('2026-11-25T12:00:00-03:00') }],
+  }
+  const app = buildFacts(input, { surface: 'app' })
+  const push = buildFacts(input, { surface: 'push' })
+  assert.equal(app.find((f) => f.cena === 'posto')?.quando, 'há 4 dias')
+  assert.equal(app.find((f) => f.cena === 'compromisso')?.slots.dias, '5 dias')
+  assert.equal(push.some((f) => f.cena === 'posto' || f.cena === 'compromisso'), false)
+})
+
+test('pickFact: com grupo sorteia o assunto pedido mesmo com prioridade baixa', () => {
+  const facts = /** @type {any} */ ([
+    { cena: 'limite-estourou', key: 'limite:estourou:x', prioridade: 90 },
+    { cena: 'posto', key: 'tx:posto:1', prioridade: 30 },
+    { cena: 'compromisso', key: 'agenda:5:abc', prioridade: 55 },
+  ])
+  assert.equal(pickFact(facts, { grupo: 'gastos' })?.cena, 'posto')
+  assert.equal(pickFact(facts, { grupo: 'agenda' })?.cena, 'compromisso')
+  assert.equal(pickFact(facts.slice(0, 1), { grupo: 'agenda' })?.cena, 'limite-estourou')
+})
+
+test('pickFact: nos gastos o sorteio alcanca qualquer compra e pula a dita ha pouco', () => {
+  const facts = /** @type {any} */ ([1, 2, 3, 4, 5].map((n) => ({ cena: 'compra', key: `tx:compra:${n}`, prioridade: 30 })))
+  const opts = { grupo: 'gastos', recentScenes: ['compra'] }
+  assert.equal(pickFact(facts, { ...opts, rand: () => 0.99 })?.key, 'tx:compra:5')
+  assert.equal(pickFact(facts, { ...opts, recentKeys: ['tx:compra:1'], rand: () => 0 })?.key, 'tx:compra:2')
 })

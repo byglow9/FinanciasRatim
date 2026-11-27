@@ -1,6 +1,6 @@
 // @ts-check
 // Estagios dos avisos fixos (07.1, D-21, D-24, D-25): conta fixa, fatura de cartao e compromisso avisam
-// 2 e 1 dia antes; conta e fatura nao pagas avisam tambem no dia. Cada estagio tem id proprio e
+// 2 e 1 dia antes; conta e fatura nao pagas avisam tambem no dia, e compromisso tambem (enquanto a hora nao passa). Cada estagio tem id proprio e
 // deterministico, sem texto e sem valor: o id e o do marcador unico que sobrevive a reinicio.
 //
 // `dueStages` devolve o que o servidor precisa para MONTAR O TEXTO na hora do envio (nome, valor e hora);
@@ -15,7 +15,7 @@ import { DEFAULT_TZ, zonedParts } from './time.js'
 const STAGES = Object.freeze({
   conta: Object.freeze([2, 1, 0]),
   fatura: Object.freeze([2, 1, 0]),
-  compromisso: Object.freeze([2, 1]),
+  compromisso: Object.freeze([2, 1, 0]),
 })
 
 /** Rota aberta ao tocar no aviso, por tipo. */
@@ -113,7 +113,8 @@ function isPaid(payments, billId, due) {
  * Estagios que existem AGORA (hoje e o dia de cada estagio, em Sao Paulo):
  *   conta       ativa da pessoa ou do casal, nao paga, vence em 2, 1 ou 0 dias (vencida nao avisa);
  *   fatura      saldo nao pago de fatura fechada, vence em 2, 1 ou 0 dias (atrasada nao avisa);
- *   compromisso do dia do evento (Sao Paulo) a 2 ou 1 dia; o da outra pessoa nao avisa.
+ *   compromisso a 2, 1 ou 0 dias do evento (Sao Paulo); no dia, so se sem hora ou com a hora por vir; o da
+ *               outra pessoa nao avisa.
  * A lista sai ordenada (menos dias primeiro, depois tipo e referencia), igual em qualquer fuso do host.
  * @param {{
  *   now: Date,
@@ -176,6 +177,9 @@ export function dueStages({ now, person, bills, payments, events, cards, tz = DE
     const title = typeof e.title === 'string' ? e.title : ''
     const dueKey = partsKey(day)
     const time = typeof e.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(e.time) ? e.time : null
+    // no dia, aviso de hora que ja passou so atrapalha
+    const clock = `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`
+    if (daysLeft === 0 && time !== null && time <= clock) continue
     // sem id no evento, a referencia e um hash so de letras do titulo, do dia e da hora
     const refId = typeof e.id === 'string' && e.id !== '' ? e.id : letterHash(`${title.trim().toLowerCase()}|${dueKey}|${time ?? ''}`)
     out.push({ kind: 'compromisso', refId, dueKey, daysLeft, nome: title, amountCents: null, hora: time })

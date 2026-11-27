@@ -172,7 +172,7 @@ test('o cartao mantem o interruptor de vencimento em settings e os tipos novos v
     assert.match(card, new RegExp(`setType\\('${key}', v\\)`))
   }
   assert.ok(card.includes('Dois dias antes, um dia antes e no dia, se não estiver paga.'))
-  assert.ok(card.includes('Dois dias antes e um dia antes.'))
+  assert.ok(card.includes('Dois dias antes, um dia antes e no dia.'))
   // Os dias de antecedencia valem so para o sino: o texto nao pode sugerir que mudam o aviso no celular.
   assert.match(card, /Só para o sino do app\. No celular, a fatura avisa dois dias antes/)
   const quiet = code(QUIET)

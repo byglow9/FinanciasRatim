@@ -89,6 +89,12 @@ const TINY_CENTS = 1000
 const BIG_CENTS = 50000
 /** Dias sem lancar a partir dos quais o OINC sente falta. */
 const MISSING_DAYS = 5
+/**
+ * So no app: o porco tambem lembra as compras da ultima semana (as mais recentes alem de ontem) e olha a
+ * agenda de uma semana a frente. Push e IA seguem com hoje, ontem e 2 dias.
+ */
+const APP_OLDER_MAX = 30
+export const APP_AGENDA_DAYS = 7
 /** Janela das contas e da fatura, em dias. */
 const BILL_AHEAD_DAYS = 5
 /** Comparacao com o ciclo anterior: aumento minimo em porcentagem e em centavos (evita o ruido de trocados). */
@@ -556,11 +562,15 @@ export function buildFacts(input, opts = {}) {
   const sorted = [...all].sort((a, b) => b.date.getTime() - a.date.getTime())
   const spends = sorted.filter((t) => isDayToDay(t) && centsOf(t) > 0)
 
-  // --- gastos e entradas de hoje e de ontem ------------------------------------------------------
+  // --- gastos e entradas de hoje e de ontem (no app, tambem os da semana) ------------------------
+  let older = 0
   for (const t of sorted) {
     const age = ageOf(t.date)
-    if (age !== 0 && age !== 1) continue
-    add(factOfTransaction(t, defs, { surface, now, horaConfiavel, tz, restanteCents: view.safeCents }))
+    const recent = age === 0 || age === 1
+    if (!recent && !(surface === 'app' && age > 1 && age < WEEK_DAYS && older < APP_OLDER_MAX)) continue
+    const fact = factOfTransaction(t, defs, { surface, now, horaConfiavel, tz, restanteCents: view.safeCents })
+    if (fact && !recent) older += 1
+    add(fact)
   }
 
   // --- repeticao na semana -----------------------------------------------------------------------
@@ -820,11 +830,12 @@ export function buildFacts(input, opts = {}) {
     )
   }
 
-  // --- compromissos de hoje a 2 dias (da pessoa ou do casal) -------------------------------------
+  // --- compromissos de hoje a 2 dias (no app, a 7), da pessoa ou do casal ------------------------
+  const agendaDays = surface === 'app' ? APP_AGENDA_DAYS : 2
   for (const e of list(src.events)) {
     if (!e || typeof e !== 'object' || !isValidDate(e.date) || isOtherPerson(e, person)) continue
     const ahead = daysBetweenParts(today, zonedParts(e.date, tz))
-    if (ahead < 0 || ahead > 2) continue
+    if (ahead < 0 || ahead > agendaDays) continue
     const titulo = typedSlot('titulo', e.title, surface, 40)
     if (titulo === null) continue
     const detail = buildAgenda([e], { person, now, tz })[0] ?? {}
@@ -849,7 +860,7 @@ export function buildFacts(input, opts = {}) {
         },
         key: `agenda:${ahead}:${letterHash(normalize(e.title))}`,
         prioridade: PRIO.compromisso,
-        quando: ahead === 0 ? 'hoje' : ahead === 1 ? 'amanhã' : 'em 2 dias',
+        quando: ahead === 0 ? 'hoje' : ahead === 1 ? 'amanhã' : `em ${ahead} dias`,
         conds: [...dateConds(ahead), ...todayConds, ...themeConds(e.title)],
         via: viaIa ? 'ia' : 'acervo',
         livre,
@@ -864,6 +875,8 @@ export function buildFacts(input, opts = {}) {
       if (used >= NOTES_MAX) break
       const item = buildNotes([n], { person, now, tz })[0]
       if (!item) continue
+      // No app toda fala de anotacao cita o titulo: sem ele o fato seria um turno mudo.
+      if (surface === 'app' && typedSlot('titulo', n.title, surface, 40) === null) continue
       used += 1
       const titulo = typeof item.titulo === 'string' ? item.titulo : null
       const texto = typeof item.texto === 'string' ? item.texto : null
@@ -1071,11 +1084,28 @@ export function buildFacts(input, opts = {}) {
 // pickFact
 // ---------------------------------------------------------------------------------------------
 
+/** Assuntos que se revezam nas falas sem gatilho. */
+export const FACT_GROUPS = Object.freeze(['gastos', 'agenda', 'resto'])
+
+/**
+ * Assunto do fato, pela chave: lancamentos recentes, calendario (compromissos e anotacoes) ou o resto.
+ * @param {{ key?: string }} fact
+ * @returns {'gastos' | 'agenda' | 'resto'}
+ */
+export function factGroup(fact) {
+  const key = String(fact?.key ?? '')
+  if (/^(tx|semana|dia):/.test(key)) return 'gastos'
+  if (/^(agenda|notas):/.test(key)) return 'agenda'
+  return 'resto'
+}
+
 /**
  * Escolhe um fato: evita as cenas de `recentScenes`, sorteia entre os tres de maior prioridade e, se
- * nada sobrar, sorteia entre todos. Sem fato devolve null.
+ * nada sobrar, sorteia entre todos. Com `grupo`, sorteia entre todos os fatos daquele assunto (assim a
+ * compra de dias atras tambem sai); sem fato do assunto vale a regra geral. Sem fato devolve null.
  * @param {ReadonlyArray<OincFact>} facts
- * @param {{ recentScenes?: Iterable<string> | null, rand?: () => number }} [opts]
+ * @param {{ recentScenes?: Iterable<string> | null, recentKeys?: Iterable<string> | null, rand?: () => number,
+ *   grupo?: string | null }} [opts]
  * @returns {OincFact | null}
  */
 export function pickFact(facts, opts = {}) {
@@ -1083,12 +1113,20 @@ export function pickFact(facts, opts = {}) {
   if (all.length === 0) return null
   const recent = new Set(opts.recentScenes ? [...opts.recentScenes] : [])
   const fresh = all.filter((f) => !recent.has(f.cena))
+  const rand = typeof opts.rand === 'function' ? opts.rand : () => 0
+  const subject = opts.grupo ? all.filter((f) => factGroup(f) === opts.grupo) : []
+  if (subject.length > 0) {
+    // Nos gastos o sorteio e por lancamento (duas compras da mesma cena concorrem); nos outros, por cena.
+    const keys = new Set(opts.recentKeys ? [...opts.recentKeys] : [])
+    const unsaid = subject.filter((f) => (opts.grupo === 'gastos' ? !keys.has(f.key) : !recent.has(f.cena)))
+    const from = unsaid.length > 0 ? unsaid : subject
+    return from[Math.min(from.length - 1, Math.max(0, Math.floor(rand() * from.length)))]
+  }
   const pool = fresh.length > 0 ? fresh : all
   const top = pool
     .map((fact, index) => ({ fact, index }))
     .sort((a, b) => (b.fact.prioridade ?? 0) - (a.fact.prioridade ?? 0) || a.index - b.index)
     .slice(0, 3)
-  const rand = typeof opts.rand === 'function' ? opts.rand : () => 0
   const at = Math.min(top.length - 1, Math.max(0, Math.floor(rand() * top.length)))
   return top[at].fact
 }

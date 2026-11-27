@@ -198,10 +198,12 @@ test('useOincFacts devolve vazio fora do proprio perfil e em somente leitura (D-
   assert.match(src, /\{ surface: 'app' \}/, 'os fatos sao da superficie do app')
   assert.match(src, /const own = user !== null && user\.person === person && !readOnly/, 'sem o portao do proprio perfil')
   assert.match(src, /if \(!own \|\| !enabled \|\| [^)]*\) return NO_FACTS/, 'fora do proprio perfil a lista nao e vazia')
-  // A agenda so e lida para quem pode ter fatos, uma vez por carga e por conta.
+  // A agenda so e lida para quem pode ter fatos, com cache curto por conta e pessoa.
   assert.match(src, /const uid = own \? user\.uid : null/)
   assert.match(src, /if \(uid === null\) return/, 'a agenda e lida fora do proprio perfil')
-  assert.match(src, /let agenda: \{ uid: string; load: Promise<AgendaEvent\[\]> \} \| null = null/, 'agenda sem cache por carga')
+  assert.match(src, /const key = `\$\{uid\}:\$\{person\}`/, 'agenda sem cache por conta')
+  assert.match(src, /Date\.now\(\) - agenda\.at > AGENDA_TTL_MS/, 'agenda sem prazo de cache')
+  assert.equal((src.match(/getNotes\(/g) ?? []).length, 1)
   assert.equal((src.match(/getEventsInRange\(/g) ?? []).length, 1)
   assert.match(src, /\.catch\(\(\) => \[\]\)/, 'falha da agenda aparece na tela')
   assert.match(src, /catch \{\s*return NO_FACTS/, 'montagem dos fatos sem try')

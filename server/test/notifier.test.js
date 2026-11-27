@@ -1015,19 +1015,20 @@ describe('notificador de contas e compromissos', () => {
     assert.equal(sender.calls[0].payload.body, expectedBody(billMarker(2), 'push-conta-d2', slots, { tone: 'direto' }))
   })
 
-  test('compromisso avisa 2 e 1 dia antes, nunca no dia, com o titulo como escrito', async () => {
+  test('compromisso avisa 2 e 1 dia antes e no dia, com o titulo como escrito', async () => {
     setup({ events: [appointment('consulta', 'ele')] })
     for (const day of [18, 19, 20]) {
       clock.t = nov(day, '10:00')
       await run()
     }
-    const ids = [2, 1].map((n) => `casalA__ele__compromisso__consulta__2026-11-20__d${n}`)
+    const ids = [2, 1, 0].map((n) => `casalA__ele__compromisso__consulta__2026-11-20__d${n}`)
     assert.deepEqual([...repo.events.keys()], ids)
-    assert.equal(sender.calls.length, 2)
+    assert.equal(sender.calls.length, 3)
     assert.equal(sender.calls[0].payload.url, '/calendario')
     const slots = { titulo: 'Dentista com o Pedro', hora: '14:30' }
-    assert.equal(sender.calls[0].payload.body, expectedBody(ids[0], 'push-compromisso-d2', slots))
+    assert.equal(sender.calls[0].payload.body, expectedBody(ids[0], 'push-compromisso-d2', { ...slots, dias: '2 dias' }))
     assert.equal(sender.calls[1].payload.body, expectedBody(ids[1], 'push-compromisso-d1', slots))
+    assert.equal(sender.calls[2].payload.body, expectedBody(ids[2], 'push-compromisso-d0', slots))
   })
 
   test('renomear o compromisso nao gera aviso novo (o id e o do documento)', async () => {

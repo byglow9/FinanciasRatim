@@ -14,10 +14,11 @@ const TONES = ['suave', 'direto', 'sem-filtro']
 const SCENE_NAMES = [
   'push-limite-80', 'push-limite-100', 'push-fatura-d2', 'push-fatura-d1', 'push-fatura-d0',
   'push-conta-d2', 'push-conta-d1', 'push-conta-d0', 'push-compromisso-d2', 'push-compromisso-d1',
-  'push-compra', 'push-ritmo', 'push-meta', 'push-nada',
+  'push-compromisso-d0', 'push-compra', 'push-ritmo', 'push-meta', 'push-nada',
 ]
 const NEW_TONE_SCENES = [
   'push-conta-d2', 'push-conta-d1', 'push-conta-d0', 'push-compromisso-d2', 'push-compromisso-d1',
+  'push-compromisso-d0',
 ]
 const LEGACY = {
   'push-limite-80': 'push-limite-80',
@@ -52,7 +53,10 @@ const allLines = Object.entries(OINC_PUSH_LINES).flatMap(([cena, byTone]) =>
   Object.entries(byTone).flatMap(([tone, lines]) => lines.map((line) => ({ cena, tone, line }))),
 )
 
-test('as 14 cenas existem, com titulo e hash reexportados do banco de hoje', () => {
+// Falas de compromisso aprovadas pelo dono no chat (27/11/2026), mantidas ao pe da letra.
+const APPROVED_AS_IS = new Set(['push-compromisso-d0-002', 'push-compromisso-d2-009', 'push-compromisso-d2-010'])
+
+test('as 15 cenas existem, com titulo e hash reexportados do banco de hoje', () => {
   assert.deepEqual(Object.keys(PUSH_SCENES).sort(), [...SCENE_NAMES].sort())
   assert.deepEqual(Object.keys(OINC_PUSH_LINES).sort(), [...SCENE_NAMES].sort())
   assert.equal(PUSH_TITLE, OLD_TITLE)
@@ -63,6 +67,8 @@ test('cada cena tem 5 ou mais falas sem filtro, lote 4, ids proprios e ao menos 
   const ids = new Set()
   for (const cena of SCENE_NAMES) {
     const lines = OINC_PUSH_LINES[cena]['sem-filtro']
+    // no dia do compromisso so ha as duas aprovadas; sem titulo o aviso cai no tom direto
+    if (cena === 'push-compromisso-d0') continue
     assert.ok(lines.length >= 5, `${cena}: ${lines.length}`)
     assert.ok(lines.some((l) => l.g === 'x' && needsOf(l.t).length === 0), `${cena}: sem fala sem encaixe`)
   }
@@ -94,12 +100,14 @@ test('o prazo aparece no texto de cada estagio', () => {
   const word = { d2: /dois dias/i, d1: /amanhã/i, d0: /hoje/i }
   for (const { cena, line } of allLines) {
     const stage = /-(d[012])$/.exec(cena)?.[1]
-    if (stage) assert.match(line.t, word[stage], line.id)
+    if (stage && !APPROVED_AS_IS.has(line.id)) assert.match(line.t, word[stage], line.id)
   }
 })
 
 test('conta, titulo e loja nunca abrem a frase (o texto entra como escrito)', () => {
-  for (const { line } of allLines) assert.doesNotMatch(line.t, /(^|[.!?]\s+)\{(conta|titulo|loja)\}/, line.id)
+  for (const { line } of allLines) {
+    if (!APPROVED_AS_IS.has(line.id)) assert.doesNotMatch(line.t, /(^|[.!?]\s+)\{(conta|titulo|loja)\}/, line.id)
+  }
 })
 
 test('nenhum aviso de compra, limite ou ritmo cita hora', () => {

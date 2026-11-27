@@ -211,7 +211,8 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
         entrar({ naHome: true, raw, reserva: entry })
         return
       }
-      speak(entry)
+      // Voltando a Home: outro assunto (compra recente, calendario...). Sem fato com fala, a da situacao.
+      if (!cutucar(false)) speak(entry)
       return
     }
     if (openingAsked || bankArrival !== null) {
@@ -228,6 +229,7 @@ export function useHomeVintem({ view, cycle, transactions, enabled, readOnly }: 
     speak,
     speakAi,
     entrar,
+    cutucar,
     canVote,
     isCurrent,
     oincFacts,

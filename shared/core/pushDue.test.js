@@ -78,11 +78,18 @@ test('conta inativa ou da outra pessoa nao gera; a do casal gera para os dois', 
   assert.deepEqual(stagesOf('2026-11-19', { bills: [bill({ dueDay: 40 }), bill({ id: '' }), null] }), [])
 })
 
-test('compromisso gera so em 2 e 1 dias; do parceiro nao gera; conjunto gera para os dois', () => {
+test('compromisso no dia avisa so enquanto a hora nao passou', () => {
+  const on = (extra) => dueStages({ now: at('2026-11-22'), person: 'ele', events: [event(extra)] }).map((s) => s.daysLeft)
+  assert.deepEqual(on({ time: '23:59' }), [0])
+  assert.deepEqual(on({ time: undefined }), [0])
+  assert.deepEqual(on({ time: '00:00' }), [])
+})
+
+test('compromisso gera em 2, 1 e 0 dias; do parceiro nao gera; conjunto gera para os dois', () => {
   const on = (day, extra) => dueStages({ now: at(day), person: 'ele', events: [event(extra)] })
   assert.deepEqual(on('2026-11-20').map((s) => s.daysLeft), [2])
   assert.deepEqual(on('2026-11-21').map((s) => s.daysLeft), [1])
-  assert.deepEqual(on('2026-11-22'), [])
+  assert.deepEqual(on('2026-11-23'), [])
   assert.deepEqual(on('2026-11-19'), [])
   assert.deepEqual(on('2026-11-21', { person: 'ela' }), [])
   for (const person of ['ele', 'ela']) {

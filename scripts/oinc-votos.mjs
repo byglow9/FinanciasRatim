@@ -224,6 +224,7 @@ const SCENE_TEXT = Object.freeze({
   'push-conta-d0': ['Aviso de conta', 'Conta vence hoje'],
   'push-compromisso-d2': ['Aviso de compromisso', 'Compromisso em 2 dias'],
   'push-compromisso-d1': ['Aviso de compromisso', 'Compromisso amanhã'],
+  'push-compromisso-d0': ['Aviso de compromisso', 'Compromisso hoje'],
   'push-compra': ['Aviso sobre uma compra', 'Aviso solto sobre uma compra'],
   'push-ritmo': ['Aviso sobre o ritmo', 'Aviso solto sobre o que sobra'],
   'push-meta': ['Aviso sobre meta', 'Aviso solto sobre uma meta'],

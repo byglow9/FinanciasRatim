@@ -7,10 +7,11 @@ import { useCycleBills } from '@/hooks/useCycleBills'
 import { useGoals } from '@/hooks/useGoals'
 import { useSavings } from '@/hooks/useSavings'
 import { getEventsInRange } from '@/services/events.service'
+import { getNotes } from '@/services/notes.service'
 import { toBills } from '@/lib/cycleData'
-import type { AgendaEvent, PersonType, Transaction } from '@/types'
+import type { AgendaEvent, Note, PersonType, Transaction } from '@/types'
 import { toCents } from '@shared/core/ledger.js'
-import { buildFacts } from '@shared/core/oincFacts.js'
+import { APP_AGENDA_DAYS, buildFacts } from '@shared/core/oincFacts.js'
 import { zonedParts, zonedTimeToInstant } from '@shared/core/time.js'
 
 // Fatos da propria pessoa para as falas do OINC (07.1, D-19). Montados no navegador com o que o app ja
@@ -30,22 +31,31 @@ export interface UseOincFactsArgs {
 }
 
 const NO_FACTS: OincFacts = []
-/** Compromissos de hoje ate este tanto de dias a frente. */
-const AGENDA_AHEAD_DAYS = 3
 /** Sem o ciclo anterior aqui, "semana sem gastar" so e verdade depois deste tanto de dias de ciclo. */
 const WEEK_DAYS = 7
 /** Cenas cujo restante e o da categoria ou o da meta: nao dependem das contas fixas. */
 const OWN_REMAINDER: ReadonlySet<string> = new Set(['limite-quase', 'meta-status'])
 
-// Agenda lida uma vez por carga do app (e por conta). Falha fica como lista vazia, sem erro na tela.
-let agenda: { uid: string; load: Promise<AgendaEvent[]> } | null = null
+// Calendario (compromissos e anotacoes) lido ao abrir a Home e reaproveitado por alguns minutos, para o que
+// foi anotado agora entrar na conversa sem reabrir o app. Falha fica como lista vazia, sem erro na tela.
+const AGENDA_TTL_MS = 5 * 60_000
+interface Agenda {
+  events: AgendaEvent[]
+  notes: Note[]
+}
+let agenda: { key: string; at: number; load: Promise<Agenda> } | null = null
 
-function loadAgenda(uid: string): Promise<AgendaEvent[]> {
-  if (agenda === null || agenda.uid !== uid) {
+function loadAgenda(uid: string, person: PersonType): Promise<Agenda> {
+  const key = `${uid}:${person}`
+  if (agenda === null || agenda.key !== key || Date.now() - agenda.at > AGENDA_TTL_MS) {
     const today = zonedParts(new Date())
     const start = zonedTimeToInstant(today.year, today.month, today.day)
-    const after = zonedTimeToInstant(today.year, today.month, today.day + AGENDA_AHEAD_DAYS + 1)
-    agenda = { uid, load: getEventsInRange(start, new Date(after.getTime() - 1)).catch(() => []) }
+    const after = zonedTimeToInstant(today.year, today.month, today.day + APP_AGENDA_DAYS + 1)
+    const load = Promise.all([
+      getEventsInRange(start, new Date(after.getTime() - 1)).catch(() => []),
+      getNotes(person).catch(() => []),
+    ]).then(([events, notes]) => ({ events, notes }))
+    agenda = { key, at: Date.now(), load }
   }
   return agenda.load
 }
@@ -66,17 +76,17 @@ export function useOincFacts({ view, cycle, transactions, person, enabled }: Use
   const savings = useSavings()
   const porquinhoCents = savings.loading || savings.error !== null ? null : toCents(savings.balance)
 
-  const [events, setEvents] = useState<{ uid: string; list: AgendaEvent[] } | null>(null)
+  const [calendar, setCalendar] = useState<(Agenda & { uid: string }) | null>(null)
   useEffect(() => {
     if (uid === null) return
     let alive = true
-    void loadAgenda(uid).then((list) => {
-      if (alive) setEvents({ uid, list })
+    void loadAgenda(uid, person).then((loaded) => {
+      if (alive) setCalendar({ uid, ...loaded })
     })
     return () => {
       alive = false
     }
-  }, [uid])
+  }, [uid, person])
 
   return useMemo<OincFacts>(() => {
     if (!own || !enabled || !isCurrent || view === null || view.isPast || transactions === null) return NO_FACTS
@@ -110,7 +120,8 @@ export function useOincFacts({ view, cycle, transactions, person, enabled }: Use
               currentCents: toCents(g.currentAmount),
             })),
           porquinhoCents,
-          events: events !== null && events.uid === uid ? events.list : [],
+          events: calendar !== null && calendar.uid === uid ? calendar.events : [],
+          notes: calendar !== null && calendar.uid === uid ? calendar.notes : [],
         },
         { surface: 'app' },
       )
@@ -144,7 +155,7 @@ export function useOincFacts({ view, cycle, transactions, person, enabled }: Use
     items,
     goals,
     porquinhoCents,
-    events,
+    calendar,
     uid,
   ])
 }

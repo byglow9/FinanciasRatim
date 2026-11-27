@@ -33,6 +33,11 @@ export const OINC_VIDA = Object.freeze({
     ['compromisso-003', 'PLANTÃO: dentista em {dias}, {hora}. Suspeito já ensaia caganeira pra não ir.', 'x', false, false, 4, '3:s23-3', { se: ['tema:dentista'] }],
     ['compromisso-004', '{dias}, {hora}, compromisso. Toma banho, que teu sovaco tá mogando o chiqueiro.', 'x', false, false, 4, '4:novo-compromisso-1'],
     ['compromisso-005', '{titulo} em {dias}, {hora}. Vai ou inventa caganeira, cabeça de bagre?', 'x', false, false, 4, '4:novo-compromisso-2'],
+    ['compromisso-006', 'Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.', 'x', false, false, 4, '4:novo-compromisso-3', { se: ['hoje'] }],
+    ['compromisso-007', '{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.', 'x', false, false, 4, '4:novo-compromisso-4', { se: ['hoje'] }],
+    ['compromisso-008', 'Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.', 'x', false, false, 4, '4:novo-compromisso-5', { se: ['amanha'] }],
+    ['compromisso-009', '{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.', 'x', false, false, 4, '4:novo-compromisso-6'],
+    ['compromisso-010', 'Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.', 'x', true, false, 4, '4:novo-compromisso-7'],
   ]),
   aniversario: list([
     ['aniversario-001', 'Aniversário em {dias}. Dar chiclete do posto é red flag, sua marmota.', 'x', false, false, 4, '3:s24-1'],

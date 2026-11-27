@@ -204,7 +204,7 @@ export function NotificationsCard() {
       <SwitchRow
         id="push-compromisso"
         label="Compromissos da agenda"
-        hint="Dois dias antes e um dia antes."
+        hint="Dois dias antes, um dia antes e no dia."
         checked={prefs.types.compromisso}
         onChange={(v) => setType('compromisso', v)}
         disabled={locked}

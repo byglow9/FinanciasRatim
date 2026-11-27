@@ -35,7 +35,7 @@ import { categoryDisplayName, categoryIcon } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import { isSpendSpike } from '@shared/core/insights.js'
-import { pickFact, themeConds } from '@shared/core/oincFacts.js'
+import { FACT_GROUPS, pickFact, themeConds } from '@shared/core/oincFacts.js'
 import { OINC_LINES } from '@shared/core/oincLines.js'
 import { OINC_SCENES } from '@shared/core/oincScenes.js'
 import {
@@ -185,7 +185,7 @@ export interface VintemContextType {
   /** Conta fixa marcada como paga: festa e fala do acervo, so no sem filtro. Desmarcar nao chama. */
   onBillPaid: (args: { name: string; valorCents: number }) => void
   /** Cutucao no porco: fala do acervo sobre um fato de agora. Falso quando nao tem o que dizer. */
-  cutucar: () => boolean
+  cutucar: (announce?: boolean) => boolean
   /** Comemoracao ativa para o humor de fundo da Home; o nucleo garante que um estouro vence a festa. */
   cheer: Cheer | null
   /** Guarda os fatos locais da propria pessoa para as falas (D-19): so em memoria, sem novo render. */
@@ -215,6 +215,8 @@ const VINTEM_TOAST_MS = 10000
 const IA_A_CADA = 3
 /** Cenas ditas ha pouco, que o sorteio do assunto evita. */
 const RECENT_SCENES = 5
+/** Fatos ditos ha pouco, para a mesma compra nao voltar logo. */
+const RECENT_KEYS = 12
 /** Fato a partir desta prioridade (estouro, limite quase, conta de hoje ou atrasada) abre a entrada. */
 const URGENT_PRIORITY = 80
 
@@ -604,24 +606,31 @@ export function VintemProvider({ children }: { children: ReactNode }) {
   )
 
   const recentScenes = useRef<string[]>([])
-  const lembrar = useCallback((cena: string): void => {
+  const recentKeys = useRef<string[]>([])
+  const lembrar = useCallback((cena: string, key?: string): void => {
     recentScenes.current = [...recentScenes.current.filter((c) => c !== cena), cena].slice(-RECENT_SCENES)
+    if (key) recentKeys.current = [...recentKeys.current.filter((k) => k !== key), key].slice(-RECENT_KEYS)
   }, [])
+
+  // Assunto da vez: gastos recentes, calendario e o resto se revezam, para o limite estourado nao
+  // monopolizar a conversa.
+  const groupTurn = useRef(0)
+  const proximoGrupo = useCallback((): string => FACT_GROUPS[groupTurn.current++ % FACT_GROUPS.length], [])
 
   // Cutucao no porco: uma fala do acervo sobre um fato de agora (saldo, conta, meta, agenda, anotacao),
   // sem repetir a cena anterior. Falso quando nao ha fato ou fala; nunca pede a IA.
-  const cutucar = useCallback((): boolean => {
+  const cutucar = useCallback((announce = true): boolean => {
     if (tone !== 'sem-filtro') return false
     rand.current ??= mulberry32(Date.now())
     const fact = pickFact(
       currentFacts().filter((f) => f.cena !== 'entrou'),
-      { recentScenes: recentScenes.current, rand: rand.current },
+      { recentScenes: recentScenes.current, recentKeys: recentKeys.current, rand: rand.current, grupo: proximoGrupo() },
     )
     if (fact === null) return false
-    const said = speak({ situation: 'espiar', cena: fact.cena, slots: fact.slots, conds: fact.conds, announce: true })
-    if (said) lembrar(fact.cena)
+    const said = speak({ situation: 'espiar', cena: fact.cena, slots: fact.slots, conds: fact.conds, announce })
+    if (said) lembrar(fact.cena, fact.key)
     return said
-  }, [tone, currentFacts, speak, lembrar])
+  }, [tone, currentFacts, speak, lembrar, proximoGrupo])
 
   // Fala sem gatilho da IA (D-12 b): so o texto dela, que cobre anotacoes, agenda e padroes. Sem texto nada
   // aparece por aqui, e o verdadeiro devolvido diz que a IA nao respondeu. Se um lancamento ou uma edicao
@@ -658,10 +667,10 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       // A cena de entrada nao serve no meio do uso.
       const fact = pickFact(
         facts.filter((f) => f.cena !== 'entrou'),
-        { recentScenes: recentScenes.current, rand: rand.current },
+        { recentScenes: recentScenes.current, recentKeys: recentKeys.current, rand: rand.current, grupo: proximoGrupo() },
       )
       if (fact !== null) {
-        lembrar(fact.cena)
+        lembrar(fact.cena, fact.key)
         if (mostrar({ situation: 'espiar', cena: fact.cena, slots: fact.slots, conds: fact.conds })) return
       }
       const idle = facts.find((f) => f.cena === 'do-nada')
@@ -670,7 +679,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     } catch {
       // Melhor esforco: a espiada nunca atrapalha o que a pessoa esta fazendo.
     }
-  }, [currentFacts, lembrar, mostrar])
+  }, [currentFacts, lembrar, mostrar, proximoGrupo])
 
   // Quem fala na vez sem gatilho. Suave e direto: so a IA, como antes (D-35). Sem filtro: o acervo, e uma em
   // cada tres vezes a IA; sem resposta dela, o acervo tambem (D-10).
@@ -700,7 +709,7 @@ export function VintemProvider({ children }: { children: ReactNode }) {
           const facts = currentFacts()
           const urgent = facts.find((f) => f.prioridade >= URGENT_PRIORITY)
           if (urgent && dizer({ situation: 'espiar', cena: urgent.cena, slots: urgent.slots, conds: urgent.conds })) {
-            lembrar(urgent.cena)
+            lembrar(urgent.cena, urgent.key)
             return
           }
           const hello = facts.find((f) => f.cena === 'entrou')

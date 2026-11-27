@@ -1,0 +1,112 @@
+[
+  {
+    "id": "compromisso-006",
+    "cenario": "Compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compromisso-007",
+    "cenario": "Compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compromisso-008",
+    "cenario": "Compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compromisso-009",
+    "cenario": "Compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compromisso-010",
+    "cenario": "Compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-compromisso-d0-001",
+    "cenario": "Aviso de compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Hoje tem {titulo}, sua anta. Levanta essa bunduxa do sofá.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-compromisso-d0-002",
+    "cenario": "Aviso de compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{titulo} é HOJE. Não esquece, que eu não sou tua secretária, porra.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-compromisso-d1-009",
+    "cenario": "Aviso de compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Amanhã: {titulo}. Separa uma roupa sem mancha de molho, criatura.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-compromisso-d2-009",
+    "cenario": "Aviso de compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{titulo} daqui a {dias}. Anotei no rabicó pra te cobrar.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-compromisso-d2-010",
+    "cenario": "Aviso de compromisso",
+    "situacao": "Aprovada pelo dono no chat",
+    "texto": "Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "Tem {titulo} em {dias}. Já pode começar a inventar desculpa, HIHIHI.",
+    "tom": "sem-filtro"
+  }
+]

@@ -11,7 +11,7 @@ import { normalize } from './classify.js'
 const RULES = [
   ['sonolento', /acordei|acorda agora|cochil|dormindo|sonhei|sonho\b|bocej|zzz|bom diazuxo/],
   ['feliz', /g[o]{2,}l|conta paga|paga!|foi paga|meta batida|bate(u)? \S+!|rebol|orgulh|beijo de focinho|que evolucao|gordinho e feliz|aura infinita|me cagar de felicidade|tá podre de rico|nadando em grana/],
-  ['bravo', /chacin|que porra|estourou|estour[ae]|caloteir|mordo|rosnar|cago n|chuto|come(r)? (tua|teu)|arranco|mastig|fodeu|vai tomar|roubar|paga essa|paga agora|paga,? porra|ou eu\b|escandalo|barraco|desgraca|safadeza/],
+  ['bravo', /chacin|que porra|estourou|estour[ae]|caloteir|mordo|rosnar|cago n|chuto|come(r)? (tua|teu)|arranco|mastig|fodeu|vai tomar|roubar|paga essa|paga agora|paga,? porra|\bou eu\b|escandalo|barraco|desgraca|safadeza/],
   ['surpreso', /piripaque|morree|socorro|mano\. mano|puta que pariu|\?!|aaaa|plantao|caiu \S*r\$|ronc\. ronc|em choque|susto|nao tankei/],
   ['triste', /saudade|sozinh|abandon|carente|senti falta|sumiu|sumido|choro|chorando|triste|magr|vazio|miojo|farelo|bolacha agua|liso|tô calmo|to calmo|nem um|devolve/],
   ['atento', /de olho|vigiando|cuidado|segura|calma ai|freia|nao mosca|vence (hoje|amanha)|faltam? (um|dois|tres|\S+ dias?)/],

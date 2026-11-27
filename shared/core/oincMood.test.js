@@ -13,6 +13,7 @@ test('a cara combina com a frase', () => {
     ['Ronc. Acordei com o app abrindo.', 'sonolento'],
     ['Tô de olho nesse dedinho.', 'atento'],
     ['Pet shop de R$ 87.', 'neutro'],
+    ['Olha que o gordinho aqui sou eu.', 'neutro'],
     ['', 'neutro'],
     [null, 'neutro'],
   ]

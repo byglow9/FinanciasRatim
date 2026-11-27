@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { Vintem, type VintemHandle, type VintemState } from '@/components/vintem/Vintem'
 import { VintemInlineRow } from '@/components/vintem/VintemInlineRow'
+import { VintemTalkCard } from '@/components/vintem/VintemTalkCard'
 import type { ArcTone } from '@/lib/rhythm'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { cn } from '@/lib/utils'
@@ -179,6 +180,8 @@ export function VintemTestPage() {
         <h1 className="font-display text-[28px] font-bold leading-tight">Teste do OINC</h1>
         <p className="text-xs font-normal text-muted-foreground">Página de testes. Nada aqui grava dados.</p>
       </div>
+
+      <VintemTalkCard />
 
       <section aria-labelledby="vt-stage" className="space-y-4 rounded-card bg-card p-4">
         <h2 id="vt-stage" className="text-base font-bold">

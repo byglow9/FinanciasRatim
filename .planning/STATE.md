@@ -1,13 +1,13 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 07
-current_phase_name: Push e Vintém com IA
+current_phase: "07.1"
+current_phase_name: Falas do OINC com qualidade
 status: executing
 stopped_at: Completed 07.1-12-PLAN.md
-last_updated: "2026-11-26T19:48:29.685Z"
-last_activity: 2026-11-25
-last_activity_desc: Phase 06 execution started
-state_head: ade9af0ad058d3ce289d2e969f3aba479aa1f498
+last_updated: "2026-11-27T12:06:24.529Z"
+last_activity: 2026-11-27
+last_activity_desc: Phase 07.1 execution started
+state_head: 91470475b3454cb6c76759c8bfb6dce5be018b80
 progress:
   total_phases: 10
   completed_phases: 2
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-17)
 
 **Core value:** Em segundos o usuário sabe quanto ainda pode gastar no mês (com base em limites por categoria) e o Vintém o ajuda a não estourar.
-**Current focus:** Phase 06 — Cartão de crédito
+**Current focus:** Phase 07.1 — Falas do OINC com qualidade
 
 ## Current Position
 
-Phase: 07 (Push e Vintém com IA) — PAUSADA no checkpoint 07-17
-Plan: 18 of 19 (07-01 a 07-16 concluídos)
-Status: Aguardando o dono testar o modelo; D-25 e D-26 (notificações) por planejar
-Last activity: 2026-11-25 — humor do OINC e leitura de calendário e anotações
+Phase: 07.1 (Falas do OINC com qualidade) — EXECUTING
+Plan: 1 of 17
+Status: Executing Phase 07.1
+Last activity: 2026-11-27 — Phase 07.1 execution started
 Retomar por: .planning/phases/07-push-e-vint-m-com-ia/.continue-here.md
 
 ## Performance Metrics
@@ -302,8 +302,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-26T19:48:29.526Z
-Stopped at: Completed 07.1-12-PLAN.md
+Last session: 2026-11-27T12:04:48.000Z
+Stopped at: 07.1-14 concluído; 07.1-15 aguarda o dono publicar (07.1-UAT-ROTEIRO.md)
 Resume file: None
 
 ## Pendências humanas abertas (24/11/2026)

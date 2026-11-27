@@ -94,3 +94,18 @@ Atenção: a latência do teste é a da chamada ao provedor, medida da máquina 
 | `AI_XAI_MODEL` | não usado |
 | `AI_REQUIRE_PROFANITY` | false |
 | Data | 2026-11-25 |
+
+## Decisão da 07.1 (2026-11-27)
+
+Segundo teste cego (07.1-14): `qwen/qwen3.8-27b` no Groq, 30 de 32 aprovadas. O dono decidiu ligar e informou a releitura dos termos do Groq na data ("lido e concordado"). Detalhe em `.planning/phases/07.1-falas-do-oinc-com-qualidade/07.1-TESTE-CEGO.md`.
+
+| Variável | Valor |
+|----------|-------|
+| `AI_PROVIDERS` | groq |
+| `AI_GROQ_MODEL` | qwen/qwen3.8-27b |
+| `AI_GROQ_REASONING_EFFORT` | none |
+| `AI_MAX_TOKENS_FACTOR` | 1 |
+| `AI_LIVE` | true |
+| `AI_REFILL` | false |
+| `AI_REQUIRE_PROFANITY` | false |
+| `AI_REACTION_TIMEOUT_MS` | 4000 |

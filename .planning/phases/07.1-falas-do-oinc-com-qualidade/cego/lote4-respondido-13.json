@@ -1,0 +1,57 @@
+[
+  {
+    "id": "delivery-011",
+    "cenario": "Delivery",
+    "situacao": "Pediu comida",
+    "texto": "R$ 58 no delivery. Se chegou quentinho, grande e na hora, quem me dera, rsrsrs.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{valor} no delivery. Se chegou quentinho, grande e na hora, quem me dera, rsrsrs.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compra-grande-001",
+    "cenario": "Compra grande",
+    "situacao": "Compra de valor alto, só para homem",
+    "texto": "R$ 1.100 de uma vez?? Eu aqui comendo moeda de cinco, seu playboy do caralho.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{valor} de uma vez?? Eu aqui comendo moeda de cinco, seu playboy do caralho.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compra-grande-002",
+    "cenario": "Compra grande",
+    "situacao": "Compra de valor alto",
+    "texto": "HIHIHI R$ 1.100 numa compra só. Tomara que vibre, pelo preço... a notificação, porra. rsrsrsrs",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "HIHIHI {valor} numa compra só. Tomara que vibre, pelo preço... a notificação, porra. rsrsrsrs",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "compra-grande-006",
+    "cenario": "Compra grande",
+    "situacao": "Compra de valor alto, só para mulher",
+    "texto": "R$ 1.100 de uma vez?? Eu aqui comendo moeda de cinco, sua playgirl do caralho.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{valor} de uma vez?? Eu aqui comendo moeda de cinco, sua playgirl do caralho.",
+    "tom": "sem-filtro"
+  },
+  {
+    "id": "push-ritmo-009",
+    "cenario": "Aviso sobre o ritmo",
+    "situacao": "Aviso solto sobre o que sobra, aviso na tela do celular, tom sem filtro",
+    "texto": "R$ 320 pra 3 dias. Dá pra um miojo ou um beck, tu escolhe. Escolhe o beck, porra.",
+    "voto": "sim",
+    "comentario": "",
+    "lote": 4,
+    "modelo": "{restante} pra {dias}. Dá pra um miojo ou um beck, tu escolhe. Escolhe o beck, porra.",
+    "tom": "sem-filtro"
+  }
+]

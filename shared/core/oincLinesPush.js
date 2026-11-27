@@ -15,7 +15,7 @@
 // Ids: cena e tres digitos (sem filtro 0xx, suave 1xx, direto 2xx).
 
 /** Avisos sem filtro mudados depois do voto: pedem voto de novo. */
-const PENDENTES = new Set(['push-ritmo-009'])
+const PENDENTES = new Set()
 
 /**
  * @typedef {import('./oincLines.js').OincLine} OincLine

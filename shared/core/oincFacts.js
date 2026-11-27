@@ -248,7 +248,7 @@ function dateConds(ahead) {
  * @param {unknown} text
  * @returns {string[]}
  */
-function themeConds(text) {
+export function themeConds(text) {
   const n = normalize(text)
   if (n === '') return []
   return OINC_TEMAS.filter((tema) => {

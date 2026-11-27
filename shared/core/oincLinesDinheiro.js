@@ -222,5 +222,13 @@ export const OINC_DINHEIRO = Object.freeze({
     ['conta-paga-005', 'Menos uma. Um adulto funcional, quem diria.', 'x', false, false, 1, '1:s11-3'],
     ['conta-paga-006', 'Conta de luz quitada. Hoje você não toma banho no escuro.', 'x', false, false, 1, '1:s11-4', { se: ['tema:luz'] }],
     ['conta-paga-007', 'É GOOOL! Conta paga! Tô rebolando peladuxo, chupa esses juros, caralho! rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-1', { reescrita: true }],
+    ['conta-paga-008', 'PLANTÃO: {conta} de {valor} foi PAGA. Vizinhos em choque, achavam que tu era caloteiruxo.', 'x', false, false, 4, '4:novo-conta-paga-8', { reescrita: true }],
+    ['conta-paga-009', '{conta} paga! Cadê quem era caloteiro? Te abduziram, cabeça de bagre? KKKKK', 'x', true, false, 4, '4:novo-conta-paga-9', { reescrita: true }],
+    ['conta-paga-010', 'É GOOOL! {conta} paga, {valor} no ângulo! Chupa, juros do caralho!', 'x', false, false, 4, '4:novo-conta-paga-10', { reescrita: true }],
+    ['conta-paga-011', 'Pagou {conta}?? Mó aura, véi. Vem cá que eu te dou um beijo de focinho. rsrsrs', 'x', true, false, 4, '4:novo-conta-paga-11', { reescrita: true }],
+    ['conta-paga-012', 'Coach: pagou {conta}. Saiu da zona de calote, guerreiro do boleto.', 'x', false, false, 4, '4:novo-conta-paga-12', { reescrita: true }],
+    ['conta-paga-013', 'Horóscopo: conta paga. Signo adulto com ascendente em liso pra caralho. huehue', 'x', true, false, 4, '4:novo-conta-paga-13', { reescrita: true }],
+    ['conta-paga-014', '{valor} foram embora e o nome ficou limpo. Eu choro peladuxo, mas de orgulho, porra.', 'x', false, false, 4, '4:novo-conta-paga-14', { reescrita: true }],
+    ['conta-paga-015', 'Conta paga! Marca no calendário, que esse milagre não passa toda semana, pamonha.', 'x', false, false, 4, '4:novo-conta-paga-15', { reescrita: true }],
   ]),
 })

@@ -34,7 +34,7 @@ import { categoryDisplayName } from '@shared/core/categories.js'
 import { cycleOf } from '@shared/core/cycle.js'
 import { dayKeyOf } from '@shared/core/dayKey.js'
 import { isSpendSpike } from '@shared/core/insights.js'
-import { pickFact } from '@shared/core/oincFacts.js'
+import { pickFact, themeConds } from '@shared/core/oincFacts.js'
 import { OINC_LINES } from '@shared/core/oincLines.js'
 import { OINC_SCENES } from '@shared/core/oincScenes.js'
 import {
@@ -181,6 +181,8 @@ export interface VintemContextType {
   onLaunched: (args: LaunchedArgs) => Promise<void>
   /** Meta batida: festa e fala de meta (melhor esforco, igual a onLaunched). Aporte que nao fecha nao chama. */
   onGoal: (args: { valorCents: number }) => void
+  /** Conta fixa marcada como paga: festa e fala do acervo, so no sem filtro. Desmarcar nao chama. */
+  onBillPaid: (args: { name: string; valorCents: number }) => void
   /** Comemoracao ativa para o humor de fundo da Home; o nucleo garante que um estouro vence a festa. */
   cheer: Cheer | null
   /** Guarda os fatos locais da propria pessoa para as falas (D-19): so em memoria, sem novo render. */
@@ -808,6 +810,19 @@ export function VintemProvider({ children }: { children: ReactNode }) {
     [deliver],
   )
 
+  const onBillPaid = useCallback(
+    ({ name, valorCents }: { name: string; valorCents: number }): void => {
+      // Suave e direto nao tem fala para este momento no banco antigo.
+      if (tone !== 'sem-filtro') return
+      void deliver('festa', 'conta-paga', { valorCents }, undefined, {
+        cena: 'conta-paga',
+        slots: { conta: name },
+        conds: themeConds(name),
+      })
+    },
+    [tone, deliver],
+  )
+
   const value = useMemo<VintemContextType>(
     () => ({
       tone,
@@ -824,10 +839,11 @@ export function VintemProvider({ children }: { children: ReactNode }) {
       registerSlot,
       onLaunched,
       onGoal,
+      onBillPaid,
       cheer,
       setFacts,
     }),
-    [tone, speech, speak, draw, speakText, speakAi, entrar, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, cheer, setFacts],
+    [tone, speech, speak, draw, speakText, speakAi, entrar, dismiss, canVote, rate, registerSlot, onLaunched, onGoal, onBillPaid, cheer, setFacts],
   )
 
   return (

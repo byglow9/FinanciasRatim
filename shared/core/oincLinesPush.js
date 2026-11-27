@@ -108,7 +108,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   'push-conta-d2': scene('push-conta-d2', {
     'sem-filtro': [
       ['001', 'Em dois dias: {conta}, {valor}. Solta o patacuxo ou eu começo a latir, porra.'],
-      ['002', 'Dois dias pra {conta}, {valor}. Coach: boleto é oportunidade que te fode.'],
+      ['002', 'Coach: {conta}, {valor}, em dois dias. Trabalhe enquanto os juros dormem.'],
       ['003', 'PLANTÃO: {conta} de {valor} ronda a vizinhança. Faltam dois dias, família.'],
       ['004', 'Quem é {conta}? {valor} em dois dias e tu nem me apresentou, safadeza?'],
       ['005', 'Boletuxo em dois dias: {conta}, {valor}. Foge não, marmota, ele sabe onde tu caga.'],
@@ -130,7 +130,7 @@ export const OINC_PUSH_LINES = Object.freeze({
     'sem-filtro': [
       ['001', '{valor} de {conta} vence amanhã. Paga ou eu durmo de bunda na tua cara.'],
       ['002', 'Amanhã: {conta}, {valor}. POV: tu jurando que vai lembrar. Vai porra nenhuma.'],
-      ['003', 'LÁ VEM {conta}, {valor}, é amanhã, os juros tão aquecendo no banco, caralho!'],
+      ['003', 'Amanhã vence {conta}, {valor}. Paga, cabeça de bagre, antes que os juros te pelem.'],
       ['004', '{valor} amanhã: {conta}. Beleza. Calmo. VOU RASPAR O COFRE COM O CASCO.'],
       ['005', 'Amanhã é {conta}, {valor}. Gastou em skin? Chacino tua mãe, songamonga.'],
       ['006', 'Amanhã vence {conta}. VENDE-SE memória de ameba, troco num miojo vencido.'],
@@ -151,8 +151,8 @@ export const OINC_PUSH_LINES = Object.freeze({
     'sem-filtro': [
       ['001', 'HOJE: {conta}, {valor}. Paga ou eu chacino tua mãe, sua anta.'],
       ['002', 'Hoje vence {conta}, {valor}. Todo mundo tem as mesmas 24h, é só querer.'],
-      ['003', 'PLANTÃO: {conta} de {valor} vence hoje. Suspeito caga e anda.'],
-      ['004', '{valor} pra hoje: {conta}. Tu: depois. Eu: depois é o caralho de asa.'],
+      ['003', 'PLANTÃO: {conta}, {valor}, vence hoje. Suspeito em choque corre se cagando na avenida.'],
+      ['004', 'Pra hoje, {conta}: {valor}. Tu: depois. Eu: depois é o caralho de asa.'],
       ['005', 'É hoje: {conta}, {valor}. Os juros tão atrás da cortina, de pau na mão. Corre.'],
       ['006', 'Hoje vence {conta}. Delivery antes disso e eu viro um porco assassino.'],
       ['007', 'Conta vencendo hoje. Beleza. Tá tudo bem. PAGA ESSA DESGRAÇAAAA.'],
@@ -225,7 +225,7 @@ export const OINC_PUSH_LINES = Object.freeze({
   'push-ritmo': scene('push-ritmo', {
     'sem-filtro': [
       ['001', '{restante} pra {dias}. Modo miojuxo ativado, véi, sem aura e sem carne.'],
-      ['002', 'Coach: {restante} pra {dias}. Fome é falta de mentalidade, guerreiro fodido.'],
+      ['002', 'Coach: {restante} pra {dias}. Saia da zona de conforto: janta pão dormido, guerreiro.'],
       ['003', 'VENDE-SE dignidade. Sobrou {restante} pra {dias}. Aceito até fiado.'],
       ['004', 'PLANTÃO: {dias} pro salário, {restante} na mão. Vítima cheira o próprio boleto. KKKKK', true],
       ['005', '{restante} pra {dias}. Beleza. Calmo. VOU LAMBER EMBALAGEM ATÉ O SALÁRIO. Ronc.', true],

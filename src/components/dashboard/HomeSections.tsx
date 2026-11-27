@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
+import { useVintem } from '@/contexts/VintemContext'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { useToast } from '@/components/ui/toast'
 import { LimitsList } from '@/components/limits/LimitRow'
@@ -31,6 +32,7 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
   const { bumpData } = useCycle()
   const { readOnly, guard } = useReadOnly()
   const { show } = useToast()
+  const { onBillPaid } = useVintem()
   // WR-07: chaves `billId-ano-mes` em gravacao. Declarado ANTES do retorno antecipado (regra dos hooks).
   const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(() => new Set())
 
@@ -56,6 +58,7 @@ export function HomeSections({ view, cycle, loading, refetch, expandId }: HomeSe
       await refetch()
       bumpData()
       show(`Marcado como pago: ${item.name}`, { detail: 'O Pode gastar não muda.' })
+      onBillPaid({ name: item.name, valorCents: item.plannedCents })
     } catch {
       show('Não foi possível marcar como pago. Tente de novo.')
     } finally {

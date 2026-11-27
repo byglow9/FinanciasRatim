@@ -3,6 +3,8 @@ import { Check, Pencil, Plus } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
 import { useCycle } from '@/contexts/CycleContext'
 import { useCycleBills } from '@/hooks/useCycleBills'
+import { useVintem } from '@/contexts/VintemContext'
+import type { BillItem } from '@shared/core/budget.js'
 import { useReadOnly } from '@/hooks/useReadOnly'
 import { BillFormSheet, type BillFormData } from '@/components/fixed-expenses/BillFormSheet'
 import { BillGroupCard } from '@/components/fixed-expenses/BillGroupCard'
@@ -30,6 +32,15 @@ export function FixedExpensesPage() {
 
   const person: PersonType = currentArea === 'porquinho' ? 'ele' : currentArea
   const { items, expenses, loading, error, refetch, add, update, remove, togglePaid, pendingKeys } = useCycleBills(person)
+
+  const { onBillPaid } = useVintem()
+
+  // Marcar (nunca desmarcar) faz o porco comentar.
+  const toggleAndSpeak = async (item: BillItem): Promise<boolean> => {
+    const saved = await togglePaid(item)
+    if (saved && !item.paid) onBillPaid({ name: item.name, valorCents: item.plannedCents })
+    return saved
+  }
 
   // O Sheet de ações fica montado enquanto a animação de saída roda, então a linha escolhida
   // continua guardada depois de fechar.
@@ -71,7 +82,7 @@ export function FixedExpensesPage() {
 
   const toggleFromSheet = async (item: CategorizedBillItem) => {
     setSheetOpen(false)
-    if (await togglePaid(item)) bumpData()
+    if (await toggleAndSpeak(item)) bumpData()
   }
 
   const openNew = () => {
@@ -213,7 +224,7 @@ export function FixedExpensesPage() {
               key={group.key}
               group={group}
               todayParts={todayParts}
-              togglePaid={togglePaid}
+              togglePaid={toggleAndSpeak}
               pendingKeys={pendingKeys}
               onSelect={select}
             />

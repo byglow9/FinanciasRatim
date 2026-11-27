@@ -51,6 +51,8 @@ export type VintemReaction = 'spend' | 'susto' | 'bronca' | 'festa' | 'wake'
 /** Controle imperativo do Vintem (React 19: `ref` como prop). */
 export interface VintemHandle {
   react: (kind: VintemReaction) => void
+  /** Poe a cara da frase por um tempo, cancelando a reacao em curso. */
+  express: (state: string, ms: number) => void
   /** Expressao que ele esta mostrando agora: a da reacao em curso ou a do humor de fundo. */
   mood: () => string
   /** Olhar guiado (plano 05-23): x e y de -1 a 1 (cenas do onboarding). */
@@ -195,6 +197,10 @@ export function Vintem({
       react: (kind) => {
         reaction.current = { state: reactionState(kind), until: performance.now() + REACTION_MS[kind] }
         viewRef.current?.react(kind)
+      },
+      express: (next, ms) => {
+        reaction.current = { state: next, until: performance.now() + ms }
+        viewRef.current?.express(next, ms)
       },
       mood: () =>
         reaction.current !== null && performance.now() < reaction.current.until

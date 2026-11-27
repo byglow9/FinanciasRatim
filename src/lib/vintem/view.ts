@@ -477,6 +477,7 @@ export interface VintemViewHandle {
   setFollow: (follow: boolean) => void
   /** Reacao curta ('spend', 'susto', 'bronca', 'festa' ou 'wake'); volta ao humor de fundo. */
   react: (kind: string) => void
+  express: (state: string, ms: number) => void
   /** Olhar guiado (plano 05-23): x e y de -1 a 1; o centro do olhar volta a derivar depois de 1 a 3 s. */
   gazeTo: (x: number, y: number) => void
   /** Toque: desperta o sonolento (devolve true); senao so pisca. */
@@ -551,6 +552,10 @@ export function createVintemView(svg: SVGSVGElement, opts: VintemViewOptions): V
       if (next === follow) return
       follow = next
       setInstanceFollow(svg, next)
+    },
+    express(state, ms) {
+      model.express(state, ms)
+      wake()
     },
     react(kind) {
       model.react(kind)

@@ -533,6 +533,19 @@ export class VintemModel {
   }
 
   /**
+   * Mostra uma expressao por um tempo (a cara da frase que ele esta dizendo). Cancela a reacao em
+   * curso, para ela nao desmentir o que ele fala; depois volta o humor de fundo.
+   * @param {string} state
+   * @param {number} ms
+   */
+  express(state, ms) {
+    if (this.dead || !knownState(state, this._entrada)) return
+    const tk = this._begin()
+    this._force(state, ms)
+    this._finish(tk, ms)
+  }
+
+  /**
    * Reacao curta: 'spend', 'susto', 'bronca', 'festa' ou 'wake'. Reacao nova
    * cancela a anterior. Com movimento reduzido vira pose estatica de 1,3 s.
    * @param {string} kind

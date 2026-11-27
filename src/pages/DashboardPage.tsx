@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CircleAlert, PiggyBank } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
@@ -13,6 +13,7 @@ import { VintemSlot } from '@/components/vintem/VintemSlot'
 import { VintemHomeBalloon, VintemHomeVote } from '@/components/vintem/VintemHomeBalloon'
 import { useVintem } from '@/contexts/VintemContext'
 import { useOincTalk } from '@/hooks/useOincTalk'
+import { moodOfLine } from '@shared/core/oincMood.js'
 import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
@@ -34,6 +35,9 @@ const LINK_BUTTON =
  * seções do HomeSections. Só exibe a BudgetView do núcleo: nenhuma fórmula de orçamento aqui.
  * Sem view não há número: carregando e erro nunca mostram valor (T-03-75).
  */
+/** Por quanto tempo a cara da frase vale por cima de uma reacao em curso. */
+const EXPRESS_MS = 2600
+
 export function DashboardPage() {
   const { currentArea, settingsStatus, reloadSettings } = useArea()
   const { viewPerson } = useCycle()
@@ -54,7 +58,15 @@ export function DashboardPage() {
   const noIncome = view !== null && !view.income.hasIncome
   // Mesma condicao de antes para o balao: so com numeros na tela.
   const talking = speech !== null && view !== null && !noIncome
-  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey, () => slot.current?.mood() ?? vintem.state)
+  // A cara vem da frase: ele nao chora ameacando. Calado, volta o humor do mes.
+  const lineMood = talking ? moodOfLine(speech.text) : null
+  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey, () => lineMood ?? vintem.state)
+  useEffect(() => {
+    // uma reacao em curso com outra cara cede para a da frase
+    if (lineMood !== null && slot.current !== null && slot.current.mood() !== lineMood) {
+      slot.current.express(lineMood, EXPRESS_MS)
+    }
+  }, [lineMood, speech?.popKey, slot])
   if (isPiggy) {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
@@ -135,7 +147,7 @@ export function DashboardPage() {
           {/* O porco nao sai do lugar: quem se ajeita e o balao. Falando, ele quica pela base. */}
           <div className="relative">
             <div ref={pigRef}>
-              <VintemSlot state={vintem.state} onTap={vintem.onTap} />
+              <VintemSlot state={lineMood ?? vintem.state} onTap={vintem.onTap} />
             </div>
             {talking && <VintemHomeBalloon />}
           </div>

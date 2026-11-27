@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Vintem, type VintemHandle, type VintemReaction } from '@/components/vintem/Vintem'
 import { useOincTalk } from '@/hooks/useOincTalk'
 import { reactionState } from '@shared/core/vintemMood.js'
+import { moodOfLine } from '@shared/core/oincMood.js'
 
 export interface VintemToastBodyProps {
   /** Fala ja sorteada e preenchida; entra como texto React, nunca como HTML. */
@@ -21,11 +22,13 @@ export interface VintemToastBodyProps {
 export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastBodyProps) {
   const handle = useRef<VintemHandle>(null)
   const body = useRef<HTMLDivElement>(null)
-  useOincTalk(body, text, undefined, () => reactionState(reaction))
+  // a cara vem da frase; a reacao em miniatura so roda quando combina com ela
+  const lineMood = moodOfLine(text)
+  useOincTalk(body, text, undefined, () => lineMood)
 
   useEffect(() => {
-    handle.current?.react(reaction)
-  }, [reaction])
+    if (reactionState(reaction) === lineMood) handle.current?.react(reaction)
+  }, [reaction, lineMood])
 
   const left = side === 'left'
   return (
@@ -54,7 +57,7 @@ export function VintemToastBody({ text, reaction, side = 'right' }: VintemToastB
       >
         <div className="anim-peek-vintem [&_ellipse[id$=-shadow]]:hidden">
           <div ref={body}>
-            <Vintem ref={handle} state="atento" size="empty" follow={false} />
+            <Vintem ref={handle} state={lineMood} size="empty" follow={false} />
           </div>
         </div>
       </div>

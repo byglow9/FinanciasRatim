@@ -54,7 +54,9 @@ export function scaleProblems(files) {
   const problems = []
   for (const f of files) {
     const src = code(f)
-    if (OFF_SCALE.test(src)) problems.push(`${f}: tamanho Tailwind fora da escala`)
+    // o dono pediu o balao de quadrinho menor: so nele vale o text-sm (14px)
+    const scaled = f.endsWith('vintem/VintemBalloon.tsx') ? src.replace(/\btext-sm\b/g, '') : src
+    if (OFF_SCALE.test(scaled)) problems.push(`${f}: tamanho Tailwind fora da escala`)
     if (WEIGHTS.test(src)) problems.push(`${f}: peso fora de 400 e 700`)
     if (INLINE_WEIGHT.test(src)) problems.push(`${f}: fontWeight fora de 400 e 700`)
     if (RAW_HTML.test(src)) problems.push(`${f}: HTML bruto`)

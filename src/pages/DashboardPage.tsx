@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CircleAlert, PiggyBank } from 'lucide-react'
 import { useArea } from '@/contexts/AreaContext'
@@ -11,6 +12,7 @@ import { ArcGauge } from '@/components/dashboard/ArcGauge'
 import { VintemSlot } from '@/components/vintem/VintemSlot'
 import { VintemHomeBalloon, VintemHomeVote } from '@/components/vintem/VintemHomeBalloon'
 import { useVintem } from '@/contexts/VintemContext'
+import { useOincTalk } from '@/hooks/useOincTalk'
 import { VintemEmpty } from '@/components/vintem/VintemEmpty'
 import { RhythmPill } from '@/components/dashboard/RhythmPill'
 import { ShortcutRow } from '@/components/dashboard/ShortcutRow'
@@ -41,6 +43,7 @@ export function DashboardPage() {
   const { open } = useLaunch()
   const { readOnly } = useReadOnly()
   const { speech } = useVintem()
+  const pigRef = useRef<HTMLDivElement>(null)
   const vintem = useHomeVintem({ view, cycle, transactions, enabled: !isPiggy, readOnly })
   const reveal = useSectionReveal()
   // Aviso de limite leva à Home com `#cat-{id}`: a linha abre expandida e a seção rola até ela.
@@ -48,6 +51,10 @@ export function DashboardPage() {
   const expandId = expandIdFromHash(hash)
   useHashReveal(undefined, view !== null && !isPiggy)
 
+  const noIncome = view !== null && !view.income.hasIncome
+  // Mesma condicao de antes para o balao: so com numeros na tela.
+  const talking = speech !== null && view !== null && !noIncome
+  useOincTalk(pigRef, talking ? speech.text : null, speech?.popKey)
   if (isPiggy) {
     return (
       <div className="mx-auto w-full max-w-[480px] space-y-4 md:max-w-[560px]">
@@ -97,9 +104,6 @@ export function DashboardPage() {
     )
   }
 
-  const noIncome = view !== null && !view.income.hasIncome
-  // Mesma condicao de antes para o balao: so com numeros na tela.
-  const talking = speech !== null && view !== null && !noIncome
   const suppressed = view?.verdictSuppressed === true
   const past = view?.isPast === true
   const negative = view !== null && view.safeCents < 0
@@ -122,15 +126,17 @@ export function DashboardPage() {
       <LimitAlertNotice />
 
       {/* Fala comprida precisa de mais altura em cima do porco, para o balao nao sair da tela. */}
-      <div className={`text-center ${talking && speech.text.length > 70 ? (speech.text.length > 110 ? 'mt-24' : 'mt-12') : 'mt-2'}`}>
+      <div className={`text-center ${talking && speech.text.length > 80 ? (speech.text.length > 120 ? 'mt-16' : 'mt-8') : 'mt-2'}`}>
         <ArcGauge
           restPct={view && !noIncome ? view.restPct : null}
           tone={suppressed ? 'neutral' : arcToneFor(view?.rhythmLevel ?? null)}
           loading={loading}
         >
-          {/* Falando, o porco chega para a esquerda e abre lugar para o balao. */}
-          <div className={`transition-transform duration-300 motion-reduce:transition-none ${talking ? '-translate-x-20' : ''}`}>
-            <VintemSlot state={vintem.state} onTap={vintem.onTap} />
+          {/* O porco nao sai do lugar: quem se ajeita e o balao. Falando, ele quica pela base. */}
+          <div className="relative">
+            <div ref={pigRef}>
+              <VintemSlot state={vintem.state} onTap={vintem.onTap} />
+            </div>
             {talking && <VintemHomeBalloon />}
           </div>
         </ArcGauge>

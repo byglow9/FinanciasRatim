@@ -3,7 +3,7 @@ import { VintemVote } from '@/components/vintem/VintemVote'
 import { useVintem } from '@/contexts/VintemContext'
 
 /**
- * Balao da Home ligado ao provedor (UI-SPEC S1): de quadrinho, ao lado do porco, por cima do medidor.
+ * Balao da Home ligado ao provedor (UI-SPEC S1): de quadrinho, saindo da cabeca do porco para o lado, por cima do medidor.
  * Fica dentro do espaco do porco (150 por 125) e cresce para cima, para nunca tampar o valor. Sem fala
  * nao renderiza nada; com fala fica ate o toque ou o proximo evento (D-09): nao existe temporizador.
  */
@@ -12,7 +12,7 @@ export function VintemHomeBalloon() {
   if (speech === null) return null
   return (
     <div
-      className="absolute bottom-[94px] left-[132px] z-30 flex w-[min(250px,calc(50vw+16px))] justify-start text-left"
+      className="absolute bottom-[112px] left-[78px] z-30 flex w-[min(200px,calc(50vw-20px))] justify-start text-left"
       data-situation={speech.situation}
       data-phrase={speech.id}
     >

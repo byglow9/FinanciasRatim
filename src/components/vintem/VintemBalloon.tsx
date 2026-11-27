@@ -78,7 +78,7 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
       onClick={onDismiss}
       className={cn(
         'relative block rounded-2xl bg-action px-4 py-3 text-left text-base font-normal leading-normal text-action-text shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        side ? 'min-h-12 w-fit max-w-full rounded-bl-md px-3 leading-snug' : inline ? 'min-h-12 w-full' : 'mx-auto min-h-12 w-fit max-w-[min(320px,100%)]',
+        side ? 'min-h-10 w-fit max-w-full rounded-bl-md px-2.5 py-2 text-sm leading-snug' : inline ? 'min-h-12 w-full' : 'mx-auto min-h-12 w-fit max-w-[min(320px,100%)]',
       )}
     >
       <span aria-hidden="true">{text}</span>

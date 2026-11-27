@@ -116,9 +116,9 @@ Requisitos do escopo atual. Cada um mapeia para uma fase do roadmap.
 
 ### Multiusuário (MULTI)
 
-- [ ] **MULTI-01**: Uma segunda pessoa (o amigo) usa o Coinc com os próprios dados, separados, e o histórico e o login dele são migrados do projeto antigo sem colisão de identificadores
+- [ ] **MULTI-01**: Uma segunda pessoa (o amigo) usa o Coinc com os próprios dados, separados, entrando por convite (sem migração do projeto antigo, decisão de 2026-11-27)
 - [ ] **MULTI-02**: O dono cria as contas por convite, e o servidor sincroniza e recebe webhooks por dono
-- [ ] **MULTI-03**: A migração é repetível, com ensaio antes, relatório de conflitos e cópia de segurança dos dados
+- **MULTI-03**: ~~migração repetível do amigo~~ — removido do escopo (2026-11-27)
 
 ## v2 Requirements
 
@@ -230,7 +230,7 @@ Preenchida na criação do roadmap.
 | CASAL-02 | Phase 8 | Pending |
 | MULTI-01 | Phase 8 | Pending |
 | MULTI-02 | Phase 8 | Pending |
-| MULTI-03 | Phase 8 | Pending |
+| MULTI-03 | - | Removido |
 
 **Coverage:**
 

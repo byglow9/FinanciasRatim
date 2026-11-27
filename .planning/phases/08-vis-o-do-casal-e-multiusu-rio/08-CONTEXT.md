@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, somente leitura. Contas novas nascem por link de convite, no modo sozinho ou casal, com dados separados por grupo, banco próprio e porco com IA e avisos. O amigo migra do app antigo (`financias-xrd`). Requisitos: CASAL-01, CASAL-02, MULTI-01, MULTI-02, MULTI-03.
+A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, somente leitura. Contas novas nascem por link de convite, no modo sozinho ou casal, com dados separados por grupo, banco próprio e porco com IA e avisos. Requisitos: CASAL-01, CASAL-02, MULTI-01, MULTI-02. Sem migração do amigo (D-11).
 </domain>
 
 <decisions>
@@ -33,9 +33,7 @@ A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, som
 - **D-10:** A própria pessoa **apaga a conta** nas Configurações: conta, dados e credenciais do banco. — **Reversibility:** one-way — exclusão não tem volta; exige confirmação forte e escopo estrito por dono.
 
 ### Migração do amigo
-- **D-11:** Vem **tudo** do app antigo: lançamentos, contas fixas, metas, Porquinho e calendário, com ensaio, cópia de segurança, relatório de conflitos e repetível sem duplicar.
-- **D-12:** Ele usa **uma pessoa só**: migra para o modo sozinho.
-- **D-13:** O app antigo **fica no ar**, sem redirecionar. O que for lançado nele depois da migração só entra se ela for repetida.
+- **D-11:** **Fora da fase** (decisão do dono, 2026-11-27). Não há migração do `financias-xrd`; o amigo começa do zero pelo convite e o app antigo dele não é tocado. Os requisitos de migração (MULTI-03 e a parte de histórico do MULTI-01) saem do escopo. A fase segue **inteira, em um só bloco**, sem subfases.
 
 ### Aba Casal
 - **D-14:** Limites **somados por categoria**: uma barra com gasto e teto juntos; tocar abre quanto é de cada um.
@@ -44,7 +42,8 @@ A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, som
 - **D-17:** Somente leitura; a Home continua individual (CASAL-02).
 
 ### Claude's Discretion
-- Formato do token de convite, coleção, cifragem das credenciais e estrutura dos scripts de migração.
+- Formato do token de convite, coleção e cifragem das credenciais.
+- Ordem interna das ondas dentro da fase; a pesquisa recomenda isolamento entre grupos antes de qualquer segundo grupo existir (inclui `limitAlerts`/`vintemInsights` sem `hid`, padrões de nome e tom, e rollback seguro).
 - Onde a "sobra" aparece na aba Casal (abaixo do destaque) e como conviver com o seletor Ciclo/Mês atual, que hoje recorta pelo ciclo de quem vê e conflita com D-16 para os blocos de entradas e saídas.
 - Textos do passo a passo do MeuPluggy.
 </decisions>
@@ -65,7 +64,7 @@ A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, som
 ### Reusable Assets
 - `src/pages/CouplePage.tsx`, `src/components/couple/*`, `shared/core/couple.js` — aba Casal com entradas, saídas, saldo e categorias; faltam limites e Pode gastar.
 - `shared/core/budget.js` (`buildBudgetView`) — cálculo do Pode gastar por pessoa.
-- `server/scripts/create-users.js`, `backfill.js`, `export-firestore.js`, `rehearsal.js`, `verify.js` — base para contas, ensaio e migração.
+- `server/scripts/create-users.js` — base para contas.
 
 ### Integration Points e armadilhas
 - `settings/main` é **um documento global** (`src/services/settings.service.ts`, `server/src/sync.js`, `push/repo.js`, `ai/snapshot.js`): precisa virar um por `hid` antes de existir um segundo grupo.
@@ -73,7 +72,7 @@ A aba Casal (já existente) passa a mostrar limites, gastos e sobra somados, som
 - `PersonType` é `'ele' | 'ela'` em todo o app, e o gênero das falas sai dela (`genderOf` em `shared/core/oincSelect.js`): o modo sozinho e o D-04 desta fase pedem separar área de gênero.
 - `firestore.rules` já isolam por `hid`; coleções novas (convites, segredos) devem ficar só no servidor.
 - Cotas grátis (IA, Firestore Spark) passam a ser divididas entre grupos; limites globais precisam ser revistos.
-- `.firebaserc`, `build:amigo` e `dev:amigo` apontam para `financias-xrd`, não tocado até a migração.
+- `.firebaserc`, `build:amigo` e `dev:amigo` apontam para `financias-xrd`; ficam como estão.
 </code_context>
 
 <specifics>

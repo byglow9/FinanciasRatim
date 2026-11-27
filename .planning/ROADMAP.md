@@ -17,7 +17,7 @@ O Coinc é uma evolução de um app que já funciona (lançamentos, fixas, metas
 - [ ] **Phase 4: Mascote Vintém** - O porquinho-cofre original reage ao ritmo e ao uso do limite, com falas próprias em tom ajustável
 - [x] **Phase 5: Identidade Coinc, PWA e onboarding** - O app vira Coinc em coinc-financias.web.app, instalável no celular, com tema e visual novos (completed 2026-11-24)
 - [ ] **Phase 6: Cartão de crédito** - Cartão como conta própria, com fatura, parcelas e limite, depois de um teste real do que o MeuPluggy entrega
-- [ ] **Phase 7: Push e Vintém com IA** - Avisos reais no celular e comentários do Vintém gerados por IA gratuita, com frases prontas de reserva
+- [x] **Phase 7: Push e Vintém com IA** - Avisos reais no celular e comentários do Vintém gerados por IA gratuita, com frases prontas de reserva (fechada pelo dono 2026-11-27, UAT detalhado em aberto)
 - [ ] **Phase 8: Visão do casal e multiusuário** - Aba Casal somente leitura e o amigo usando o app com dados separados
 
 ## Phase Details
@@ -477,49 +477,49 @@ Plans:
 
 **Notas de planejamento (2026-11-25):** as duas trilhas (push e IA) rodam em paralelo nas ondas. Primeiro vêm os tracers (07-01 e 07-02 para o push, que o gate 07-06 prova num iPhone real antes de qualquer expansão; 07-09 para a IA), depois as expansões. Os checkpoints humanos do dono ficam em 07-06 (chave VAPID, APIs do Google e iPhone real), 07-17 (chaves de IA, teste lado a lado e escolha do modelo) e 07-18 (publicação e conferência no aparelho real, com a revisão de conteúdo). Nenhuma regra nem índice do Firestore muda na fase e nenhum pacote novo entra (limitador próprio no lugar de express-rate-limit).
 
-**Plans**: 0/19 plans executed
+**Plans**: 19/19 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Tracer do push no servidor e no service worker: registro do FID, teste de aviso por fid e worker que sempre exibe (PUSH-01, PUSH-04, PUSH-05)
-- [ ] 07-02-PLAN.md — Tracer do push no app: Ativar avisos pelo fluxo FID e Testar aviso no cartão Notificações (PUSH-01, PUSH-05)
-- [ ] 07-03-PLAN.md — Núcleo: preferências, silêncio com retenção e eventos de limite, fatura e espontâneo com id estável (PUSH-02, PUSH-03, PUSH-04)
-- [ ] 07-04-PLAN.md — Núcleo: banco de frases do aviso sem dado financeiro e os cinco estados do cartão Notificações (PUSH-01, PUSH-04)
-- [ ] 07-05-PLAN.md — Núcleo da IA: filtro de privacidade com removedor de nomes, régua própria da saída e chave do cache (IA-02, IA-03)
+- [x] 07-01-PLAN.md — Tracer do push no servidor e no service worker: registro do FID, teste de aviso por fid e worker que sempre exibe (PUSH-01, PUSH-04, PUSH-05)
+- [x] 07-02-PLAN.md — Tracer do push no app: Ativar avisos pelo fluxo FID e Testar aviso no cartão Notificações (PUSH-01, PUSH-05)
+- [x] 07-03-PLAN.md — Núcleo: preferências, silêncio com retenção e eventos de limite, fatura e espontâneo com id estável (PUSH-02, PUSH-03, PUSH-04)
+- [x] 07-04-PLAN.md — Núcleo: banco de frases do aviso sem dado financeiro e os cinco estados do cartão Notificações (PUSH-01, PUSH-04)
+- [x] 07-05-PLAN.md — Núcleo da IA: filtro de privacidade com removedor de nomes, régua própria da saída e chave do cache (IA-02, IA-03)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-06-PLAN.md — Gate do tracer de push: chave VAPID, APIs do FCM, publicação e aviso de teste no iPhone real (PUSH-01, PUSH-05)
-- [ ] 07-07-PLAN.md — Núcleo da IA: resumo montado no servidor e prompt por tom e situação (IA-02, IA-03)
+- [x] 07-06-PLAN.md — Gate do tracer de push: chave VAPID, APIs do FCM, publicação e aviso de teste no iPhone real (PUSH-01, PUSH-05)
+- [x] 07-07-PLAN.md — Núcleo da IA: resumo montado no servidor e prompt por tom e situação (IA-02, IA-03)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 07-08-PLAN.md — Servidor do push: preferências por pessoa, registro robusto, status e coleções do servidor fechadas ao cliente (PUSH-01, PUSH-03, PUSH-04)
-- [ ] 07-09-PLAN.md — Servidor da fala por IA: rota, provedores trocáveis por configuração, cadeia de fallback e validação da saída (IA-01 a IA-05)
+- [x] 07-08-PLAN.md — Servidor do push: preferências por pessoa, registro robusto, status e coleções do servidor fechadas ao cliente (PUSH-01, PUSH-03, PUSH-04)
+- [x] 07-09-PLAN.md — Servidor da fala por IA: rota, provedores trocáveis por configuração, cadeia de fallback e validação da saída (IA-01 a IA-05)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 07-10-PLAN.md — Notificador de limites: aviso único a 80 e 100 por cento, silêncio que entrega depois e gatilho no app (PUSH-02, PUSH-03, PUSH-04)
-- [ ] 07-11-PLAN.md — Cartão Notificações completo: cinco estados, tipos, silêncio, desativar e renovação a cada abertura (PUSH-01, PUSH-03, PUSH-05)
-- [ ] 07-12-PLAN.md — IA: teto diário por pessoa, cache com variantes, coalescência e freio por provedor (IA-01, IA-04)
-- [ ] 07-13-PLAN.md — IA: leitura completa do resumo (ciclo anterior, fixas, metas, Porquinho, fatura e padrões) com escopo por pessoa (IA-01, IA-02)
-- [ ] 07-14-PLAN.md — Cliente da fala por IA nas reações a lançamento, limite e sincronização, com reserva do banco de frases (IA-01, IA-03, IA-04)
+- [x] 07-10-PLAN.md — Notificador de limites: aviso único a 80 e 100 por cento, silêncio que entrega depois e gatilho no app (PUSH-02, PUSH-03, PUSH-04)
+- [x] 07-11-PLAN.md — Cartão Notificações completo: cinco estados, tipos, silêncio, desativar e renovação a cada abertura (PUSH-01, PUSH-03, PUSH-05)
+- [x] 07-12-PLAN.md — IA: teto diário por pessoa, cache com variantes, coalescência e freio por provedor (IA-01, IA-04)
+- [x] 07-13-PLAN.md — IA: leitura completa do resumo (ciclo anterior, fixas, metas, Porquinho, fatura e padrões) com escopo por pessoa (IA-01, IA-02)
+- [x] 07-14-PLAN.md — Cliente da fala por IA nas reações a lançamento, limite e sincronização, com reserva do banco de frases (IA-01, IA-03, IA-04)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07-15-PLAN.md — Notificador: fatura perto de vencer, push espontâneo, entrega retida, relógio e gatilho pós-sincronização (PUSH-02, PUSH-03, PUSH-04)
-- [ ] 07-16-PLAN.md — Fala espontânea da IA: abertura do app e Vintém que espia (IA-01, IA-04)
-- [ ] 07-17-PLAN.md — Gate da IA: teste lado a lado, termos de dados e escolha do modelo pelo dono (IA-03, IA-05)
+- [x] 07-15-PLAN.md — Notificador: fatura perto de vencer, push espontâneo, entrega retida, relógio e gatilho pós-sincronização (PUSH-02, PUSH-03, PUSH-04)
+- [x] 07-16-PLAN.md — Fala espontânea da IA: abertura do app e Vintém que espia (IA-01, IA-04)
+- [x] 07-17-PLAN.md — Gate da IA: teste lado a lado, termos de dados e escolha do modelo pelo dono (IA-03, IA-05)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 07-18-PLAN.md — Gate de produção: publicação e conferência de push e IA no aparelho real, com revisão de conteúdo (PUSH-01 a PUSH-05, IA-01 a IA-05)
+- [x] 07-18-PLAN.md — Gate de produção: publicação e conferência de push e IA no aparelho real, com revisão de conteúdo (PUSH-01 a PUSH-05, IA-01 a IA-05)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 07-19-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT (todos os requisitos da fase)
+- [x] 07-19-PLAN.md — Fechamento: guarda transversal, suíte completa, mapa de validação e roteiro de UAT (todos os requisitos da fase)
 
 ### Phase 07.1: Falas do OINC com qualidade (INSERTED)
 
@@ -573,20 +573,55 @@ Plans:
 
 ### Phase 8: Visão do casal e multiusuário
 
-**Goal:** O casal vê os números somados de Ele e Ela em uma aba somente leitura, e o amigo usa o Coinc com os próprios dados, separados, depois de uma migração segura
+**Goal:** O casal vê os números somados de Ele e Ela em uma aba somente leitura, e novas pessoas usam o Coinc por convite, com os próprios dados, separados
 **Mode:** mvp
 **Depends on:** Phase 3, Phase 6, Phase 7 (e as costuras de `ownerId` da Fase 1)
-**Requirements**: CASAL-01, CASAL-02, MULTI-01, MULTI-02, MULTI-03
+**Requirements**: CASAL-01, CASAL-02, MULTI-01, MULTI-02
 **Decisão de produto antes de planejar:** o amigo usa só lançamentos manuais ou cria a própria conta MeuPluggy com credenciais dele, guardadas por dono. As credenciais do dono não são reutilizadas (o plano grátis cobre só o mesmo titular). O formato da aba Casal vem dos mockups da Fase 3.
 **Success Criteria** (what must be TRUE):
 
   1. O usuário abre a aba Casal e vê limites, gastos e sobra de Ele e Ela somados, com o escopo indicado em cada número, sem poder editar nada, e a Home continua individual
   2. O dono cria a conta do amigo por convite, e o amigo entra e vê apenas os próprios dados, sem acesso aos do casal
-  3. O histórico e o login do amigo vêm do projeto antigo sem colisão de identificadores, por uma migração com ensaio prévio, relatório de conflitos e cópia de segurança, que pode ser repetida sem duplicar nada
-  4. A sincronização e os webhooks do banco funcionam por dono, sem misturar dados de pessoas diferentes
+  3. A sincronização e os webhooks do banco funcionam por dono, sem misturar dados de pessoas diferentes
 
-**Plans**: TBD
+**Plans**: 0/14 plans executed
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — Aba Casal somente leitura: Pode gastar juntos, gasto e sobra somados e limites por categoria (CASAL-01, CASAL-02; D-14 a D-17)
+- [ ] 08-02-PLAN.md — Contrato de isolamento: ids com dono, regras com households, rollback seguro e núcleo de perfil e gênero (MULTI-01; D-06)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 08-03-PLAN.md — Servidor por grupo: settingsFor, padrões neutros, ids lógicos e script de migração de settings (MULTI-01)
+- [ ] 08-04-PLAN.md — Cliente por grupo: settings/{hid}, alertas e insights com id do grupo e limpeza das chaves locais (MULTI-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 08-05-PLAN.md — Convite e cadastro no servidor: link de uso único, conta, claims, perfil e link do par (D-01 a D-04, D-06, D-09)
+- [ ] 08-06-PLAN.md — Gênero do perfil no push, na IA, na reposição e no cliente, com HouseholdContext (D-04)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 08-07-PLAN.md — Modo sozinho na interface: sem seletor Ele/Ela e sem aba Casal (D-05)
+- [ ] 08-08-PLAN.md — Tela pública de convite, cartão de convites nas Configurações e documentação (D-01 a D-04, D-09)
+- [ ] 08-09-PLAN.md — Banco por grupo no servidor: segredos cifrados, resolvedor por dono, sync e webhook por grupo (D-07, D-08)
+- [ ] 08-11-PLAN.md — Política de exclusão de conta por escrito para o portão de decisão (D-10)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 08-10-PLAN.md — Banco por grupo na interface: credenciais da Pluggy, passo a passo e conectar opcional (D-07, D-08)
+- [ ] 08-12-PLAN.md — Exclusão de conta no servidor, com portão de decisão sem volta, retomável e por escopo (D-10)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 08-13-PLAN.md — Exclusão de conta na interface: reautenticação, confirmação digitada e saída (D-10)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 08-14-PLAN.md — Gate de publicação em ordem (variáveis, servidor, hospedagem, migração, regras, Auth, convites) e conferência com conta descartável e com o amigo
 
 ## Progress
 
@@ -600,5 +635,5 @@ Plans:
 | 4. Mascote Vintém | 20/20 | In Progress|  |
 | 5. Identidade Coinc, PWA e onboarding | 23/23 | Complete    | 2026-11-24 |
 | 6. Cartão de crédito | 18/20 | In Progress|  |
-| 7. Push e Vintém com IA | 0/19 | Not started | - |
-| 8. Visão do casal e multiusuário | 0/TBD | Not started | - |
+| 7. Push e Vintém com IA | 19/19 | Complete (UAT em aberto) | 2026-11-27 |
+| 8. Visão do casal e multiusuário | 0/14 | Planned | - |

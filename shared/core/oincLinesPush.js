@@ -25,6 +25,7 @@ const PENDENTES = new Set()
 /**
  * @param {string} cena
  * @param {Row[]} rows
+ * @param {boolean} pendente tom que nao foi a voto: as linhas levam a marca reescrita
  * @returns {ReadonlyArray<Readonly<OincLine>>}
  */
 const list = (cena, rows, pendente) =>

@@ -178,6 +178,9 @@ function drawEye(
   }
   put(E.sclG, 'opacity', f2(clamp(1 - arc * 1.5, 0, 1)))
 
+  // olho em arco (feliz) nao tem traco de palpebra: ele aparecia escuro atras do arco
+  const semArco = clamp(1 - arc * 1.5, 0, 1)
+
   // palpebra de cima: cobre ate eyU; o piscar fecha por cobertura, nunca por escala do olho
   const cvT = cv + bc * (1 - cv)
   const entrada = look === 'entrada'
@@ -190,10 +193,10 @@ function drawEye(
     // so o estado que fecha o olho (cv a partir de 0,9) mostra o traco escuro; piscada nao mostra
     put(E.lidl, 'd', `M${f2(-13)},-3Q0,8 13,-3`)
     put(E.lidl, 'stroke-width', '4')
-    put(E.lidl, 'opacity', f2(clamp((cv - 0.8) * 10, 0, 1)))
+    put(E.lidl, 'opacity', f2(clamp((cv - 0.8) * 10, 0, 1) * semArco))
   } else {
     put(E.lidl, 'd', `M${f2(-rx * 1.1)},${f2(eyU)}Q0,${f2(eyU + 2 + bc * 3)} ${f2(rx * 1.1)},${f2(eyU)}`)
-    put(E.lidl, 'opacity', f2(clamp(cvT * 14, 0, 1)))
+    put(E.lidl, 'opacity', f2(clamp(cvT * 14, 0, 1) * semArco))
   }
 
   // palpebra de baixo (bochecha subindo) e cobertura do piscar

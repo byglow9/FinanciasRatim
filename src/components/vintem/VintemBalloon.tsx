@@ -4,12 +4,12 @@ import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { onFrame } from '@/lib/vintem/world'
 import { cn } from '@/lib/utils'
 
-export type VintemBalloonPlacement = 'below' | 'inline'
+export type VintemBalloonPlacement = 'below' | 'inline' | 'side'
 
 export interface VintemBalloonProps {
   /** Texto simples da fala: entra como filho React, nunca como HTML. */
   text: string
-  /** `below`: abaixo do arco, com rabicho no topo. `inline`: ao lado do Vintem de 48 px. */
+  /** `below`: com rabicho no topo. `inline`: ao lado do Vintem de 48 px. `side`: de quadrinho, ao lado do porco. */
   placement?: VintemBalloonPlacement
   onDismiss?: () => void
   /** Muda a cada fala nova: reinicia o pop de mola. */
@@ -34,11 +34,12 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
   const media = useReducedMotion()
   const effectiveReduced = reduced ?? media
   const inline = placement === 'inline'
+  const side = placement === 'side'
 
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    el.style.transformOrigin = inline ? '0% 50%' : '50% 0%'
+    el.style.transformOrigin = side ? '0% 100%' : inline ? '0% 50%' : '50% 0%'
     el.style.opacity = '0'
     const fadeSec = effectiveReduced ? FADE_REDUCED_SEC : FADE_SEC
     const spring = new Spring(POP_FROM, SPRING_PARAMS.bub[0], SPRING_PARAMS.bub[1])
@@ -67,7 +68,7 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
       el.style.opacity = ''
       el.style.transform = ''
     }
-  }, [popKey, effectiveReduced, inline])
+  }, [popKey, effectiveReduced, inline, side])
 
   return (
     <button
@@ -77,18 +78,25 @@ export function VintemBalloon({ text, placement = 'below', onDismiss, popKey, re
       onClick={onDismiss}
       className={cn(
         'relative block rounded-2xl bg-action px-4 py-3 text-left text-base font-normal leading-normal text-action-text shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        inline ? 'min-h-12 w-full' : 'mx-auto min-h-12 w-fit max-w-[min(320px,100%)]',
+        side ? 'min-h-12 w-fit max-w-full rounded-bl-md px-3 leading-snug' : inline ? 'min-h-12 w-full' : 'mx-auto min-h-12 w-fit max-w-[min(320px,100%)]',
       )}
     >
       <span aria-hidden="true">{text}</span>
-      {/* Rabicho do mesmo desenho do balao que aparece quando o porco espia de lado (VintemToast). */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute h-3.5 w-3.5 rotate-45 bg-action',
-          inline ? '-left-[7px] top-4 rounded-bl-[3px]' : '-top-[7px] left-1/2 -translate-x-1/2 rounded-tl-[3px]',
-        )}
-      />
+      {side ? (
+        // Rabicho de quadrinho: sai do canto de baixo e aponta para o porco.
+        <svg aria-hidden="true" viewBox="0 0 22 18" className="absolute -bottom-[14px] left-0 h-[18px] w-[22px] text-action">
+          <path d="M6 0H22C16 8 9 14 0 18C5 12 6 6 6 0Z" fill="currentColor" />
+        </svg>
+      ) : (
+        // Rabicho do mesmo desenho do balao que aparece quando o porco espia de lado (VintemToast).
+        <span
+          aria-hidden="true"
+          className={cn(
+            'absolute h-3.5 w-3.5 rotate-45 bg-action',
+            inline ? '-left-[7px] top-4 rounded-bl-[3px]' : '-top-[7px] left-1/2 -translate-x-1/2 rounded-tl-[3px]',
+          )}
+        />
+      )}
     </button>
   )
 }

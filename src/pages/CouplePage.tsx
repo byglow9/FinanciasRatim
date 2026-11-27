@@ -5,6 +5,7 @@ import { useCoupleBudget } from '@/hooks/useCoupleBudget'
 import { useCoupleData, type CoupleMode } from '@/hooks/useCoupleData'
 import { useSavings } from '@/hooks/useSavings'
 import { CoupleHeadline } from '@/components/couple/CoupleHeadline'
+import { CoupleLimits } from '@/components/couple/CoupleLimits'
 import { DualBars } from '@/components/couple/DualBars'
 import { PiggyCard } from '@/components/couple/PiggyCard'
 import { SplitBar } from '@/components/couple/SplitBar'
@@ -60,18 +61,25 @@ export function CouplePage() {
       ) : budget.loading || !budget.first || !budget.second ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Carregando o Pode gastar juntos</span>
-          {[176, 96].map((h) => (
+          {[176, 96, 144].map((h) => (
             <div key={h} aria-hidden="true" className="anim-pulse rounded-[22px] bg-card" style={{ height: h }} />
           ))}
         </div>
       ) : (
-        <TogetherHeadline
-          budget={budget.summary}
-          firstName={settings.tabNames.area1}
-          secondName={settings.tabNames.area2}
-          firstCycle={budget.cycleLabels.first}
-          secondCycle={budget.cycleLabels.second}
-        />
+        <>
+          <TogetherHeadline
+            budget={budget.summary}
+            firstName={settings.tabNames.area1}
+            secondName={settings.tabNames.area2}
+            firstCycle={budget.cycleLabels.first}
+            secondCycle={budget.cycleLabels.second}
+          />
+          <CoupleLimits
+            rows={budget.summary.rows}
+            firstName={settings.tabNames.area1}
+            secondName={settings.tabNames.area2}
+          />
+        </>
       )}
 
       <div className="flex items-center justify-between gap-3">

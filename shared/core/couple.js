@@ -6,7 +6,8 @@
 // verdadeira (transfer === true) fica fora das entradas e das saidas (PR-14).
 
 import { toCents } from './ledger.js'
-import { isDayToDay } from './budget.js'
+import { isDayToDay, sortByUrgency } from './budget.js'
+import { limitState } from './limits.js'
 import { compareGroupKeys, groupKeyOf } from './categoryOrder.js'
 
 /** @typedef {import('./budget.js').Tx} Tx */
@@ -215,6 +216,64 @@ export function coupleSummary({ first, second, defs }) {
  */
 
 /**
+ * Parte de uma pessoa numa categoria: com limite vem de spend.rows; sem limite
+ * o gasto vem de spend.generalByCategory (zero se nao gastou) (D-14).
+ * @param {BudgetView | null} view
+ * @param {string} categoryId
+ * @returns {CouplePart}
+ */
+function partOf(view, categoryId) {
+  const row = view?.spend.rows.find((r) => r.categoryId === categoryId)
+  if (row) return { hasLimit: true, limitCents: row.limitCents, spentCents: row.spentCents }
+  const general = view?.spend.generalByCategory.find((g) => g.categoryId === categoryId)
+  return { hasLimit: false, limitCents: null, spentCents: general ? general.cents : 0 }
+}
+
+/**
+ * Linhas de limite somadas: a uniao das categorias com limite nos dois lados.
+ * Teto e gasto contam so quem tem limite; o estado usa os mesmos cortes da Home.
+ * @param {BudgetView | null} first
+ * @param {BudgetView | null} second
+ * @returns {CoupleLimitRow[]}
+ */
+function limitRows(first, second) {
+  const ids = new Set()
+  for (const view of [first, second]) {
+    for (const row of view?.spend.rows ?? []) ids.add(row.categoryId)
+  }
+  /** @type {CoupleLimitRow[]} */
+  const rows = []
+  for (const categoryId of ids) {
+    const parts = { first: partOf(first, categoryId), second: partOf(second, categoryId) }
+    let limitCents = 0
+    let spentCents = 0
+    for (const part of [parts.first, parts.second]) {
+      if (!part.hasLimit || part.limitCents === null) continue
+      limitCents += part.limitCents
+      spentCents += part.spentCents
+    }
+    const info = limitState(spentCents, limitCents)
+    if (info === null) continue
+    rows.push({
+      categoryId,
+      limitCents,
+      spentCents,
+      pct: Math.floor((Math.max(spentCents, 0) * 100) / limitCents),
+      state: info.state,
+      parts,
+    })
+  }
+  // Urgencia (over, warn, ok); dentro do estado, maior gasto e depois categoryId.
+  const byState = (/** @type {CoupleLimitRow} */ a, /** @type {CoupleLimitRow} */ b) => {
+    const order = sortByUrgency({ state: a.state, pct: 0, categoryId: '' }, { state: b.state, pct: 0, categoryId: '' })
+    if (order !== 0) return order
+    if (b.spentCents !== a.spentCents) return b.spentCents - a.spentCents
+    return a.categoryId < b.categoryId ? -1 : a.categoryId > b.categoryId ? 1 : 0
+  }
+  return rows.sort(byState)
+}
+
+/**
  * Soma das duas BudgetView (a mesma da Home de cada um). Lado nulo conta zero.
  * Pode gastar negativo soma como negativo. Sem fonte de renda, `noIncome` avisa
  * mas o numero continua inteiro.
@@ -243,6 +302,6 @@ export function coupleBudget({ first, second }) {
       first: sides[0] ? !sides[0].income.hasIncome : false,
       second: sides[1] ? !sides[1].income.hasIncome : false,
     },
-    rows: [],
+    rows: limitRows(sides[0], sides[1]),
   }
 }

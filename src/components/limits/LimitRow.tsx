@@ -129,62 +129,26 @@ export function LimitRow({ row, categoryDefs, neutralOk = false, open, onToggle 
   )
 }
 
-interface GeneralRowProps {
-  generalCents: number
-  generalByCategory: Array<{ categoryId: string | null; cents: number }>
-  categoryDefs: CategoryDef[]
-  open: boolean
-  onToggle: (open: boolean) => void
-}
+/** Quantas categorias aparecem antes do "Ver mais". */
+const TOP_CATEGORIES = 5
 
-/** Linha "Gasto geral": categorias sem limite somadas, sem barra, expansível por categoria. */
-function GeneralRow({ generalCents, generalByCategory, categoryDefs, open, onToggle }: GeneralRowProps) {
-  const panelId = useId()
+/** Categoria sem limite: so o quanto ja foi, sem barra. */
+function FreeRow({ categoryId, cents, categoryDefs }: { categoryId: string | null; cents: number; categoryDefs: CategoryDef[] }) {
+  const def = categoryDefs.find((d) => d.id === categoryId) ?? { id: categoryId ?? 'outros' }
+  const Icon = categoryId === null ? LayoutGrid : iconComponent(categoryIcon(def))
+  const name = categoryId === null ? 'Sem categoria' : nameOf(categoryId, categoryDefs)
   return (
-    <li className="border-b border-border last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => onToggle(!open)}
-        className="flex min-h-14 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <IconCircle icon={LayoutGrid} />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate text-base font-bold">Gasto geral</span>
-            <span className="shrink-0">
-              <span className="text-xs font-bold">{formatMoney(generalCents)}</span>
-              <span className="text-xs text-muted-foreground"> sem limite</span>
-            </span>
-          </span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            categorias sem limite, somadas. Já descontado do Pode gastar.
-          </span>
+    <li className="flex min-h-14 items-center gap-3 border-b border-border py-3 pr-8 last:border-b-0">
+      <IconCircle icon={Icon} />
+      <span className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+        <span className="min-w-0 truncate text-base font-bold" title={name}>
+          {name}
         </span>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          aria-hidden="true"
-        />
-      </button>
-      <Collapsible id={panelId} open={open}>
-        <div className="pl-14">
-          {generalByCategory.length === 0 ? (
-            <p className="py-2 text-base text-muted-foreground">Nenhum lançamento neste ciclo</p>
-          ) : (
-            <ul>
-              {generalByCategory.map((g) => (
-                <li key={g.categoryId ?? 'sem-categoria'} className="flex items-baseline justify-between gap-3 py-2">
-                  <span className="min-w-0 truncate text-base text-muted-foreground">
-                    {g.categoryId === null ? 'Sem categoria' : nameOf(g.categoryId, categoryDefs)}
-                  </span>
-                  <span className="shrink-0 text-base font-bold">{formatMoney(g.cents)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Collapsible>
+        <span className="shrink-0">
+          <span className="text-xs font-bold">{formatMoney(cents)}</span>
+          <span className="text-xs text-muted-foreground"> sem limite</span>
+        </span>
+      </span>
     </li>
   )
 }
@@ -203,7 +167,7 @@ interface LimitsListProps {
   id?: string
 }
 
-/** Cartão "Limites do mês": linhas por urgência (já ordenadas pelo núcleo) e Gasto geral por último. */
+/** Cartão "Limites do mês": as categorias que mais gastaram primeiro, cinco à vista e o resto no "Ver mais". */
 export function LimitsList({
   rows,
   generalCents,
@@ -221,6 +185,17 @@ export function LimitsList({
 
   const isOpen = (key: string, fallback: boolean) => (key in toggled ? toggled[key] : fallback)
   const setOpen = (key: string, open: boolean) => setToggled((t) => ({ ...t, [key]: open }))
+
+  // Com e sem limite na mesma lista, da que mais gastou para a que menos gastou.
+  const categories = [
+    ...rows.map((row) => ({ key: row.categoryId, cents: row.spentCents, row })),
+    ...generalByCategory.map((g) => ({ key: g.categoryId ?? 'sem-categoria', cents: g.cents, row: null, categoryId: g.categoryId })),
+  ].sort((a, b) => b.cents - a.cents)
+  const [showAll, setShowAll] = useState(false)
+  // O aviso de limite abre a Home numa categoria: se ela estiver escondida, mostra tudo.
+  const wanted = categories.findIndex((c) => expandId === `cat-${c.key}`)
+  const all = showAll || wanted >= TOP_CATEGORIES
+  const shown = all ? categories : categories.slice(0, TOP_CATEGORIES)
 
   return (
     <section id={id} aria-labelledby={titleId} className="scroll-mt-4 rounded-card bg-card p-4">
@@ -267,24 +242,33 @@ export function LimitsList({
       )}
 
       <ul>
-        {rows.map((row) => (
-          <LimitRow
-            key={row.categoryId}
-            row={row}
-            categoryDefs={categoryDefs}
-            neutralOk={neutralOk}
-            open={isOpen(row.categoryId, expandId === `cat-${row.categoryId}`)}
-            onToggle={(open) => setOpen(row.categoryId, open)}
-          />
-        ))}
-        <GeneralRow
-          generalCents={generalCents}
-          generalByCategory={generalByCategory}
-          categoryDefs={categoryDefs}
-          open={isOpen('__geral', false)}
-          onToggle={(open) => setOpen('__geral', open)}
-        />
+        {shown.map((c) =>
+          c.row !== null ? (
+            <LimitRow
+              key={c.key}
+              row={c.row}
+              categoryDefs={categoryDefs}
+              neutralOk={neutralOk}
+              open={isOpen(c.row.categoryId, expandId === `cat-${c.row.categoryId}`)}
+              onToggle={(open) => setOpen(c.key, open)}
+            />
+          ) : (
+            <FreeRow key={c.key} categoryId={c.categoryId ?? null} cents={c.cents} categoryDefs={categoryDefs} />
+          ),
+        )}
       </ul>
+
+      {categories.length > TOP_CATEGORIES && (
+        <button type="button" aria-expanded={all} onClick={() => setShowAll(!all)} className={`${LINK_44} w-full justify-center`}>
+          {all ? 'Ver menos' : `Ver mais ${categories.length - TOP_CATEGORIES}`}
+        </button>
+      )}
+
+      {generalCents > 0 && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Gasto geral: {formatMoney(generalCents)} em categorias sem limite, somadas. Já descontado do Pode gastar.
+        </p>
+      )}
     </section>
   )
 }
